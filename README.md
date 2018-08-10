@@ -37,12 +37,12 @@ program BlinkLed;
 uses PIC16F84A;
 {$FREQUENCY 8MHZ}
 var
-  pin: bit absolute PORTB.7;
+  pin: byte;
 begin                          
   TRISB := 0;   //all outputs
   while true do 
     delay_ms(1000);
-    pin := not pin;
+    pin := 1;
   end;
 end.
 ```
@@ -180,7 +180,6 @@ Operator            Precedence
 ```
 Type           Size
 ============== ==========
- bit           1 bit
  boolean       1 bit
  byte          1 byte
  char          1 byte
@@ -196,7 +195,6 @@ Variables are defined with the VAR keyword:
 ```
 var
   var1 : byte;
-  var2 : bit;
   large_name_variable: boolean;
 ```
 
@@ -205,15 +203,7 @@ Variables can be defined too, at an absolute memory address:
 ```
 var
   PORTB: BYTE absolute $06;
-  pin0: bit; absolute $06.0;
-  pin1: boolean; absolute PORTB.bit1;
-```
-
-Bit access can be performed too, using fields:
-
-```
-  var_byte.bit0 := 1;
-  var_byte.bit7 := 0;
+  pin1: boolean; absolute $07;
 ```
 
 Specific byte of a word, can be access using fields:
@@ -271,16 +261,11 @@ FUNCTION       DESCRIPTION
 delay_ms()	   Generate a time delay in miliseconds, from 0 to 65536.
 Inc()          Increase a variable.
 Dec()          Decrease a varaible.
-SetBank()      Set the current RAM bank.
 Exit()         Exit from a procedure or end the program.
 Ord()          Convert a char to a byte.
 Chr()          Convert a byte to a char.
-Bit()          Convert an expression to a bit expression.
 Byte()         Convert an expression to a byte expression.
 Word()         Convert an expression to a word expression.
-DWord()        Convert an expression to a dword expression.
-SetAsInput()   Set a 8-bits port or a pin as an input.
-SetAsOutput()  Set a 8-bits port or a pin as an output.
 ```
 
 ### Procedure and Functions
@@ -324,153 +309,6 @@ end;
 REGISTER parameters are fast, because they use the W register, so only one REGISTER parameter can be used. 
 As REGISTER parameter is stored in W register, any operation using the W register, could lose its value, so the first operation in a procedure, using a REGISTER parameter must be read this parameter.
 
-### Interrupts
-
-To manage interrupts, P65Pas let us to define a special kind of Procedure:
-
-```
-  procedure My_ISR; interrupt;
-  begin
-
-    //ISR code
-
-  end;
-```
-
-The name of the procedure is not important, but the declaration must be followed but the reserved word INTERRUPT.
-
-Only one INTERRUPT procedure is allowed in a program.
-
-When P65Pas compile an INTERRUPT procedure, some special criterias are considered:
-
-1. Are always compiled starting in the address 0x0004.
-2. A RETFIE instruction is added to the end of the routine.
-3. No additional bank switching instructions are generated at the beginning of the procedure. It is the responsibility of the programmer to properly handle the banks within the routine.
-
-INTERRUPT procedures don't save the value of registers or the control flags. This should be done manually.
-
-
-### ASM blocks
-
-P65Pas have a complete support for inserting ASM code inside the Pascal source. 
-
-ASM blocks must be included between the delimiters ASM and END:
-
-```
-procedure DoSomething;
-begin
-  x := 10;
-  asm
-    ;Add 2 to the address $20 
-    MOVLW 2
-    ADDWF $20, F
-  end
-end;
-```
-
-ASM blocks are not instructions, that's why they are not finished with ";". It lets the ASM block, to be included in almost any place of the source code, like a comment.
-
-WARNING: Changing the RAM bank, inside an ASM block, can generate errors in compilation or in the code compiled. P65Pas know always the current RAM bank, when compiling, but is not aware of the changes can be made inside ASM blocks.
-
-Absolute and relative Labels can be used too:
-
-```
-asm 
-  GOTO $+1   ;jump one position forward
-end
-```
-
-```
-asm 
-  ;infinite loop
-label:
-  NOP
-  GOTO label
-end
-```
-
-Program variables can be accessed, using his common name:
-
-```
-var 
- byte1: byte; 
- car1: char; 
- bit1: bit;
- bol1: boolean; 
- word1: word;
- dword1: dword;
-begin
-  //Low level clear
-  asm 
-    CLRF byte1
-    CLRF car1
-    BCF bit1
-    BCF bol1
-    CLRF word1.Low
-    BCF word1.high.bit1
-	CLRF dword1.low
-	CLRF dword1.high
-	CLRF dword1.extra
-	CLRF dword1.ultra
-  end
-end.
-```
-
-Constant can be accessed too, using the same way. 
-
-It's possible to use the directive ORG inside a ASM block, too:
-
-```
-  asm 
-    org $-2
-  end
-  vbit := 1;
-```
-
-The address in ORG, can be absolute or relative. 
-
-WARNING: Changing the PC pointer with ORG, can generate errors in the compilation or in the code compiled.
-
-## Pointers
-
-Pointers are supported in P65Pas, only for addresses going from $00 to $FF (1 byte size), thus they can cover only the RAM memory in banks 0 and 1.
-
-Pointers must be declared usin first, a type declaration in the common Pascal style:
-
-```
-type
-  ptrByte: ^Byte;
-  ptrByte: ^Word;
-var
-  pbyte: ptrByte;
-  pword: ptrWord;
-```
-
-Pointers can be assigned like variables or using addresses form others varaibles:
-
-```
-type
-  ptrByte: ^Byte;
-var
-  pbyte: ptrByte;
-  m    : byte;
-begin
-  pbyte := @m;    //Assign address
-  pbyte^ := $ff;  //Write value
-  //Now “m” is  $ff
-end.
-```
-The operator "@" return the address of a variable.
-
-Pointers support some basic operations:
-
-Assign   :	p1 := p2;
-Compare  : 	if p1 = p2 then ...
-Increment:	Inc(p);
-Decrement:	Dec(p);
-Add      :	p1 + p2 + 1
-Subtrac  :	p1 - 5
-
 ## Directives
 
 Directives are special instructions inserted in the source code that are interpreted and executed by the compiler when compiling the source code (in compilation time).
@@ -513,11 +351,7 @@ There are some system variables, accessible from the directives language. They a
 
 {$MSGBOX PIC_MAXFREQ} -> Shows the Max Clock frequency for the device.
 
-{$MSGBOX PIC_NUMBANKS} -> Shows the RAM banks number for the device.
-
 {$MSGBOX SYN_MODE} -> Shows the syntax Mode of the compiler.
-
-{$MSGBOX CURRBANK} -> Shows the current RAM bank.
 
 (*) To see the complete list, check the User Manual.
 
@@ -571,24 +405,6 @@ Shows a text message in the screen, with an error icon.
 #### $MSGWAR
 
 Shows a text message in the screen, with a warning icon.
-
-#### $CONFIG
-
-Sets the configuration bits of the device.
-
-```
-{$CONFIG $3FFD}
-
-{$define _CP_ON       =     0x000F}
-{$define _CP_OFF      =     0x3FFF}
-{$define _WDT_OFF     =     0x3FFB}
-{$define _LP_OSC      =     0x3FFC}
-{$define _XT_OSC      =     $3FFD}
-
-{$CONFIG _CP_OFF, _XT_OSC, _WDT_OFF }
-
-{$CONFIG _CP_OFF _XT_OSC _WDT_OFF }
-```
 
 #### $INCLUDE
 
@@ -773,49 +589,6 @@ var x: word;
 {$ENDIF}
 ```
 
-#### $SET_STATE_RAM
-
-Set the state of the RAM memory for the current device.
-
-The state of a byte of RAM can have 3 values:
-
-* SFR: Special Function Register, like STATUS or TRISB.
-* GPR: General Purpose Register. Used as free memory for the user.
-* NIM: Not implemented cell.
-
-$SET_STATE_RAM, let us to define the state of the RAM using a range of addresses.
-
-The syntax of $SET_STATE_RAM is: 
-
-```
-{$SET_STATE_RAM <list of commands>}
-```
-
-COmmands are separaed by commas. One command have teh syntax:
-
-<Begin adrress>-<End address>:<state>
-
-One valid example, for this directive, would be:
-
-```
-{$SET_STATE_RAM '000-00B:SFR'};
-```
-
-That indicates the bytes in RAM from $000 to $00B are SFR.
-
-Addresses are expressed always in hexadecimal. 
-
-Other example are:
-
-```
-//Multiple commands in one directive
-{$SET_STATE_RAM '000-00B:SFR, 00C-04F:GPR'}  
-//Set state for all banks
-{$SET_STATE_RAM '000-00C:SFR:ALL'}  
-//Set state for all banks and map them to bank 0
-{$SET_STATE_RAM '000-00C:SFR:ALLMAPPED'}  
-```
-
 #### $CLEAR_STATE_RAM
 
 USed to define the initial state of RAM memory. 
@@ -825,136 +598,9 @@ $CLEAR_STATE_RAM, set the state of all the RAM as unimplemented, clearing all pr
 It's used before of starting to define the RAM for a device, using the directives $SET_STATE_RAM and $SET_MAPPED_RAM.
 
 
-#### $RESET_PINS 
-
-Clear all the configuration for the pines defined in the microcontroller.
-
-```
-{$RESET_PINS}
-```
-
-This directive is generally used before of defining the microcontollers pins with the directive {$SET_PIN_NAME}
-
-
-#### $SET_PIN_NAME
-
-Define the name for a specified pin of the microcontroller. 
-
-The syntax is:
-
-```
-{$SET_PIN_NAME <pin number>:<name>}
-```
-
-One example would be:
-
-```
-{$SET_PIN_NAME '2:VDD'}
-```
-
-This definition would make the label "VDD" will appear in the pin 2 of the graphic representation of the PIC, when using the debugger.,
-
-#### $MAP_RAM_TO_PIN
-
-Assign some bits of the RAM, to physical pins of a microcontroller. This is used to map the registers GPIO, PORTA, PORTB, …, to pins of the device.
-
-This assignment is needed to a have a better visual effect in the simulation of the PIC, when using the debugger. This way we will see the pin highlighted when it has a high level (bit set to 1). 
-
-The syntax of $MAP_RAM_TO_PIN is: 
-
-```
-{$MAP_RAM_TO_PIN <address>:<list of associations>}
-```
-
-Associations are separated by commas. One association have the form:
-
-```
-<number of bit>-<number of pin>
-```
-
-One valid example would be:
-
-```
-{$MAP_RAM_TO_PIN '005:0-17,1-18,2-1,3-2,4-3'};
-```
-
-This instruction indicates the bits  0, 1, 2, 3 and 4, of the address $05, are mapped to the pins 17, 18, 1, 2 y 3 respectively.
-
-Values for number of bit and pins are in decimal.
-
-#### $SET_UNIMP_BITS
-
-Defines bits not implemented in some specific positions of the RAM.
-
-This setting is used to model the RAM in a accurate way (to the bit level) in order to have a better and realistic simulation of the device.
-
-The syntax of $SET_UNIMP_BITS is: 
-
-```
-{$SET_UNIMP_BITS <list of commands>}
-```
-
-The commands are separated by commas. One command have the form:
-
-```
-<address>:<mask>
-```
-
-The address and the mask are expressed in hexadecimal using 3 and 2 digits respectively.
-
-One valid example would be:
-
-```
-{$SET_UNIMP_BITS '005:1F'};
-```
-
-And indicates the bits 5, 6 and 7, of the position $005 (PORTA) are not implemented in the hardware and will be read always as 0.
-
-#### $SET_UNIMP_BITS1
-
-Defines bits not implemented in some specific positions of the RAM.
-
-This instruction works in the same way of $SET_UNIMP_BITS, but the unimplemented bits will be read always as 1, instead of 0.
-
-One valid example would be:
-
-{$SET_UNIMP_BITS1 '004:E0'};
-
-And indicates the bits 5, 6 and 7, of the position $004 are not implemented in the hardware and will be read always as 1.
-
-(*) For more information about directives, check the User Manual.
-
-### Defining custom devices
-
-P65Pas have complete support to define the hardware of microcontrollers, using directives. 
-
-Following, there is an example of defining a microcontoller similar to the  PIC16F84:
- 
-```
-//Define hardware
-{$SET PIC_MODEL='MY_PIC'}
-{$SET PIC_MAXFREQ = 1000000}
-{$SET PIC_NPINS = 18}
-{$SET PIC_NUMBANKS = 2}
-{$SET PIC_NUMPAGES = 1}
-{$SET PIC_MAXFLASH = 1024}
-//Clear memory state
-{$SET_STATE_RAM '000-1FF:NIM'}
-//Define RAM state
-{$SET_STATE_RAM '000-00B:SFR, 00C-04F:GPR'}
-{$SET_STATE_RAM '080-08B:SFR, 08C-0CF:GPR'}
-//Define mapped RAM
-{$SET_MAPPED_RAM '080-080:bnk0, 082-084:bnk0, 08A-08B:bnk0'}
-{$SET_MAPPED_RAM '08C-0CF:bnk0'}
-//Define unimplemented bits in RAM
-{$SET_UNIMP_BITS '003:3F,083:3F,005:1F,085:1F,00A:1F,08A:1F'}
-```
-
-To see more examples of definig devices, check the folders /devices10 and /devices16.
- 
 ## P65Pas Limitations
 
-•	Only basic types are implemented: bit, byte, char, boolean, word an dword(limited support).
+•	Only basic types are implemented: byte, char, boolean, word an dword(limited support).
 
 •	Cannot declare arrays or records.
 
