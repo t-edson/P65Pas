@@ -1,0 +1,31 @@
+object fraRomExplorer: TfraRomExplorer
+  Left = 0
+  Height = 325
+  Top = 0
+  Width = 438
+  ClientHeight = 325
+  ClientWidth = 438
+  TabOrder = 0
+  DesignLeft = 313
+  DesignTop = 141
+  object Label1: TLabel
+    Left = 0
+    Height = 17
+    Top = 0
+    Width = 438
+    Align = alTop
+    AutoSize = False
+    Caption = 'ROM map'
+    Color = clActiveCaption
+    ParentColor = False
+    Transparent = False
+  end
+  object panGraph: TPanel
+    Left = 0
+    Height = 308
+    Top = 17
+    Width = 438
+    Align = alClient
+    TabOrder = 0
+  end
+end
