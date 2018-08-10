@@ -117,7 +117,6 @@ type
     procedure ProcCONFIG;
     procedure ProcFREQUENCY;
   private  //Access to system variables
-    function read_CURRBANK: Single;
     function read_CURRBLOCK: String;
     function read_PIC_FREQUEN: Single;
     function read_PIC_IFLASH: Single;
@@ -125,7 +124,6 @@ type
     function read_PIC_MODEL: string;
     function read_PIC_NPINS: Single;
     function read_SYN_MODE: String;
-    procedure write_CURRBANK(AValue: Single);
     procedure write_PIC_FREQUEN(AValue: Single);
     procedure write_PIC_IFLASH(AValue: Single);
     procedure write_PIC_MAXFREQ(AValue: Single);
@@ -1342,14 +1340,6 @@ procedure TParserDirecBase.write_SYN_MODE(AValue: String);
 begin
 
 end;
-function TParserDirecBase.read_CURRBANK: Single;
-begin
-  Result := CurrBank;
-end;
-procedure TParserDirecBase.write_CURRBANK(AValue: Single);
-begin
-  CurrBank := Round(AValue);
-end;
 function TParserDirecBase.read_CURRBLOCK: String;
 var
   parentNod: TxpEleCodeCont;
@@ -1642,7 +1632,6 @@ begin
   AddSysVariableNumber('PIC_IFLASH'  , @read_PIC_IFLASH , @write_PIC_IFLASH);
   AddSysVariableNumber('PIC_NPINS'   , @read_PIC_NPINS  , @write_PIC_NPINS);
   AddSysVariableString('SYN_MODE'    , @read_SYN_MODE   , @write_SYN_MODE);
-  AddSysVariableNumber('CURRBANK'    , @read_CURRBANK   , @write_CURRBANK);
   AddSysVariableString('CURRBLOCK'   , @read_CURRBLOCK  , nil);
 end;
 //Initialization

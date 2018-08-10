@@ -631,7 +631,7 @@ begin
 //    if not CaptureRegister(f) then exit;
 //    if not CaptureComma then exit;
 //    if not CaptureDestinat(d) then exit;
-//    pic.codAsmFD(idInst, f, d);
+//    pic.codAsm(idInst, f, d);
 //  end;
 //  'f':begin
 //    if not CaptureRegister(f) then exit;

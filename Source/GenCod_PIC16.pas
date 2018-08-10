@@ -117,7 +117,6 @@ type
       procedure fun_Ord(fun: TxpEleFun);
       procedure fun_Chr(fun: TxpEleFun);
       procedure fun_Word(fun: TxpEleFun);
-      procedure fun_SetBank(fun: TxpEleFun);
     protected
       procedure StartCodeSub(fun: TxpEleFun);
       procedure EndCodeSub;
@@ -165,10 +164,8 @@ end;
 procedure TGenCod.callFunct(fun: TxpEleFun);
 {Rutina genérica para llamar a una función definida por el usuario.}
 begin
-  fun.iniBnk := CurrBank;   //fija el banco inicial
   //Por ahora, no se implementa paginación, pero despuñes habría que considerarlo.
   _CALL(fun.adrr);  //codifica el salto
-  CurrBank := fun.ExitBank;
 end;
 procedure TGenCod.CopyInvert_C_to_Z;
 begin
@@ -226,13 +223,8 @@ begin
     //Asignación a una variable
     case p2^.Sto of
     stConst : begin
-      if value2=0 then begin
-        //caso especial
-        kCLRF(byte1);
-      end else begin
-        kMOVLW(value2);
-        kMOVWF(byte1);
-      end;
+      _LDAi(value2);
+      _STA(byte1.addr);
     end;
     stVariab: begin
       kMOVF(byte2, toW);
@@ -1314,9 +1306,7 @@ en un registro, o se podría generar el código usando la rutina de WHILE. }
 var
   loop1: Word;
   dg: integer;
-  bnkExp1: Byte;
 begin
-  bnkExp1 := CurrBank;   //Guarda el banco al entrar la rutina
   _ADDLW(1);   //corrige valor inicial
 loop1 := _PC;
   _ADDLW(255);  //W=W-1  (no hay instrucción DECW)
@@ -1327,19 +1317,6 @@ loop1 := _PC;
   _GOTO(loop1);
   //Terminó el lazo
   pic.codGotoAt(dg, _PC);   //termina de codificar el salto
-  {El valor del banco RAM al terminar de ejecutarse esta rutina sería:
-  * El mismo banco antes de entrar -> Si el lazo no se ejecuto ninguna vez.
-  * El mismo banco de "target"     -> Si el lazo se ejecuta al menos una vez.
-  Si en "bnkExp1" almacenamos el banco al inicio de la rutina, se concluye entonces
-  que:
-  * Si "bnkExp1" es igual al banco de "target", No se generan instrucciones de cambio de
-  banco y todo trabaja pues no se altera "CurrBank",
-  * Si "bnkExp1" es diferente al banco de "target", entonces se generarán instrucciones
-  de cambio de banco en el lazo, pero como no sabemos si se ejecutarán, por seguridad
-  generamos código obligatorio para fijar siempre el banco de salida en el de "target".}
-  if bnkExp1 <> target.bank then begin
-    CurrBank := 255;  //Para forzar a generar cambio de banco
-  end;
 end;
 procedure TGenCod.ROB_byte_shr_byte(Opt: TxpOperation; SetRes: boolean);  //Desplaza a la derecha
 var
@@ -1878,7 +1855,7 @@ begin
   //Lleva el registro de las llamadas a exit()
   if FirstPass then begin
     //CurrBank debe ser el banco con el que se llamó al i_RETURN.
-    parentNod.AddExitCall(posExit, parentNod.CurrBlockID, CurrBank);
+    parentNod.AddExitCall(posExit, parentNod.CurrBlockID);
   end;
   res.SetAsNull;  //No es función
 end;
@@ -2204,29 +2181,6 @@ begin
   end;
   if not CaptureTok(')') then exit;
 end;
-procedure TGenCod.fun_SetBank(fun: TxpEleFun);
-{Define el banco actual}
-begin
-  if not CaptureTok('(') then exit;
-  GetExpressionE(0, pexPARSY);  //captura parámetro
-  if HayError then exit;   //aborta
-  case res.Sto of  //el parámetro debe estar en "res"
-  stConst : begin
-    if (res.Typ = typByte) or (res.Typ = typWord) or (res.Typ = typDWord) then begin
-      //ya es Word
-      CurrBank := 255;   //para forzar el cambio
-    end else begin
-      GenError('Number expected.'); exit;
-    end;
-  end;
-  stVariab, stExpres: begin  //se asume que ya está en (w)
-    GenError('A constant expected.'); exit;
-  end;
-  else
-    genError('Not implemented "%s" for this operand.', [fun.name]);
-  end;
-  if not CaptureTok(')') then exit;
-end;
 procedure TGenCod.StartSyntax;
 //Se ejecuta solo una vez al inicio
 begin
@@ -2457,7 +2411,6 @@ begin
   f := CreateSysFunction('Chr'      , @callParam, @fun_Chr);
   f := CreateSysFunction('Byte'     , @callParam, @fun_Byte);
   f := CreateSysFunction('Word'     , @callParam, @fun_Word);
-  f := CreateSysFunction('SetBank'  , nil, @fun_SetBank);
   //Funciones de sistema para operaciones aritméticas/lógicas complejas
   //Multiplicación byte por byte a word
   f_byte_mul_byte_16 := CreateSysFunction('byte_mul_byte_16', nil, nil);

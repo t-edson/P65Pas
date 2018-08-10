@@ -25,7 +25,7 @@ type
     procedure cInNewLine(lin: string);
     procedure Cod_JumpIfTrue;
     function CompileStructBody(GenCode: boolean): boolean;
-    function CompileConditionalBody(out FinalBank: byte): boolean;
+    function CompileConditionalBody: boolean;
     function CompileNoConditionBody(GenCode: boolean): boolean;
     procedure CompileFOR;
     procedure CompileLastEnd;
@@ -124,7 +124,6 @@ en la posición inicial de la RAM.}
 begin
   pic.iRam := 0;  //Ubica puntero al inicio.
   pic.ClearMemRAM;  //Pone las celdas como no usadas y elimina nombres.
-  CurrBank := 0;
   StartRegs;        //Limpia registros de trabajo, auxiliares, y de pila.
 end;
 procedure TCompiler_PIC16.getListOfIdent(var itemList: TStringDynArray; out srcPosArray: TSrcPosArray);
@@ -420,14 +419,13 @@ begin
   //Salió sin errores
   exit(true);
 end;
-function TCompiler_PIC16.CompileConditionalBody(out FinalBank: byte): boolean;
+function TCompiler_PIC16.CompileConditionalBody: boolean;
 {Versión de CompileStructBody(), para bloques condicionales.
 Se usa para bloque que se ejecutarán de forma condicional, es decir, que no se
 garantiza que se ejecute siempre. "FinalBank" indica el banco en el que debería
 terminar el bloque.}
 begin
   Result := CompileStructBody(true);  //siempre genera código
-  FinalBank := CurrBank;  //Devuelve banco
 end;
 function TCompiler_PIC16.CompileNoConditionBody(GenCode: boolean): boolean;
 {Versión de CompileStructBody(), para bloques no condicionales.
@@ -462,26 +460,10 @@ begin
 end;
 procedure TCompiler_PIC16.CompileIF;
 {Compila una extructura IF}
-  procedure SetFinalBank(bnk1, bnk2: byte);
-  {Fija el valor de CurrBank, de acuerdo a dos bancos finales.}
-  begin
-    if OptBnkAftIF then begin
-      //Optimizar banking
-      if bnk1 = bnk2 then begin
-        //Es el mismo banco (aunque sea 255). Lo deja allí.
-      end else begin
-        CurrBank := 255;  //Indefinido
-      end;
-    end else begin
-      //Sin optimización
-    end;
-  end;
 var
   jFALSE, jEND_TRUE: integer;
-  bnkExp, bnkTHEN, bnkELSE: Byte;
 begin
   if not GetExpressionBool then exit;
-  bnkExp := CurrBank;   //Guarda el banco inicial
   if not CaptureStr('then') then exit; //toma "then"
   //Aquí debe estar el cuerpo del "if"
   case res.Sto of
@@ -528,17 +510,15 @@ begin
     Cod_JumpIfTrue;
     _GOTO_PEND(jFALSE);  //salto pendiente
     //Compila la parte THEN
-    if not CompileConditionalBody(bnkTHEN) then exit;
+    if not CompileConditionalBody then exit;
     //Verifica si sigue el ELSE
     if cIn.tokL = 'else' then begin
       //Es: IF ... THEN ... ELSE ... END
       cIn.Next;   //toma "else"
       _GOTO_PEND(jEND_TRUE);  //llega por aquí si es TRUE
       _LABEL(jFALSE);   //termina de codificar el salto
-      CurrBank := bnkExp;  //Fija el banco inicial antes de compilar
-      if not CompileConditionalBody(bnkELSE) then exit;
+      if not CompileConditionalBody then exit;
       _LABEL(jEND_TRUE);   //termina de codificar el salto
-      SetFinalBank(bnkTHEN, bnkELSE);  //Manejo de bancos
       VerifyEND;   //puede salir con error
     end else if cIn.tokL = 'elsif' then begin
       //Es: IF ... THEN ... ELSIF ...
@@ -548,12 +528,10 @@ begin
       CompileIF;  //más fácil es la forma recursiva
       if HayError then exit;
       _LABEL(jEND_TRUE);   //termina de codificar el salto
-      SetFinalBank(bnkTHEN, CurrBank);  //Manejo de bancos
       //No es necesario verificar el END final.
     end else begin
       //Es: IF ... THEN ... END. (Puede ser recursivo)
       _LABEL(jFALSE);   //termina de codificar el salto
-      SetFinalBank(bnkExp, bnkTHEN);  //Manejo de bancos
       VerifyEND;  //puede salir con error
     end;
   end;
@@ -625,12 +603,9 @@ procedure TCompiler_PIC16.CompileWHILE;
 var
   l1: Word;
   dg: Integer;
-  bnkEND, bnkExp1, bnkExp2: byte;
 begin
   l1 := _PC;        //guarda dirección de inicio
-  bnkExp1 := CurrBank;   //Guarda el banco antes de la expresión
   if not GetExpressionBool then exit;  //Condición
-  bnkExp2 := CurrBank;   //Guarda el banco antes de la expresión
   if not CaptureStr('do') then exit;  //toma "do"
   //Aquí debe estar el cuerpo del "while"
   case res.Sto of
@@ -649,14 +624,13 @@ begin
   stVariab, stExpres: begin
     Cod_JumpIfTrue;
     _GOTO_PEND(dg);  //salto pendiente
-    if not CompileConditionalBody(bnkEND) then exit;
+    if not CompileConditionalBody then exit;
     _GOTO(l1);   //salta a evaluar la condición
     if not VerifyEND then exit;
     //ya se tiene el destino del salto
     _LABEL(dg);   //termina de codificar el salto
   end;
   end;
-  CurrBank := bnkExp2;  //Este es el banco con que se sale del WHILE
 end;
 procedure TCompiler_PIC16.CompileFOR;
 {Compila uan extructura WHILE}
@@ -709,7 +683,7 @@ begin
     Oper(Op1, opr1, Op2);   //"res" mantiene la constante o variable
     Cod_JumpIfTrue;
     _GOTO_PEND(dg);  //salto pendiente
-    if not CompileConditionalBody(bnkFOR) then exit;
+    if not CompileConditionalBody then exit;
     if not VerifyEND then exit;
     //Incrementa variable cursor
     if Op1.Typ = typByte then begin
@@ -846,12 +820,6 @@ begin
     end;
   end;
   EndCodeSub;  //termina codificación
-  {Fija banco al terminar de codificar. Si no se modificó el banco en la compilación
-  (como en un procedimiento vacío) CurrBank, contiene el banco que se fijó antes de
-  llamar a CompileProcBody(), que es:
-    Siemrpe 0 -> en la primera pasada.
-    Un valor calculado -> en la segund pasada.}
-  fun.finBnk := CurrBank;  //Banco al terminar de codificar
   //Calcula tamaño
   fun.srcSize := pic.iRam - fun.adrr;
 end;
@@ -1653,16 +1621,13 @@ procedure TCompiler_PIC16.CompileInstructionDummy;
 var
   p: Integer;
   InvertedFromC0: Boolean;
-  CurrBank0: Byte;
 begin
   p := pic.iRam;
-  CurrBank0      := CurrBank;      //Guarda estado
   InvertedFromC0 := InvertedFromC; //Guarda estado
 
   CompileInstruction;  //Compila solo para mantener la sintaxis
 
   InvertedFromC := InvertedFromC0; //Restaura
-  CurrBank      := CurrBank0;      //Restaura
   pic.iRam := p;     //Elimina lo compilado
   //puede salir con error
   { TODO : Debe limpiar la memoria flash que ocupó, para dejar la casa limpia. }
@@ -1692,16 +1657,13 @@ procedure TCompiler_PIC16.CompileCurBlockDummy;
 var
   p: Integer;
   InvertedFromC0: Boolean;
-  CurrBank0: Byte;
 begin
   p := pic.iRam;
-  CurrBank0      := CurrBank;      //Guarda estado
   InvertedFromC0 := InvertedFromC; //Guarda estado
 
   CompileCurBlock;  //Compila solo para mantener la sintaxis
 
   InvertedFromC := InvertedFromC0; //Restaura
-  CurrBank      := CurrBank0;      //Restaura
   pic.iRam := p;     //Elimina lo compilado
   //puede salir con error
   { TODO : Debe limpiar la memoria flash que ocupó, para dejar la casa limpia. }
@@ -2073,41 +2035,6 @@ Esto es lo más cercano a un enlazador, que hay en PicPas.}
       end;
     end;
   end;
-  procedure SetInitialBank(fun: TxpEleFun);
-  {Define el banco de trabajo para compilar correctamente}
-  var
-    cal : TxpEleCaller;
-  begin
-    if fun.IsInterrupt then begin
-      //Para ISR, no se genera código de manejo de bancos
-      fun.iniBnk := 0;         //asume siempre 0
-      CurrBank := fun.iniBnk;  //configura al compilador
-      exit;
-    end;
-    if SetProIniBnk then begin
-      fun.iniBnk := 0;   //graba
-    end else begin
-      //Se debe deducir el banco inicial de la función
-      //Explora los bancos desde donde se llama
-      if fun.lstCallers.Count = 1 then begin
-        //Solo es llamado una vez
-        fun.iniBnk := fun.lstCallers[0].curBnk;
-        CurrBank := fun.iniBnk;  //configura al compilador
-      end else begin
-        fun.iniBnk := fun.lstCallers[0].curBnk;  //banco de la primera llamada
-        //Hay varias llamadas
-        for cal in fun.lstCallers do begin
-          if fun.iniBnk <> cal.curBnk then begin
-            //Hay llamadas desde varios bancos.
-            fun.iniBnk := 0;   //graba
-            exit;
-          end;
-        end;
-        //Todas las llamadas son del mismo banco
-        CurrBank := fun.iniBnk;  //configura al compilador
-      end;
-    end;
-  end;
   procedure UpdateFunLstCalled;
   {Actualiza la lista lstCalled de las funciones, para saber, a qué fúnciones llama
    cada función.}
@@ -2199,7 +2126,7 @@ begin
     noUsedPrev := noUsed;   //valor anterior
     noUsed := RemoveUnusedFuncReferences;
   until noUsed = noUsedPrev;
-  //Inicio de geenración de código.
+  //Inicio de generación de código.
   pic.iRam:= 0;  //inicia puntero a Flash
   _GOTO_PEND(iniMain);   //Salto hasta después del espacio de variables
   ///////////////////////////////////////////////////////////////////////////////
@@ -2269,7 +2196,6 @@ begin
         cIn.PosAct := fun.posCtx;  //Posiciona escáner
         PutLabel('__'+fun.name);
         TreeElems.OpenElement(fun.BodyNode); //Ubica el espacio de nombres, de forma similar a la pre-compilación
-        SetInitialBank(fun);   //Configura manejo de bancos RAM
         CompileProcBody(fun);
         TreeElems.CloseElement;  //cierra el body
         TreeElems.CloseElement;  //cierra la función
@@ -2301,7 +2227,6 @@ begin
       cIn.PosAct := fun.posCtx;  //Posiciona escáner
       PutLabel('__'+fun.name);
       TreeElems.OpenElement(fun.BodyNode); //Ubica el espacio de nombres, de forma similar a la pre-compilación
-      SetInitialBank(fun);   //Configura manejo de bancos RAM
       CompileProcBody(fun);
       TreeElems.CloseElement;  //cierra el body
       TreeElems.CloseElement;  //cierra la función
@@ -2323,7 +2248,6 @@ begin
   cIn.PosAct := bod.posCtx;   //ubica escaner
   PutLabel('__main_program__');
   TreeElems.OpenElement(bod);
-  CurrBank := 0;  //Se limpia, porque pudo haber cambiado con la compilación de procedimientos
   CompileCurBlock;
   TreeElems.CloseElement;   //cierra el cuerpo principal
   PutLabel('__end_program__');

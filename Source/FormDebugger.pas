@@ -5,7 +5,7 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
   ComCtrls, ExtCtrls, StdCtrls, Grids, ActnList, Menus, LCLType, Parser,
   FrameRamExplorer, FrameRomExplorer, FramePicRegisters, FrameRegWatcher,
-  P6502utils, CPUCore, MisUtils, FramePICDiagram, FramePicAsm;
+  P6502utils, CPUCore, MisUtils, FramePicAsm;
 type
   { TfrmDebugger }
   TfrmDebugger = class(TForm)
@@ -71,7 +71,6 @@ type
     fraRomExp: TfraRomExplorer;
     fraPicReg: TfraPicRegisters;
     fraRegWat: TfraRegWatcher;
-    fraPicDia: TfraPICDiagram;
     fraPicAsm: TfraPicAsm;
     milsecRefresh: integer;   //Periodo de refresco en milisegunod
     nCyclesPerClk: integer;   //Número de ciclos a ejecutar por pasada
@@ -105,9 +104,6 @@ begin
   pic.ExecNCycles(nCyclesPerClk, stopped);
   if stopped then begin
     acGenPauseExecute(self);
-  end else begin
-    if fraPicDia.Visible then fraPicDia.Refrescar;
-//    RefreshScreen;
   end;
 //  consoleTickCount('');
 end;
@@ -129,7 +125,6 @@ begin
   fraPicReg.Refrescar;
   if fraRamExp.Visible then fraRamExp.panGraph.Invalidate;
   if fraRegWat.Visible then fraRegWat.Refrescar;
-  if fraPicDia.Visible then fraPicDia.Refrescar;
   if fraPicAsm.Visible then fraPicAsm.Refrescar(SetGridRow);
   StatusBar1.Panels[1].Text := 'Clock Cycles = ' + IntToStr(pic.nClck);
   StatusBar1.Panels[2].Text := 'Time  = ' +
@@ -163,7 +158,6 @@ begin
   fraRomExp.panGraph.Invalidate;  //Se refresca aquí porque no se incluye su refresco en RefreshScreen().
   fraPicReg.SetCompiler(cxp);
   fraRegWat.SetCompiler(cxp);
-  fraPicDia.SetCompiler(cxp);
   fraPicAsm.SetCompiler(cxp);
 
   pic.AddBreakpoint(0);
@@ -203,10 +197,6 @@ begin
   fraRegWat := TfraRegWatcher.Create(self);
   fraRegWat.Parent := Panel2;
   fraRegWat.Align := alClient;
-
-  fraPicDia:= TfraPICDiagram.Create(self);
-  fraPicDia.Parent := Panel3;
-  fraPicDia.Align := alClient;
 
   fraPicAsm:= TfraPicAsm.Create(self);
   fraPicAsm.Parent := Panel1;

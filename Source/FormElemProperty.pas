@@ -63,7 +63,7 @@ end;
 procedure TfrmElemProperty.butDetailsClick(Sender: TObject);
 var
   call: TxpEleCaller;
-  tmp, bnkStr, callerStr: String;
+  tmp, callerStr: String;
 begin
   //Detalla las llamadas hechas al elemento
   tmp := '';
@@ -73,8 +73,7 @@ begin
     end else begin
       callerStr := call.caller.name;
     end;
-    bnkStr := IntToStr(call.curBnk);
-    tmp := tmp + 'Called by: ' + callerStr + ' from Bank:' + bnkStr +
+    tmp := tmp + 'Called by: ' + callerStr + ' ' +
            ' Pos:' + call.curPos.RowColString + LineEnding;
   end;
   MsgBox(tmp);
@@ -100,7 +99,7 @@ begin
 end;
 procedure TfrmElemProperty.Exec(elem0: TxpElement);
 var
-  adicInformation, dirSolic, tmp, bnkStr: String;
+  adicInformation, dirSolic, tmp: String;
   xcon: TxpEleCon;
   xfun: TxpEleFun;
   xbod: TxpEleBody;
@@ -148,8 +147,7 @@ begin
     //Genera reporte de ExitCalls
     tmp := '';
     for ecall in xfun.lstExitCalls do begin
-      bnkStr := IntToStr(ecall.curBnk);
-      tmp := tmp + 'exit() in : ' + ecall.srcPos.RowColString + ' from Bank:' + bnkStr +
+      tmp := tmp + 'exit() in : ' + ecall.srcPos.RowColString + ' ' +
              LineEnding;
     end;
     //Información adicional

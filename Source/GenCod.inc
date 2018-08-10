@@ -286,7 +286,7 @@ begin
     end else if value1 = 255 then begin  //caso especial
       _INCF(p2^.offs, toW);  //si el resultado es cero _Z=1
     end else begin
-      _MOVLW(value1);
+      _LDAi(value1);
       _SUBWF(p2^.offs, toW);  //si iguales _Z=1
     end;
   end;

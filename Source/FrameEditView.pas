@@ -1073,7 +1073,7 @@ begin
   case Upcase(ext) of
   '.PAS': begin
       //Es Pascal
-      synFile := patSyntax + DirectorySeparator + 'PicPas_PIC16.xml';
+      synFile := patSyntax + DirectorySeparator + 'P65Pas_P6502.xml';
       if not FileExists(synFile) then begin
         MsgErr(MSG_NOSYNFIL, [synFile]);
         exit;
@@ -1086,7 +1086,7 @@ begin
     end;
   '.ASM','.LST': begin
       //Es Ensamblador
-      synFile := patSyntax + DirectorySeparator + 'PicPas_AsmPic.xml';
+      synFile := patSyntax + DirectorySeparator + 'P65Pas_Asm.xml';
       if not FileExists(synFile) then begin
         MsgErr(MSG_NOSYNFIL, [synFile]);
         exit;
@@ -1098,7 +1098,7 @@ begin
    end;
   '.C': begin
      //Es C
-     synFile := patSyntax + DirectorySeparator + 'PicPas_C.xml';
+     synFile := patSyntax + DirectorySeparator + 'P65Pas_C.xml';
      if not FileExists(synFile) then begin
        MsgErr(MSG_NOSYNFIL, [synFile]);
        exit;

@@ -92,7 +92,6 @@ type  //TxpElement y clases previas
   //Datos sobre la llamada a un elemento desde otro elemento
   TxpEleCaller = class
     curPos: TSrcPos;    //Posición desde donde es llamado
-    curBnk: byte;       //banco RAM, desde donde se llama
     caller: TxpElement; //función que llama a esta función
   end;
   TxpListCallers = specialize TFPGObjectList<TxpEleCaller>;
@@ -127,7 +126,6 @@ type  //TxpElement y clases previas
   TxpExitCall = class
     srcPos: TSrcPos;    //Posición en el código fuente
     blkId : TxpSynBlockId; //Identificador del bloque desde donde se hizo la llamada
-    curBnk: byte;       //Banco actual al hacer el RETURN
     function IsObligat: boolean;
   end;
   TxpExitCalls = specialize TFPGObjectList<TxpExitCall>; //lista de variables
@@ -209,17 +207,11 @@ type //Clases de elementos
   como el programa principal, un procedimeinto o una unidad}
   TxpEleCodeCont = class(TxpElement)
   public
-    {Banco de RAM, que tiene la función al ejecutar la útlima instrucción. No es
-     necesariamente el banco con el que termina siempre, la función, porque puede haber
-     instrucciones exit(), antes. Para mejor precisión sobre el banco de salida, se debe
-     usar ExitBank()}
-    finBnk: byte;
     function BodyNode: TxpEleBody;
   public //Manejo de llamadas a exit()
     lstExitCalls: TxpExitCalls;
-    procedure AddExitCall(srcPos: TSrcPos; blkId: TxpSynBlockId; curBnk: byte);
+    procedure AddExitCall(srcPos: TSrcPos; blkId: TxpSynBlockId);
     function ObligatoryExit: TxpExitCall;
-    function ExitBank: byte;
   public //Información sobre bloques de sintaxis
     {TxpEleBody, almacena bloques de sintaxis para llevar el control de la ubicación
      de las instrucciones, con respecto a los bloques.}
@@ -405,8 +397,6 @@ type //Clases de elementos
     adrr   : integer;     //Dirección física, en donde se compila
     srcSize: integer;  {Tamaño del código compilado. En la primera pasada, es referencial,
                         porque el tamaño puede variar al reubicarse.}
-    //Banco de RAM, al iniciar la ejecución de la subrutina.
-    iniBnk: byte;
     {Referencia a la función que implemanta, la rutina de porcesamiento que se debe
     hacer, antes de empezar a leer los parámetros de la función.}
     procParam: TProcExecFunction;
@@ -812,7 +802,7 @@ begin
   //Devuelve referencia
   Result := TxpEleBody(elem);
 end;
-procedure TxpEleCodeCont.AddExitCall(srcPos: TSrcPos; blkId: TxpSynBlockId; curBnk: byte);
+procedure TxpEleCodeCont.AddExitCall(srcPos: TSrcPos; blkId: TxpSynBlockId);
 var
   exitCall: TxpExitCall;
 begin
@@ -821,7 +811,6 @@ begin
   {Se guarda el ID, en lugar de la referencia al bloque, porque en el modo de trabajo
    actual, los bloques se crean y destruyen, dinámicamente}
   exitCall.blkId  := blkId;
-  exitCall.curBnk := curBnk;
   lstExitCalls.Add(exitCall);
 end;
 function TxpEleCodeCont.ObligatoryExit: TxpExitCall;
@@ -843,37 +832,6 @@ begin
   end;
   //No se encontró ningún exit en el mismo "body"
   exit(nil);
-end;
-function TxpEleCodeCont.ExitBank: byte;
-{Devuelve el banco de RAM, que deja el bloque de código, después de ejecutarse.}
-var
-  exitCall: TxpExitCall;
-  bank1: Byte;
-begin
-  if lstExitCalls.Count = 0 then begin
-    //No hay instrucciones exit()
-    //Se asume que el banco de salida, será el que deje la última instrucción
-    if idClass = eltFunc then begin //Este contenedor es una función
-      Result := finBnk;
-    end else begin  //Debe ser el bloque Main
-      Result := 255;
-    end;
-  end else if (lstExitCalls.Count = 1) and  lstExitCalls[0].IsObligat then begin
-    //Hay una instrucción exit() y está en código obligatorio
-    Result := lstExitCalls[0].curBnk;
-  end else begin
-    //Hay al menos una instrucción exit y no es de ejecución obligatoria
-    bank1 := finBnk;  //Es el banco al final
-    for exitCall in lstExitCalls do begin
-      if exitCall.curBnk <> bank1 then begin
-        //No sale en el mismo banco
-        Result := 255;
-        exit;
-      end;
-    end;
-    //Todos salen por el mismo banco
-    Result := bank1;
-  end;
 end;
 procedure TxpEleCodeCont.OpenBlock(blkId: TxpSynBlockId);
 {Abre un bloque de sintaxis en este nodo TxpEleCodeCont..
@@ -1048,11 +1006,11 @@ begin
   if typ.IsBitSize then begin
     Result := 'bnk'+ IntToStr(adrBit.bank) + ':$' + IntToHex(adrBit.offs, 3) + '.' + IntToStr(adrBit.bit);
   end else if typ.IsByteSize then begin
-    Result := 'bnk'+ IntToStr(adrByte0.bank) + ':$' + IntToHex(adrByte0.offs, 3);
+    Result := '$' + IntToHex(adrByte0.offs, 3);
   end else if typ.IsWordSize then begin
-    Result := 'bnk'+ IntToStr(adrByte0.bank) + ':$' + IntToHex(adrByte0.offs, 3);
+    Result := '$' + IntToHex(adrByte0.offs, 3);
   end else if typ.IsDWordSize then begin
-    Result := 'bnk'+ IntToStr(adrByte0.bank) + ':$' + IntToHex(adrByte0.offs, 3);
+    Result := '$' + IntToHex(adrByte0.offs, 3);
   end else begin
     Result := '';   //Error
   end;

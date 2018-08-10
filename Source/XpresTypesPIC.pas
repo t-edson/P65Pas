@@ -127,16 +127,14 @@ type
    para un fin particular)}
   TPicRegister = class
   private
-    function Getbank: byte;
     function Getoffs: byte;
   public
-    addr   : word;      //Dirección absoluta: $000 a $1FF
+    addr   : word;      //Dirección absoluta: $000 a $FFFF
     assigned: boolean;  //indica si tiene una dirección física asignada
     used   : boolean;   //Indica si está usado.
     typ    : TPicRegType; //Tipo de registro
   public
     property offs: byte read Getoffs;   //Desplazamiento en memoria
-    property bank: byte read Getbank;   //Banco del registro
     procedure Assign(srcReg: TPicRegister);
   end;
   TPicRegister_list = specialize TFPGObjectList<TPicRegister>; //lista de registros
@@ -173,15 +171,9 @@ type
 implementation
 
 { TPicRegister }
-function TPicRegister.Getbank: byte;
-begin
-  Result := addr >> 7;
-end;
 function TPicRegister.Getoffs: byte;
 begin
-  Result := addr and $7F;  //devuelve dirección
-  //Tal vez sería mejor:
-  //Result := hi(addr << 1);  //devuelve dirección
+  Result := addr;  //devuelve dirección
 end;
 procedure TPicRegister.Assign(srcReg: TPicRegister);
 begin

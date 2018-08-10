@@ -299,7 +299,6 @@ end;
 procedure TfraRamExplorer.panGraphPaint(Sender: TObject);
 var
   bordlat, ancPag, x0, i, separ, alto, bordSup, y0: Integer;
-  bnkSel: byte;
 begin
   ////////////////////////
   if pic = nil then exit;
@@ -317,10 +316,9 @@ begin
 //debugln('panGraph.width: %d bordLat: %d', [panGraph.width, bordlat]);
   x0 := bordlat;
   y0 := bordsup;
-  bnkSel := cxp.PICCurBank;
 
   for i:=0 to 0 do begin
-    DrawRAMbank(Rect(x0, y0, x0+ancPag+1, y0+alto), i = bnkSel);
+    DrawRAMbank(Rect(x0, y0, x0+ancPag+1, y0+alto), true);
     x0 := x0 + ancPag + separ;
   end;
 end;

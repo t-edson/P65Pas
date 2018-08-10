@@ -1012,7 +1012,7 @@ begin
   edAsm.Lines.Add(';===Blocks of Code===');
   Compiler.DumpCode(edAsm.Lines, Config.IncAddress, true, COnfig.IncVarName );
   edAsm.Lines.Add(';--------------------');
-  edAsm.Lines.Add('    END');
+  edAsm.Lines.Add('      END');
   edAsm.EndUpdate;
 end;
 procedure TfrmPrincipal.acToolComEjecExecute(Sender: TObject);

@@ -76,7 +76,6 @@ public  //Campos acceso cuando sea variable.
   function Uoffs: TVarOffs; inline; //dirección del byte alto
   function bank : TVarBank; inline;  //banco
   function addr : TVarOffs; //dirección absoluta de la variable
-  function Lbank: TVarBank; inline;  //banco
   function bit : byte; inline;  //posición del bit
 public  //Campos de acceso a los valores constantes
   property valInt  : Int64 read Fval.ValInt write SetvalInt;
@@ -104,7 +103,6 @@ TCompilerBase = class
 protected  //Variables de expresión.
   {Estas variables, se inician al inicio de cada expresión y su valor es válido
   hasta el final de la expresión.}
-  CurrBank  : Byte;    //Banco RAM actual
   //Variables de estado de las expresiones booleanas
   InvertedFromC: boolean; {Indica que el resultado de una expresión Booleana o Bit, se
                            ha obtenido, en la última subexpresion, copaindo el bit C al
@@ -305,7 +303,6 @@ public    //Información y acceso a memoria
   procedure GenerateListReport(lins: TStrings); virtual; abstract;
 public    //Acceso a campos del objeto PIC
   function PICName: string; virtual; abstract;
-  function PICCurBank: byte; virtual; abstract; //Current RAM bank
   function RAMmax: integer; virtual; abstract;
 protected //Container lists of registers
   listRegAux : TPicRegister_list;  //lista de registros de trabajo y auxiliares
@@ -989,7 +986,6 @@ begin
   end else begin
     fc.caller := callerElem;
   end;
-  fc.curBnk := CurrBank;
   fc.curPos := cIn.ReadSrcPos;
   elem.lstCallers.Add(fc);
   Result := fc;
@@ -1575,11 +1571,6 @@ end;
 function TOperand.addr: TVarOffs;
 begin
   Result := FVar.addr;
-end;
-function TOperand.Lbank: TVarBank;
-{Banco del byte bajo, cuando es de tipo Word.}
-begin
-  Result := rVar.adrByte0.bank;
 end;
 function TOperand.bit: byte;
 begin
