@@ -306,9 +306,7 @@ begin
   opEve.AddItem('chr(65);', 5);
   opEve.AddItem('ord(\_);', 5);
   opEve.AddItem('ord(''A'');', 5);
-  opEve.AddItem('SetAsInput(\_);', 5);
-  opEve.AddItem('SetAsOutput(\_);', 5);
-  opEve.AddItem('SetBank(\_);', 5);
+  opEve.AddItem('SetOrig(\_);', 5);
 end;
 procedure TCodeTool.Fill_SpecialIdentif(opEve: TFaOpenEvent; hl: TSynFacilComplet;
                                             tokName: string; idIcon: integer);

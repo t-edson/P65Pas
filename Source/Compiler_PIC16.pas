@@ -6,7 +6,8 @@ interface
 uses
   Classes, SysUtils, lclProc, SynEditHighlighter, types, MisUtils, XpresBas,
   XpresTypesPIC, XpresElementsPIC, P6502Utils, Parser, ParserDirec,
-  GenCodBas_PIC16, GenCod_PIC16, ParserDirec_PIC16, Globales, FormConfig {Por diseño, parecería que GenCodBas, no debería accederse desde aquí};
+  GenCodBas_PIC16, GenCod_PIC16, ParserDirec_PIC16, Globales,
+  FormConfig {Por diseño, FormConfig, no debería accederse desde aquí};
 type
  { TCompiler }
 
@@ -37,7 +38,7 @@ type
     procedure array_length(const OpPtr: pointer);
     procedure ProcCommentsNoExec;
     function StartOfSection: boolean;
-    procedure ResetFlashAndRAM;
+    procedure ResetRAM;
     procedure getListOfIdent(var itemList: TStringDynArray; out
       srcPosArray: TSrcPosArray);
     procedure CaptureDecParams(fun: TxpEleFun);
@@ -73,8 +74,9 @@ type
      tener que abrir nuevamente al archivo.}
     OnRequireFileString: procedure(FilePath: string; var strList: TStrings) of object;
     procedure Compile(NombArc: string; Link: boolean); override;
-    procedure RAMusage(lins: TStrings; varDecType: TVarDecType; ExcUnused: boolean); override; //uso de memoria RAM
-    procedure DumpCode(lins: TSTrings; incAdrr, incCom, incVarNam: boolean); override; //uso de la memoria Flash
+    procedure RAMusage(lins: TStrings; ExcUnused: boolean); override; //uso de memoria RAM
+    procedure DumpCode(lins: TSTrings; AsmMode, IncVarDec, ExcUnused: boolean;
+      incAdrr, incCom, incVarNam: boolean); override; //uso de la memoria Flash
     function RAMusedStr: string; override;
     procedure GetResourcesUsed(out ramUse, romUse, stkUse: single); override;
     procedure GenerateListReport(lins: TStrings); override;
@@ -118,7 +120,7 @@ begin
   Result := (cIn.tokL ='var') or (cIn.tokL ='const') or
             (cIn.tokL ='type') or (cIn.tokL ='procedure');
 end;
-procedure TCompiler_PIC16.ResetFlashAndRAM;
+procedure TCompiler_PIC16.ResetRAM;
 {Reinicia el dispositivo, para empezar a escribir en la posición $000 de la FLASH, y
 en la posición inicial de la RAM.}
 begin
@@ -551,7 +553,7 @@ begin
     end;
   end else if res.Sto = stExpres then begin
     //Los resultados de expresión, pueden optimizarse
-    if InvertedFromC then begin
+    if BooleanFromC then begin
       //El resultado de la expresión, está en Z, pero a partir una copia negada de C
       //Se optimiza, eliminando las instrucciones de copia de C a Z
       pic.iRam := pic.iRam-2;
@@ -1474,7 +1476,7 @@ begin
   se codifican al inicio de la memoria FLASH, y las variables y registros se ubican al
   inicio de la memeoria RAM, ya que lo que importa es simplemente recabar información
   del procedimiento, y no tanto codificarlo. }
-  ResetFlashAndRAM;   //Limpia RAM y FLASH, y fija CurrBank
+  ResetRAM;   //Limpia RAM y FLASH, y fija CurrBank
   if IsImplementation then begin
     //Se compila para implementación.
     {Este proceso es más complejo. La idea es compilar el enzabezado de cualquier función,
@@ -1623,11 +1625,11 @@ var
   InvertedFromC0: Boolean;
 begin
   p := pic.iRam;
-  InvertedFromC0 := InvertedFromC; //Guarda estado
+  InvertedFromC0 := BooleanFromC; //Guarda estado
 
   CompileInstruction;  //Compila solo para mantener la sintaxis
 
-  InvertedFromC := InvertedFromC0; //Restaura
+  BooleanFromC := InvertedFromC0; //Restaura
   pic.iRam := p;     //Elimina lo compilado
   //puede salir con error
   { TODO : Debe limpiar la memoria flash que ocupó, para dejar la casa limpia. }
@@ -1659,11 +1661,11 @@ var
   InvertedFromC0: Boolean;
 begin
   p := pic.iRam;
-  InvertedFromC0 := InvertedFromC; //Guarda estado
+  InvertedFromC0 := BooleanFromC; //Guarda estado
 
   CompileCurBlock;  //Compila solo para mantener la sintaxis
 
-  InvertedFromC := InvertedFromC0; //Restaura
+  BooleanFromC := InvertedFromC0; //Restaura
   pic.iRam := p;     //Elimina lo compilado
   //puede salir con error
   { TODO : Debe limpiar la memoria flash que ocupó, para dejar la casa limpia. }
@@ -1791,7 +1793,7 @@ begin
   CompileLastEnd;
   if HayError then exit;
 //  //procesa cuerpo
-//  ResetFlashAndRAM;  {No es tan necesario, pero para seguir un orden y tener limpio
+//  ResetRAM;  {No es tan necesario, pero para seguir un orden y tener limpio
 //                     también, la flash y memoria, después de algún psoible procedimiento.}
 //  if cIn.tokL = 'begin' then begin
 //    bod := CreateBody;
@@ -1947,7 +1949,7 @@ begin
     end;
   end;
   //procesa cuerpo
-  ResetFlashAndRAM;  {No es tan necesario, pero para seguir un orden y tener limpio
+  ResetRAM;  {No es tan necesario, pero para seguir un orden y tener limpio
                      también, la flash y memoria, después de algún posible procedimiento.}
   if cIn.tokL <> 'begin' then begin
     GenError('Expected "begin", "var", "type" or "const".');
@@ -1966,7 +1968,7 @@ begin
   if HayError then exit;
   CompileLastEnd;  //Compila el "END." final
   if HayError then exit;
-  _SLEEP();   //agrega instrucción final
+  //_RTS();   //agrega instrucción final
   Cod_EndProgram;
 end;
 procedure TCompiler_PIC16.CompileLinkProgram;
@@ -2108,8 +2110,7 @@ var
   iniMain, noUsed, noUsedPrev, xxx: integer;
 begin
   ExprLevel := 0;
-  pic.ClearMemRAM;
-  ResetFlashAndRAM;
+  ResetRAM;
   ClearError;
   pic.MsjError := '';
   //Verifica las constantes usadas. Solo en el nodo principal, para no sobrecargar mensajes.
@@ -2118,7 +2119,6 @@ begin
       GenWarnPos(WA_UNUSED_CON_, [elem.name], elem.srcDec);
     end;
   end;
-  pic.iRam:= 0;  //inicia puntero a Flash
   //Explora las funciones, para identifcar a las no usadas
   TreeElems.RefreshAllFuncs;
   noUsed := 0;
@@ -2127,7 +2127,7 @@ begin
     noUsed := RemoveUnusedFuncReferences;
   until noUsed = noUsedPrev;
   //Inicio de generación de código.
-  pic.iRam:= 0;  //inicia puntero a Flash
+  pic.iRam:= GeneralORG;  //inicia puntero a RAM
   _GOTO_PEND(iniMain);   //Salto hasta después del espacio de variables
   ///////////////////////////////////////////////////////////////////////////////
   //Asigna memoria, primero a las variables locales (y parámetros) de las funciones
@@ -2170,7 +2170,7 @@ begin
     noUsedPrev := noUsed;   //valor anterior
     noUsed := RemoveUnusedVarReferences;
   until noUsed = noUsedPrev;
-  //Reserva espacio para las variables adicionales usadas
+  //Reserva espacio para las variables (Que no son de funciones).
   for xvar in TreeElems.AllVars do begin
     if xvar.Parent.idClass = eltFunc then continue;  //Las variables de funciones ya se crearon
     if xvar.nCalled>0 then begin
@@ -2252,7 +2252,7 @@ begin
   TreeElems.CloseElement;   //cierra el cuerpo principal
   PutLabel('__end_program__');
   {No es necesario hacer más validaciones, porque ya se hicieron en la primera pasada}
-  _SLEEP();   //agrega instrucción final
+  //_RTS();   //agrega instrucción final
   if pic.MsjError<>'' then begin //Puede ser error al escribir la última instrucción
       GenError(pic.MsjError);
       exit;
@@ -2277,7 +2277,7 @@ var
 begin
   mode := modPicPas;   //Por defecto en sintaxis nueva
   mainFile := NombArc;
-  hexfile := ChangeFileExt(NombArc, '.hex');     //Obtiene nombre
+  hexfile := ChangeFileExt(NombArc, '.prg');     //Obtiene nombre
   hexfile := hexFilePath;   //Expande nombre si es necesario
   //se pone en un "try" para capturar errores y para tener un punto salida de salida
   //único
@@ -2305,9 +2305,7 @@ begin
     ClearMacros;           //Limpia las macros
     //Inicia PIC
     ExprLevel := 0;  //inicia
-    pic.ClearMemRAM;
-    ResetFlashAndRAM;  {Realmente lo que importa aquí sería limpiar solo la RAM, porque
-                        cada procedimiento, reiniciará el puntero de FLASH}
+    ResetRAM;  //Inicia la memoria RAM
     //Compila el archivo actual como programa o como unidad
     if IsUnit then begin
       CompiledUnit := true;
@@ -2340,7 +2338,7 @@ begin
         CompileLinkProgram;
         consoleTickCount('** Second Pass.');
         //Genera archivo hexa, en la misma ruta del programa
-        pic.GenHex(hexFile, ConfigWord);  //CONFIG_NULL;
+        pic.GenHex(hexFile);  //CONFIG_NULL;
       end;
     end;
     {-------------------------------------------------}
@@ -2356,32 +2354,15 @@ function AdrStr(absAdr: word): string;
 begin
   Result := '0x' + IntToHex(AbsAdr, 3);
 end;
-procedure TCompiler_PIC16.RAMusage(lins: TStrings; varDecType: TVarDecType; ExcUnused: boolean);
+procedure TCompiler_PIC16.RAMusage(lins: TStrings; ExcUnused: boolean);
 {Devuelve una cadena con información sobre el uso de la memoria.}
 var
   adStr: String;
   v: TxpEleVar;
   nam, subUsed: string;
   reg: TPicRegister;
-  rbit: TPicRegisterBit;
 begin
   for v in TreeElems.AllVars do begin   //Se supone que "AllVars" ya se actualizó.
-    case varDecType of
-    dvtDBDb: begin
-      if ExcUnused and (v.nCalled = 0) then continue;
-      adStr := v.AddrString;  //dirección hexadecimal
-      if adStr='' then adStr := 'XXXX';  //Error en dirección
-      if v.typ.IsBitSize then begin
-        lins.Add(' ' + v.name + ' Db ' +  adStr);
-      end else if v.typ.IsByteSize then begin
-        lins.Add(' ' + v.name + ' DB ' +  adStr);
-      end else if v.typ.IsWordSize then begin
-        lins.Add(' ' + v.name + ' DW ' +  adStr);
-      end else begin
-        lins.Add(' "' + v.name + '"->' +  adStr);
-      end;
-    end;
-    dvtEQU: begin;
       if ExcUnused and (v.nCalled = 0) then continue;
       if v.nCalled = 0 then subUsed := '; <Unused>' else subUsed := '';
       if v.typ.IsBitSize then begin
@@ -2400,8 +2381,6 @@ begin
       end else begin
         lins.Add('"' + v.name + '"->' +  AdrStr(v.addr) + subUsed);
       end;
-    end;
-    end;
   end;
   //Reporte de registros de trabajo, auxiliares y de pila
   if (listRegAux.Count>0) or (listRegAuxBit.Count>0) then begin
@@ -2423,13 +2402,38 @@ begin
   end;
 //  lins.Add(';-------------------------');
 end;
-procedure TCompiler_PIC16.DumpCode(lins: TSTrings; incAdrr, incCom, incVarNam: boolean);
+procedure TCompiler_PIC16.DumpCode(lins: TSTrings; AsmMode, IncVarDec,
+  ExcUnused: boolean; incAdrr, incCom, incVarNam: boolean);
+var
+  i: Integer;
+  minUsed: integer;
 begin
-  pic.DumpCode(lins, incAdrr, incCom, incVarNam);
+  if AsmMode then begin
+    //Incluye encabezado
+    lins.Add('    ;Code generated by P6502 compiler');
+    lins.Add('    processor ' + PICName);
+    if IncVarDec then begin
+       lins.Add(';===RAM usage===');
+       RAMusage(lins, ExcUnused);
+    end;
+    lins.Add(';===Blocks of Code===');
+    pic.DumpCodeAsm(lins, incAdrr, incCom, incVarNam);
+    lins.Add(';--------------------');
+    lins.Add('      END');
+  end else begin
+    minUsed := pic.CPUMAXRAM;
+    for i := 0 to pic.CPUMAXRAM-1 do begin
+      if pic.ram[i].used then begin
+        if i<minUsed then minUsed := i;  //Calcula mínimo
+        lins.Add('poke ' +  IntToStr(i) + ',' + IntToStr(pic.ram[i].value));
+      end;
+    end;
+    lins.Add('sys ' +  IntToStr(minUsed) );
+  end;
 end;
 function TCompiler_PIC16.RAMusedStr: string;
 var
-  usedRAM, totRAM: Word;
+  usedRAM, totRAM: integer;
 begin
   totRAM := pic.TotalMemRAM;
   if totRAM=0 then exit;  //protección
@@ -2439,8 +2443,7 @@ begin
 end;
 procedure TCompiler_PIC16.GetResourcesUsed(out ramUse, romUse, stkUse: single);
 var
-  totROM, usedROM: Word;
-  usedRAM, totRAM: Word;
+  usedRAM, totRAM: integer;
 begin
   //Calcula RAM
   ramUse := 0;  //valor por defecto
@@ -2600,7 +2603,6 @@ begin
 end;
 constructor TCompiler_PIC16.Create;
 begin
- // hexFile := 'output.hex';
   inherited Create;
   cIn.OnNewLine:=@cInNewLine;
   mode := modPicPas;   //Por defecto en sintaxis nueva

@@ -64,7 +64,7 @@ type
       f_word_mul_word_16: TxpEleFun;  //índice para función
       procedure byte_div_byte(fun: TxpEleFun);
       procedure mul_byte_16(fun: TxpEleFun);
-      procedure CopyInvert_C_to_Z;
+      procedure Copy_C_to_A;
       procedure fun_Byte(fun: TxpEleFun);
       procedure ROB_byte_div_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
@@ -114,6 +114,7 @@ type
       procedure fun_Exit(fun: TxpEleFun);
       procedure fun_Inc(fun: TxpEleFun);
       procedure fun_Dec(fun: TxpEleFun);
+      procedure SetOrig(fun: TxpEleFun);
       procedure fun_Ord(fun: TxpEleFun);
       procedure fun_Chr(fun: TxpEleFun);
       procedure fun_Word(fun: TxpEleFun);
@@ -167,12 +168,13 @@ begin
   //Por ahora, no se implementa paginación, pero despuñes habría que considerarlo.
   _CALL(fun.adrr);  //codifica el salto
 end;
-procedure TGenCod.CopyInvert_C_to_Z;
+procedure TGenCod.Copy_C_to_A;
 begin
-  //El resultado está en C (invertido), hay que pasarlo a Z
-  kMOVLW($01 << _C);     //carga máscara de C
-  _ANDWF(_STATUS, toW);   //el resultado está en Z, corregido en lógica.
-  InvertedFromC := true;  //Indica que se ha hecho Z = 'C. para que se pueda optimizar
+  //El resultado está en C y lo mueve a A
+  _LDAi(0);
+  _BCC(_PC+1);
+  _LDAi(1);
+  BooleanFromC := true;  //Activa bandera para que se pueda optimizar
 end;
 ////////////rutinas obligatorias
 procedure TGenCod.Cod_StartProgram;
@@ -248,7 +250,6 @@ begin
         //caso especial
         kCLRF(INDF);
       end else begin
-        kMOVLW(value2);
         kMOVWF(INDF);
       end;
     end;
@@ -288,7 +289,6 @@ begin
         //caso especial
         kCLRF(INDF);
       end else begin
-        kMOVLW(value2);
         kMOVWF(INDF);
       end;
     end;
@@ -336,7 +336,6 @@ begin
       if value2=0 then begin
         //Caso especial. No hace nada
       end else begin
-        kMOVLW(value2);
         kADDWF(byte1, toF);
       end;
     end;
@@ -361,7 +360,6 @@ begin
         //Caso especial. No hace nada
       end else begin
         kMOVWF(FSR);  //direcciona
-        kMOVLW(value2);
         _ADDWF(0, toF);
       end;
     end;
@@ -400,7 +398,6 @@ begin
         //Caso especial de asignación a puntero dereferenciado: variable^
         kMOVF(byte1, toW);
         kMOVWF(FSR);  //direcciona
-        kMOVLW(value2);
         _ADDWF(0, toF);
       end;
     end;
@@ -447,7 +444,6 @@ begin
       if value2=0 then begin
         //Caso especial. No hace nada
       end else begin
-        kMOVLW(value2);
         kSUBWF(byte1, toF);
       end;
     end;
@@ -472,7 +468,6 @@ begin
         //Caso especial. No hace nada
       end else begin
         kMOVWF(FSR);  //direcciona
-        kMOVLW(value2);
         _SUBWF(0, toF);
       end;
     end;
@@ -511,7 +506,6 @@ begin
         //Caso especial de asignación a puntero dereferenciado: variable^
         kMOVF(byte1, toW);
         kMOVWF(FSR);  //direcciona
-        kMOVLW(value2);
         _SUBWF(0, toF);
       end;
     end;
@@ -567,7 +561,6 @@ begin
       exit;
     end;
     SetROBResultExpres_byte(Opt);
-    kMOVLW(value1);
     kADDWF(byte2, toW);
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
@@ -631,7 +624,6 @@ begin
   end;
   stVariab_Const: begin
     SetROBResultExpres_byte(Opt);
-    kMOVLW(value2);
     kSUBWF(byte1, toW);  //F - W -> W
   end;
   stVariab_Variab:begin
@@ -722,14 +714,12 @@ begin
     SetROBResultExpres_word(Opt);
     kMOVF(byte2, toW);
     _MOVWF(E.offs);
-    kMOVLW(value1);
     _CALL(f_byte_mul_byte_16.adrr);
     AddCallerTo(f_byte_mul_byte_16);
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
     SetROBResultExpres_word(opt);
     kMOVWF(E);
-    kMOVLW(value1);
     _CALL(f_byte_mul_byte_16.adrr);
     AddCallerTo(f_byte_mul_byte_16);
   end;
@@ -737,7 +727,6 @@ begin
     SetROBResultExpres_word(opt);
     kMOVF(byte1, toW);
     _MOVWF(E.offs);
-    kMOVLW(value2);
     _CALL(f_byte_mul_byte_16.adrr);
     AddCallerTo(f_byte_mul_byte_16);
   end;
@@ -759,7 +748,6 @@ begin
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
     SetROBResultExpres_word(Opt);
     _MOVWF(E.offs);  //p1 -> E
-    kMOVLW(value2); //p2 -> W
     _CALL(f_byte_mul_byte_16.adrr);
     AddCallerTo(f_byte_mul_byte_16);
   end;
@@ -905,7 +893,6 @@ begin
     _MOVWF (aux.offs);
     _clrf   (E.offs);        //En principio el resultado es cero.
     _clrf   (U.offs);
-    kMOVLW  (8);             //Carga el contador.
     _movwf  (aux2.offs);
 Arit_DivideBit8 := _PC;
     _rlf    (H.offs,toF);
@@ -946,7 +933,6 @@ begin
       exit;
     end;
     SetROBResultExpres_byte(Opt);
-    kMOVLW(value1);
     _MOVWF(H.offs);
     kMOVF(byte2, toW);
     _CALL(f_byte_div_byte.adrr);
@@ -960,7 +946,6 @@ begin
     SetROBResultExpres_byte(Opt);
     _MOVWF(E.offs);  //guarda divisor
 
-    kMOVLW(value1);
     _MOVWF(H.offs);  //dividendo
 
     _MOVF(E.offs, toW);  //divisor
@@ -975,7 +960,6 @@ begin
     SetROBResultExpres_byte(Opt);
     kMOVF(byte1, toW);
     _MOVWF(H.offs);
-    kMOVLW(value2);
     _CALL(f_byte_div_byte.adrr);
     AddCallerTo(f_byte_div_byte);
   end;
@@ -1006,7 +990,6 @@ begin
     end;
     SetROBResultExpres_byte(Opt);
     _MOVWF(H.offs);  //p1 -> H
-    kMOVLW(value2); //p2 -> W
     _CALL(f_byte_div_byte.adrr);
     AddCallerTo(f_byte_div_byte);
   end;
@@ -1065,7 +1048,6 @@ begin
       exit;
     end;
     SetROBResultExpres_byte(Opt);
-    kMOVLW(value1);
     kMOVWF(H);
     kMOVF(byte2, toW);
     _CALL(f_byte_div_byte.adrr);
@@ -1080,7 +1062,6 @@ begin
     end;
     SetROBResultExpres_byte(Opt);
     kMOVWF(E);  //guarda divisor
-    kMOVLW(value1);
     kMOVWF(H);  //dividendo
 
     kMOVF(E, toW);  //divisor
@@ -1096,7 +1077,6 @@ begin
     SetROBResultExpres_byte(Opt);
     kMOVF(byte1, toW);
     kMOVWF(H);
-    kMOVLW(value2);
     _CALL(f_byte_div_byte.adrr);
     kMOVF(U, toW);  //Resultado en W
     AddCallerTo(f_byte_div_byte);
@@ -1130,7 +1110,6 @@ begin
     end;
     SetROBResultExpres_byte(Opt);
     kMOVWF(H);  //p1 -> H
-    kMOVLW(value2); //p2 -> W
     _CALL(f_byte_div_byte.adrr);
     kMOVF(U, toW);  //Resultado en W
     AddCallerTo(f_byte_div_byte);
@@ -1188,9 +1167,8 @@ begin
 //      GenWarn('Expression will always be FALSE.');  //o TRUE si la lógica Está invertida
     end else begin
       SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-      kMOVLW(value1);
       kSUBWF(byte2, toW);  //Si p1 > p2: C=0.
-      CopyInvert_C_to_Z; //Pasa C a Z (invirtiendo)
+      Copy_C_to_A; //Pasa C a Z (invirtiendo)
     end;
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
@@ -1204,7 +1182,7 @@ begin
       SetROBResultExpres_byte(Opt);  //invierte la lógica
       //p2, ya está en W
       kSUBLW(value1-1);  //Si p1 > p2: C=0.
-      CopyInvert_C_to_Z; //Pasa C a Z (invirtiendo)
+      Copy_C_to_A; //Pasa C a Z (invirtiendo)
     end;
   end;
   stVariab_Const: begin
@@ -1216,14 +1194,14 @@ begin
       SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
       kMOVF(byte1, toW);
       kSUBLW(value2);  //Si p1 > p2: C=0.
-      CopyInvert_C_to_Z; //Pasa C a Z (invirtiendo)
+      Copy_C_to_A; //Pasa C a Z (invirtiendo)
     end;
   end;
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     kMOVF(byte1, toW);
     kSUBWF(byte2, toW);  //Si p1 > p2: C=0.
-    CopyInvert_C_to_Z; //Pasa C a Z (invirtiendo)
+    Copy_C_to_A; //Pasa C a Z (invirtiendo)
   end;
   stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
@@ -1232,7 +1210,7 @@ begin
     //Ahora es como stVariab_Variab
     kMOVF(byte1, toW);
     kSUBWF(tmp, toW);  //Si p1 > tmp: C=0.
-    CopyInvert_C_to_Z; //Pasa C a Z (invirtiendo)
+    Copy_C_to_A; //Pasa C a Z (invirtiendo)
     tmp.used := false;  //libera
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
@@ -1244,13 +1222,13 @@ begin
       SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
   //    p1, ya está en W
       kSUBLW(value2);  //Si p1 > p2: C=0.
-      CopyInvert_C_to_Z; //Pasa C a Z (invirtiendo)
+      Copy_C_to_A; //Pasa C a Z (invirtiendo)
     end;
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     kSUBWF(byte2, toW);  //Si p1 > p2: C=0.
-    CopyInvert_C_to_Z; //Pasa C a Z (invirtiendo)
+    Copy_C_to_A; //Pasa C a Z (invirtiendo)
   end;
   stExpres_Expres:begin
     //la expresión p1 debe estar salvada y p2 en el acumulador
@@ -1373,7 +1351,6 @@ begin
       kMOVF(byte1, toW);
       kMOVWF(aux);
       //copia p2 a W
-      kMOVLW(value2);
       //lazo de rotación
       CodifShift_by_W(aux, true);
       kMOVF(aux, toW);  //deja en W
@@ -1431,7 +1408,6 @@ begin
       //copia p1 a "aux"
       kMOVWF(aux);
       //copia p2 a W
-      kMOVLW(value2);
       //lazo de rotación
       CodifShift_by_W(aux, true);
       kMOVF(aux, toW);  //deja en W
@@ -1500,7 +1476,6 @@ begin
       kMOVF(byte1, toW);
       kMOVWF(aux);
       //copia p2 a W
-      kMOVLW(value2);
       //lazo de rotación
       CodifShift_by_W(aux, false);
       kMOVF(aux, toW);  //deja en W
@@ -1558,7 +1533,6 @@ begin
       //copia p1 a "aux"
       kMOVWF(aux);
       //copia p2 a W
-      kMOVLW(value2);
       //lazo de rotación
       CodifShift_by_W(aux, false);
       kMOVF(aux, toW);  //deja en W
@@ -1587,7 +1561,6 @@ begin
       //caso especial
       kCLRF(byte1);
     end else begin
-      kMOVLW(value2);  //Los chars se manejan como números
       kMOVWF(byte1);
     end;
   end;
@@ -1684,30 +1657,25 @@ procedure TGenCod.codif_1mseg;
 begin
   PutFwdComm(';1 msec routine.');
   if _CLOCK = 1000000 then begin
-    kMOVLW(62);  //contador de iteraciones
     _ADDLW(255);  //lazo de 4 ciclos
     _BTFSS(_STATUS,_Z);
     _GOTO(_PC-2); PutComm(';fin rutina 1 mseg a 1MHz.');
   end else if _CLOCK = 2000000 then begin
-    kMOVLW(125);  //contador de iteraciones
     _ADDLW(255);  //lazo de 4 ciclos
     _BTFSS(_STATUS,_Z);
     _GOTO(_PC-2); PutComm(';fin rutina 1 mseg a 2MHz.');
   end else if _CLOCK = 4000000 then begin
     //rtuina básica para 4MHz
-    kMOVLW(250);  //contador de iteraciones
     _ADDLW(255);  //lazo de 4 ciclos
     _BTFSS(_STATUS,_Z);
     _GOTO(_PC-2); PutComm(';fin rutina 1 mseg a 4MHz.');
   end else if _CLOCK = 8000000 then begin
-    kMOVLW(250);
     _ADDLW(255);   //lazo de 8 ciclos
     _GOTO(_PC+1);  //introduce 4 ciclos más de retardo
     _GOTO(_PC+1);
     _BTFSS(_STATUS,_Z);
     _GOTO(_PC-4); PutComm(';fin rutina 1 mseg a 8Mhz.');
   end else if _CLOCK = 10000000 then begin
-    kMOVLW(250);
     _ADDLW(255);   //lazo de 10 ciclos
     _GOTO(_PC+1);  //introduce 6 ciclos más de retardo
     _GOTO(_PC+1);
@@ -1715,7 +1683,6 @@ begin
     _BTFSS(_STATUS,_Z);
     _GOTO(_PC-5); PutComm(';fin rutina 1 mseg a 10MHz.');
   end else if _CLOCK = 12000000 then begin
-    kMOVLW(250);
     _ADDLW(255);   //lazo de 12 ciclos
     _GOTO(_PC+1);  //introduce 8 ciclos más de retardo
     _GOTO(_PC+1);
@@ -1724,7 +1691,6 @@ begin
     _BTFSS(_STATUS,_Z);
     _GOTO(_PC-6); PutComm(';fin rutina 1 mseg a 12MHz.');
   end else if _CLOCK = 16000000 then begin
-    kMOVLW(250);
     _ADDLW(255);   //lazo de 16 ciclos
     _GOTO(_PC+1);  //introduce 12 ciclos más de retardo
     _GOTO(_PC+1);
@@ -1735,7 +1701,6 @@ begin
     _BTFSS(_STATUS,_Z);
     _GOTO(_PC-8); PutComm(';fin rutina 1 mseg a 12MHz.');
   end else if _CLOCK = 20000000 then begin
-    kMOVLW(250);
     _ADDLW(255);   //lazo de 20 ciclos
     _GOTO(_PC+1);  //introduce 16 ciclos más de retardo
     _GOTO(_PC+1);
@@ -1819,7 +1784,7 @@ begin
   posExit := cIn.ReadSrcPos;  //Guarda para el AddExitCall()
   if parentNod.idClass = eltMain then begin
     //Es el cuerpo del programa principal
-    _SLEEP;   //Así se termina un programa en PicPas
+    _RTS;   //Así se termina un programa en PicPas
   end else if parentNod.idClass = eltFunc then begin
     //Es el caso común, un exit() en procedimientos.
     //"parentNod" debe ser de tipo TxpEleFun
@@ -1854,7 +1819,6 @@ begin
   end;
   //Lleva el registro de las llamadas a exit()
   if FirstPass then begin
-    //CurrBank debe ser el banco con el que se llamó al i_RETURN.
     parentNod.AddExitCall(posExit, parentNod.CurrBlockID);
   end;
   res.SetAsNull;  //No es función
@@ -1942,7 +1906,6 @@ begin
       _DECF(res.Hoffs, toF);
       _DECF(res.Loffs, toF);
     end else if res.Typ = typDWord then begin
-      kMOVLW(1);
       _subwf(res.Loffs, toF);
       _BTFSS(_STATUS, _C);
       _subwf(RES.Hoffs, toF);
@@ -1960,6 +1923,24 @@ begin
   end;
   stExpres: begin  //se asume que ya está en (_H,w)
     GenError('Cannot decrease an expression.'); exit;
+  end;
+  else
+    genError('Not implemented "%s" for this operand.', [fun.name]);
+  end;
+  res.SetAsNull;  //No es función
+  //Verifica fin de parámetros
+  if not CaptureTok(')') then exit;
+end;
+procedure TGenCod.SetOrig(fun: TxpEleFun);
+{Define el origen para colocar el código binario.}
+// NO ES MUY ÚTIL PORQUE EL CAMBIO DE ORIGEN DEBE HACERSE ANTES DEL CÓDIGO
+begin
+  if not CaptureTok('(') then exit;
+  res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
+  if HayError then exit;   //aborta
+  case res.Sto of  //el parámetro debe estar en "res"
+  stConst : begin
+    pic.iRam := res.valInt;
   end;
   else
     genError('Not implemented "%s" for this operand.', [fun.name]);
@@ -2220,7 +2201,7 @@ begin
   xLex.AddIdentSpecList('bit boolean byte word char dword', tnType);
   //funciones del sistema
   xLex.AddIdentSpecList('exit delay_ms Inc Dec Ord Chr', tnSysFunct);
-  xLex.AddIdentSpecList('SetAsInput SetAsOutput SetBank', tnSysFunct);
+  xLex.AddIdentSpecList('SetOrig', tnSysFunct);
   //símbolos especiales
   xLex.AddSymbSpec('+',  tnOperator);
   xLex.AddSymbSpec('+=', tnOperator);
@@ -2407,6 +2388,7 @@ begin
   f := CreateSysFunction('exit'     , nil, @fun_Exit);
   f := CreateSysFunction('Inc'      , nil, @fun_Inc);
   f := CreateSysFunction('Dec'      , nil, @fun_Dec);
+  f := CreateSysFunction('SetOrig'  , nil, @SetOrig);
   f := CreateSysFunction('Ord'      , @callParam, @fun_Ord);
   f := CreateSysFunction('Chr'      , @callParam, @fun_Chr);
   f := CreateSysFunction('Byte'     , @callParam, @fun_Byte);

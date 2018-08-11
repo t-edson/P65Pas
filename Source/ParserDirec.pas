@@ -114,18 +114,18 @@ type
     procedure ProcIFDEF(lin: string; negated: boolean);
     procedure ProcOUTPUTHEX(lin: string);
     procedure ProcINCLUDE(lin: string; var ctxChanged: boolean);
-    procedure ProcCONFIG;
+    procedure ProcORG;
     procedure ProcFREQUENCY;
   private  //Access to system variables
     function read_CURRBLOCK: String;
     function read_PIC_FREQUEN: Single;
-    function read_PIC_IFLASH: Single;
+    function read_ORG: Single;
     function read_PIC_MAXFREQ: Single;
     function read_PIC_MODEL: string;
     function read_PIC_NPINS: Single;
     function read_SYN_MODE: String;
     procedure write_PIC_FREQUEN(AValue: Single);
-    procedure write_PIC_IFLASH(AValue: Single);
+    procedure write_ORG(AValue: Single);
     procedure write_PIC_MAXFREQ(AValue: Single);
     procedure write_PIC_MODEL(AValue: string);
     procedure write_PIC_NPINS(AValue: Single);
@@ -171,7 +171,6 @@ var
   ER_ERROR_FREQ, ER_IDENT_EXPEC, ER_EXPEC_EQUAL,
   ER_SYNTAX_ERRO, ER_SYNTAX_ERR_: string;
   ER_EXPECTED_BR: String;
-  ER_CONF_UNDEF_, ER_INVAL_CBIT_: String;
   ER_FILE_NO_FND_, ER_ERIN_NUMBER_, ER_UNKNW_IDENT_: String;
   ER_DIVIDE_ZERO, ER_EVA_ZER_ZER, ER_OPE_NOT_IMP_: String;
   ER_EXPECT_CAR_: String;
@@ -1069,64 +1068,32 @@ begin
   end;
   picCore.frequen:=f; //asigna frecuencia
 end;
-procedure TParserDirecBase.ProcCONFIG;
+procedure TParserDirecBase.ProcORG;
 var
-  Ident, tmp: String;
-  mac: TDirMacro;
-  valBit: Longint;
+  Ident: String;
+  valOrg: Longint;
 begin
   lexDir.Next;  //pasa al siguiente
   skipWhites;
   if lexDir.GetTokenKind = lexDir.tnNumber then begin
     //Es un valor numérico
-    if not TryStrToInt(lexDir.GetToken, valBit) then begin
-      GenErrorDir(ER_INVAL_CBIT_, [lexDir.GetToken]);
+    if not TryStrToInt(lexDir.GetToken, valOrg) then begin
+      GenErrorDir(ER_ERIN_NUMBER_, [lexDir.GetToken]);
       exit;
     end;
     //Ya se tiene el valor numérico
-    ConfigWord := valBit;  //carga directamente
+    GeneralORG := valOrg;  //Carga directamente en variable global
     lexDir.Next;
     skipWhites;
     //No debe seguir nada
     if not lexDir.GetEol then begin
-      GenErrorDir(ER_INVAL_CBIT_, [lexDir.GetToken]);
+      GenErrorDir(ER_ERIN_NUMBER_, [lexDir.GetToken]);
       exit;
     end;
     exit;
-  end;
-  //Debe seguir identificadores
-  while not lexDir.GetEol do begin
-    Ident := GetIdent;
-    if HayError then exit;
-    if DefinedMacro(Ident,  mac) then begin
-      //Hay macro definida. Hay que extraer su valor.
-      tmp := trim(mac.value);
-      if copy(tmp,1,2) = '0x' then begin
-        delete(tmp,1,2);
-        tmp := '$' + tmp;
-      end;
-      if not TryStrToInt(tmp, valBit) then begin
-        GenErrorDir(ER_INVAL_CBIT_, [Ident]);
-        exit;
-      end;
-      //Ya se tiene el valor numérico
-      if ConfigWord = -1 then begin
-        //Es la primera vez que se inicia
-        ConfigWord := $FFFF;
-      end;
-      ConfigWord := ConfigWord and valBit;  //Marca bandera
-
-      //msgbox('|'+mac.value+'|');
-    end else begin
-      //No está definido
-      GenErrorDir(ER_CONF_UNDEF_, [Ident]);
-      exit;
-    end;
-    skipWhites;
-    if lexDir.GetToken = ',' then begin
-      lexDir.Next;  //pasa al siguiente
-    end;
-    skipWhites;
+  end else begin
+    GenErrorDir(ER_ERIN_NUMBER_, [Ident]);
+    exit;
   end;
 end;
 procedure TParserDirecBase.ProcSET_STATE_RAM;
@@ -1311,11 +1278,11 @@ procedure TParserDirecBase.write_PIC_MAXFREQ(AValue: Single);
 begin
   PICCore.MaxFreq := round(AValue);
 end;
-function TParserDirecBase.read_PIC_IFLASH: Single;
+function TParserDirecBase.read_ORG: Single;
 begin
   Result := picCore.iRam;
 end;
-procedure TParserDirecBase.write_PIC_IFLASH(AValue: Single);
+procedure TParserDirecBase.write_ORG(AValue: Single);
 begin
   picCore.iRam:= round(AValue);
 end;
@@ -1510,7 +1477,7 @@ begin
   //sigue identificador
   case UpperCase(lexDir.GetToken) of
   'FREQUENCY' : ProcFREQUENCY;
-  'CONFIG'    : ProcCONFIG;
+  'ORG'       : ProcORG;
   'INCLUDE'   : ProcINCLUDE(lin, ctxChanged);
   'OUTPUTHEX' : ProcOUTPUTHEX(lin);
   'DEFINE'    : ProcDEFINE(lin);
@@ -1619,18 +1586,16 @@ procedure TParserDirecBase.ClearMacros;
 begin
   macroList.Clear;
   WaitForEndIF := 0;
-  ConfigWord := -1;   //-1 significa, No Inicializado
-  //Create instructions
+  GeneralORG := 0;   //ORG por defecto en 0
   instList.Clear;
-//  AddInstruction();
 
   //Create system variables
   varsList.Clear;
   AddSysVariableString('PIC_MODEL'   , @read_PIC_MODEL  , @write_PIC_MODEL);
   AddSysVariableNumber('PIC_FREQUEN' , @read_PIC_FREQUEN, @write_PIC_FREQUEN);
   AddSysVariableNumber('PIC_MAXFREQ' , @read_PIC_MAXFREQ, @write_PIC_MAXFREQ);
-  AddSysVariableNumber('PIC_IFLASH'  , @read_PIC_IFLASH , @write_PIC_IFLASH);
   AddSysVariableNumber('PIC_NPINS'   , @read_PIC_NPINS  , @write_PIC_NPINS);
+  AddSysVariableNumber('PIC_ORG'     , @read_ORG        , @write_ORG);
   AddSysVariableString('SYN_MODE'    , @read_SYN_MODE   , @write_SYN_MODE);
   AddSysVariableString('CURRBLOCK'   , @read_CURRBLOCK  , nil);
 end;

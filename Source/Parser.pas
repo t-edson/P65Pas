@@ -12,7 +12,7 @@ unit Parser;
 interface
 uses
   Classes, SysUtils, Forms, LCLType, lclProc, SynFacilHighlighter, SynEditHighlighter,
-  XpresBas, XpresTypesPIC, XpresElementsPIC, MisUtils, FormConfig, CPUCore;
+  XpresBas, XpresTypesPIC, XpresElementsPIC, MisUtils, CPUCore;
 const
   TIT_BODY_ELE = 'Body';
 type
@@ -104,10 +104,12 @@ protected  //Variables de expresión.
   {Estas variables, se inician al inicio de cada expresión y su valor es válido
   hasta el final de la expresión.}
   //Variables de estado de las expresiones booleanas
-  InvertedFromC: boolean; {Indica que el resultado de una expresión Booleana o Bit, se
-                           ha obtenido, en la última subexpresion, copaindo el bit C al
-                           bit Z, con inversión lógica. Se usa para opciones de
-                           optimziación de código.}
+  BooleanFromC: boolean; {Indica que el resultado de una expresión Booleana, se
+                          ha obtenido, en la última subexpresion, usando el bit C.
+                          Se usa para opciones de optimización de código.}
+  BooleanFromZ: boolean; {Indica que el resultado de una expresión Booleana, se
+                          ha obtenido, en la última subexpresion, usando el bit Z.
+                          Se usa para opciones de optimización de código.}
 protected
   procedure IdentifyField(xOperand: TOperand);
   procedure LogExpLevel(txt: string);
@@ -280,7 +282,7 @@ public   //Manejo de errores y advertencias
   procedure GenErrorPos(msg: String; const Args: array of const; srcPos: TSrcPos);
 public    //Compiling Options
   incDetComm  : boolean; //Incluir Comentarios detallados.
-  ConfigWord  : integer; //Bits de configuración
+  GeneralORG  : integer; //Dirección general de origen de código
   mode        : (modPascal, modPicPas);
   SetProIniBnk: boolean; //Incluir instrucciones de cambio de banco al inicio de procedimientos
   OptBnkAftPro: boolean; //Incluir instrucciones de cambio de banco al final de procedimientos
@@ -296,10 +298,11 @@ public    //Información y acceso a memoria
   function hexFilePath: string;
   function mainFilePath: string;
   function CompilerName: string; virtual; abstract;  //Name of the compiler
-  procedure RAMusage(lins: TStrings; varDecType: TVarDecType; ExcUnused: boolean); virtual; abstract;
+  procedure RAMusage(lins: TStrings; ExcUnused: boolean); virtual; abstract;
   function RAMusedStr: string; virtual; abstract;
   procedure GetResourcesUsed(out ramUse, romUse, stkUse: single); virtual; abstract;
-  procedure DumpCode(lins: TSTrings; incAdrr, incCom, incVarNam: boolean); virtual; abstract;
+  procedure DumpCode(lins: TSTrings; asmMode, IncVarDec, ExcUnused: boolean;
+                     incAdrr, incCom, incVarNam: boolean); virtual; abstract;
   procedure GenerateListReport(lins: TStrings); virtual; abstract;
 public    //Acceso a campos del objeto PIC
   function PICName: string; virtual; abstract;

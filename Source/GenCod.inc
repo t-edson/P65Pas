@@ -86,7 +86,6 @@ begin
       exit;
     end;
     SetROBResultExpres_byte(Opt);
-    kMOVLW(value2);
     kANDWF(byte1, toW);   //leave in W
   end;
   stVariab_Variab:begin
@@ -170,7 +169,6 @@ begin
       exit;
     end;
     SetROBResultExpres_byte(Opt);
-    kMOVLW(value2);
     kIORWF(byte1, toW);   //leave in W
   end;
   stVariab_Variab:begin
@@ -233,7 +231,6 @@ begin
   end;
   stVariab_Const: begin
     SetROBResultExpres_byte(Opt);
-    kMOVLW(value2);
     kXORWF(byte1, toW);   //leave in W
   end;
   stVariab_Variab:begin
@@ -347,13 +344,11 @@ begin
       if value2L = 0 then begin  //optimiza
         kCLRF(byte1L);
       end else begin
-        kMOVLW(value2L);
         kMOVWF(byte1L);
       end;
       if value2H = 0 then begin  //optimiza
         kCLRF(byte1H);
       end else begin
-        kMOVLW(value2H);
         kMOVWF(byte1H);
       end;
     end;
@@ -386,7 +381,6 @@ begin
         //caso especial
         _CLRF(0);
       end else begin
-        kMOVLW(value2L);
         _MOVWF(0);
       end;
       _INCF(FSR.offs, toF);  //direcciona byte alto
@@ -394,7 +388,6 @@ begin
         //caso especial
         _CLRF(0);
       end else begin
-        kMOVLW(value2H);
         _MOVWF(0);
       end;
     end;
@@ -443,7 +436,6 @@ begin
         kCLRF(byte1H);
       end else begin;
         kCLRF(byte1H);
-        kMOVLW(value2);
         kMOVWF(byte1L);
       end;
     end;
@@ -501,7 +493,6 @@ begin
       pero i_DECFSZ, no actualiza Z}
       _GOTO_PEND(sale);  //no son iguales
     end else begin  //caso general
-      kMOVLW(value1H);
       kSUBWF(byte2H, toW); //p2-p1
       _BTFSS(Z.offs, Z.bit);
       _GOTO_PEND(sale);  //no son iguales
@@ -517,7 +508,6 @@ begin
       kINCF(byte2L,toW);	//p2-p1
   _LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
     end else begin
-      kMOVLW(value1L);
       kSUBWF(byte2L,toW);	//p2-p1
   _LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
     end;
@@ -528,12 +518,10 @@ begin
     if HayError then exit;
     _MOVWF(tmp.offs);   //salva byte bajo de Expresión
     //Compara byte alto
-    kMOVLW(value1H);
     _SUBWF(H.offs, toW); //p2-p1
     _BTFSS(Z.offs, Z.bit);
     _GOTO_PEND(sale);  //no son iguales
     //Son iguales, comparar el byte bajo
-    kMOVLW(value1L);
     _SUBWF(tmp.offs,toW);	//p2-p1
 _LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
     tmp.used := false;
@@ -879,7 +867,6 @@ begin
   end;
   stConst_Variab: begin
     SetROBResultExpres_byte(Opt);
-    kMOVLW(value1L);      //Carga menos peso del dato 1
     kANDWF(byte2L,toW);  //deja en W
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en (W)

@@ -31,15 +31,6 @@ var
 var
  curLanguage: string;  //identificador del lenguaje
 
-//type
-// TTranslation = record
-//  en: string;
-//  es: string;
-// end;
-//
-//const
-// TestRec: TTranslation = (en: 'Something'; es: 'algo'; );
-
 function Trans(const strEn, strEs, strQu, strDe, strUk, strRu, strFr: string): string;
 //////////////////////////////////////////////////////
 function LeerParametros: boolean;

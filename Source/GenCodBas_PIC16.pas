@@ -146,6 +146,8 @@ type
     procedure _MOVF(const f: byte; d: TPIC16destin);
     procedure _LDAi(const k: word);
     procedure _STA(const f: word);
+    procedure _BCC(const a: byte);
+    procedure _RTS;
     procedure _MOVWF(const f: byte);
     procedure _NOP;
     procedure _RETFIE;
@@ -153,7 +155,6 @@ type
     procedure _RETURN;
     procedure _RLF(const f: byte; d: TPIC16destin);
     procedure _RRF(const f: byte; d: TPIC16destin);
-    procedure _SLEEP;
     procedure _SUBLW(const k: word);
     procedure _SUBWF(const f: byte; d: TPIC16destin);
     procedure _SWAPF(const f: byte; d: TPIC16destin);
@@ -183,7 +184,6 @@ type
     procedure kIORLW(const k: word);
     procedure kIORWF(const f: TPicRegister; d: TPIC16destin);
     procedure kMOVF(const f: TPicRegister; d: TPIC16destin);
-    procedure kMOVLW(const k: word);
     procedure kMOVWF(const f: TPicRegister);
     procedure kNOP;
     procedure kRETFIE;
@@ -577,7 +577,6 @@ begin
   //Obtiene los valores de: offs, bnk, y bit, para el alamacenamiento.
   if absAdd=-1 then begin
     //Caso normal, sin dirección absoluta.
-    addr := pic.iRam;  //Crea en posición actual
     AssignRAM(addr, regName, shared);
     inc(pic.iRam);  //Pasa al siguiente byte.
     //Puede salir con error
@@ -683,7 +682,7 @@ procedure TGenCodBas.SetResultNull;
 {Fija el resultado como NULL.}
 begin
   res.SetAsNull;
-  InvertedFromC:=false;   //para limpiar el estado
+  BooleanFromC:=false;   //para limpiar el estado
   res.Inverted := false;
 end;
 procedure TGenCodBas.SetResultConst(typ: TxpEleType);
@@ -691,7 +690,7 @@ procedure TGenCodBas.SetResultConst(typ: TxpEleType);
 siempre antes de evaluar cada subexpresión.}
 begin
   res.SetAsConst(typ);
-  InvertedFromC:=false;   //para limpiar el estado
+  BooleanFromC:=false;   //para limpiar el estado
   {Se asume que no se necesita invertir la lógica, en una constante (booleana o bit), ya
   que en este caso, tenemos control pleno de su valor}
   res.Inverted := false;
@@ -701,7 +700,7 @@ procedure TGenCodBas.SetResultVariab(rVar: TxpEleVar; Inverted: boolean = false)
 siempre antes de evaluar cada subexpresión.}
 begin
   res.SetAsVariab(rVar);
-  InvertedFromC:=false;   //para limpiar el estado
+  BooleanFromC:=false;   //para limpiar el estado
   //"Inverted" solo tiene sentido, para los tipos bit y boolean
   res.Inverted := Inverted;
 end;
@@ -722,14 +721,14 @@ begin
   //Fija como expresión
   res.SetAsExpres(typ);
   //Limpia el estado. Esto es útil que se haga antes de generar el código para una operación
-  InvertedFromC:=false;
+  BooleanFromC:=false;
   //Actualiza el estado de los registros de trabajo.
   RTstate := typ;
 end;
 procedure TGenCodBas.SetResultVarRef(rVarBase: TxpEleVar);
 begin
   res.SetAsVarRef(rVarBase);
-  InvertedFromC:=false;   //para limpiar el estado
+  BooleanFromC:=false;   //para limpiar el estado
   //No se usa "Inverted" en este almacenamiento
   res.Inverted := false;
 end;
@@ -745,7 +744,7 @@ begin
     end;
   end;
   res.SetAsExpRef(rVarBase, typ);
-  InvertedFromC:=false;   //para limpiar el estado
+  BooleanFromC:=false;   //para limpiar el estado
   //No se usa "Inverted" en este almacenamiento
   res.Inverted := false;
 end;
@@ -924,7 +923,7 @@ begin
     if HayError then exit(false);  //Por si no está implementado
     //COnfigura después SetAsExpres(), para que LoadToRT(), sepa el almacenamiento de "op"
     ope.SetAsExpres(ope.Typ);  //"ope.Typ" es el tipo al que apunta
-    InvertedFromC:=false;
+    BooleanFromC:=false;
     RTstate := ope.Typ;
   end else if ope.Sto = stVarRefExp then begin
     //Es una expresión.
@@ -935,7 +934,7 @@ begin
     if HayError then exit(false);  //Por si no está implementado
     //COnfigura después SetAsExpres(), para que LoadToRT(), sepa el almacenamiento de "op"
     ope.SetAsExpres(ope.Typ);  //"ope.Typ" es el tipo al que apunta
-    InvertedFromC:=false;
+    BooleanFromC:=false;
     RTstate := ope.Typ;
   end;
 end;
@@ -1122,7 +1121,14 @@ procedure TGenCodBas._STA(const f: word);  //STA Absolute
 begin
   pic.codAsm(i_STA, aAbsolute, f);
 end;
-
+procedure TGenCodBas._BCC(const a: byte);
+begin
+  pic.codAsm(i_BCC, aRelative, a);
+end;
+procedure TGenCodBas._RTS;
+begin
+  pic.codAsm(i_RTS, aImplicit, 0);
+end;
 procedure TGenCodBas._RETFIE; inline;
 begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
@@ -1137,11 +1143,6 @@ procedure TGenCodBas._RETURN;
 begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
 //  pic.codAsm(i_RETURN);
-end;
-procedure TGenCodBas._SLEEP; inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_SLEEP);
 end;
 procedure TGenCodBas._SUBLW(const k: word); inline;
 begin
@@ -1199,6 +1200,12 @@ begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
 //  pic.codAsm(i_CLRW);
 end;
+
+procedure TGenCodBas.kCLRWDT;
+begin
+
+end;
+
 procedure TGenCodBas.kCOMF(const f: TPicRegister; d: TPIC16Destin);
 begin
 //  GenCodBank(f.addr);
@@ -1317,11 +1324,6 @@ begin
 //  pic.flash[pic.iFlash].curBnk := CurrBank;
 //  pic.codAsmA(i_CALL, a);
 end;
-procedure TGenCodBas.kCLRWDT; inline;
-begin
-//  pic.flash[pic.iFlash].curBnk := CurrBank;
-//  pic.codAsm(i_CLRWDT);
-end;
 procedure TGenCodBas.kGOTO(const a: word); inline;
 begin
 //  pic.flash[pic.iFlash].curBnk := CurrBank;
@@ -1340,11 +1342,6 @@ procedure TGenCodBas.kIORLW(const k: word); inline;
 begin
 //  pic.flash[pic.iFlash].curBnk := CurrBank;
 //  pic.codAsmK(i_IORLW, k);
-end;
-procedure TGenCodBas.kMOVLW(const k: word); inline;
-begin
-//  pic.flash[pic.iFlash].curBnk := CurrBank;
-//  pic.codAsmK(i_MOVLW, k);
 end;
 procedure TGenCodBas.kRETFIE;
 begin

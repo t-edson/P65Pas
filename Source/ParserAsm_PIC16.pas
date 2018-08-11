@@ -600,7 +600,6 @@ end;
 procedure TParserAsm.ProcInstrASM;
 //Procesa una instrucción ASM
 var
-  stx: string;
   idInst: TP6502Inst;
   tok: String;
   f : byte;
@@ -609,63 +608,69 @@ var
   a: word;
   k: byte;
 begin
-//  tok := lexAsm.GetToken;
-//  //verifica directiva ORG
-//  if upcase(tok) = 'ORG' then begin
-//    lexAsm.Next;
-//    idInst := i_JMP;  //no debería ser necesario
-//    if not CaptureAddress(idInst, a) then exit;
-//    pic.iRam := a;   //¡CUIDADO! cambia PC
-//    exit;
-//  end;
-//  //debería ser una instrucción
-//  idInst := pic.FindOpcode(tok, stx);
-//  if idInst = i_Inval then begin
-//    GenErrorAsm(ER_INV_ASMCODE, [tok]);
-//    exit;
-//  end;
-//  //es un código válido
-//  lexAsm.Next;
-//  case stx of
-//  'fd': begin   //se espera 2 parámetros
-//    if not CaptureRegister(f) then exit;
-//    if not CaptureComma then exit;
-//    if not CaptureDestinat(d) then exit;
-//    pic.codAsm(idInst, f, d);
-//  end;
-//  'f':begin
-//    if not CaptureRegister(f) then exit;
-//    pic.codAsmF(idInst, f);
-//  end;
-//  'fb':begin  //para instrucciones de tipo bit
-//    if CaptureBitVar(f, b) then begin
-//      //Es una referencia a variable bit.
-//    end else begin
-//      if not CaptureRegister(f) then exit;
-//      if not CaptureComma then exit;
-//      if not CaptureNbit(b) then exit;
-//    end;
-//    pic.codAsmFB(idInst, f, b);
-//  end;
-//  'a': begin  //i_CALL y GOTO
-//    if not CaptureAddress(idInst, a) then exit;
-//    pic.codAsmA(idInst, a);
-//  end;
-//  'k': begin  //i_MOVLW
-//     if not CaptureByte(k) then exit;
-//     pic.codAsmK(idInst, k);
-//  end;
-//  '': begin
-//    pic.codAsm(idInst);
-//  end;
-//  end;
-//  //no debe quedar más que espacios o comentarios
-//  skipWhites;
-//  if tokType <> lexAsm.tnEol then begin
-//    GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
-//    exit;
-//  end;
-//
+  tok := lexAsm.GetToken;
+  //verifica directiva ORG
+  if upcase(tok) = 'ORG' then begin
+    lexAsm.Next;
+    idInst := i_JMP;  //no debería ser necesario
+    if not CaptureAddress(idInst, a) then exit;
+    pic.iRam := a;   //¡CUIDADO! cambia PC
+    exit;
+  end;
+  //debería ser una instrucción
+  idInst := pic.FindOpcode(tok);
+  if idInst = i_Inval then begin
+    GenErrorAsm(ER_INV_ASMCODE, [tok]);
+    exit;
+  end;
+  //es un código válido
+  lexAsm.Next;
+  //case stx of
+  //'fd': begin   //se espera 2 parámetros
+  //  if not CaptureRegister(f) then exit;
+  //  if not CaptureComma then exit;
+  //  if not CaptureDestinat(d) then exit;
+  //  pic.codAsm(idInst, f, d);
+  //end;
+  //'f':begin
+  //  if not CaptureRegister(f) then exit;
+  //  pic.codAsmF(idInst, f);
+  //end;
+  //'fb':begin  //para instrucciones de tipo bit
+  //  if CaptureBitVar(f, b) then begin
+  //    //Es una referencia a variable bit.
+  //  end else begin
+  //    if not CaptureRegister(f) then exit;
+  //    if not CaptureComma then exit;
+  //    if not CaptureNbit(b) then exit;
+  //  end;
+  //  pic.codAsmFB(idInst, f, b);
+  //end;
+  //'a': begin  //i_CALL y GOTO
+  //  if not CaptureAddress(idInst, a) then exit;
+  //  pic.codAsmA(idInst, a);
+  //end;
+  //'k': begin  //i_MOVLW
+  //   if not CaptureByte(k) then exit;
+  //   pic.codAsmK(idInst, k);
+  //end;
+  //'': begin
+  //  pic.codAsm(idInst);
+  //end;
+  //end;
+  //no debe quedar más que espacios o comentarios
+  skipWhites;
+  if tokType = lexAsm.tnEol then begin
+    //Sin parámetros. Puede ser Implícito o Acumulador
+    pic.codAsm(idInst, aImplicit, 0);
+    if pic.MsjError<>'' then begin
+      GenErrorAsm(pic.MsjError);
+    end;
+  end else begin
+    GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+    exit;
+  end;
+
 end;
 procedure TParserAsm.ProcASM(const AsmLin: string);
 {Procesa una línea en ensamblador.}
@@ -822,11 +827,21 @@ begin
   lexAsm.DefTokContent('[0-9]', '[0-9.]*', lexAsm.tnNumber);
   lexAsm.DefTokContent('[$]','[0-9A-Fa-f]*', lexAsm.tnNumber);
   lexAsm.DefTokContent('[%]','[01]*', lexAsm.tnNumber);
-  lexAsm.AddIdentSpecList('ADDWF ANDWF CLRF CLRW COMF DECF DECFSZ INCF', lexAsm.tnKeyword);
-  lexAsm.AddIdentSpecList('INCFSZ IORWF MOVF MOVWF NOP RLF RRF SUBWF SWAPF XORWF', lexAsm.tnKeyword);
-  lexAsm.AddIdentSpecList('BCF BSF BTFSC BTFSS', lexAsm.tnKeyword);
-  lexAsm.AddIdentSpecList('ADDLW ANDLW CALL CLRWDT GOTO IORLW MOVLW RETFIE', lexAsm.tnKeyword);
-  lexAsm.AddIdentSpecList('RETLW RETURN SLEEP SUBLW XORLW', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('ADC AND ASL', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('BCC BCS BEQ BIT BMI BNE BPL BRK BVC BVS CLC', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('CLD CLI CLV CMP CPX CPY', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('DEC DEX DEY', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('EOR', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('INC INX INY', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('JMP JSR', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('LDA LDX LDY LSR', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('NOP', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('ORA', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('PHA PHP PLA PLP', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('ROL ROR RTI RTS', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('SBC SEC SED SEI STA STX STY', lexAsm.tnKeyword);
+  lexAsm.AddIdentSpecList('TAX TAY TSX TXA TXS TYA', lexAsm.tnKeyword);
+
   lexAsm.AddIdentSpecList('ORG', lexAsm.tnKeyword);
   lexAsm.DefTokDelim(';','', lexAsm.tnComment);
   lexAsm.DefTokDelim('''','''', lexAsm.tnString);

@@ -14,9 +14,9 @@ type
   //Tipo de Barra de herramientas
   TStyleToolbar = (stb_SmallIcon, stb_BigIcon);
   //Tipo de declaración de variables
-  TVarDecType = (dvtDBDb,  //Estilo DB/Db/DW
-                 dvtEQU    //Estilo usando macros y EQU
-                 );
+  TAsmType  = (dvtASM,    //Estilo ensamblador
+               dvtBASIC  //Programa Basic
+              );
   //Niveles de optimización
   TOptimLev = (olvFool,   //Nivel básico de optimización
                olvSmart   //Nivel mayor de optimización
@@ -45,7 +45,6 @@ type
     chkIncDecVar: TCheckBox;
     chkIncAddress: TCheckBox;
     chkIncComment: TCheckBox;
-    chkIncHeadMpu: TCheckBox;
     chkViewHScroll: TCheckBox;
     chkViewVScroll: TCheckBox;
     cmbFontName: TComboBox;
@@ -150,9 +149,8 @@ type
     filesClosed: string;  {Lista de archivos cargados. Usado para restaurar los archivos
                           abiertos al abrir nuevamente el programa.}
   public  //Configuraciones para ensamblador
-    IncHeadMpu: boolean;  //Incluye encabezado con información del MPU
     IncVarDec : boolean;  //Incluye declaración de varaibles
-    VarDecType: TVarDecType;  //tipo de declaración de variables
+    AsmType   : TAsmType; //Tipo de Salida
     IncAddress: boolean;  //Incluye dirección física en el código desensamblado
     IncComment: boolean;  //Incluye comentarios en el código desensamblado
     IncComment2: boolean; //Incluye comentarios detallados en el código desensamblado
@@ -406,9 +404,8 @@ begin
   fraCfgSyntax.LoadSyntaxFiles(patSyntax);
 
   //Configuraciones de Ensamblador
-  cfgFile.Asoc_Bol('IncHeadMpu', @IncHeadMpu , chkIncHeadMpu , false);
   cfgFile.Asoc_Bol('IncDecVar' , @IncVarDec  , chkIncDecVar  , true);
-  cfgFile.Asoc_Enum('VarDecType',@VarDecType , Sizeof(TVarDecType), RadioGroup2, 1);
+  cfgFile.Asoc_Enum('VarDecType',@AsmType , Sizeof(TAsmType), RadioGroup2, 1);
   cfgFile.Asoc_Bol('IncAddress', @IncAddress , chkIncAddress , true);
   cfgFile.Asoc_Bol('IncComment', @IncComment , chkIncComment , false);
   cfgFile.Asoc_Bol('IncComment2',@IncComment2, chkIncComment2, false);

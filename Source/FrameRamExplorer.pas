@@ -34,9 +34,9 @@ type
     procedure DrawRAMbank(const marcoRam: TRect; selected: boolean);
     procedure DibBar(const x1, x2: integer; y1, y2: integer; lbl: string);
     procedure DrawBlockTxt(const marcoRam: TRect; ancMargenDir: integer; dirIni,
-      dirFin, BankSize: word; lbl: string);
+      dirFin, BankSize: integer; lbl: string);
     procedure DrawBlock(const marcoRam: TRect; ancMargenDir: integer; dirIni,
-      dirFin, BankSize: word);
+      dirFin, BankSize: integer);
     procedure panGraphPaint(Sender: TObject);
   public
     OnCloseFrame: procedure of object;   //Evento de cierre
@@ -174,8 +174,7 @@ begin
   cv.TextRect(Arect, xt, yt, lbl, TextStyle);
 end;
 procedure TfraRamExplorer.DrawBlockTxt(const marcoRam: TRect;
-                                 ancMargenDir: integer;
-                                 dirIni, dirFin, BankSize: word; lbl: string);
+  ancMargenDir: integer; dirIni, dirFin, BankSize: integer; lbl: string);
 {Dibuja un bloque de un banco de RAM (definida en el área "marcoRam"), pone etiqueta
 descriptiva y pinta con color indicativo.
 El bloque a dibujar, empieza en la dirección "dirIni" y termina en "dirFin".}
@@ -216,7 +215,7 @@ begin
 end;
 procedure TfraRamExplorer.DrawBlock(const marcoRam: TRect;
                                  ancMargenDir: integer;
-                                 dirIni, dirFin, BankSize: word);
+                                 dirIni, dirFin, BankSize: integer);
 {Similar a DrawBlockTxt(), pero no pone las etiquetas de dirección, ni la etiqueta
 central.}
 var
@@ -245,7 +244,7 @@ var
   i, ancMargenDir, j: integer;
   cv: TCanvas;
   lbl: String;
-  tarAdd, tarBnk, tmp: Word;
+  tmp: integer;
 begin
   cv := panGraph.Canvas;
   //Calcula el ancho de las etqiuetas
