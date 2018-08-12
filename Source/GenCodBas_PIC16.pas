@@ -130,34 +130,50 @@ type
     procedure _BSF(const f, b: byte);
     procedure _BTFSC(const f, b: byte);
     procedure _BTFSS(const f, b: byte);
-    procedure _CALL(const a: word);
-    procedure _CLRF(const f: byte);
     procedure _CLRW;
-    procedure _CLRWDT;
     procedure _COMF(const f: byte; d: TPIC16destin);
     procedure _DECF(const f: byte; d: TPIC16destin);
     procedure _DECFSZ(const f: byte; d: TPIC16destin);
-    procedure _GOTO(const a: word);
-    procedure _GOTO_PEND(out igot: integer);
     procedure _INCF(const f: byte; d: TPIC16destin);
-    procedure _INCFSZ(const f: byte; d: TPIC16destin);
     procedure _IORLW(const k: word);
     procedure _IORWF(const f: byte; d: TPIC16destin);
     procedure _MOVF(const f: byte; d: TPIC16destin);
+
+    procedure _JMP(const a: word);
+    procedure _JMP_lbl(out igot: integer);
+    procedure _JSR(const a: word);
+    procedure _BEQ(const a: ShortInt);
+    procedure _BEQ_lbl(out ibranch: integer);
+    procedure _BNE(const a: ShortInt);
+    procedure _BNE_lbl(out ibranch: integer);
+    procedure _BCC(const a: ShortInt);
+    procedure _DEX;
+    procedure _DEY;
+    procedure _DEC(const f: word);
+    procedure _INC(const f: word);
+    procedure _INX;
+    procedure _INY;
     procedure _LDAi(const k: word);
-    procedure _STA(const f: word);
-    procedure _BCC(const a: byte);
-    procedure _RTS;
-    procedure _MOVWF(const f: byte);
+    procedure _LDA(const f: word);
+    procedure _LDXi(const k: word);
+    procedure _LDX(const f: word);
+    procedure _LDYi(const k: word);
+    procedure _LDY(const f: word);
     procedure _NOP;
+    procedure _STA(const f: word);
+    procedure _MOVWF(const f: byte);
+    procedure _RTS;
+    procedure _TAX;
+    procedure _TAY;
+    procedure _TYA;
+    procedure _TXA;
+
     procedure _RETFIE;
     procedure _RETLW(const k: word);
-    procedure _RETURN;
     procedure _RLF(const f: byte; d: TPIC16destin);
     procedure _RRF(const f: byte; d: TPIC16destin);
     procedure _SUBLW(const k: word);
     procedure _SUBWF(const f: byte; d: TPIC16destin);
-    procedure _SWAPF(const f: byte; d: TPIC16destin);
     procedure _XORLW(const k: word);
     procedure _XORWF(const f: byte; d: TPIC16destin);
   protected  //Instrucciones "k"
@@ -211,20 +227,20 @@ type
     procedure bit_LoadToRT(const OpPtr: pointer; modReturn: boolean);
     procedure bit_DefineRegisters;
     //////////////// Tipo Byte /////////////
-    procedure byte_LoadToRT(const OpPtr: pointer; modReturn: boolean);
+    procedure byte_LoadToRT(const OpPtr: pointer);
     procedure byte_DefineRegisters;
     procedure byte_SaveToStk;
     procedure byte_GetItem(const OpPtr: pointer);
     procedure byte_SetItem(const OpPtr: pointer);
     procedure byte_ClearItems(const OpPtr: pointer);
     //////////////// Tipo Word /////////////
-    procedure word_LoadToRT(const OpPtr: pointer; modReturn: boolean);
+    procedure word_LoadToRT(const OpPtr: pointer);
     procedure word_DefineRegisters;
     procedure word_SaveToStk;
     procedure word_Low(const OpPtr: pointer);
     procedure word_High(const OpPtr: pointer);
     //////////////// Tipo DWord /////////////
-    procedure dword_LoadToRT(const OpPtr: pointer; modReturn: boolean);
+    procedure dword_LoadToRT(const OpPtr: pointer);
     procedure dword_DefineRegisters;
     procedure dword_SaveToStk;
     procedure dword_Extra(const OpPtr: pointer);
@@ -966,7 +982,20 @@ end;
 procedure TGenCodBas._LABEL(igot: integer);
 {Termina de codificar el GOTO_PEND}
 begin
-  pic.codGotoAt(igot, _PC);
+  if pic.ram[igot].value = 0 then begin
+    //Es salto absoluto
+    pic.ram[igot].value   := lo(_PC);
+    pic.ram[igot+1].value := hi(_PC);
+  end else begin
+    //Es salto relativo
+    if _PC > igot then begin
+      //Salto hacia adelante
+      pic.ram[igot].value := _PC - igot;
+    end else begin
+      //Salto hacia atrás
+      pic.ram[igot].value := 256 + (_PC - igot);
+    end;
+  end;
 end;
 //Instrucciones simples
 {Estas instrucciones no guardan la instrucción compilada en "lastOpCode".}
@@ -989,11 +1018,6 @@ procedure TGenCodBas._ANDWF(const f: byte; d: TPIC16destin); inline;
 begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
 //  pic.codAsm(i_ANDWF, f,d);
-end;
-procedure TGenCodBas._CLRF(const f: byte); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsmF(i_CLRF, f);
 end;
 procedure TGenCodBas._CLRW; inline;
 begin
@@ -1020,11 +1044,6 @@ begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
 //  pic.codAsm(i_INCF, f,d);
 end;
-procedure TGenCodBas._INCFSZ(const f: byte; d: TPIC16destin); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_INCFSZ, f,d);
-end;
 procedure TGenCodBas._IORWF(const f: byte; d: TPIC16destin); inline;
 begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
@@ -1040,11 +1059,6 @@ begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
 //  pic.codAsmF(i_MOVWF, f);
 end;
-procedure TGenCodBas._NOP; inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_NOP);
-end;
 procedure TGenCodBas._RLF(const f: byte; d: TPIC16destin); inline;
 begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
@@ -1059,11 +1073,6 @@ procedure TGenCodBas._SUBWF(const f: byte; d: TPIC16destin); inline;
 begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
 //  pic.codAsm(i_SUBWF, f,d);
-end;
-procedure TGenCodBas._SWAPF(const f: byte; d: TPIC16destin); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_SWAPF, f,d);
 end;
 procedure TGenCodBas._BCF(const f, b: byte); inline;
 begin
@@ -1085,50 +1094,163 @@ begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
 //  pic.codAsmFB(i_BTFSS, f, b);
 end;
-procedure TGenCodBas._CALL(const a: word); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsmA(i_CALL, a);
-end;
-procedure TGenCodBas._CLRWDT; inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_CLRWDT);
-end;
-procedure TGenCodBas._GOTO(const a: word); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsmA(i_GOTO, a);
-end;
-procedure TGenCodBas._GOTO_PEND(out igot: integer);
-{Escribe una instrucción GOTO, pero sin precisar el destino aún. Devuelve la dirección
- donde se escribe el GOTO, para poder completarla posteriormente.
-}
-begin
-  igot := pic.iRam;  //guarda posición de instrucción de salto
-  pic.codAsm(i_JMP, aAbsolute, 0);  //pone salto indefinido
-end;
 procedure TGenCodBas._IORLW(const k: word); inline;
 begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
 //  pic.codAsmK(i_IORLW, k);
 end;
+
+procedure TGenCodBas._JMP(const a: word); inline;
+begin
+  pic.codAsm(i_JMP, aAbsolute, a);  //pone salto indefinido
+end;
+procedure TGenCodBas._JMP_lbl(out igot: integer);
+{Escribe una instrucción GOTO, pero sin precisar el destino aún. Devuelve la dirección
+ donde se escribe el GOTO, para poder completarla posteriormente.
+}
+begin
+  igot := pic.iRam;  //guarda posición de instrucción de salto
+  pic.codAsm(i_JMP, aAbsolute, 0);  //1 en Offset indica que se completará con salto absoluto
+end;
+procedure TGenCodBas._JSR(const a: word); inline;
+begin
+  pic.codAsm(i_JSR, aAbsolute, a);  //1 en Offset indica que se completará con salto absoluto
+end;
+procedure TGenCodBas._BEQ(const a: ShortInt);
+begin
+  if a>0 then begin
+    pic.codAsm(i_BEQ, aRelative, a);
+  end else begin
+    pic.codAsm(i_BEQ, aRelative, 256-a);
+  end;
+end;
+procedure TGenCodBas._BEQ_lbl(out ibranch: integer);
+begin
+  ibranch := pic.iRam+1;  //guarda posición del offset de salto
+  pic.codAsm(i_BEQ, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
+end;
+procedure TGenCodBas._BNE(const a: ShortInt);
+begin
+  if a>0 then begin
+    pic.codAsm(i_BNE, aRelative, a);
+  end else begin
+    pic.codAsm(i_BNE, aRelative, 256-a);
+  end;
+end;
+procedure TGenCodBas._BNE_lbl(out ibranch: integer);
+begin
+  ibranch := pic.iRam+1;  //guarda posición del offset de salto
+  pic.codAsm(i_BNE, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
+end;
+procedure TGenCodBas._BCC(const a: ShortInt);
+begin
+  if a>0 then begin
+    pic.codAsm(i_BCC, aRelative, a);
+  end else begin
+    pic.codAsm(i_BCC, aRelative, 256-a);
+  end;
+end;
+procedure TGenCodBas._DEX;
+begin
+  pic.codAsm(i_DEX, aImplicit, 0);
+end;
+procedure TGenCodBas._DEY;
+begin
+  pic.codAsm(i_DEY, aImplicit, 0);
+end;
+procedure TGenCodBas._DEC(const f: word);  //INC Absolute/Zeropage
+begin
+  if f<256 then begin
+    pic.codAsm(i_DEC, aZeroPage, f);
+  end else begin
+    pic.codAsm(i_DEC, aAbsolute, f);
+  end;
+end;
+procedure TGenCodBas._INC(const f: word);  //INC Absolute/Zeropage
+begin
+  if f<256 then begin
+    pic.codAsm(i_INC, aZeroPage, f);
+  end else begin
+    pic.codAsm(i_INC, aAbsolute, f);
+  end;
+end;
+procedure TGenCodBas._INX;
+begin
+  pic.codAsm(i_INX, aImplicit, 0);
+end;
+procedure TGenCodBas._INY;
+begin
+  pic.codAsm(i_INY, aImplicit, 0);
+end;
 procedure TGenCodBas._LDAi(const k: word); inline;  //LDA Immediate
 begin
   pic.codAsm(i_LDA, aImmediat, k);
 end;
-procedure TGenCodBas._STA(const f: word);  //STA Absolute
+procedure TGenCodBas._LDA(const f: word);  //LDA Absolute/Zeropage
 begin
-  pic.codAsm(i_STA, aAbsolute, f);
+  if f<256 then begin
+    pic.codAsm(i_LDA, aZeroPage, f);
+  end else begin
+    pic.codAsm(i_LDA, aAbsolute, f);
+  end;
 end;
-procedure TGenCodBas._BCC(const a: byte);
+procedure TGenCodBas._LDXi(const k: word); inline;  //LDA Immediate
 begin
-  pic.codAsm(i_BCC, aRelative, a);
+  pic.codAsm(i_LDX, aImmediat, k);
+end;
+procedure TGenCodBas._LDX(const f: word);  //LDA  Absolute/Zeropage
+begin
+  if f<256 then begin
+    pic.codAsm(i_LDX, aZeroPage, f);
+  end else begin
+    pic.codAsm(i_LDX, aAbsolute, f);
+  end;
+end;
+procedure TGenCodBas._LDYi(const k: word); inline;  //LDA Immediate
+begin
+  pic.codAsm(i_LDY, aImmediat, k);
+end;
+procedure TGenCodBas._LDY(const f: word);  //LDA Absolute/Zeropage
+begin
+  if f<256 then begin
+    pic.codAsm(i_LDY, aZeroPage, f);
+  end else begin
+    pic.codAsm(i_LDY, aAbsolute, f);
+  end;
+end;
+procedure TGenCodBas._NOP; inline;
+begin
+  pic.codAsm(i_NOP, aImplicit, 0);
+end;
+procedure TGenCodBas._STA(const f: word);  //STA Absolute/Zeropage
+begin
+  if f<256 then begin
+    pic.codAsm(i_STA, aZeroPage, f);
+  end else begin
+    pic.codAsm(i_STA, aAbsolute, f);
+  end;
 end;
 procedure TGenCodBas._RTS;
 begin
   pic.codAsm(i_RTS, aImplicit, 0);
 end;
+procedure TGenCodBas._TAX;
+begin
+  pic.codAsm(i_TAX, aImplicit, 0);
+end;
+procedure TGenCodBas._TAY;
+begin
+  pic.codAsm(i_TAY, aImplicit, 0);
+end;
+procedure TGenCodBas._TYA;
+begin
+  pic.codAsm(i_TYA, aImplicit, 0);
+end;
+procedure TGenCodBas._TXA;
+begin
+  pic.codAsm(i_TXA, aImplicit, 0);
+end;
+
 procedure TGenCodBas._RETFIE; inline;
 begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
@@ -1138,11 +1260,6 @@ procedure TGenCodBas._RETLW(const k: word); inline;
 begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
 //  pic.codAsmK(i_RETLW, k);
-end;
-procedure TGenCodBas._RETURN;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_RETURN);
 end;
 procedure TGenCodBas._SUBLW(const k: word); inline;
 begin
@@ -1420,7 +1537,7 @@ begin
 //  GenCodBank(f.addr);
 //  _BTFSS(f.addr, f.bit);
 //  igot := pic.iFlash;     //guarda posición de instrucción de salto
-//  _GOTO(0); //salto pendiente
+//  _JMP(0); //salto pendiente
 end;
 procedure TGenCodBas.kIF_BSET_END(igot: integer);
 {Define the End of the block, created with kIF_BSET().}
@@ -1540,14 +1657,14 @@ begin
     //Almacenamiento no implementado
     GenError(MSG_NOT_IMPLEM);
   end;
-  if modReturn then _RETURN;  //codifica instrucción
+  if modReturn then _RTS;  //codifica instrucción
 end;
 procedure TGenCodBas.bit_DefineRegisters;
 begin
   //No es encesario, definir registros adicionales a W
 end;
 //////////////// Tipo Byte /////////////
-procedure TGenCodBas.byte_LoadToRT(const OpPtr: pointer; modReturn: boolean);
+procedure TGenCodBas.byte_LoadToRT(const OpPtr: pointer);
 {Carga operando a registros de trabajo.}
 var
   Op: ^TOperand;
@@ -1556,15 +1673,12 @@ begin
   Op := OpPtr;
   case Op^.Sto of  //el parámetro debe estar en "res"
   stConst : begin
-    if modReturn then _RETLW(Op^.valInt)
-    else _LDAi(Op^.valInt);
+    _LDAi(Op^.valInt);
   end;
   stVariab: begin
-    kMOVF(Op^.rVar.adrByte0, toW);
-    if modReturn then _RETURN;
+    _LDA(Op^.rVar.adrByte0.addr);
   end;
   stExpres: begin  //ya está en w
-    if modReturn then _RETURN;
   end;
   stVarRefVar: begin
     //Se tiene una variable puntero dereferenciada: x^
@@ -1573,7 +1687,6 @@ begin
     kMOVF(varPtr.adrByte0, toW);
     kMOVWF(FSR);  //direcciona
     kMOVF(INDF, toW);  //deje en W
-    if modReturn then _RETURN;
   end;
   stVarRefExp: begin
     //Es una expresión derefernciada (x+a)^.
@@ -1582,7 +1695,6 @@ begin
     //Mueve a W
     _MOVWF(FSR.offs);  //direcciona
     _MOVF(0, toW);  //deje en W
-    if modReturn then _RETURN;
   end;
   else
     //Almacenamiento no implementado
@@ -1651,7 +1763,6 @@ procedure TGenCodBas.byte_SetItem(const OpPtr: pointer);
 //Función que fija un valor indexado
 var
   WithBrack: Boolean;
-var
   Op: ^TOperand;
   arrVar, rVar: TxpEleVar;
   idx, value: TOperand;
@@ -1671,7 +1782,8 @@ begin
         if not GetValueToAssign(WithBrack, arrVar, value) then exit;
         if (value.Sto = stConst) and (value.valInt=0) then begin
           //Caso especial, se pone a cero
-          _CLRF(idxTar);
+          _LDAi(0);
+          _STA(idxTar);
         end else begin
           //Sabemos que hay una expresión byte
           LoadToRT(value); //Carga resultado en W
@@ -1688,7 +1800,8 @@ begin
           _MOVF(idx.offs, toW);  //índice
           _ADDLW(arrVar.addr0);  //Dirección de inicio
           _MOVWF($04);  //Direcciona
-          _CLRF($00);   //Pone a cero
+          _LDAi(0);
+          _STA(00);
         end else if value.Sto = stConst then begin
           //Es una constante cualquiera
           _MOVF(idx.offs, toW);  //índice
@@ -1723,7 +1836,8 @@ begin
         //Caso especial, se pide asignar una constante cero
         _ADDLW(arrVar.addr0);  //Dirección de inicio
         _MOVWF($04);  //Direcciona
-        _CLRF($00);   //Pone a cero
+        _LDAi(0);
+        _STA(0);
       end else if value.Sto = stConst then begin
         //Es una constante cualquiera
         _ADDLW(arrVar.addr0);  //Dirección de inicio
@@ -1776,51 +1890,50 @@ begin
     res.valInt {%H-}:= xvar.typ.arrSize;  //Devuelve tamaño
     if xvar.typ.arrSize = 0 then exit;  //No hay nada que limpiar
     if xvar.typ.arrSize = 1 then begin  //Es de un solo byte
-      _CLRF(xvar.addr0);
+      _LDAi(0);
+      _STA(xvar.addr0);
     end else if xvar.typ.arrSize = 2 then begin  //Es de 2 bytes
-      _CLRF(xvar.addr0);
-      _CLRF(xvar.addr0+1);
+      _LDAi(0);
+      _STA(xvar.addr0);
+      _STA(xvar.addr0+1);
     end else if xvar.typ.arrSize = 3 then begin  //Es de 3 bytes
-      _CLRF(xvar.addr0);
-      _CLRF(xvar.addr0+1);
-      _CLRF(xvar.addr0+2);
+      _LDAi(0);
+      _STA(xvar.addr0);
+      _STA(xvar.addr0+1);
+      _STA(xvar.addr0+2);
     end else if xvar.typ.arrSize = 4 then begin  //Es de 4 bytes
-      _CLRF(xvar.addr0);
-      _CLRF(xvar.addr0+1);
-      _CLRF(xvar.addr0+2);
-      _CLRF(xvar.addr0+3);
+      _LDAi(0);
+      _STA(xvar.addr0);
+      _STA(xvar.addr0+1);
+      _STA(xvar.addr0+2);
+      _STA(xvar.addr0+3);
     end else if xvar.typ.arrSize = 5 then begin  //Es de 5 bytes
-      _CLRF(xvar.addr0);
-      _CLRF(xvar.addr0+1);
-      _CLRF(xvar.addr0+2);
-      _CLRF(xvar.addr0+3);
-      _CLRF(xvar.addr0+4);
+      _LDAi(0);
+      _STA(xvar.addr0);
+      _STA(xvar.addr0+1);
+      _STA(xvar.addr0+2);
+      _STA(xvar.addr0+3);
+      _STA(xvar.addr0+4);
     end else if xvar.typ.arrSize = 6 then begin  //Es de 6 bytes
-      _CLRF(xvar.addr0);
-      _CLRF(xvar.addr0+1);
-      _CLRF(xvar.addr0+2);
-      _CLRF(xvar.addr0+3);
-      _CLRF(xvar.addr0+4);
-      _CLRF(xvar.addr0+5);
-    end else if xvar.typ.arrSize = 7 then begin  //Es de 7 bytes
-      _CLRF(xvar.addr0);
-      _CLRF(xvar.addr0+1);
-      _CLRF(xvar.addr0+2);
-      _CLRF(xvar.addr0+3);
-      _CLRF(xvar.addr0+4);
-      _CLRF(xvar.addr0+5);
-      _CLRF(xvar.addr0+6);
+      _LDAi(0);
+      _STA(xvar.addr0);
+      _STA(xvar.addr0+1);
+      _STA(xvar.addr0+2);
+      _STA(xvar.addr0+3);
+      _STA(xvar.addr0+4);
+      _STA(xvar.addr0+5);
     end else begin
       //Implementa lazo, usando W como índice
       _LDAi(xvar.adrByte0.offs);  //dirección inicial
       _MOVWF($04);   //FSR
       _LDAi(256-xvar.typ.arrSize);
 j1:= _PC;
-      _CLRF($00);    //Limpia [FSR]
+      _LDAi(0);
+      _STA(0);
       _INCF($04, toF);    //Siguiente
       _ADDLW(1);   //W = W + 1
       _BTFSS(_STATUS, _Z);
-      _GOTO(j1);
+      _JMP(j1);
     end;
   end;
   else
@@ -1828,7 +1941,7 @@ j1:= _PC;
   end;
 end;
 //////////////// Tipo DWord /////////////
-procedure TGenCodBas.word_LoadToRT(const OpPtr: pointer; modReturn: boolean);
+procedure TGenCodBas.word_LoadToRT(const OpPtr: pointer);
 {Carga el valor de una expresión a los registros de trabajo.}
 var
   Op: ^TOperand;
@@ -1838,24 +1951,17 @@ begin
   case Op^.Sto of  //el parámetro debe estar en "Op^"
   stConst : begin
     //byte alto
-    if Op^.HByte = 0 then begin
-      _CLRF(H.offs);
-    end else begin
-      _LDAi(Op^.HByte);
-      _MOVWF(H.offs);
-    end;
+    _LDAi(Op^.HByte);
+    _MOVWF(H.offs);
     //byte bajo
-    if modReturn then _RETLW(Op^.LByte)
-    else _LDAi(Op^.LByte);
+    _LDAi(Op^.LByte);
   end;
   stVariab: begin
-    kMOVF(Op^.rVar.adrByte1, toW);
-    kMOVWF(H);
-    kMOVF(Op^.rVar.adrByte0, toW);
-    if modReturn then _RETURN;
+    _LDA(Op^.rVar.adrByte1.addr);
+    _STA(H.addr);
+    _LDA(Op^.rVar.adrByte0.addr);
   end;
-  stExpres: begin  //se asume que ya está en (H,w)
-    if modReturn then _RETURN;
+  stExpres: begin  //se asume que ya está en (H,A)
   end;
   stVarRefVar: begin
     //Se tiene una variable puntero dereferenciada: x^
@@ -1867,7 +1973,6 @@ begin
     _MOVWF(H.offs);  //Guarda byte alto
     _DECF(FSR.offs,toF);
     _MOVF(0, toW);  //deje en W byte bajo
-    if modReturn then _RETURN;
   end;
   stVarRefExp: begin
     //Es una expresión desrefernciada (x+a)^.
@@ -1880,7 +1985,6 @@ begin
     _MOVWF(H.offs);  //Guarda byte alto
     _DECF(FSR.offs,toF);
     _MOVF(0, toW);  //deje en W byte bajo
-    if modReturn then _RETURN;
   end;
   else
     //Almacenamiento no implementado
@@ -1984,173 +2088,173 @@ var
   idxTar: Int64;
   aux: TPicRegister;
 begin
-  if not GetIdxParArray(WithBrack, idx) then exit;
-  //Procesa
-  Op := OpPtr;
-  if Op^.Sto = stVariab then begin  //Se aplica a una variable
-    arrVar := Op^.rVar;  //referencia a la variable.
-    res.SetAsNull;  //No devuelve nada
-    //Genera el código de acuerdo al índice
-    case idx.Sto of
-    stConst: begin  //Indice constante
-        //Como el índice es constante, se puede acceder directamente
-        idxTar := arrVar.adrByte0.offs+idx.valInt*2; //índice destino
-        if not GetValueToAssign(WithBrack, arrVar, value) then exit;
-        if value.Sto = stConst then begin
-          //Es una constante
-          //Byte bajo
-          if value.LByte=0 then begin //Caso especial
-            _CLRF(idxTar);
-          end else begin
-            _LDAi(value.LByte);
-            _MOVWF(idxTar);
-          end;
-          //Byte alto
-          if value.HByte=0 then begin //Caso especial
-            _CLRF(idxTar+1);
-          end else begin
-            _LDAi(value.HByte);
-            _MOVWF(idxTar+1);
-          end;
-        end else begin
-          //El valor a asignar es variable o expresión
-          typWord.DefineRegister;   //Para usar H
-          //Sabemos que hay una expresión word
-          LoadToRT(value); //Carga resultado en H,W
-          _MOVWF(idxTar);  //Byte bajo
-          _MOVF(H.offs, toW);
-          _MOVWF(idxTar+1);  //Byte alto
-        end;
-      end;
-    stVariab: begin
-        //El índice es una variable
-        //Tenemos la referencia la variable en idx.rvar
-        if not GetValueToAssign(WithBrack, arrVar, value) then exit;
-        //Sabemos que hay una expresión word
-        if value.Sto = stConst then begin
-          //El valor a escribir, es una constante cualquiera
-          _BCF(_STATUS, _C);
-          _RLF(idx.offs, toW);  //índice * 2
-          _ADDLW(arrVar.addr0);  //Dirección de inicio
-          _MOVWF(FSR.offs);  //Direcciona
-          ////// Byte Bajo
-          if value.LByte = 0 then begin
-            _CLRF($00);
-          end else begin
-            _LDAi(value.LByte);
-            _MOVWF($00);   //Escribe
-          end;
-          ////// Byte Alto
-          _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
-          if value.HByte = 0 then begin
-            _CLRF($00);
-          end else begin
-            _LDAi(value.HByte);
-            _MOVWF($00);   //Escribe
-          end;
-        end else if value.Sto = stVariab then begin
-          //El valor a escribir, es una variable
-          //Calcula dirfección de byte bajo
-          _BCF(_STATUS, _C);
-          _RLF(idx.offs, toW);  //índice * 2
-          _ADDLW(arrVar.addr0);  //Dirección de inicio
-          _MOVWF(FSR.offs);  //Direcciona
-          ////// Byte Bajo
-          _MOVF(value.Loffs, toW);
-          _MOVWF($00);   //Escribe
-          ////// Byte Alto
-          _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
-          _MOVF(value.Hoffs, toW);
-          _MOVWF($00);   //Escribe
-        end else begin
-          //El valor a escribir, es una expresión y está en H,W
-          //hay que mover value a arrVar[idx.rvar]
-          aux := GetAuxRegisterByte;
-          typWord.DefineRegister;   //Para usar H
-          _MOVWF(aux.offs);  //W->   salva W (Valor.H)
-          //Calcula dirección de byte bajo
-          _BCF(_STATUS, _C);
-          _RLF(idx.offs, toW);  //índice * 2
-          _ADDLW(arrVar.addr0);  //Dirección de inicio
-          _MOVWF(FSR.offs);  //Direcciona
-          ////// Byte Bajo
-          _MOVF(aux.offs, toW);
-          _MOVWF($00);   //Escribe
-          ////// Byte Alto
-          _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
-          _MOVF(H.offs, toW);
-          _MOVWF($00);   //Escribe
-          aux.used := false;
-        end;
-      end;
-    stExpres: begin
-      //El índice es una expresión y está en W.
-      if not GetValueToAssign(WithBrack, arrVar, value) then exit;
-      if value.Sto = stConst then begin
-        //El valor a asignar, es una constante
-        _MOVWF(FSR.offs);   //Salva W.
-        _BCF(_STATUS, _C);
-        _RLF(FSR.offs, toW);  //idx * 2
-        _ADDLW(arrVar.addr0);  //Dirección de inicio
-        _MOVWF(FSR.offs);  //Direcciona a byte bajo
-        //Byte bajo
-        if value.LByte = 0 then begin
-          _CLRF($00);   //Pone a cero
-        end else begin
-          _LDAi(value.LByte);
-          _MOVWF($00);
-        end;
-        //Byte alto
-        _INCF(FSR.offs, toF);
-        if value.HByte = 0 then begin
-          _CLRF($00);   //Pone a cero
-        end else begin
-          _LDAi(value.HByte);
-          _MOVWF($00);
-        end;
-      end else if value.Sto = stVariab then begin
-        _MOVWF(FSR.offs);   //Salva W.
-        _BCF(_STATUS, _C);
-        _RLF(FSR.offs, toW);  //idx * 2
-        _ADDLW(arrVar.addr0);  //Dirección de inicio
-        _MOVWF(FSR.offs);  //Direcciona a byte bajo
-        //Byte bajo
-        _MOVF(value.Loffs, toW);
-        _MOVWF($00);
-        //Byte alto
-        _INCF(FSR.offs, toF);
-        _MOVF(value.Hoffs, toW);
-        _MOVWF($00);
-      end else begin
-        //El valor a asignar está en H,W, y el índice (byte) en la pila
-        typWord.DefineRegister;   //Para usar H
-        aux := GetAuxRegisterByte;
-        _MOVWF(aux.offs);  //W->aux   salva W
-        rVar := GetVarByteFromStk;  //toma referencia de la pila
-        //Calcula dirección de byte bajo
-        _BCF(_STATUS, _C);
-        _RLF(rVar.adrByte0.offs, toW);  //índice * 2
-        _ADDLW(arrVar.addr0);  //Dirección de inicio
-        _MOVWF(FSR.offs);  //Direcciona
-        ////// Byte Bajo
-        _MOVF(aux.offs, toW);
-        _MOVWF($00);   //Escribe
-        ////// Byte Alto
-        _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
-        _MOVF(H.offs, toW);
-        _MOVWF($00);   //Escribe
-        aux.used := false;
-      end;
-    end;
-    end;
-  end else begin
-    GenError('Syntax error.');
-  end;
-  if WithBrack then begin
-    //En este modo, no se requiere ")"
-  end else begin
-    if not CaptureTok(')') then exit;
-  end;
+//  if not GetIdxParArray(WithBrack, idx) then exit;
+//  //Procesa
+//  Op := OpPtr;
+//  if Op^.Sto = stVariab then begin  //Se aplica a una variable
+//    arrVar := Op^.rVar;  //referencia a la variable.
+//    res.SetAsNull;  //No devuelve nada
+//    //Genera el código de acuerdo al índice
+//    case idx.Sto of
+//    stConst: begin  //Indice constante
+//        //Como el índice es constante, se puede acceder directamente
+//        idxTar := arrVar.adrByte0.offs+idx.valInt*2; //índice destino
+//        if not GetValueToAssign(WithBrack, arrVar, value) then exit;
+//        if value.Sto = stConst then begin
+//          //Es una constante
+//          //Byte bajo
+//          if value.LByte=0 then begin //Caso especial
+//            _CLRF(idxTar);
+//          end else begin
+//            _LDAi(value.LByte);
+//            _MOVWF(idxTar);
+//          end;
+//          //Byte alto
+//          if value.HByte=0 then begin //Caso especial
+//            _CLRF(idxTar+1);
+//          end else begin
+//            _LDAi(value.HByte);
+//            _MOVWF(idxTar+1);
+//          end;
+//        end else begin
+//          //El valor a asignar es variable o expresión
+//          typWord.DefineRegister;   //Para usar H
+//          //Sabemos que hay una expresión word
+//          LoadToRT(value); //Carga resultado en H,W
+//          _MOVWF(idxTar);  //Byte bajo
+//          _MOVF(H.offs, toW);
+//          _MOVWF(idxTar+1);  //Byte alto
+//        end;
+//      end;
+//    stVariab: begin
+//        //El índice es una variable
+//        //Tenemos la referencia la variable en idx.rvar
+//        if not GetValueToAssign(WithBrack, arrVar, value) then exit;
+//        //Sabemos que hay una expresión word
+//        if value.Sto = stConst then begin
+//          //El valor a escribir, es una constante cualquiera
+//          _BCF(_STATUS, _C);
+//          _RLF(idx.offs, toW);  //índice * 2
+//          _ADDLW(arrVar.addr0);  //Dirección de inicio
+//          _MOVWF(FSR.offs);  //Direcciona
+//          ////// Byte Bajo
+//          if value.LByte = 0 then begin
+//            _CLRF($00);
+//          end else begin
+//            _LDAi(value.LByte);
+//            _MOVWF($00);   //Escribe
+//          end;
+//          ////// Byte Alto
+//          _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
+//          if value.HByte = 0 then begin
+//            _CLRF($00);
+//          end else begin
+//            _LDAi(value.HByte);
+//            _MOVWF($00);   //Escribe
+//          end;
+//        end else if value.Sto = stVariab then begin
+//          //El valor a escribir, es una variable
+//          //Calcula dirfección de byte bajo
+//          _BCF(_STATUS, _C);
+//          _RLF(idx.offs, toW);  //índice * 2
+//          _ADDLW(arrVar.addr0);  //Dirección de inicio
+//          _MOVWF(FSR.offs);  //Direcciona
+//          ////// Byte Bajo
+//          _MOVF(value.Loffs, toW);
+//          _MOVWF($00);   //Escribe
+//          ////// Byte Alto
+//          _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
+//          _MOVF(value.Hoffs, toW);
+//          _MOVWF($00);   //Escribe
+//        end else begin
+//          //El valor a escribir, es una expresión y está en H,W
+//          //hay que mover value a arrVar[idx.rvar]
+//          aux := GetAuxRegisterByte;
+//          typWord.DefineRegister;   //Para usar H
+//          _MOVWF(aux.offs);  //W->   salva W (Valor.H)
+//          //Calcula dirección de byte bajo
+//          _BCF(_STATUS, _C);
+//          _RLF(idx.offs, toW);  //índice * 2
+//          _ADDLW(arrVar.addr0);  //Dirección de inicio
+//          _MOVWF(FSR.offs);  //Direcciona
+//          ////// Byte Bajo
+//          _MOVF(aux.offs, toW);
+//          _MOVWF($00);   //Escribe
+//          ////// Byte Alto
+//          _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
+//          _MOVF(H.offs, toW);
+//          _MOVWF($00);   //Escribe
+//          aux.used := false;
+//        end;
+//      end;
+//    stExpres: begin
+//      //El índice es una expresión y está en W.
+//      if not GetValueToAssign(WithBrack, arrVar, value) then exit;
+//      if value.Sto = stConst then begin
+//        //El valor a asignar, es una constante
+//        _MOVWF(FSR.offs);   //Salva W.
+//        _BCF(_STATUS, _C);
+//        _RLF(FSR.offs, toW);  //idx * 2
+//        _ADDLW(arrVar.addr0);  //Dirección de inicio
+//        _MOVWF(FSR.offs);  //Direcciona a byte bajo
+//        //Byte bajo
+//        if value.LByte = 0 then begin
+//          _CLRF($00);   //Pone a cero
+//        end else begin
+//          _LDAi(value.LByte);
+//          _MOVWF($00);
+//        end;
+//        //Byte alto
+//        _INCF(FSR.offs, toF);
+//        if value.HByte = 0 then begin
+//          _CLRF($00);   //Pone a cero
+//        end else begin
+//          _LDAi(value.HByte);
+//          _MOVWF($00);
+//        end;
+//      end else if value.Sto = stVariab then begin
+//        _MOVWF(FSR.offs);   //Salva W.
+//        _BCF(_STATUS, _C);
+//        _RLF(FSR.offs, toW);  //idx * 2
+//        _ADDLW(arrVar.addr0);  //Dirección de inicio
+//        _MOVWF(FSR.offs);  //Direcciona a byte bajo
+//        //Byte bajo
+//        _MOVF(value.Loffs, toW);
+//        _MOVWF($00);
+//        //Byte alto
+//        _INCF(FSR.offs, toF);
+//        _MOVF(value.Hoffs, toW);
+//        _MOVWF($00);
+//      end else begin
+//        //El valor a asignar está en H,W, y el índice (byte) en la pila
+//        typWord.DefineRegister;   //Para usar H
+//        aux := GetAuxRegisterByte;
+//        _MOVWF(aux.offs);  //W->aux   salva W
+//        rVar := GetVarByteFromStk;  //toma referencia de la pila
+//        //Calcula dirección de byte bajo
+//        _BCF(_STATUS, _C);
+//        _RLF(rVar.adrByte0.offs, toW);  //índice * 2
+//        _ADDLW(arrVar.addr0);  //Dirección de inicio
+//        _MOVWF(FSR.offs);  //Direcciona
+//        ////// Byte Bajo
+//        _MOVF(aux.offs, toW);
+//        _MOVWF($00);   //Escribe
+//        ////// Byte Alto
+//        _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
+//        _MOVF(H.offs, toW);
+//        _MOVWF($00);   //Escribe
+//        aux.used := false;
+//      end;
+//    end;
+//    end;
+//  end else begin
+//    GenError('Syntax error.');
+//  end;
+//  if WithBrack then begin
+//    //En este modo, no se requiere ")"
+//  end else begin
+//    if not CaptureTok(')') then exit;
+//  end;
 end;
 procedure TGenCodBas.word_ClearItems(const OpPtr: pointer);
 begin
@@ -2209,7 +2313,7 @@ begin
   end;
 end;
 //////////////// Tipo DWord /////////////
-procedure TGenCodBas.dword_LoadToRT(const OpPtr: pointer; modReturn: boolean);
+procedure TGenCodBas.dword_LoadToRT(const OpPtr: pointer);
 {Carga el valor de una expresión a los registros de trabajo.}
 var
   Op: ^TOperand;
@@ -2218,29 +2322,16 @@ begin
   case Op^.Sto of  //el parámetro debe estar en "Op^"
   stConst : begin
     //byte U
-    if Op^.UByte = 0 then begin
-      _CLRF(U.offs);
-    end else begin
-      _LDAi(Op^.UByte);
-      _MOVWF(U.offs);
-    end;
+    _LDAi(Op^.UByte);
+    _STA(U.offs);
     //byte E
-    if Op^.EByte = 0 then begin
-      _CLRF(E.offs);
-    end else begin
-      _LDAi(Op^.EByte);
-      _MOVWF(E.offs);
-    end;
+    _LDAi(Op^.EByte);
+    _MOVWF(E.offs);
     //byte H
-    if Op^.HByte = 0 then begin
-      _CLRF(H.offs);
-    end else begin
-      _LDAi(Op^.HByte);
-      _MOVWF(H.offs);
-    end;
+    _LDAi(Op^.HByte);
+    _MOVWF(H.offs);
     //byte 0
-    if modReturn then _RETLW(Op^.LByte)
-    else _LDAi(Op^.LByte);
+    _LDAi(Op^.LByte);
   end;
   stVariab: begin
     kMOVF(Op^.rVar.adrByte3, toW);
@@ -2253,10 +2344,8 @@ begin
     kMOVWF(H);
 
     kMOVF(Op^.rVar.adrByte0, toW);
-    if modReturn then _RETURN;
   end;
-  stExpres: begin  //se asume que ya está en (U,E,H,w)
-    if modReturn then _RETURN;
+  stExpres: begin  //se asume que ya está en (U,E,H,A)
   end;
   else
     //Almacenamiento no implementado

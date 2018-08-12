@@ -166,7 +166,7 @@ procedure TGenCod.callFunct(fun: TxpEleFun);
 {Rutina genérica para llamar a una función definida por el usuario.}
 begin
   //Por ahora, no se implementa paginación, pero despuñes habría que considerarlo.
-  _CALL(fun.adrr);  //codifica el salto
+  _JSR(fun.adrr);  //codifica el salto
 end;
 procedure TGenCod.Copy_C_to_A;
 begin
@@ -229,11 +229,11 @@ begin
       _STA(byte1.addr);
     end;
     stVariab: begin
-      kMOVF(byte2, toW);
-      kMOVWF(byte1);
+      _LDA(byte2.addr);
+      _STA(byte1.addr);
     end;
-    stExpres: begin  //ya está en w
-      kMOVWF(byte1);
+    stExpres: begin  //ya está en A
+      _STA(byte1.addr);
     end;
     else
       GenError(MSG_UNSUPPORTED); exit;
@@ -662,119 +662,119 @@ procedure TGenCod.mul_byte_16(fun: TxpEleFun);
 var
   LOOP: Word;
 begin
-    typDWord.DefineRegister;   //Asegura que exista W,H,E,U
-    _CLRF (H.offs);
-    _CLRF (U.offs);
-    _BSF  (U.offs,3);  //8->U
-    _RRF  (E.offs,toF);
-LOOP:=_PC;
-    _BTFSC (_STATUS,0);
-    _ADDWF (H.offs,toF);
-    _RRF   (H.offs,toF);
-    _RRF   (E.offs,toF);
-    _DECFSZ(U.offs, toF);
-    _GOTO  (LOOP);
-    //Realmente el algortimo es: E*W -> [H:E], pero lo convertimos a: E*W -> [H:W]
-    _MOVF(E.offs, toW);
-    _RETURN;
+//    typDWord.DefineRegister;   //Asegura que exista W,H,E,U
+//    _CLRF (H.offs);
+//    _CLRF (U.offs);
+//    _BSF  (U.offs,3);  //8->U
+//    _RRF  (E.offs,toF);
+//LOOP:=_PC;
+//    _BTFSC (_STATUS,0);
+//    _ADDWF (H.offs,toF);
+//    _RRF   (H.offs,toF);
+//    _RRF   (E.offs,toF);
+//    _DECFSZ(U.offs, toF);
+//    _JMP  (LOOP);
+//    //Realmente el algortimo es: E*W -> [H:E], pero lo convertimos a: E*W -> [H:W]
+//    _MOVF(E.offs, toW);
+//    _RTS;
 end;
 procedure TGenCod.ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
-  case stoOperation of
-  stConst_Const:begin  //producto de dos constantes. Caso especial
-    if value1*value2 < $100 then begin
-      SetROBResultConst_byte((value1*value2) and $FF);  //puede generar error
-    end else begin
-      SetROBResultConst_word((value1*value2) and $FFFF);  //puede generar error
-    end;
-    exit;  //sale aquí, porque es un caso particular
-  end;
-  stConst_Variab: begin
-    if value1=0 then begin  //caso especial
-      SetROBResultConst_byte(0);
-      exit;
-    end else if value1=1 then begin  //caso especial
-      SetROBResultVariab(p2^.rVar);
-      exit;
-    end else if value1=2 then begin
-      SetROBResultExpres_word(Opt);
-      _CLRF(H.offs);
-      _BCF(_STATUS, _C);
-      kRLF(byte2, toW);
-      _RLF(H.offs, toF);
-      exit;
-    end;
-    SetROBResultExpres_word(Opt);
-    kMOVF(byte2, toW);
-    _MOVWF(E.offs);
-    _CALL(f_byte_mul_byte_16.adrr);
-    AddCallerTo(f_byte_mul_byte_16);
-  end;
-  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
-    SetROBResultExpres_word(opt);
-    kMOVWF(E);
-    _CALL(f_byte_mul_byte_16.adrr);
-    AddCallerTo(f_byte_mul_byte_16);
-  end;
-  stVariab_Const: begin
-    SetROBResultExpres_word(opt);
-    kMOVF(byte1, toW);
-    _MOVWF(E.offs);
-    _CALL(f_byte_mul_byte_16.adrr);
-    AddCallerTo(f_byte_mul_byte_16);
-  end;
-  stVariab_Variab:begin
-    SetROBResultExpres_word(Opt);
-    kMOVF(byte1, toW);
-    _MOVWF(E.offs);
-    kMOVF(byte2, toW);
-    _CALL(f_byte_mul_byte_16.adrr);
-    AddCallerTo(f_byte_mul_byte_16);
-  end;
-  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
-    SetROBResultExpres_word(Opt);
-    _MOVWF(E.offs);  //p2 -> E
-    kMOVF(byte1, toW); //p1 -> W
-    _CALL(f_byte_mul_byte_16.adrr);
-    AddCallerTo(f_byte_mul_byte_16);
-  end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
-    SetROBResultExpres_word(Opt);
-    _MOVWF(E.offs);  //p1 -> E
-    _CALL(f_byte_mul_byte_16.adrr);
-    AddCallerTo(f_byte_mul_byte_16);
-  end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
-    SetROBResultExpres_word(Opt);
-    _MOVWF(E.offs);  //p1 -> E
-    kMOVF(byte2, toW); //p2 -> W
-    _CALL(f_byte_mul_byte_16.adrr);
-    AddCallerTo(f_byte_mul_byte_16);
-  end;
-  stExpres_Expres:begin
-    SetROBResultExpres_word(Opt);
-    //la expresión p1 debe estar salvada y p2 en el acumulador
-    rVar := GetVarByteFromStk;
-    _MOVWF(E.offs);  //p2 -> E
-    kMOVF(rVar.adrByte0, toW); //p1 -> W
-    _CALL(f_byte_mul_byte_16.adrr);
-    FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
-    {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
-    variable) temporal, si se tuviera una rutina de multiplicación que compilara a
-    partir de la direccion de una variable (en este caso de la pila, que se puede
-    modificar), pero es un caso puntual, y podría no reutilizar el código apropiadamente.}
-    AddCallerTo(f_byte_mul_byte_16);
-  end;
-  else
-    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-  end;
+//  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+//    GenError('Too complex pointer expression.'); exit;
+//  end;
+//  if not ChangePointerToExpres(p1^) then exit;
+//  if not ChangePointerToExpres(p2^) then exit;
+//  case stoOperation of
+//  stConst_Const:begin  //producto de dos constantes. Caso especial
+//    if value1*value2 < $100 then begin
+//      SetROBResultConst_byte((value1*value2) and $FF);  //puede generar error
+//    end else begin
+//      SetROBResultConst_word((value1*value2) and $FFFF);  //puede generar error
+//    end;
+//    exit;  //sale aquí, porque es un caso particular
+//  end;
+//  stConst_Variab: begin
+//    if value1=0 then begin  //caso especial
+//      SetROBResultConst_byte(0);
+//      exit;
+//    end else if value1=1 then begin  //caso especial
+//      SetROBResultVariab(p2^.rVar);
+//      exit;
+//    end else if value1=2 then begin
+//      SetROBResultExpres_word(Opt);
+//      _CLRF(H.offs);
+//      _BCF(_STATUS, _C);
+//      kRLF(byte2, toW);
+//      _RLF(H.offs, toF);
+//      exit;
+//    end;
+//    SetROBResultExpres_word(Opt);
+//    kMOVF(byte2, toW);
+//    _MOVWF(E.offs);
+//    _JSR(f_byte_mul_byte_16.adrr);
+//    AddCallerTo(f_byte_mul_byte_16);
+//  end;
+//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
+//    SetROBResultExpres_word(opt);
+//    kMOVWF(E);
+//    _JSR(f_byte_mul_byte_16.adrr);
+//    AddCallerTo(f_byte_mul_byte_16);
+//  end;
+//  stVariab_Const: begin
+//    SetROBResultExpres_word(opt);
+//    kMOVF(byte1, toW);
+//    _MOVWF(E.offs);
+//    _JSR(f_byte_mul_byte_16.adrr);
+//    AddCallerTo(f_byte_mul_byte_16);
+//  end;
+//  stVariab_Variab:begin
+//    SetROBResultExpres_word(Opt);
+//    kMOVF(byte1, toW);
+//    _MOVWF(E.offs);
+//    kMOVF(byte2, toW);
+//    _JSR(f_byte_mul_byte_16.adrr);
+//    AddCallerTo(f_byte_mul_byte_16);
+//  end;
+//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
+//    SetROBResultExpres_word(Opt);
+//    _MOVWF(E.offs);  //p2 -> E
+//    kMOVF(byte1, toW); //p1 -> W
+//    _JSR(f_byte_mul_byte_16.adrr);
+//    AddCallerTo(f_byte_mul_byte_16);
+//  end;
+//  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
+//    SetROBResultExpres_word(Opt);
+//    _MOVWF(E.offs);  //p1 -> E
+//    _JSR(f_byte_mul_byte_16.adrr);
+//    AddCallerTo(f_byte_mul_byte_16);
+//  end;
+//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
+//    SetROBResultExpres_word(Opt);
+//    _MOVWF(E.offs);  //p1 -> E
+//    kMOVF(byte2, toW); //p2 -> W
+//    _JSR(f_byte_mul_byte_16.adrr);
+//    AddCallerTo(f_byte_mul_byte_16);
+//  end;
+//  stExpres_Expres:begin
+//    SetROBResultExpres_word(Opt);
+//    //la expresión p1 debe estar salvada y p2 en el acumulador
+//    rVar := GetVarByteFromStk;
+//    _MOVWF(E.offs);  //p2 -> E
+//    kMOVF(rVar.adrByte0, toW); //p1 -> W
+//    _JSR(f_byte_mul_byte_16.adrr);
+//    FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
+//    {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
+//    variable) temporal, si se tuviera una rutina de multiplicación que compilara a
+//    partir de la direccion de una variable (en este caso de la pila, que se puede
+//    modificar), pero es un caso puntual, y podría no reutilizar el código apropiadamente.}
+//    AddCallerTo(f_byte_mul_byte_16);
+//  end;
+//  else
+//    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+//  end;
 end;
 procedure TGenCod.ROB_byte_mul_word(Opt: TxpOperation; SetRes: boolean);
 begin
@@ -813,14 +813,14 @@ begin
 //    _MOVF(p2^.offs, toW);
 //    _MOVWF(E.offs);
 //    kMOVLW(value1);
-//    _CALL(f_byte_mul_byte_16.adrr);
+//    _JSR(f_byte_mul_byte_16.adrr);
 //    AddCallerTo(f_byte_mul_byte_16);
 //  end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
 //    SetROBResultExpres_word(opt);
 //    _MOVWF(E.offs);
 //    kMOVLW(value1);
-//    _CALL(f_byte_mul_byte_16.adrr);
+//    _JSR(f_byte_mul_byte_16.adrr);
 //    AddCallerTo(f_byte_mul_byte_16);
 //  end;
 //  stVariab_Const: begin
@@ -828,7 +828,7 @@ begin
 //    _MOVF(p1^.offs, toW);
 //    _MOVWF(E.offs);
 //    kMOVLW(value2);
-//    _CALL(f_byte_mul_byte_16.adrr);
+//    _JSR(f_byte_mul_byte_16.adrr);
 //    AddCallerTo(f_byte_mul_byte_16);
 //  end;
 //  stVariab_Variab:begin
@@ -836,28 +836,28 @@ begin
 //    _MOVF(p1^.offs, toW);
 //    _MOVWF(E.offs);
 //    _MOVF(p2^.offs, toW);
-//    _CALL(f_byte_mul_byte_16.adrr);
+//    _JSR(f_byte_mul_byte_16.adrr);
 //    AddCallerTo(f_byte_mul_byte_16);
 //  end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
 //    SetROBResultExpres_word(Opt);
 //    _MOVWF(E.offs);  //p2 -> E
 //    _MOVF(p1^.offs, toW); //p1 -> W
-//    _CALL(f_byte_mul_byte_16.adrr);
+//    _JSR(f_byte_mul_byte_16.adrr);
 //    AddCallerTo(f_byte_mul_byte_16);
 //  end;
 //  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
 //    SetROBResultExpres_word(Opt);
 //    _MOVWF(E.offs);  //p1 -> E
 //    kMOVLW(value2); //p2 -> W
-//    _CALL(f_byte_mul_byte_16.adrr);
+//    _JSR(f_byte_mul_byte_16.adrr);
 //    AddCallerTo(f_byte_mul_byte_16);
 //  end;
 //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
 //    SetROBResultExpres_word(Opt);
 //    _MOVWF(E.offs);  //p1 -> E
 //    _MOVF(p2^.offs, toW); //p2 -> W
-//    _CALL(f_byte_mul_byte_16.adrr);
+//    _JSR(f_byte_mul_byte_16.adrr);
 //    AddCallerTo(f_byte_mul_byte_16);
 //  end;
 //  stExpres_Expres:begin
@@ -866,7 +866,7 @@ begin
 //    rVar := GetVarByteFromStk;
 //    _MOVWF(E.offs);  //p2 -> E
 //    _MOVF(rVar.adrByte0.offs, toW); //p1 -> W
-//    _CALL(f_byte_mul_byte_16.adrr);
+//    _JSR(f_byte_mul_byte_16.adrr);
 //    FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
 //    {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
 //    variable) temporal, si se tuviera una rutina de multiplicación que compilara a
@@ -886,28 +886,28 @@ var
   Arit_DivideBit8: Word;
   aux, aux2: TPicRegister;
 begin
-    typDWord.DefineRegister;   //Asegura que exista W,H,E,U
-    aux := GetAuxRegisterByte;  //Pide registro auxiliar
-//    aux2 := GetAuxRegisterByte;  //Pide registro auxiliar
-    aux2 := FSR;   //utiliza FSR como registro auxiliar
-    _MOVWF (aux.offs);
-    _clrf   (E.offs);        //En principio el resultado es cero.
-    _clrf   (U.offs);
-    _movwf  (aux2.offs);
-Arit_DivideBit8 := _PC;
-    _rlf    (H.offs,toF);
-    _rlf    (U.offs,toF);    // (U.offs) contiene el dividendo parcial.
-    _movf   (aux.offs,toW);
-    _subwf  (U.offs,toW);    //Compara dividendo parcial y divisor.
-    _btfsc  (_STATUS,_C);     //Si (dividendo parcial)>(divisor)
-    _movwf  (U.offs);        //(dividendo parcial) - (divisor) --> (dividendo parcial)
-    _rlf    (E.offs,toF);    //Desplaza el cociente introduciendo el bit apropiado.
-    _decfsz (aux2.offs,toF);
-    _goto   (Arit_DivideBit8);
-    _movf   (E.offs,toW);    //Devuelve también en (W)
-    _RETURN;
-//    aux2.used := false;
-    aux.used := false;
+//    typDWord.DefineRegister;   //Asegura que exista W,H,E,U
+//    aux := GetAuxRegisterByte;  //Pide registro auxiliar
+////    aux2 := GetAuxRegisterByte;  //Pide registro auxiliar
+//    aux2 := FSR;   //utiliza FSR como registro auxiliar
+//    _MOVWF (aux.offs);
+//    _clrf   (E.offs);        //En principio el resultado es cero.
+//    _clrf   (U.offs);
+//    _movwf  (aux2.offs);
+//Arit_DivideBit8 := _PC;
+//    _rlf    (H.offs,toF);
+//    _rlf    (U.offs,toF);    // (U.offs) contiene el dividendo parcial.
+//    _movf   (aux.offs,toW);
+//    _subwf  (U.offs,toW);    //Compara dividendo parcial y divisor.
+//    _btfsc  (_STATUS,_C);     //Si (dividendo parcial)>(divisor)
+//    _movwf  (U.offs);        //(dividendo parcial) - (divisor) --> (dividendo parcial)
+//    _rlf    (E.offs,toF);    //Desplaza el cociente introduciendo el bit apropiado.
+//    _decfsz (aux2.offs,toF);
+//    _JMP   (Arit_DivideBit8);
+//    _movf   (E.offs,toW);    //Devuelve también en (W)
+//    _RTS;
+////    aux2.used := false;
+//    aux.used := false;
 end;
 procedure TGenCod.ROB_byte_div_byte(Opt: TxpOperation; SetRes: boolean);
 var
@@ -935,7 +935,7 @@ begin
     SetROBResultExpres_byte(Opt);
     _MOVWF(H.offs);
     kMOVF(byte2, toW);
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     AddCallerTo(f_byte_div_byte);
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
@@ -949,7 +949,7 @@ begin
     _MOVWF(H.offs);  //dividendo
 
     _MOVF(E.offs, toW);  //divisor
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     AddCallerTo(f_byte_div_byte);
   end;
   stVariab_Const: begin
@@ -960,7 +960,7 @@ begin
     SetROBResultExpres_byte(Opt);
     kMOVF(byte1, toW);
     _MOVWF(H.offs);
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     AddCallerTo(f_byte_div_byte);
   end;
   stVariab_Variab:begin
@@ -968,7 +968,7 @@ begin
     kMOVF(byte1, toW);
     _MOVWF(H.offs);
     kMOVF(byte2, toW);
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     AddCallerTo(f_byte_div_byte);
   end;
   stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
@@ -980,7 +980,7 @@ begin
     _MOVWF(H.offs);  //dividendo
 
     _MOVF(E.offs, toW);  //divisor
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     AddCallerTo(f_byte_div_byte);
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
@@ -990,14 +990,14 @@ begin
     end;
     SetROBResultExpres_byte(Opt);
     _MOVWF(H.offs);  //p1 -> H
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     AddCallerTo(f_byte_div_byte);
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);
     _MOVWF(H.offs);  //p1 -> H
     kMOVF(byte2, toW); //p2 -> W
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     AddCallerTo(f_byte_div_byte);
   end;
   stExpres_Expres:begin
@@ -1012,7 +1012,7 @@ begin
     //divisor -> W
     _MOVF(E.offs, toW);  //p2 -> E
 
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
     {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
     variable) temporal, si se tuviera una rutina de multiplicación que compilara a
@@ -1050,7 +1050,7 @@ begin
     SetROBResultExpres_byte(Opt);
     kMOVWF(H);
     kMOVF(byte2, toW);
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     //¿Y el banco de salida?
     kMOVF(U, toW);  //Resultado en W
     AddCallerTo(f_byte_div_byte);
@@ -1065,7 +1065,7 @@ begin
     kMOVWF(H);  //dividendo
 
     kMOVF(E, toW);  //divisor
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     kMOVF(U, toW);  //Resultado en W
     AddCallerTo(f_byte_div_byte);
   end;
@@ -1077,7 +1077,7 @@ begin
     SetROBResultExpres_byte(Opt);
     kMOVF(byte1, toW);
     kMOVWF(H);
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     kMOVF(U, toW);  //Resultado en W
     AddCallerTo(f_byte_div_byte);
   end;
@@ -1086,7 +1086,7 @@ begin
     kMOVF(byte1, toW);
     kMOVWF(H);
     kMOVF(byte2, toW);
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     kMOVF(U, toW);  //Resultado en W
     AddCallerTo(f_byte_div_byte);
   end;
@@ -1099,7 +1099,7 @@ begin
     kMOVWF(H);  //dividendo
 
     kMOVF(E, toW);  //divisor
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     kMOVF(U, toW);  //Resultado en W
     AddCallerTo(f_byte_div_byte);
   end;
@@ -1110,7 +1110,7 @@ begin
     end;
     SetROBResultExpres_byte(Opt);
     kMOVWF(H);  //p1 -> H
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     kMOVF(U, toW);  //Resultado en W
     AddCallerTo(f_byte_div_byte);
   end;
@@ -1118,7 +1118,7 @@ begin
     SetROBResultExpres_byte(Opt);
     kMOVWF(H);  //p1 -> H
     kMOVF(byte2, toW); //p2 -> W
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     kMOVF(U, toW);  //Resultado en W
     AddCallerTo(f_byte_div_byte);
   end;
@@ -1133,7 +1133,7 @@ begin
     kMOVWF(H);  //dividendo
     //divisor -> W
     kMOVF(E, toW);  //p2 -> E
-    _CALL(f_byte_div_byte.adrr);
+    _JSR(f_byte_div_byte.adrr);
     kMOVF(U, toW);  //Resultado en W
     FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
     {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
@@ -1289,10 +1289,10 @@ begin
 loop1 := _PC;
   _ADDLW(255);  //W=W-1  (no hay instrucción DECW)
   _BTFSC(Z.offs, Z.bit);
-  _GOTO_PEND(dg);     //Dio, cero, termina
+  _JMP_lbl(dg);     //Dio, cero, termina
   //Desplaza
   if toRight then kSHIFTR(target, toF) else kSHIFTL(target, toF);
-  _GOTO(loop1);
+  _JMP(loop1);
   //Terminó el lazo
   pic.codGotoAt(dg, _PC);   //termina de codificar el salto
 end;
@@ -1654,64 +1654,24 @@ end;
 ///////////// Funciones del sistema
 procedure TGenCod.codif_1mseg;
 //Codifica rutina de retardo de 1mseg.
+var
+  nCyc1m: word;
+  i: Integer;
 begin
   PutFwdComm(';1 msec routine.');
-  if _CLOCK = 1000000 then begin
-    _ADDLW(255);  //lazo de 4 ciclos
-    _BTFSS(_STATUS,_Z);
-    _GOTO(_PC-2); PutComm(';fin rutina 1 mseg a 1MHz.');
-  end else if _CLOCK = 2000000 then begin
-    _ADDLW(255);  //lazo de 4 ciclos
-    _BTFSS(_STATUS,_Z);
-    _GOTO(_PC-2); PutComm(';fin rutina 1 mseg a 2MHz.');
-  end else if _CLOCK = 4000000 then begin
-    //rtuina básica para 4MHz
-    _ADDLW(255);  //lazo de 4 ciclos
-    _BTFSS(_STATUS,_Z);
-    _GOTO(_PC-2); PutComm(';fin rutina 1 mseg a 4MHz.');
-  end else if _CLOCK = 8000000 then begin
-    _ADDLW(255);   //lazo de 8 ciclos
-    _GOTO(_PC+1);  //introduce 4 ciclos más de retardo
-    _GOTO(_PC+1);
-    _BTFSS(_STATUS,_Z);
-    _GOTO(_PC-4); PutComm(';fin rutina 1 mseg a 8Mhz.');
-  end else if _CLOCK = 10000000 then begin
-    _ADDLW(255);   //lazo de 10 ciclos
-    _GOTO(_PC+1);  //introduce 6 ciclos más de retardo
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _BTFSS(_STATUS,_Z);
-    _GOTO(_PC-5); PutComm(';fin rutina 1 mseg a 10MHz.');
-  end else if _CLOCK = 12000000 then begin
-    _ADDLW(255);   //lazo de 12 ciclos
-    _GOTO(_PC+1);  //introduce 8 ciclos más de retardo
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _BTFSS(_STATUS,_Z);
-    _GOTO(_PC-6); PutComm(';fin rutina 1 mseg a 12MHz.');
-  end else if _CLOCK = 16000000 then begin
-    _ADDLW(255);   //lazo de 16 ciclos
-    _GOTO(_PC+1);  //introduce 12 ciclos más de retardo
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _BTFSS(_STATUS,_Z);
-    _GOTO(_PC-8); PutComm(';fin rutina 1 mseg a 12MHz.');
-  end else if _CLOCK = 20000000 then begin
-    _ADDLW(255);   //lazo de 20 ciclos
-    _GOTO(_PC+1);  //introduce 16 ciclos más de retardo
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _GOTO(_PC+1);
-    _BTFSS(_STATUS,_Z);
-    _GOTO(_PC-10); PutComm(';fin rutina 1 mseg a 12MHz.');
+  nCyc1m := round(_CLOCK/1000);  //Número de ciclos necesarios para 1 mseg
+  if nCyc1m < 10 then begin
+    //Tiempo muy pequeño, se genera con NOP
+    for i:=1 to nCyc1m div 2 do begin
+      _NOP;
+    end;
+  end else if nCyc1m < 1275 then begin
+    //Se puede lograr con bucles de 5 ciclos
+    //Lazo de 5 ciclos por vuelta
+    _LDXi(nCyc1m div 5);  //2 cycles
+  //delay:
+    _DEX;       //2 cycles (1 byte)
+    _BNE(-3);   //3 cycles in loop, 2 cycles at end (2 bytes)
   end else begin
     GenError('Clock frequency %d not supported for delay_ms().', [_CLOCK]);
   end;
@@ -1720,32 +1680,37 @@ procedure TGenCod.codif_delay_ms(fun: TxpEleFun);
 //Codifica rutina de retardo en milisegundos
 var
   delay: Word;
-  aux: TPicRegister;
+  LABEL1, ZERO: integer;
 begin
   StartCodeSub(fun);  //inicia codificación
 //  PutLabel('__delay_ms');
   PutTopComm('    ;delay routine.');
   typWord.DefineRegister;   //Se asegura de que se exista y lo marca como "usado".
   //aux := GetAuxRegisterByte;  //Pide un registro libre
-  aux := FSR;  //Usa el FSR como registro auxiliar
   if HayError then exit;
-  {Esta rutina recibe los milisegundos en los registros en (H,w) o en (w)
+  fun.adrr := pic.iRam;  {Se hace justo antes de generar código por si se crea
+                          la variable _H}
+  {Esta rutina recibe los milisegundos en los registros en (H,A) o en (A)
   En cualquier caso, siempre usa el registros H , el acumulador "w" y un reg. auxiliar.
   Se supone que para pasar los parámetros, ya se requirió H, así que no es necesario
   crearlo.}
-  _CLRF(H.offs);   PutComm(' ;enter when parameters in (0,w)');
-  _MOVWF(aux.offs); PutComm(';enter when parameters in (H,w)');
-  _INCF(H.offs,toF);
-  _INCF(aux.offs,toF);  //corrección
+  _LDAi(0);     PutComm(' ;enter when parameters in (0,A)');
+  _STA(H.offs);
+  _TAY; PutComm(';enter when parameters in (H,A)');
+  //Se tiene el número en H,Y
 delay:= _PC;
-  _DECFSZ(aux.offs, toF);
-  _GOTO(_PC+2);
-  _DECFSZ(H.offs, toF);
-  _GOTO(_PC+2);
-  _RETURN();
+  _TYA;
+  _BNE_lbl(LABEL1);  //label
+  _LDA(H.offs);
+  _BEQ_lbl(ZERO); //NUM = $0000 (not decremented in that case)
+  _DEC(H.offs);
+_LABEL(LABEL1);
+  _DEY;
   codif_1mseg;   //codifica retardo 1 mseg
   if HayError then exit;
-  _GOTO(delay);
+  _JMP(delay);
+_LABEL(ZERO);
+  _RTS();
   EndCodeSub;  //termina codificación
   //aux.used := false;  //libera registro
 end;
@@ -1759,10 +1724,10 @@ begin
   if HayError then exit;
   if res.Typ = typByte then begin
     //El parámetro byte, debe estar en W
-    _CALL(fun.adrr);
+    _JSR(fun.adrr);
   end else if res.Typ = typWord then begin
     //El parámetro word, debe estar en (H, W)
-    _CALL(fun.adrr+1);
+    _JSR(fun.adrr+1);
   end else begin
     GenError(MSG_INVAL_PARTYP, [res.Typ.name]);
     exit;
@@ -1797,7 +1762,7 @@ begin
     curFunTyp := curFun.typ;
     if curFunTyp = typNull then begin
       //No retorna valores. Es solo procedimiento
-      _RETURN;
+      _RTS;
       //No hay nada, más que hacer
     end else begin
       //Se espera el valor devuelto
@@ -1811,7 +1776,7 @@ begin
         GenError('Expected a "%s" expression.', [curFunTyp.name]);
         exit;
       end;
-      LoadToRT(res, true);  //Carga expresión en RT y genera i_RETURN o i_RETLW
+      LoadToRT(res);  //Carga expresión en RT y genera i_RETURN o i_RETLW
     end;
   end else begin
     //Faltaría implementar en cuerpo de TxpEleUni
@@ -2098,69 +2063,69 @@ procedure TGenCod.fun_Word(fun: TxpEleFun);
 var
   tmpVar: TxpEleVar;
 begin
-  if not CaptureTok('(') then exit;
-  res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
-  if HayError then exit;   //aborta
-  case res.Sto of  //el parámetro debe estar en "res"
-  stConst : begin
-    if res.Typ = typByte then begin
-      res.SetAsConst(typWord);  //solo cambia el tipo
-    end else if res.Typ = typChar then begin
-      res.SetAsConst(typWord);  //solo cambia el tipo
-    end else if res.Typ = typWord then begin
-      //ya es Word
-    end else if res.Typ = typDWord then begin
-      res.SetAsConst(typWord);
-      res.valInt := res.valInt and $FFFF;
-    end else begin
-      GenError('Cannot convert this constant to word.'); exit;
-    end;
-  end;
-  stVariab: begin
-    typWord.DefineRegister;
-    if res.Typ = typByte then begin
-      SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
-      _CLRF(H.offs);
-      _MOVF(res.offs, toW);
-    end else if res.Typ = typChar then begin
-      SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
-      _CLRF(H.offs);
-      _MOVF(res.offs, toW);
-    end else if res.Typ = typWord then begin
-      //ya es Word
-    end else if res.Typ = typDWord then begin
-      //Crea varaible que apunte al word bajo
-      tmpVar := CreateTmpVar('', typWord);   //crea variable temporal Word
-      tmpVar.addr0 := res.rVar.addr0; //apunta al byte L
-      tmpVar.addr1 := res.rVar.addr1; //apunta al byte H
-      SetResultVariab(tmpVar);
-    end else begin
-      GenError('Cannot convert this variable to word.'); exit;
-    end;
-  end;
-  stExpres: begin  //se asume que ya está en (w)
-    typWord.DefineRegister;
-    if res.Typ = typByte then begin
-      res.SetAsExpres(typWord);
-      //Ya está en W el byte bajo
-      _CLRF(H.offs);
-    end else if res.Typ = typChar then begin
-      res.SetAsExpres(typWord);
-      //Ya está en W el byte bajo
-      _CLRF(H.offs);
-    end else if res.Typ = typWord then begin
-//      Ya es word
-    end else if res.Typ = typDWord then begin
-      res.SetAsExpres(typWord);
-      //Ya está en H,W el word bajo
-    end else begin
-      GenError('Cannot convert expression to word.'); exit;
-    end;
-  end;
-  else
-    genError('Not implemented "%s" for this operand.', [fun.name]);
-  end;
-  if not CaptureTok(')') then exit;
+//  if not CaptureTok('(') then exit;
+//  res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
+//  if HayError then exit;   //aborta
+//  case res.Sto of  //el parámetro debe estar en "res"
+//  stConst : begin
+//    if res.Typ = typByte then begin
+//      res.SetAsConst(typWord);  //solo cambia el tipo
+//    end else if res.Typ = typChar then begin
+//      res.SetAsConst(typWord);  //solo cambia el tipo
+//    end else if res.Typ = typWord then begin
+//      //ya es Word
+//    end else if res.Typ = typDWord then begin
+//      res.SetAsConst(typWord);
+//      res.valInt := res.valInt and $FFFF;
+//    end else begin
+//      GenError('Cannot convert this constant to word.'); exit;
+//    end;
+//  end;
+//  stVariab: begin
+//    typWord.DefineRegister;
+//    if res.Typ = typByte then begin
+//      SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
+//      _CLRF(H.offs);
+//      _MOVF(res.offs, toW);
+//    end else if res.Typ = typChar then begin
+//      SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
+//      _CLRF(H.offs);
+//      _MOVF(res.offs, toW);
+//    end else if res.Typ = typWord then begin
+//      //ya es Word
+//    end else if res.Typ = typDWord then begin
+//      //Crea varaible que apunte al word bajo
+//      tmpVar := CreateTmpVar('', typWord);   //crea variable temporal Word
+//      tmpVar.addr0 := res.rVar.addr0; //apunta al byte L
+//      tmpVar.addr1 := res.rVar.addr1; //apunta al byte H
+//      SetResultVariab(tmpVar);
+//    end else begin
+//      GenError('Cannot convert this variable to word.'); exit;
+//    end;
+//  end;
+//  stExpres: begin  //se asume que ya está en (w)
+//    typWord.DefineRegister;
+//    if res.Typ = typByte then begin
+//      res.SetAsExpres(typWord);
+//      //Ya está en W el byte bajo
+//      _CLRF(H.offs);
+//    end else if res.Typ = typChar then begin
+//      res.SetAsExpres(typWord);
+//      //Ya está en W el byte bajo
+//      _CLRF(H.offs);
+//    end else if res.Typ = typWord then begin
+////      Ya es word
+//    end else if res.Typ = typDWord then begin
+//      res.SetAsExpres(typWord);
+//      //Ya está en H,W el word bajo
+//    end else begin
+//      GenError('Cannot convert expression to word.'); exit;
+//    end;
+//  end;
+//  else
+//    genError('Not implemented "%s" for this operand.', [fun.name]);
+//  end;
+//  if not CaptureTok(')') then exit;
 end;
 procedure TGenCod.StartSyntax;
 //Se ejecuta solo una vez al inicio

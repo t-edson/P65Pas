@@ -94,7 +94,7 @@ type  //tipos enumerados
   TProcDefineVar = procedure(const varName, varInitVal: string) of object;
   {Evento para cargar un  operando en la pila.
   "OpPtr" debería ser "TOperand", pero aún no se define "TOperand".}
-  TProcLoadOperand = procedure(const OpPtr: pointer; modReturn: boolean) of object;
+  TProcLoadOperand = procedure(const OpPtr: pointer) of object;
 
   TxpOperatorKind = (
     opkUnaryPre,   //operador Unario Pre
@@ -127,14 +127,14 @@ type
    para un fin particular)}
   TPicRegister = class
   private
-    function Getoffs: byte;
+    function Getoffs: word;
   public
-    addr   : word;      //Dirección absoluta: $000 a $FFFF
+    addr    : word;      //Dirección absoluta: $000 a $FFFF
     assigned: boolean;  //indica si tiene una dirección física asignada
-    used   : boolean;   //Indica si está usado.
-    typ    : TPicRegType; //Tipo de registro
+    used    : boolean;   //Indica si está usado.
+    typ     : TPicRegType; //Tipo de registro
   public
-    property offs: byte read Getoffs;   //Desplazamiento en memoria
+    property offs: word read Getoffs;   //Desplazamiento en memoria
     procedure Assign(srcReg: TPicRegister);
   end;
   TPicRegister_list = specialize TFPGObjectList<TPicRegister>; //lista de registros
@@ -171,7 +171,7 @@ type
 implementation
 
 { TPicRegister }
-function TPicRegister.Getoffs: byte;
+function TPicRegister.Getoffs: word;
 begin
   Result := addr;  //devuelve dirección
 end;

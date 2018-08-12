@@ -369,57 +369,57 @@ begin
       GenError(MSG_UNSUPPORTED); exit;
     end;
   end else if p1^.Sto = stVarRefVar then begin
-    //Asignación a una variable
-    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
-    case p2^.Sto of
-    stConst : begin
-      //Caso especial de asignación a puntero derefrrenciado: variable^
-      kMOVF(byte1, toW);
-      kMOVWF(FSR);  //direcciona byte bajo
-      //Asignación normal
-      if value2L=0 then begin
-        //caso especial
-        _CLRF(0);
-      end else begin
-        _MOVWF(0);
-      end;
-      _INCF(FSR.offs, toF);  //direcciona byte alto
-      if value2H=0 then begin
-        //caso especial
-        _CLRF(0);
-      end else begin
-        _MOVWF(0);
-      end;
-    end;
-    stVariab: begin
-      //Caso especial de asignación a puntero dereferenciado: variable^
-      kMOVF(byte1, toW);
-      kMOVWF(FSR);  //direcciona byte bajo
-      //Asignación normal
-      kMOVF(byte2L, toW);
-      _MOVWF(0);
-      _INCF(FSR.offs, toF);  //direcciona byte alto
-      kMOVF(byte2H, toW);
-      _MOVWF(0);
-    end;
-    stExpres: begin  //ya está en H,w
-      //Caso especial de asignación a puntero dereferenciado: variable^
-      aux := GetAuxRegisterByte;
-      _MOVWF(aux.offs);   //Salva W (p2.L)
-      //Apunta con p1
-      kMOVF(byte1, toW);
-      _MOVWF(FSR.offs);  //direcciona a byte bajo
-      //Asignación normal
-      _MOVF(aux.offs, toW);   //recupero p2.L
-      _MOVWF(0);          //escribe
-      _MOVF(H.offs, toW);   //recupero p2.H
-      _INCF(FSR.offs, toF);   //apunta a byte alto
-      _MOVWF(0);          //escribe
-      aux.used := false;
-    end;
-    else
-      GenError(MSG_UNSUPPORTED); exit;
-    end;
+//    //Asignación a una variable
+//    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+//    case p2^.Sto of
+//    stConst : begin
+//      //Caso especial de asignación a puntero derefrrenciado: variable^
+//      kMOVF(byte1, toW);
+//      kMOVWF(FSR);  //direcciona byte bajo
+//      //Asignación normal
+//      if value2L=0 then begin
+//        //caso especial
+//        _CLRF(0);
+//      end else begin
+//        _MOVWF(0);
+//      end;
+//      _INCF(FSR.offs, toF);  //direcciona byte alto
+//      if value2H=0 then begin
+//        //caso especial
+//        _CLRF(0);
+//      end else begin
+//        _MOVWF(0);
+//      end;
+//    end;
+//    stVariab: begin
+//      //Caso especial de asignación a puntero dereferenciado: variable^
+//      kMOVF(byte1, toW);
+//      kMOVWF(FSR);  //direcciona byte bajo
+//      //Asignación normal
+//      kMOVF(byte2L, toW);
+//      _MOVWF(0);
+//      _INCF(FSR.offs, toF);  //direcciona byte alto
+//      kMOVF(byte2H, toW);
+//      _MOVWF(0);
+//    end;
+//    stExpres: begin  //ya está en H,w
+//      //Caso especial de asignación a puntero dereferenciado: variable^
+//      aux := GetAuxRegisterByte;
+//      _MOVWF(aux.offs);   //Salva W (p2.L)
+//      //Apunta con p1
+//      kMOVF(byte1, toW);
+//      _MOVWF(FSR.offs);  //direcciona a byte bajo
+//      //Asignación normal
+//      _MOVF(aux.offs, toW);   //recupero p2.L
+//      _MOVWF(0);          //escribe
+//      _MOVF(H.offs, toW);   //recupero p2.H
+//      _INCF(FSR.offs, toF);   //apunta a byte alto
+//      _MOVWF(0);          //escribe
+//      aux.used := false;
+//    end;
+//    else
+//      GenError(MSG_UNSUPPORTED); exit;
+//    end;
   end else begin
     GenError('Cannot assign to this Operand.'); exit;
   end;
@@ -477,25 +477,25 @@ begin
     if value1H = 0 then begin  //caso especial
       kMOVF(byte2H, toW); //p2-p1
       _BTFSS(Z.offs, Z.bit);
-      _GOTO_PEND(sale);  //no son iguales
+      _JMP_lbl(sale);  //no son iguales
     end else if value1H = 1 then begin  //caso especial
       kDECF(byte2H, toW); //p2-p1
       _BTFSS(Z.offs, Z.bit);
       {De no ser porque se tiene que devolver siempre, el valor de Z,
       las 2 instrucciones anteriores, se podrían reemplazar con un i_DECFSZ,
       pero i_DECFSZ, no actualiza Z}
-      _GOTO_PEND(sale);  //no son iguales
+      _JMP_lbl(sale);  //no son iguales
     end else if value1H = 255 then begin  //caso especial
       kINCF(byte2H, toW); //p2-p1
       _BTFSS(Z.offs, Z.bit);
       {De no ser porque se tiene que devolver siempre, el valor de Z,
       las 2 instrucciones anteriores, se podrían reemplazar con un i_DECFSZ,
       pero i_DECFSZ, no actualiza Z}
-      _GOTO_PEND(sale);  //no son iguales
+      _JMP_lbl(sale);  //no son iguales
     end else begin  //caso general
       kSUBWF(byte2H, toW); //p2-p1
       _BTFSS(Z.offs, Z.bit);
-      _GOTO_PEND(sale);  //no son iguales
+      _JMP_lbl(sale);  //no son iguales
     end;
     //////////  Son iguales, comparar el byte bajo
     if value1L = 0 then begin  //caso especial
@@ -520,7 +520,7 @@ begin
     //Compara byte alto
     _SUBWF(H.offs, toW); //p2-p1
     _BTFSS(Z.offs, Z.bit);
-    _GOTO_PEND(sale);  //no son iguales
+    _JMP_lbl(sale);  //no son iguales
     //Son iguales, comparar el byte bajo
     _SUBWF(tmp.offs,toW);	//p2-p1
 _LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
@@ -536,7 +536,7 @@ _LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
     kMOVF(byte1H, toW);
     kSUBWF(byte2H, toW); //p2-p1
     _BTFSS(Z.offs, Z.bit);
-    _GOTO_PEND(sale);  //no son iguales
+    _JMP_lbl(sale);  //no son iguales
     //Son iguales, comparar el byte bajo
     kMOVF(byte1L, toW);
     kSUBWF(byte2L,toW);	//p2-p1
@@ -550,7 +550,7 @@ _LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
     kMOVF(byte1H, toW);
     _SUBWF(H.offs, toW); //p2-p1
     _BTFSS(Z.offs, Z.bit);
-    _GOTO_PEND(sale);  //no son iguales
+    _JMP_lbl(sale);  //no son iguales
     //Son iguales, comparar el byte bajo
     kMOVF(byte1L, toW);
     _SUBWF(tmp.offs,toW);	//p2-p1
@@ -619,14 +619,14 @@ begin
  //    _MOVF(p2^.offs, toW);
  //    _MOVWF(E.offs);
  //    kMOVLW(value1);
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
  //    SetROBResultExpres_word(opt);
  //    _MOVWF(E.offs);
  //    kMOVLW(value1);
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stVariab_Const: begin
@@ -634,7 +634,7 @@ begin
  //    _MOVF(p1^.offs, toW);
  //    _MOVWF(E.offs);
  //    kMOVLW(value2);
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stVariab_Variab:begin
@@ -642,28 +642,28 @@ begin
  //    _MOVF(p1^.offs, toW);
  //    _MOVWF(E.offs);
  //    _MOVF(p2^.offs, toW);
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
  //    SetROBResultExpres_word(Opt);
  //    _MOVWF(E.offs);  //p2 -> E
  //    _MOVF(p1^.offs, toW); //p1 -> W
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
  //    SetROBResultExpres_word(Opt);
  //    _MOVWF(E.offs);  //p1 -> E
  //    kMOVLW(value2); //p2 -> W
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
  //    SetROBResultExpres_word(Opt);
  //    _MOVWF(E.offs);  //p1 -> E
  //    _MOVF(p2^.offs, toW); //p2 -> W
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stExpres_Expres:begin
@@ -672,7 +672,7 @@ begin
  //    rVar := GetVarByteFromStk;
  //    _MOVWF(E.offs);  //p2 -> E
  //    _MOVF(rVar.adrByte0.offs, toW); //p1 -> W
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
  //    {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
  //    variable) temporal, si se tuviera una rutina de multiplicación que compilara a
@@ -721,14 +721,14 @@ begin
  //    _MOVF(p2^.offs, toW);
  //    _MOVWF(E.offs);
  //    kMOVLW(value1);
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
  //    SetROBResultExpres_word(opt);
  //    _MOVWF(E.offs);
  //    kMOVLW(value1);
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stVariab_Const: begin
@@ -736,7 +736,7 @@ begin
  //    _MOVF(p1^.offs, toW);
  //    _MOVWF(E.offs);
  //    kMOVLW(value2);
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stVariab_Variab:begin
@@ -744,28 +744,28 @@ begin
  //    _MOVF(p1^.offs, toW);
  //    _MOVWF(E.offs);
  //    _MOVF(p2^.offs, toW);
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
  //    SetROBResultExpres_word(Opt);
  //    _MOVWF(E.offs);  //p2 -> E
  //    _MOVF(p1^.offs, toW); //p1 -> W
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
  //    SetROBResultExpres_word(Opt);
  //    _MOVWF(E.offs);  //p1 -> E
  //    kMOVLW(value2); //p2 -> W
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
  //    SetROBResultExpres_word(Opt);
  //    _MOVWF(E.offs);  //p1 -> E
  //    _MOVF(p2^.offs, toW); //p2 -> W
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    AddCallerTo(f_byte_mul_byte_16);
  //  end;
  //  stExpres_Expres:begin
@@ -774,7 +774,7 @@ begin
  //    rVar := GetVarByteFromStk;
  //    _MOVWF(E.offs);  //p2 -> E
  //    _MOVF(rVar.adrByte0.offs, toW); //p1 -> W
- //    _CALL(f_byte_mul_byte_16.adrr);
+ //    _JSR(f_byte_mul_byte_16.adrr);
  //    FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
  //    {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
  //    variable) temporal, si se tuviera una rutina de multiplicación que compilara a
@@ -798,13 +798,13 @@ begin
 //    _MOVF(p2^.offs, toW);
 //    _MOVWF(H.offs);
 //    kMOVLW(value1);
-//    _CALL(f_byteXbyte_byte.adrr);
+//    _JSR(f_byteXbyte_byte.adrr);
 //    if FirstPass then f_byteXbyte_byte.AddCaller;
 //  end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
 //    _MOVWF(H.offs);
 //    kMOVLW(value1);
-//    _CALL(f_byteXbyte_byte.adrr);
+//    _JSR(f_byteXbyte_byte.adrr);
 //    if FirstPass then f_byteXbyte_byte.AddCaller;
 //  end;
 //  stVariab_Const: begin
@@ -812,7 +812,7 @@ begin
 //    _MOVF(p1^.offs, toW);
 //    _MOVWF(H.offs);
 //    kMOVLW(value2);
-//    _CALL(f_byteXbyte_byte.adrr);
+//    _JSR(f_byteXbyte_byte.adrr);
 //    if FirstPass then f_byteXbyte_byte.AddCaller;
 //  end;
 //  stVariab_Variab:begin
@@ -820,25 +820,25 @@ begin
 //    _MOVF(p1^.offs, toW);
 //    _MOVWF(H.offs);
 //    _MOVF(p2^.offs, toW);
-//    _CALL(f_byteXbyte_byte.adrr);
+//    _JSR(f_byteXbyte_byte.adrr);
 //    if FirstPass then f_byteXbyte_byte.AddCaller;
 //  end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
 //    _MOVWF(H.offs);  //p2 -> H
 //    _MOVF(p1^.offs, toW); //p1 -> W
-//    _CALL(f_byteXbyte_byte.adrr);
+//    _JSR(f_byteXbyte_byte.adrr);
 //    if FirstPass then f_byteXbyte_byte.AddCaller;
 //  end;
 //  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
 //    _MOVWF(H.offs);  //p1 -> H
 //    kMOVLW(value2); //p2 -> W
-//    _CALL(f_byteXbyte_byte.adrr);
+//    _JSR(f_byteXbyte_byte.adrr);
 //    if FirstPass then f_byteXbyte_byte.AddCaller;
 //  end;
 //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
 //    _MOVWF(H.offs);  //p1 -> H
 //    _MOVF(p2^.offs, toW); //p2 -> W
-//    _CALL(f_byteXbyte_byte.adrr);
+//    _JSR(f_byteXbyte_byte.adrr);
 //    if FirstPass then f_byteXbyte_byte.AddCaller;
 //  end;
 //  stExpres_Expres:begin
@@ -847,7 +847,7 @@ begin
 //    FreeStkRegisterByte(r);   //libera pila porque se usará el dato ahí contenido
 //    _MOVWF(H.offs);  //p2 -> H
 //    _MOVF(r.offs, toW); //p1 -> W
-//    _CALL(f_byteXbyte_byte.adrr);
+//    _JSR(f_byteXbyte_byte.adrr);
 //    {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
 //    variable) temporal, si se tuviera una rutina de multiplicación que compilara a
 //    partir de la direccion de una variable (en este caso de la pila, que se puede

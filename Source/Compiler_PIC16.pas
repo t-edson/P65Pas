@@ -510,14 +510,14 @@ begin
   end;
   stVariab, stExpres:begin
     Cod_JumpIfTrue;
-    _GOTO_PEND(jFALSE);  //salto pendiente
+    _JMP_lbl(jFALSE);  //salto pendiente
     //Compila la parte THEN
     if not CompileConditionalBody then exit;
     //Verifica si sigue el ELSE
     if cIn.tokL = 'else' then begin
       //Es: IF ... THEN ... ELSE ... END
       cIn.Next;   //toma "else"
-      _GOTO_PEND(jEND_TRUE);  //llega por aquí si es TRUE
+      _JMP_lbl(jEND_TRUE);  //llega por aquí si es TRUE
       _LABEL(jFALSE);   //termina de codificar el salto
       if not CompileConditionalBody then exit;
       _LABEL(jEND_TRUE);   //termina de codificar el salto
@@ -525,7 +525,7 @@ begin
     end else if cIn.tokL = 'elsif' then begin
       //Es: IF ... THEN ... ELSIF ...
       cIn.Next;
-      _GOTO_PEND(jEND_TRUE);  //llega por aquí si es TRUE
+      _JMP_lbl(jEND_TRUE);  //llega por aquí si es TRUE
       _LABEL(jFALSE);   //termina de codificar el salto
       CompileIF;  //más fácil es la forma recursiva
       if HayError then exit;
@@ -590,12 +590,12 @@ begin
       //lazo nulo
     end else begin
       //lazo infinito
-      _GOTO(l1);
+      _JMP(l1);
     end;
   end;
   stVariab, stExpres: begin
     Cod_JumpIfTrue;
-    _GOTO(l1);
+    _JMP(l1);
     //sale cuando la condición es verdadera
   end;
   end;
@@ -616,7 +616,7 @@ begin
       //Lazo infinito
       if not CompileNoConditionBody(true) then exit;
       if not VerifyEND then exit;
-      _GOTO(l1);
+      _JMP(l1);
     end else begin
       //Lazo nulo. Compila sin generar código.
       if not CompileNoConditionBody(false) then exit;
@@ -625,9 +625,9 @@ begin
   end;
   stVariab, stExpres: begin
     Cod_JumpIfTrue;
-    _GOTO_PEND(dg);  //salto pendiente
+    _JMP_lbl(dg);  //salto pendiente
     if not CompileConditionalBody then exit;
-    _GOTO(l1);   //salta a evaluar la condición
+    _JMP(l1);   //salta a evaluar la condición
     if not VerifyEND then exit;
     //ya se tiene el destino del salto
     _LABEL(dg);   //termina de codificar el salto
@@ -684,7 +684,7 @@ begin
     Op2 := res;   //Copia porque la operación Oper() modificará res
     Oper(Op1, opr1, Op2);   //"res" mantiene la constante o variable
     Cod_JumpIfTrue;
-    _GOTO_PEND(dg);  //salto pendiente
+    _JMP_lbl(dg);  //salto pendiente
     if not CompileConditionalBody then exit;
     if not VerifyEND then exit;
     //Incrementa variable cursor
@@ -695,7 +695,7 @@ begin
       _BTFSC(_STATUS, _Z);
       _INCF(Op1.Hoffs, toF);
     end;
-    _GOTO(l1);  //repite el lazo
+    _JMP(l1);  //repite el lazo
     //ya se tiene el destino del salto
     _LABEL(dg);   //termina de codificar el salto
   end else begin
@@ -815,10 +815,10 @@ begin
         //No es necesario incluir el i_RETURN().
       end else begin
         //No hay un exit(), seguro
-        _RETURN();  //instrucción de salida
+        _RTS();  //instrucción de salida
       end;
     end else begin
-      _RETURN();  //instrucción de salida
+      _RTS();  //instrucción de salida
     end;
   end;
   EndCodeSub;  //termina codificación
@@ -2128,7 +2128,7 @@ begin
   until noUsed = noUsedPrev;
   //Inicio de generación de código.
   pic.iRam:= GeneralORG;  //inicia puntero a RAM
-  _GOTO_PEND(iniMain);   //Salto hasta después del espacio de variables
+  _JMP_lbl(iniMain);   //Salto hasta después del espacio de variables
   ///////////////////////////////////////////////////////////////////////////////
   //Asigna memoria, primero a las variables locales (y parámetros) de las funciones
   ///////////////////////////////////////////////////////////////////////////////
