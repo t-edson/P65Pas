@@ -29,25 +29,19 @@ When starting, P65Pas could generate warning messsages, if not needed folders ex
 
 ## Hello World
 
-As an example the following code, is to blink a LED on port B:
+As an example the following code can be tested in a Commodore64:
 
 ```
-{Sample program to blink a Led on PORTB.7}
-program BlinkLed;
-uses PIC16F84A;
-{$FREQUENCY 8MHZ}
+{Change thE back color of a Commodore 64 screen}
+program C64ChamgeBack;
 var
-  pin: byte;
-begin                          
-  TRISB := 0;   //all outputs
-  while true do 
-    delay_ms(1000);
-    pin := 1;
+  border: byte absolute 53280;
+begin
+  while true do
+    inc(border);
   end;
 end.
 ```
-
-The processor target is defined including the correspondent unit in the USES section. 
 
 The CPU clock is defined using the directive {$FREQUENCY } and must be after the USES section.
 
