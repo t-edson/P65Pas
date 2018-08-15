@@ -74,7 +74,6 @@ public  //Campos acceso cuando sea variable.
   function Hoffs: TVarOffs; inline; //dirección del byte alto
   function Eoffs: TVarOffs; inline; //dirección del byte alto
   function Uoffs: TVarOffs; inline; //dirección del byte alto
-  function bank : TVarBank; inline;  //banco
   function addr : TVarOffs; //dirección absoluta de la variable
   function bit : byte; inline;  //posición del bit
 public  //Campos de acceso a los valores constantes
@@ -1555,21 +1554,6 @@ end;
 function TOperand.Uoffs: TVarOffs;
 begin
   Result := rVar.adrByte3.offs;
-end;
-function TOperand.bank: TVarBank;
-{Banco, del operando. Se supone que si se pide el banoo es porque es stVariab, o también
-puede se el caso stVarRefVar. }
-begin
-  if FSto = stVarRefVar then begin
-    //Caso especial, de stVarRefVar
-//    if FVar = nil then
-//      Result := FVarOff.bank
-//    else
-      Result := FVar.bank;
-  end else begin
-    //Para todos los otros casos, esto debe funcionar, según la docuemntación.
-    Result := FVar.bank;
-  end;
 end;
 function TOperand.addr: TVarOffs;
 begin

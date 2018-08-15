@@ -2417,7 +2417,7 @@ begin
        RAMusage(lins, ExcUnused);
     end;
     lins.Add(';===Blocks of Code===');
-    pic.DumpCodeAsm(lins, incAdrr, incCom, incVarNam);
+    pic.DumpCodeAsm(lins, incAdrr, incAdrr, incCom, incVarNam);
     lins.Add(';--------------------');
     lins.Add('      END');
   end else begin

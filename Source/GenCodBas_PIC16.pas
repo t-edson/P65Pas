@@ -362,6 +362,7 @@ begin
     GenError(MSG_NO_ENOU_RAM);
     exit;
   end;
+  inc(pic.iRam);  //Pasa al siguiente byte.
   pic.SetNameRAM(addr, regName);  //pone nombre a registro
 end;
 function TGenCodBas.CreateRegisterByte(RegType: TPicRegType): TPicRegister;
@@ -594,7 +595,6 @@ begin
   if absAdd=-1 then begin
     //Caso normal, sin dirección absoluta.
     AssignRAM(addr, regName, shared);
-    inc(pic.iRam);  //Pasa al siguiente byte.
     //Puede salir con error
   end else begin
     //Se debe crear en una posición absoluta
@@ -990,7 +990,7 @@ begin
     //Es salto relativo
     if _PC > igot then begin
       //Salto hacia adelante
-      pic.ram[igot].value := _PC - igot;
+      pic.ram[igot].value := _PC - igot-1;
     end else begin
       //Salto hacia atrás
       pic.ram[igot].value := 256 + (_PC - igot);
@@ -1118,10 +1118,10 @@ begin
 end;
 procedure TGenCodBas._BEQ(const a: ShortInt);
 begin
-  if a>0 then begin
+  if a>=0 then begin
     pic.codAsm(i_BEQ, aRelative, a);
   end else begin
-    pic.codAsm(i_BEQ, aRelative, 256-a);
+    pic.codAsm(i_BEQ, aRelative, 256+a);
   end;
 end;
 procedure TGenCodBas._BEQ_lbl(out ibranch: integer);
@@ -1131,10 +1131,10 @@ begin
 end;
 procedure TGenCodBas._BNE(const a: ShortInt);
 begin
-  if a>0 then begin
+  if a>=0 then begin
     pic.codAsm(i_BNE, aRelative, a);
   end else begin
-    pic.codAsm(i_BNE, aRelative, 256-a);
+    pic.codAsm(i_BNE, aRelative, 256+a);
   end;
 end;
 procedure TGenCodBas._BNE_lbl(out ibranch: integer);
@@ -1144,10 +1144,10 @@ begin
 end;
 procedure TGenCodBas._BCC(const a: ShortInt);
 begin
-  if a>0 then begin
+  if a>=0 then begin
     pic.codAsm(i_BCC, aRelative, a);
   end else begin
-    pic.codAsm(i_BCC, aRelative, 256-a);
+    pic.codAsm(i_BCC, aRelative, 256+a);
   end;
 end;
 procedure TGenCodBas._DEX;

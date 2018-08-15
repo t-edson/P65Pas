@@ -353,7 +353,6 @@ type //Clases de elementos
     function adrByte2: TPicRegister;    //Dirección física, cuando es de tipo DWord
     function adrByte3: TPicRegister;    //Dirección física, cuando es de tipo DWord
     //Estos campos deberían desaparecer
-    function bank: TVarBank;   //Banco de la dirección de la variable
     function offs: TVarOffs;    //Dirección relativa de inicio
 
     function addr : word;   //Devuelve la dirección absoluta de la variable
@@ -928,16 +927,10 @@ begin
   Result := adrByteTmp;
 end;
 
-function TxpEleVar.bank: TVarBank;
-{Devuelve el banco de memoria en donde se ubica la variable actual. Asumiendo que toda
-la variables se ubica en el mismo banco.}
-begin
-  Result := addr0 >> 7;  //La variable siempre empieza en "addr0"
-end;
 function TxpEleVar.offs: TVarOffs;
 {Devuelve la dirección de inicio, en donde empieza a almacenarse la variable.}
 begin
-  Result := addr0 and $7F;  //La variable siempre empieza en "addr0"
+  Result := addr0;  //La variable siempre empieza en "addr0"
 end;
 procedure TxpEleVar.SetHavAdicPar(AValue: boolean);
 begin

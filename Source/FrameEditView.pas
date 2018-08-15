@@ -1080,7 +1080,7 @@ begin
       end;
       ed.LoadSyntaxFromFile(synFile);
       if Complete then begin
-        //Configura eventos de apertura para nombres de unidades.
+        //Se llama al evento para que CodeTools configura los eventos de apertura.
         if OnRequireSetCompletion<>nil then OnRequireSetCompletion(ed);
       end;
     end;
@@ -1345,8 +1345,8 @@ begin
     if OnRequireSynEditConfig<>nil then begin
       OnRequireSynEditConfig(editors[i].SynEdit);
     end;
-    //Actualiza resaltador
-    ConfigureSyntax(editors[i], false);
+    //Actualiza resaltador y Completado
+    ConfigureSyntax(editors[i]);
   end;
 end;
 procedure TfraEditView.UpdateSynEditCompletion;

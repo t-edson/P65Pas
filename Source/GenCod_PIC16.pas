@@ -1799,7 +1799,7 @@ begin
   end;
   stVariab: begin
     if (res.Typ = typByte) or (res.Typ = typChar) then begin
-      _INCF(res.offs, toF);
+      _INC(res.offs);
     end else if res.Typ = typWord then begin
       _INCF(res.Loffs, toF);
       _BTFSC(_STATUS, _Z);

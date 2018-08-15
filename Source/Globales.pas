@@ -8,7 +8,7 @@ uses  Classes, SysUtils, Forms, SynEdit, SynEditKeyCmds, MisUtils,
       lclType, FileUtil, LazLogger, Menus ;
 
 const
-  NOM_PROG = 'PicPas';   //nombre de programa
+  NOM_PROG = 'P65Pas';   //nombre de programa
   {$I ../version.txt}   //versión del programa
 
 var

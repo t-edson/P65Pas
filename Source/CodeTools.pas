@@ -369,7 +369,8 @@ begin
   ele := cxp.TreeElems.GetElementAt(curPos);
   if ele = nil then begin
     //No identifica la posición actual
-    exit;
+    Cancel := false;  //Deja que siga el filtrado, porque hay items agregados
+    exit;  //Sale porque no se reconcoe al elemento sintáctico actual
   end;
   cxp.TreeElems.curNode := ele;  //Se posiciona en ese nodo
   //Realiza la búsqueda con FindFirst, usando evento OnFindElement
@@ -378,7 +379,7 @@ begin
   cxp.TreeElems.FindFirst('#');  //Nunca lo va a encontrar pero va a explorar todo el árbol
   cxp.TreeElems.OnFindElement := nil;
 
-  //Deja el filtro
+  //Llenó los ítems y deja que se aplique el filtro para llenar Avails[]
   Cancel := false;
 end;
 procedure TCodeTool.OpenAfterDot1(opEve: TFaOpenEvent;
