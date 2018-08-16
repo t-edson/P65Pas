@@ -1541,19 +1541,19 @@ end;
 function TOperand.Loffs: TVarOffs;
 {Dirección de memoria baja, cuando es de tipo Word.}
 begin
-  Result := rVar.adrByte0.offs;
+  Result := rVar.adrByte0.addr;
 end;
 function TOperand.Hoffs: TVarOffs;
 begin
-  Result := rVar.adrByte1.offs;
+  Result := rVar.adrByte1.addr;
 end;
 function TOperand.Eoffs: TVarOffs;
 begin
-  Result := rVar.adrByte2.offs;
+  Result := rVar.adrByte2.addr;
 end;
 function TOperand.Uoffs: TVarOffs;
 begin
-  Result := rVar.adrByte3.offs;
+  Result := rVar.adrByte3.addr;
 end;
 function TOperand.addr: TVarOffs;
 begin

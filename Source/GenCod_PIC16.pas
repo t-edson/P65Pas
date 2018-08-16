@@ -53,7 +53,6 @@ type
       procedure callParam(fun: TxpEleFun);
       procedure callFunct(fun: TxpEleFun);
     private
-      procedure ROB_byte_mod_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_byte_mul_word(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_word_mul_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_word_mul_word(Opt: TxpOperation; SetRes: boolean);
@@ -64,9 +63,9 @@ type
       f_word_mul_word_16: TxpEleFun;  //índice para función
       procedure byte_div_byte(fun: TxpEleFun);
       procedure mul_byte_16(fun: TxpEleFun);
+      procedure Copy_Z_to_A;
       procedure Copy_C_to_A;
       procedure fun_Byte(fun: TxpEleFun);
-      procedure ROB_byte_div_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROU_addr_word(Opr: TxpOperator; SetRes: boolean);
       procedure ROU_not_byte(Opr: TxpOperator; SetRes: boolean);
@@ -89,7 +88,6 @@ type
       procedure ROB_byte_less_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_byte_gequ_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_byte_lequ_byte(Opt: TxpOperation; SetRes: boolean);
-      procedure CodifShift_by_W(target: TPicRegister; toRight: boolean);
       procedure ROB_byte_shr_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_byte_shl_byte(Opt: TxpOperation; SetRes: boolean);
     private  //Operaciones con Word
@@ -168,12 +166,20 @@ begin
   //Por ahora, no se implementa paginación, pero despuñes habría que considerarlo.
   _JSR(fun.adrr);  //codifica el salto
 end;
+procedure TGenCod.Copy_Z_to_A;
+begin
+  //El resultado está en Z y lo mueve a A
+  _LDA(0);
+  _BNE(_PC+2);
+  _LDA(1);
+  BooleanFromZ := true;  //Activa bandera para que se pueda optimizar
+end;
 procedure TGenCod.Copy_C_to_A;
 begin
   //El resultado está en C y lo mueve a A
-  _LDAi(0);
-  _BCC(_PC+1);
-  _LDAi(1);
+  _LDA(0);
+  _BCC(_PC+2);
+  _LDA(1);
   BooleanFromC := true;  //Activa bandera para que se pueda optimizar
 end;
 ////////////rutinas obligatorias
@@ -225,96 +231,96 @@ begin
     //Asignación a una variable
     case p2^.Sto of
     stConst : begin
-      _LDAi(value2);
-      _STA(byte1.addr);
+      _LDA(value2);
+      _STA(byte1);
     end;
     stVariab: begin
-      _LDA(byte2.addr);
-      _STA(byte1.addr);
+      _LDA(byte2);
+      _STA(byte1);
     end;
     stExpres: begin  //ya está en A
-      _STA(byte1.addr);
+      _STA(byte1);
     end;
     else
       GenError(MSG_UNSUPPORTED); exit;
     end;
   end else if p1^.Sto = stVarRefExp then begin
-    {Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
-    cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
-    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
-    case p2^.Sto of
-    stConst : begin
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      if value2=0 then begin
-        //caso especial
-        kCLRF(INDF);
-      end else begin
-        kMOVWF(INDF);
-      end;
-    end;
-    stVariab: begin
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(byte2, toW);
-      kMOVWF(INDF);
-    end;
-    stExpres: begin
-      //La dirección está en la pila y la expresión en W
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //Salva W (p2)
-      //Apunta con p1
-      rVar := GetVarByteFromStk;
-      kMOVF(rVar.adrByte0, toW);  //Opera directamente al dato que había en la pila. Deja en W
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(aux, toW);
-      kMOVWF(INDF);
-      aux.used := false;
-      exit;
-    end;
-    else
-      GenError(MSG_UNSUPPORTED); exit;
-    end;
+    //{Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
+    //cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
+    //SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+    //case p2^.Sto of
+    //stConst : begin
+    //  kMOVWF(FSR);  //direcciona
+    //  //Asignación normal
+    //  if value2=0 then begin
+    //    //caso especial
+    //    kCLRF(INDF);
+    //  end else begin
+    //    kMOVWF(INDF);
+    //  end;
+    //end;
+    //stVariab: begin
+    //  kMOVWF(FSR);  //direcciona
+    //  //Asignación normal
+    //  kMOVF(byte2, toW);
+    //  kMOVWF(INDF);
+    //end;
+    //stExpres: begin
+    //  //La dirección está en la pila y la expresión en W
+    //  aux := GetAuxRegisterByte;
+    //  kMOVWF(aux);   //Salva W (p2)
+    //  //Apunta con p1
+    //  rVar := GetVarByteFromStk;
+    //  kMOVF(rVar.adrByte0, toW);  //Opera directamente al dato que había en la pila. Deja en W
+    //  kMOVWF(FSR);  //direcciona
+    //  //Asignación normal
+    //  kMOVF(aux, toW);
+    //  kMOVWF(INDF);
+    //  aux.used := false;
+    //  exit;
+    //end;
+    //else
+    //  GenError(MSG_UNSUPPORTED); exit;
+    //end;
   end else if p1^.Sto = stVarRefVar then begin
-    //Asignación a una variable
-    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
-    case p2^.Sto of
-    stConst : begin
-      //Caso especial de asignación a puntero desreferenciado: variable^
-      kMOVF(byte1, toW);
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      if value2=0 then begin
-        //caso especial
-        kCLRF(INDF);
-      end else begin
-        kMOVWF(INDF);
-      end;
-    end;
-    stVariab: begin
-      //Caso especial de asignación a puntero derefrrenciado: variable^
-      kMOVF(byte1, toW);
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(byte2, toW);
-      kMOVWF(INDF);
-    end;
-    stExpres: begin  //ya está en w
-      //Caso especial de asignación a puntero derefrrenciado: variable^
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //Salva W (p2)
-      //Apunta con p1
-      kMOVF(byte1, toW);
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(aux, toW);
-      kMOVWF(INDF);
-      aux.used := false;
-    end;
-    else
-      GenError(MSG_UNSUPPORTED); exit;
-    end;
+    ////Asignación a una variable
+    //SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+    //case p2^.Sto of
+    //stConst : begin
+    //  //Caso especial de asignación a puntero desreferenciado: variable^
+    //  kMOVF(byte1, toW);
+    //  kMOVWF(FSR);  //direcciona
+    //  //Asignación normal
+    //  if value2=0 then begin
+    //    //caso especial
+    //    kCLRF(INDF);
+    //  end else begin
+    //    kMOVWF(INDF);
+    //  end;
+    //end;
+    //stVariab: begin
+    //  //Caso especial de asignación a puntero derefrrenciado: variable^
+    //  kMOVF(byte1, toW);
+    //  kMOVWF(FSR);  //direcciona
+    //  //Asignación normal
+    //  kMOVF(byte2, toW);
+    //  kMOVWF(INDF);
+    //end;
+    //stExpres: begin  //ya está en w
+    //  //Caso especial de asignación a puntero derefrrenciado: variable^
+    //  aux := GetAuxRegisterByte;
+    //  kMOVWF(aux);   //Salva W (p2)
+    //  //Apunta con p1
+    //  kMOVF(byte1, toW);
+    //  kMOVWF(FSR);  //direcciona
+    //  //Asignación normal
+    //  kMOVF(aux, toW);
+    //  kMOVWF(INDF);
+    //  aux.used := false;
+    //end;
+    //else
+    //  GenError(MSG_UNSUPPORTED); exit;
+    //end;
   end else begin
     GenError('Cannot assign to this Operand.'); exit;
   end;
@@ -336,94 +342,101 @@ begin
       if value2=0 then begin
         //Caso especial. No hace nada
       end else begin
-        kADDWF(byte1, toF);
+        _CLC;
+        _LDA(byte1);
+        _ADC(value2);
+        _STA(byte1);
       end;
     end;
     stVariab: begin
-      kMOVF(byte2, toW);
-      kADDWF(byte1, toF);
+      _LDA(byte1);
+      _CLC;
+      _ADC(byte2);
+      _STA(byte1);
     end;
     stExpres: begin  //ya está en w
-      kADDWF(byte1, toF);
+      _CLC;
+      _ADC(byte1);
+      _STA(byte1);
     end;
     else
       GenError(MSG_UNSUPPORTED); exit;
     end;
   end else if p1^.Sto = stVarRefExp then begin
-    {Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
-    cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
-    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
-    case p2^.Sto of
-    stConst : begin
-      //Asignación normal
-      if value2=0 then begin
-        //Caso especial. No hace nada
-      end else begin
-        kMOVWF(FSR);  //direcciona
-        _ADDWF(0, toF);
-      end;
-    end;
-    stVariab: begin
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(byte2, toW);
-      _ADDWF(0, toF);
-    end;
-    stExpres: begin
-      //La dirección está en la pila y la expresión en W
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //Salva W (p2)
-      //Apunta con p1
-      rVar := GetVarByteFromStk;
-      kMOVF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en W
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(aux, toW);
-      _ADDWF(0, toF);
-      aux.used := false;
-      exit;
-    end;
-    else
-      GenError(MSG_UNSUPPORTED); exit;
-    end;
+//    {Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
+//    cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
+//    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+//    case p2^.Sto of
+//    stConst : begin
+//      //Asignación normal
+//      if value2=0 then begin
+//        //Caso especial. No hace nada
+//      end else begin
+//        kMOVWF(FSR);  //direcciona
+//        _ADDWF(0, toF);
+//      end;
+//    end;
+//    stVariab: begin
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(byte2, toW);
+//      _ADDWF(0, toF);
+//    end;
+//    stExpres: begin
+//      //La dirección está en la pila y la expresión en W
+//      aux := GetAuxRegisterByte;
+//      kMOVWF(aux);   //Salva W (p2)
+//      //Apunta con p1
+//      rVar := GetVarByteFromStk;
+//      kMOVF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en W
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(aux, toW);
+//      _ADDWF(0, toF);
+//      aux.used := false;
+//      exit;
+//    end;
+//    else
+//      GenError(MSG_UNSUPPORTED); exit;
+//    end;
   end else if p1^.Sto = stVarRefVar then begin
-    //Asignación a una variable
-    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
-    case p2^.Sto of
-    stConst : begin
-      //Asignación normal
-      if value2=0 then begin
-        //Caso especial. No hace nada
-      end else begin
-        //Caso especial de asignación a puntero dereferenciado: variable^
-        kMOVF(byte1, toW);
-        kMOVWF(FSR);  //direcciona
-        _ADDWF(0, toF);
-      end;
-    end;
-    stVariab: begin
-      //Caso especial de asignación a puntero derefrrenciado: variable^
-      kMOVF(byte1, toW);
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(byte2, toW);
-      _ADDWF(0, toF);
-    end;
-    stExpres: begin  //ya está en w
-      //Caso especial de asignación a puntero derefrrenciado: variable^
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //Salva W (p2)
-      //Apunta con p1
-      kMOVF(byte1, toW);
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(aux, toW);
-      _ADDWF(0, toF);
-      aux.used := false;
-    end;
-    else
-      GenError(MSG_UNSUPPORTED); exit;
-    end;
+//    //Asignación a una variable
+//    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+//    case p2^.Sto of
+//    stConst : begin
+//      //Asignación normal
+//      if value2=0 then begin
+//        //Caso especial. No hace nada
+//      end else begin
+//        //Caso especial de asignación a puntero dereferenciado: variable^
+//        kMOVF(byte1, toW);
+//        kMOVWF(FSR);  //direcciona
+//        _ADDWF(0, toF);
+//      end;
+//    end;
+//    stVariab: begin
+//      //Caso especial de asignación a puntero derefrrenciado: variable^
+//      kMOVF(byte1, toW);
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(byte2, toW);
+//      _ADDWF(0, toF);
+//    end;
+//    stExpres: begin  //ya está en w
+//      //Caso especial de asignación a puntero derefrrenciado: variable^
+//      aux := GetAuxRegisterByte;
+//      kMOVWF(aux);   //Salva W (p2)
+//      //Apunta con p1
+//      kMOVF(byte1, toW);
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(aux, toW);
+//      _ADDWF(0, toF);
+//      aux.used := false;
+//    end;
+//    else
+//      GenError(MSG_UNSUPPORTED); exit;
+//    end;
   end else begin
     GenError('Cannot assign to this Operand.'); exit;
   end;
@@ -444,94 +457,106 @@ begin
       if value2=0 then begin
         //Caso especial. No hace nada
       end else begin
-        kSUBWF(byte1, toF);
+        _SEC;
+        _LDA(byte1);
+        _SBC(value2);
+        _STA(byte1);
       end;
     end;
     stVariab: begin
-      kMOVF(byte2, toW);
-      kSUBWF(byte1, toF);
+      _SEC;
+      _LDA(byte1);
+      _SBC(byte2);
+      _STA(byte1);
     end;
     stExpres: begin  //ya está en w
-      kSUBWF(byte1, toF);
+      _SEC;
+      _SBC(byte1);   //a - p1 -> a
+      //Invierte
+      _EORi($ff);
+      _CLC;
+      _ADC(1);
+      //Devuelve
+      _STA(byte1);
     end;
     else
       GenError(MSG_UNSUPPORTED); exit;
     end;
   end else if p1^.Sto = stVarRefExp then begin
-    {Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
-    cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
-    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
-    case p2^.Sto of
-    stConst : begin
-      //Asignación normal
-      if value2=0 then begin
-        //Caso especial. No hace nada
-      end else begin
-        kMOVWF(FSR);  //direcciona
-        _SUBWF(0, toF);
-      end;
-    end;
-    stVariab: begin
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(byte2, toW);
-      _SUBWF(0, toF);
-    end;
-    stExpres: begin
-      //La dirección está en la pila y la expresión en W
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //Salva W (p2)
-      //Apunta con p1
-      rVar := GetVarByteFromStk;
-      kMOVF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en W
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(aux, toW);
-      _SUBWF(0, toF);
-      aux.used := false;
-      exit;
-    end;
-    else
-      GenError(MSG_UNSUPPORTED); exit;
-    end;
+//    {Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
+//    cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
+//    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+//    case p2^.Sto of
+//    stConst : begin
+//      //Asignación normal
+//      if value2=0 then begin
+//        //Caso especial. No hace nada
+//      end else begin
+//        kMOVWF(FSR);  //direcciona
+//        _SUBWF(0, toF);
+//      end;
+//    end;
+//    stVariab: begin
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(byte2, toW);
+//      _SUBWF(0, toF);
+//    end;
+//    stExpres: begin
+//      //La dirección está en la pila y la expresión en W
+//      aux := GetAuxRegisterByte;
+//      kMOVWF(aux);   //Salva W (p2)
+//      //Apunta con p1
+//      rVar := GetVarByteFromStk;
+//      kMOVF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en W
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(aux, toW);
+//      _SUBWF(0, toF);
+//      aux.used := false;
+//      exit;
+//    end;
+//    else
+//      GenError(MSG_UNSUPPORTED); exit;
+//    end;
   end else if p1^.Sto = stVarRefVar then begin
-    //Asignación a una variable
-    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
-    case p2^.Sto of
-    stConst : begin
-      //Asignación normal
-      if value2=0 then begin
-        //Caso especial. No hace nada
-      end else begin
-        //Caso especial de asignación a puntero dereferenciado: variable^
-        kMOVF(byte1, toW);
-        kMOVWF(FSR);  //direcciona
-        _SUBWF(0, toF);
-      end;
-    end;
-    stVariab: begin
-      //Caso especial de asignación a puntero derefrrenciado: variable^
-      kMOVF(byte1, toW);
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(byte2, toW);
-      _SUBWF(0, toF);
-    end;
-    stExpres: begin  //ya está en w
-      //Caso especial de asignación a puntero derefrrenciado: variable^
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //Salva W (p2)
-      //Apunta con p1
-      kMOVF(byte1, toW);
-      kMOVWF(FSR);  //direcciona
-      //Asignación normal
-      kMOVF(aux, toW);
-      _SUBWF(0, toF);
-      aux.used := false;
-    end;
-    else
-      GenError(MSG_UNSUPPORTED); exit;
-    end;
+//    //Asignación a una variable
+//    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+//    case p2^.Sto of
+//    stConst : begin
+//      //Asignación normal
+//      if value2=0 then begin
+//        //Caso especial. No hace nada
+//      end else begin
+//        //Caso especial de asignación a puntero dereferenciado: variable^
+//        kMOVF(byte1, toW);
+//        kMOVWF(FSR);  //direcciona
+//        _SUBWF(0, toF);
+//      end;
+//    end;
+//    stVariab: begin
+//      //Caso especial de asignación a puntero derefrrenciado: variable^
+//      kMOVF(byte1, toW);
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(byte2, toW);
+//      _SUBWF(0, toF);
+//    end;
+//    stExpres: begin  //ya está en w
+//      //Caso especial de asignación a puntero derefrrenciado: variable^
+//      aux := GetAuxRegisterByte;
+//      kMOVWF(aux);   //Salva W (p2)
+//      //Apunta con p1
+//      kMOVF(byte1, toW);
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(aux, toW);
+//      _SUBWF(0, toF);
+//      aux.used := false;
+//    end;
+//    else
+//      GenError(MSG_UNSUPPORTED); exit;
+//    end;
   end else begin
     GenError('Cannot assign to this Operand.'); exit;
   end;
@@ -557,15 +582,18 @@ begin
     end else if value1 = 1 then begin
       //Caso especial
       SetROBResultExpres_byte(Opt);
-      kINCF(byte2, toW);
+      _INC(byte2);
       exit;
     end;
     SetROBResultExpres_byte(Opt);
-    kADDWF(byte2, toW);
+    _CLC;
+    _LDA(value1);
+    _ADC(byte2);
   end;
-  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
-    kADDLW(value1);  //deja en W
+    _CLC;
+    _ADC(value1);
   end;
   stVariab_Const: begin
     ExchangeP1_P2;
@@ -573,26 +601,31 @@ begin
   end;
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);
-    kMOVF(byte2, toW);
-    kADDWF(byte1, toW);  //deja en W
+    _CLC;
+    _LDA(byte1);
+    _ADC(byte2);
   end;
   stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);
-    kADDWF(byte1, toW);  //deja en W
+    _CLC;
+    _ADC(byte1);
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);
-    kADDLW(value2);  //deja en W
+    _CLC;
+    _ADC(value2);
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);
-    kADDWF(byte2, toW);  //deja en W
+    _CLC;
+    _ADC(byte2);
   end;
   stExpres_Expres:begin
     SetROBResultExpres_byte(Opt);
     //La expresión p1 debe estar salvada y p2 en el acumulador
     rVar := GetVarByteFromStk;
-    kADDWF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en W
+    _CLC;
+    _ADC(rVar.adrByte0);  //opera directamente al dato que había en la pila. Deja en W
     FreeStkRegisterByte;   //libera pila porque ya se uso
   end;
   else
@@ -615,41 +648,54 @@ begin
   end;
   stConst_Variab: begin
     SetROBResultExpres_byte(Opt);
-    kMOVF(byte2, toW);
-    kSUBLW(value1);   //K - W -> W
+    _SEC;
+    _LDA(value1);
+    _SBC(byte2);
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);
-    kSUBLW(value1);   //K - W -> W
+    typWord.DefineRegister;   //Asegura que exista H
+    _STA(H);
+    _SEC;
+    _LDA(value1);
+    _SBC(H);
   end;
   stVariab_Const: begin
     SetROBResultExpres_byte(Opt);
-    kSUBWF(byte1, toW);  //F - W -> W
+    _SEC;
+    _LDA(byte1);
+    _SBC(value2);
   end;
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);
-    kMOVF(byte2, toW);
-    kSUBWF(byte1, toW);  //F - W -> W
+    _LDA(byte1);
+    _SBC(byte2);
   end;
   stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);
-    kSUBWF(byte1, toW);  //F - W -> W
+    _SEC;
+    _SBC(byte1);   //a - p1 -> a
+    //Invierte
+    _EORi($FF);
+    _CLC;
+    _ADC(1);
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);
-    kSUBLW(value2);  //K - W -> W
-    kSUBLW(0);  //K - W -> W   //invierte W
+    _SEC;
+    _SBC(value2);
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);
-    kSUBWF(byte2, toW);  //F - W -> W
-    kSUBLW(0);  //K - W -> W   //invierte W
+    _SEC;
+    _SBC(byte2);
   end;
   stExpres_Expres:begin
     SetROBResultExpres_byte(Opt);
     //la expresión p1 debe estar salvada y p2 en el acumulador
     rVar := GetVarByteFromStk;
-    kSUBWF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en W
+    _SEC;
+    _SBC(rVar.adrByte0);
     FreeStkRegisterByte;   //libera pila porque ya se uso
   end;
   else
@@ -909,244 +955,6 @@ begin
 ////    aux2.used := false;
 //    aux.used := false;
 end;
-procedure TGenCod.ROB_byte_div_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
-begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
-  case stoOperation of
-  stConst_Const:begin  //producto de dos constantes. Caso especial
-    if value2 = 0 then begin
-      GenError('Cannot divide by zero');
-      exit;
-    end;
-    SetROBResultConst_byte(value1 div value2);  //puede generar error
-    exit;  //sale aquí, porque es un caso particular
-  end;
-  stConst_Variab: begin
-    if value1=0 then begin  //caso especial
-      SetROBResultConst_byte(0);
-      exit;
-    end;
-    SetROBResultExpres_byte(Opt);
-    _MOVWF(H.offs);
-    kMOVF(byte2, toW);
-    _JSR(f_byte_div_byte.adrr);
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
-    if value1=0 then begin  //caso especial
-      SetROBResultConst_byte(0);
-      exit;
-    end;
-    SetROBResultExpres_byte(Opt);
-    _MOVWF(E.offs);  //guarda divisor
-
-    _MOVWF(H.offs);  //dividendo
-
-    _MOVF(E.offs, toW);  //divisor
-    _JSR(f_byte_div_byte.adrr);
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stVariab_Const: begin
-    if value2 = 0 then begin
-      GenError('Cannot divide by zero');
-      exit;
-    end;
-    SetROBResultExpres_byte(Opt);
-    kMOVF(byte1, toW);
-    _MOVWF(H.offs);
-    _JSR(f_byte_div_byte.adrr);
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stVariab_Variab:begin
-    SetROBResultExpres_byte(Opt);
-    kMOVF(byte1, toW);
-    _MOVWF(H.offs);
-    kMOVF(byte2, toW);
-    _JSR(f_byte_div_byte.adrr);
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
-    SetROBResultExpres_byte(Opt);
-    //guarda divisor
-    _MOVWF(E.offs);
-    //p1 -> H
-    kMOVF(byte1, toW); //p1 -> W
-    _MOVWF(H.offs);  //dividendo
-
-    _MOVF(E.offs, toW);  //divisor
-    _JSR(f_byte_div_byte.adrr);
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
-    if value2 = 0 then begin
-      GenError('Cannot divide by zero');
-      exit;
-    end;
-    SetROBResultExpres_byte(Opt);
-    _MOVWF(H.offs);  //p1 -> H
-    _JSR(f_byte_div_byte.adrr);
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
-    SetROBResultExpres_byte(Opt);
-    _MOVWF(H.offs);  //p1 -> H
-    kMOVF(byte2, toW); //p2 -> W
-    _JSR(f_byte_div_byte.adrr);
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stExpres_Expres:begin
-    SetROBResultExpres_byte(Opt);
-    //la expresión p1 debe estar salvada y p2 en el acumulador
-    rVar := GetVarByteFromStk;
-    //guarda divisor
-    _MOVWF(E.offs);
-    //pila -> H
-    kMOVF(rVar.adrByte0, toW); //p1 -> W
-    _MOVWF(H.offs);  //dividendo
-    //divisor -> W
-    _MOVF(E.offs, toW);  //p2 -> E
-
-    _JSR(f_byte_div_byte.adrr);
-    FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
-    {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
-    variable) temporal, si se tuviera una rutina de multiplicación que compilara a
-    partir de la direccion de una variable (en este caso de la pila, que se puede
-    modificar), pero es un caso puntual, y podría no reutilizar el código apropiadamente.}
-    AddCallerTo(f_byte_div_byte);
-  end;
-  else
-    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-  end;
-end;
-procedure TGenCod.ROB_byte_mod_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
-begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
-  case stoOperation of
-  stConst_Const : begin  //producto de dos constantes. Caso especial
-    if value2 = 0 then begin
-      GenError('Cannot divide by zero');
-      exit;
-    end;
-    SetROBResultConst_byte(value1 mod value2);  //puede generar error
-    exit;  //sale aquí, porque es un caso particular
-  end;
-  stConst_Variab: begin
-    if value1=0 then begin  //caso especial
-      SetROBResultConst_byte(0);
-      exit;
-    end;
-    SetROBResultExpres_byte(Opt);
-    kMOVWF(H);
-    kMOVF(byte2, toW);
-    _JSR(f_byte_div_byte.adrr);
-    //¿Y el banco de salida?
-    kMOVF(U, toW);  //Resultado en W
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
-    if value1=0 then begin  //caso especial
-      SetROBResultConst_byte(0);
-      exit;
-    end;
-    SetROBResultExpres_byte(Opt);
-    kMOVWF(E);  //guarda divisor
-    kMOVWF(H);  //dividendo
-
-    kMOVF(E, toW);  //divisor
-    _JSR(f_byte_div_byte.adrr);
-    kMOVF(U, toW);  //Resultado en W
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stVariab_Const: begin
-    if value2 = 0 then begin
-      GenError('Cannot divide by zero');
-      exit;
-    end;
-    SetROBResultExpres_byte(Opt);
-    kMOVF(byte1, toW);
-    kMOVWF(H);
-    _JSR(f_byte_div_byte.adrr);
-    kMOVF(U, toW);  //Resultado en W
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stVariab_Variab:begin
-    SetROBResultExpres_byte(Opt);
-    kMOVF(byte1, toW);
-    kMOVWF(H);
-    kMOVF(byte2, toW);
-    _JSR(f_byte_div_byte.adrr);
-    kMOVF(U, toW);  //Resultado en W
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
-    SetROBResultExpres_byte(Opt);
-    //guarda divisor
-    kMOVWF(E);
-    //p1 -> H
-    kMOVF(byte1, toW); //p1 -> W
-    kMOVWF(H);  //dividendo
-
-    kMOVF(E, toW);  //divisor
-    _JSR(f_byte_div_byte.adrr);
-    kMOVF(U, toW);  //Resultado en W
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
-    if value2 = 0 then begin
-      GenError('Cannot divide by zero');
-      exit;
-    end;
-    SetROBResultExpres_byte(Opt);
-    kMOVWF(H);  //p1 -> H
-    _JSR(f_byte_div_byte.adrr);
-    kMOVF(U, toW);  //Resultado en W
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
-    SetROBResultExpres_byte(Opt);
-    kMOVWF(H);  //p1 -> H
-    kMOVF(byte2, toW); //p2 -> W
-    _JSR(f_byte_div_byte.adrr);
-    kMOVF(U, toW);  //Resultado en W
-    AddCallerTo(f_byte_div_byte);
-  end;
-  stExpres_Expres:begin
-    SetROBResultExpres_byte(Opt);
-    //la expresión p1 debe estar salvada y p2 en el acumulador
-    rVar := GetVarByteFromStk;
-    //guarda divisor
-    kMOVWF(E);
-    //pila -> H
-    kMOVF(rVar.adrByte0, toW); //p1 -> W
-    kMOVWF(H);  //dividendo
-    //divisor -> W
-    kMOVF(E, toW);  //p2 -> E
-    _JSR(f_byte_div_byte.adrr);
-    kMOVF(U, toW);  //Resultado en W
-    FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
-    {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
-    variable) temporal, si se tuviera una rutina de multiplicación que compilara a
-    partir de la direccion de una variable (en este caso de la pila, que se puede
-    modificar), pero es un caso puntual, y podría no reutilizar el código apropiadamente.}
-    AddCallerTo(f_byte_div_byte);
-  end;
-  else
-    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-  end;
-end;
-
 procedure TGenCod.ROB_byte_great_byte(Opt: TxpOperation; SetRes: boolean);
 var
   tmp: TPicRegister;
@@ -1167,7 +975,9 @@ begin
 //      GenWarn('Expression will always be FALSE.');  //o TRUE si la lógica Está invertida
     end else begin
       SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-      kSUBWF(byte2, toW);  //Si p1 > p2: C=0.
+      _SEC;
+      _LDA(value1);
+      _SBC(byte2);
       Copy_C_to_A; //Pasa C a Z (invirtiendo)
     end;
   end;
@@ -1180,8 +990,12 @@ begin
       //Optimiza rutina, usando: A>B  equiv. NOT (B<=A-1)
       //Se necesita asegurar que p1, es mayo que cero.
       SetROBResultExpres_byte(Opt);  //invierte la lógica
+      typWord.DefineRegister;   //Asegura que exista H
       //p2, ya está en W
-      kSUBLW(value1-1);  //Si p1 > p2: C=0.
+      _STA(H);
+      _SEC;
+      _LDA(value1);
+      _SBC(H);
       Copy_C_to_A; //Pasa C a Z (invirtiendo)
     end;
   end;
@@ -1192,24 +1006,26 @@ begin
       GenWarn('Expression will always be FALSE or TRUE.');
     end else begin
       SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-      kMOVF(byte1, toW);
-      kSUBLW(value2);  //Si p1 > p2: C=0.
+      _SEC;
+      _LDA(byte1);
+      _SBC(value2);
       Copy_C_to_A; //Pasa C a Z (invirtiendo)
     end;
   end;
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-    kMOVF(byte1, toW);
-    kSUBWF(byte2, toW);  //Si p1 > p2: C=0.
+    _SEC;
+    _LDA(byte1);
+    _SBC(byte2);
     Copy_C_to_A; //Pasa C a Z (invirtiendo)
   end;
   stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     tmp := GetAuxRegisterByte;  //Se pide registro auxiliar
-    kMOVWF(tmp);    //guarda resultado de expresión
-    //Ahora es como stVariab_Variab
-    kMOVF(byte1, toW);
-    kSUBWF(tmp, toW);  //Si p1 > tmp: C=0.
+    _STA(tmp);
+    _SEC;
+    _LDA(byte1);
+    _SBC(tmp);
     Copy_C_to_A; //Pasa C a Z (invirtiendo)
     tmp.used := false;  //libera
   end;
@@ -1220,14 +1036,15 @@ begin
 //      GenWarn('Expression will always be FALSE.');  //o TRUE si la lógica Está invertida
     end else begin
       SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-  //    p1, ya está en W
-      kSUBLW(value2);  //Si p1 > p2: C=0.
+      _SEC;
+      _SBC(value2);
       Copy_C_to_A; //Pasa C a Z (invirtiendo)
     end;
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-    kSUBWF(byte2, toW);  //Si p1 > p2: C=0.
+    _SEC;
+    _SBC(byte2);
     Copy_C_to_A; //Pasa C a Z (invirtiendo)
   end;
   stExpres_Expres:begin
@@ -1275,27 +1092,6 @@ begin
   ROB_byte_great_byte(Opt, SetRes);
   res.Invert;
 end;
-procedure TGenCod.CodifShift_by_W(target: TPicRegister; toRight: boolean);
-{Desplaza el registro "aux", las veces indicadas en el registro W.
-Deja el resultado en W.
-Deja el banco, en el banco de "aux"}
-{ TODO : Tal vez se pueda optimizar usando una rutina que rote W, las veces indicadas
-en un registro, o se podría generar el código usando la rutina de WHILE. }
-var
-  loop1: Word;
-  dg: integer;
-begin
-  _ADDLW(1);   //corrige valor inicial
-loop1 := _PC;
-  _ADDLW(255);  //W=W-1  (no hay instrucción DECW)
-  _BTFSC(Z.offs, Z.bit);
-  _JMP_lbl(dg);     //Dio, cero, termina
-  //Desplaza
-  if toRight then kSHIFTR(target, toF) else kSHIFTL(target, toF);
-  _JMP(loop1);
-  //Terminó el lazo
-  pic.codGotoAt(dg, _PC);   //termina de codificar el salto
-end;
 procedure TGenCod.ROB_byte_shr_byte(Opt: TxpOperation; SetRes: boolean);  //Desplaza a la derecha
 var
   aux: TPicRegister;
@@ -1317,58 +1113,43 @@ begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
     if value2 = 0 then begin
-      kMOVF(byte1, toW);  //solo devuelve lo mismo en W
+      _LDA(byte1);  //solo devuelve lo mismo en A
     end else if value2 = 1 then begin
-      kSHIFTR(byte1, toW);  //devuelve desplazado en W
+      _LDA(byte1);
+      _LSRa;
     end else if value2 = 2 then begin
-      aux := GetAuxRegisterByte;
-      //copia p1 a "aux"
-      kSHIFTR(byte1, toW);  //desplaza y mueve
-      kMOVWF(aux);
-      kSHIFTR(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _LDA(byte1);
+      _LSRa;
+      _LSRa;
     end else if value2 = 3 then begin
-      aux := GetAuxRegisterByte;
-      //copia p1 a "aux"
-      kSHIFTR(byte1, toW);  //desplaza y mueve
-      kMOVWF(aux);
-      kSHIFTR(aux, toF);  //desplaza
-      kSHIFTR(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _LDA(byte1);
+      _LSRa;
+      _LSRa;
+      _LSRa;
     end else if value2 = 4 then begin
-      aux := GetAuxRegisterByte;
-      //copia p1 a "aux"
-      kSHIFTR(byte1, toW);  //desplaza y mueve
-      kMOVWF(aux);
-      kSHIFTR(aux, toF);  //desplaza
-      kSHIFTR(aux, toF);  //desplaza
-      kSHIFTR(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _LDA(byte1);
+      _LSRa;
+      _LSRa;
+      _LSRa;
+      _LSRa;
     end else begin
       //Caso general
-      aux := GetAuxRegisterByte;
-      //copia p1 a "aux"
-      kMOVF(byte1, toW);
-      kMOVWF(aux);
-      //copia p2 a W
-      //lazo de rotación
-      CodifShift_by_W(aux, true);
-      kMOVF(aux, toW);  //deja en W
-      aux.used := false;
+      _LDA(byte1);
+      _LDX(value2);
+//loop1:
+      _LSRa;
+      _DEX;
+      _BNE(-4);  //loop1
     end;
   end;
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-    aux := GetAuxRegisterByte;
-    //copia p1 a "aux"
-    kMOVF(byte1, toW);
-    kMOVWF(aux);
-    //copia p2 a W
-    kMOVF(byte2, toW);
-    //lazo de rotación
-    CodifShift_by_W(aux, true);
-    kMOVF(aux, toW);  //deja en W
-    aux.used := false;
+    _LDA(byte1);
+    _LDX(byte2);
+//loop1:
+    _LSRa;
+    _DEX;
+    _BNE(-4);  //loop1
   end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
 //  end;
@@ -1376,42 +1157,27 @@ begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
     if value2 = 0 then begin
-      //solo devuelve lo mismo en W
+      //solo devuelve lo mismo en A
     end else if value2 = 1 then begin
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);
-      kSHIFTR(aux, toW);  //devuelve desplazado en W
-      aux.used := false;
+      _LSRa;
     end else if value2 = 2 then begin
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //copia p1 a "aux"
-      kSHIFTR(aux, toF);  //desplaza
-      kSHIFTR(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _LSRa;
+      _LSRa;
     end else if value2 = 3 then begin
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //copia p1 a "aux"
-      kSHIFTR(aux, toF);  //desplaza
-      kSHIFTR(aux, toF);  //desplaza
-      kSHIFTR(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _LSRa;
+      _LSRa;
+      _LSRa;
     end else if value2 = 4 then begin
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //copia p1 a "aux"
-      kSHIFTR(aux, toF);  //desplaza
-      kSHIFTR(aux, toF);  //desplaza
-      kSHIFTR(aux, toF);  //desplaza
-      kSHIFTR(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _LSRa;
+      _LSRa;
+      _LSRa;
+      _LSRa;
     end else begin
-      aux := GetAuxRegisterByte;
-      //copia p1 a "aux"
-      kMOVWF(aux);
-      //copia p2 a W
-      //lazo de rotación
-      CodifShift_by_W(aux, true);
-      kMOVF(aux, toW);  //deja en W
-      aux.used := false;
+      _LDX(value2);
+  //loop1:
+      _LSRa;
+      _DEX;
+      _BNE(-4);  //loop1
     end;
   end;
 //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
@@ -1443,57 +1209,43 @@ begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
     if value2 = 0 then begin
-      kMOVF(byte1, toW);  //solo devuelve lo mismo en W
+      _LDA(byte1);  //solo devuelve lo mismo en W
     end else if value2 = 1 then begin
-      kSHIFTL(byte1, toW);  //devuelve desplazado en W
+      _LDA(byte1);
+      _ASLa;
     end else if value2 = 2 then begin
-      aux := GetAuxRegisterByte;
-      //copia p1 a "aux"
-      kSHIFTL(byte1, toW);  //desplaza y mueve
-      kMOVWF(aux);
-      kSHIFTL(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _LDA(byte1);
+      _ASLa;
+      _ASLa;
     end else if value2 = 3 then begin
-      aux := GetAuxRegisterByte;
-      //copia p1 a "aux"
-      kSHIFTL(byte1, toW);  //desplaza y mueve
-      kMOVWF(aux);
-      kSHIFTL(aux, toF);  //desplaza
-      kSHIFTL(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _LDA(byte1);
+      _ASLa;
+      _ASLa;
+      _ASLa;
     end else if value2 = 4 then begin
-      aux := GetAuxRegisterByte;
-      //copia p1 a "aux"
-      kSHIFTL(byte1, toW);  //desplaza y mueve
-      kMOVWF(aux);
-      kSHIFTL(aux, toF);  //desplaza
-      kSHIFTL(aux, toF);  //desplaza
-      kSHIFTL(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _LDA(byte1);
+      _ASLa;
+      _ASLa;
+      _ASLa;
+      _ASLa;
     end else begin
-      aux := GetAuxRegisterByte;
-      //copia p1 a "aux"
-      kMOVF(byte1, toW);
-      kMOVWF(aux);
-      //copia p2 a W
-      //lazo de rotación
-      CodifShift_by_W(aux, false);
-      kMOVF(aux, toW);  //deja en W
-      aux.used := false;
+      //Caso general
+      _LDA(byte1);
+      _LDX(value2);
+//loop1:
+      _ASLa;
+      _DEX;
+      _BNE(-4);  //loop1
     end;
   end;
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-    aux := GetAuxRegisterByte;
-    //copia p1 a "aux"
-    kMOVF(byte1, toW);
-    kMOVWF(aux);
-    //copia p2 a W
-    kMOVF(byte2, toW);
-    //lazo de rotación
-    CodifShift_by_W(aux, false);
-    kMOVF(aux, toW);  //deja en W
-    aux.used := false;
+    _LDA(byte1);
+    _LDX(byte2);
+//loop1:
+    _ASLa;
+    _DEX;
+    _BNE(-4);  //loop1
   end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
 //  end;
@@ -1501,42 +1253,27 @@ begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
     if value2 = 0 then begin
-      //solo devuelve lo mismo en W
+      //solo devuelve lo mismo en A
     end else if value2 = 1 then begin
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);
-      kSHIFTL(aux, toW);  //devuelve desplazado en W
-      aux.used := false;
+      _ASLa;
     end else if value2 = 2 then begin
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //copia p1 a "aux"
-      kSHIFTL(aux, toF);  //desplaza
-      kSHIFTL(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _ASLa;
+      _ASLa;
     end else if value2 = 3 then begin
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //copia p1 a "aux"
-      kSHIFTL(aux, toF);  //desplaza
-      kSHIFTL(aux, toF);  //desplaza
-      kSHIFTL(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _ASLa;
+      _ASLa;
+      _ASLa;
     end else if value2 = 4 then begin
-      aux := GetAuxRegisterByte;
-      kMOVWF(aux);   //copia p1 a "aux"
-      kSHIFTL(aux, toF);  //desplaza
-      kSHIFTL(aux, toF);  //desplaza
-      kSHIFTL(aux, toF);  //desplaza
-      kSHIFTL(aux, toW);  //desplaza y devuelve en W
-      aux.used := false;
+      _ASLa;
+      _ASLa;
+      _ASLa;
+      _ASLa;
     end else begin
-      aux := GetAuxRegisterByte;
-      //copia p1 a "aux"
-      kMOVWF(aux);
-      //copia p2 a W
-      //lazo de rotación
-      CodifShift_by_W(aux, false);
-      kMOVF(aux, toW);  //deja en W
-      aux.used := false;
+      _LDX(value2);
+  //loop1:
+      _ASLa;
+      _DEX;
+      _BNE(-4);  //loop1
     end;
   end;
 //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
@@ -1557,21 +1294,17 @@ begin
   case p2^.Sto of
   stConst : begin
     SetROBResultExpres_char(Opt);  //Realmente, el resultado no es importante
-    if value2=0 then begin
-      //caso especial
-      kCLRF(byte1);
-    end else begin
-      kMOVWF(byte1);
-    end;
+    _LDA(value2);
+    _STA(byte1);
   end;
   stVariab: begin
     SetROBResultExpres_char(Opt);  //Realmente, el resultado no es importante
-    kMOVF(byte2, toW);
-    kMOVWF(byte1);
+    _LDA(byte2);
+    _STA(byte1);
   end;
   stExpres: begin  //ya está en w
     SetROBResultExpres_char(Opt);  //Realmente, el resultado no es importante
-    kMOVWF(byte1);
+    _STA(byte1);
   end;
   else
     GenError(MSG_UNSUPPORTED); exit;
@@ -1668,7 +1401,7 @@ begin
   end else if nCyc1m < 1275 then begin
     //Se puede lograr con bucles de 5 ciclos
     //Lazo de 5 ciclos por vuelta
-    _LDXi(nCyc1m div 5);  //2 cycles
+    _LDX(nCyc1m div 5);  //2 cycles
   //delay:
     _DEX;       //2 cycles (1 byte)
     _BNE(-3);   //3 cycles in loop, 2 cycles at end (2 bytes)
@@ -1694,16 +1427,16 @@ begin
   En cualquier caso, siempre usa el registros H , el acumulador "w" y un reg. auxiliar.
   Se supone que para pasar los parámetros, ya se requirió H, así que no es necesario
   crearlo.}
-  _LDAi(0);     PutComm(' ;enter when parameters in (0,A)');
-  _STA(H.offs);
+  _LDA(0);     PutComm(' ;enter when parameters in (0,A)');
+  _STA(H);
   _TAY; PutComm(';enter when parameters in (H,A)');
   //Se tiene el número en H,Y
 delay:= _PC;
   _TYA;
   _BNE_lbl(LABEL1);  //label
-  _LDA(H.offs);
+  _LDA(H);
   _BEQ_lbl(ZERO); //NUM = $0000 (not decremented in that case)
-  _DEC(H.offs);
+  _DEC(H.addr);
 _LABEL(LABEL1);
   _DEY;
   codif_1mseg;   //codifica retardo 1 mseg
@@ -1799,7 +1532,7 @@ begin
   end;
   stVariab: begin
     if (res.Typ = typByte) or (res.Typ = typChar) then begin
-      _INC(res.offs);
+      _INC(res.rVar.adrByte0);
     end else if res.Typ = typWord then begin
       _INCF(res.Loffs, toF);
       _BTFSC(_STATUS, _Z);
@@ -2249,11 +1982,6 @@ begin
   opr:=typByte.CreateBinaryOperator('*',5,'mult');  //byte*byte -> word
   opr.CreateOperation(typByte,@ROB_byte_mul_byte);
   opr.CreateOperation(typWord,@ROB_byte_mul_word);
-
-  opr:=typByte.CreateBinaryOperator('DIV',5,'div');  //byte / byte ->byte
-  opr.CreateOperation(typByte,@ROB_byte_div_byte);
-  opr:=typByte.CreateBinaryOperator('MOD',5,'mod');  //byte mod byte ->byte
-  opr.CreateOperation(typByte,@ROB_byte_mod_byte);
 
   opr:=typByte.CreateBinaryOperator('AND',5,'and');  //suma
   opr.CreateOperation(typByte,@ROB_byte_and_byte);

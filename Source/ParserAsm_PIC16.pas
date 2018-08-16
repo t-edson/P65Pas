@@ -395,19 +395,19 @@ begin
     exit;
   end else if lexAsm.GetToken = '_H' then begin
     //Es el registro  de trabajo _H
-    f := H_register.offs;
+    f := H_register.addr;
     lexAsm.Next;
     Result := true;
     exit;
   end else if lexAsm.GetToken = '_E' then begin
     //Es el registro  de trabajo _H
-    f := E_register.offs;
+    f := E_register.addr;
     lexAsm.Next;
     Result := true;
     exit;
   end else if lexAsm.GetToken = '_U' then begin
     //Es el registro  de trabajo _H
-    f := U_register.offs;
+    f := U_register.addr;
     lexAsm.Next;
     Result := true;
     exit;
@@ -433,10 +433,10 @@ begin
         if HaveByteInformation(bytePos) then begin
           //Hay precisión de byte
           if bytePos = 0 then begin  //Byte bajo
-            n := xvar.adrByte0.offs;
+            n := xvar.adrByte0.addr;
             f := GetFaddress(n);
           end else if bytePos = 1 then begin        //Byte alto
-            n := xvar.adrByte1.offs;
+            n := xvar.adrByte1.addr;
             f := GetFaddress(n);
           end else begin
              GenErrorAsm(ER_NOGETADD_VAR);
@@ -452,16 +452,16 @@ begin
         if HaveByteInformation(bytePos) then begin
           //Hay precisión de byte
           if bytePos = 0 then begin  //Byte bajo
-            n := xvar.adrByte0.offs;
+            n := xvar.adrByte0.addr;
             f := GetFaddress(n);
           end else if bytePos = 1 then begin        //Byte alto
-            n := xvar.adrByte1.offs;
+            n := xvar.adrByte1.addr;
             f := GetFaddress(n);
           end else if bytePos = 2 then begin        //Byte alto
-            n := xvar.adrByte2.offs;
+            n := xvar.adrByte2.addr;
             f := GetFaddress(n);
           end else if bytePos = 3 then begin        //Byte alto
-            n := xvar.adrByte3.offs;
+            n := xvar.adrByte3.addr;
             f := GetFaddress(n);
           end else begin
              GenErrorAsm(ER_NOGETADD_VAR);

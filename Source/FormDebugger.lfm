@@ -58,26 +58,26 @@ object frmDebugger: TfrmDebugger
       Left = 1
       Height = 225
       Top = 43
-      Width = 263
+      Width = 330
       Align = alLeft
       TabOrder = 0
     end
     object Splitter2: TSplitter
-      Left = 264
+      Left = 331
       Height = 225
       Top = 43
       Width = 5
     end
     object panROM: TPanel
-      Left = 269
+      Left = 336
       Height = 225
       Top = 43
-      Width = 327
+      Width = 291
       Align = alLeft
       TabOrder = 2
     end
     object Splitter3: TSplitter
-      Left = 596
+      Left = 627
       Height = 225
       Top = 43
       Width = 5

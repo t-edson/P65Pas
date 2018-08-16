@@ -126,15 +126,12 @@ type
   {Objeto que sirve para modelar a un registro del PIC (una dirección de memoria, usada
    para un fin particular)}
   TPicRegister = class
-  private
-    function Getoffs: word;
   public
     addr    : word;      //Dirección absoluta: $000 a $FFFF
     assigned: boolean;  //indica si tiene una dirección física asignada
     used    : boolean;   //Indica si está usado.
     typ     : TPicRegType; //Tipo de registro
   public
-    property offs: word read Getoffs;   //Desplazamiento en memoria
     procedure Assign(srcReg: TPicRegister);
   end;
   TPicRegister_list = specialize TFPGObjectList<TPicRegister>; //lista de registros
@@ -171,10 +168,6 @@ type
 implementation
 
 { TPicRegister }
-function TPicRegister.Getoffs: word;
-begin
-  Result := addr;  //devuelve dirección
-end;
 procedure TPicRegister.Assign(srcReg: TPicRegister);
 begin
   addr    := srcReg.addr;

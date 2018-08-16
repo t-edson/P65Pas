@@ -68,7 +68,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="31">
+    <Units Count="29">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -226,27 +226,16 @@
         <ResourceBaseClass Value="Frame"/>
       </Unit26>
       <Unit27>
-        <Filename Value="FramePICDiagram.pas"/>
-        <IsPartOfProject Value="True"/>
-        <ComponentName Value="fraPICDiagram"/>
-        <HasResources Value="True"/>
-        <ResourceBaseClass Value="Frame"/>
-      </Unit27>
-      <Unit28>
-        <Filename Value="GenCod_PIC10.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit28>
-      <Unit29>
         <Filename Value="ParserDirec.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit29>
-      <Unit30>
+      </Unit27>
+      <Unit28>
         <Filename Value="FramePicAsm.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraPicAsm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit30>
+      </Unit28>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

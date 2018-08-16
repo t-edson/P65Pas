@@ -56,14 +56,16 @@ procedure TfraPicAsm.StringGrid1DrawCell(Sender: TObject; aCol,
   aRow: Integer; aRect: TRect; aState: TGridDrawState);
 var
   txt, comm, lab: String;   //Texto de la celda
-  cv: TCanvas;              //Referencia al lienzo
+  cv    : TCanvas;              //Referencia al lienzo
   ramCell: ^TCPURamCell;  //Referencia a la celda RAM
-  PC: Word;
+  PC    : Word;
   rowHeight: LongInt;
-  nBytes: byte;
+  nBytes : byte;
+  addr   : integer;
 begin
   cv := StringGrid1.Canvas;  //referencia al Lienzo
-  ramCell := @pic.ram[aRow];
+  addr := PtrUInt(StringGrid1.Objects[0, ARow]);  //Lee dirección física
+  ramCell := @pic.ram[addr];
   //Fija color de texto y relleno
   if gdFixed in aState then begin
     //Es una celda fija
@@ -90,11 +92,12 @@ begin
   //Dibuja contenido de celda
   cv.FillRect(aRect);   //fondo
   if ACol = 0 then begin
-    txt := '$'+IntToHex(aRow,3);
+    //Celda para la dirección
+    txt := StringGrid1.Cells[ACol, ARow];
     cv.TextOut(aRect.Left + 2, aRect.Top + 2, txt);
   end else if ACol = 1 then begin
-    //Celda normal
-    txt := pic.DisassemblerAt(aRow, nBytes, true);   //desensambla
+    //Celda para el OpCode
+    txt := StringGrid1.Cells[ACol, ARow];
     PC := pic.ReadPC;
     //Escribe texto con alineación
     rowHeight := StringGrid1.RowHeights[Arow];
@@ -112,7 +115,7 @@ begin
       if ramCell^.breakPnt then begin
         ImageList16.Draw(cv, aRect.Left + 1, aRect.Top+2 + defHeight*2, 9);
       end;
-      if aRow = PC then begin  //marca
+      if addr = PC then begin  //marca
          ImageList16.Draw(cv, aRect.Left + 10, aRect.Top+2 + defHeight*2, 3);
       end;
     end else if rowHeight = defHeight*2 then begin
@@ -133,7 +136,7 @@ begin
       if ramCell^.breakPnt then begin
         ImageList16.Draw(cv, aRect.Left + 1, aRect.Top+2 + defHeight, 9);
       end;
-      if aRow = PC then begin  //marca
+      if addr = PC then begin  //marca
          ImageList16.Draw(cv, aRect.Left + 10, aRect.Top+2 + defHeight, 3);
       end;
     end else if rowHeight = defHeightFold then begin
@@ -148,7 +151,7 @@ begin
       if ramCell^.breakPnt then begin
         ImageList16.Draw(cv, aRect.Left + 1, aRect.Top+2, 9);
       end;
-      if aRow = PC then begin  //marca
+      if addr = PC then begin  //marca
          ImageList16.Draw(cv, aRect.Left + 10, aRect.Top+2, 3);
       end;
     end;
@@ -311,6 +314,7 @@ begin
     exit;
   end;
   //Es celda usada
+  StringGrid1.Objects[0,i] := TObject(PtrUInt(i));
   if (pic.ram[i].topComment<>'') and (pic.ram[i].topLabel<>'') then begin
     //Tiene comentario arriba y etiqueta
     StringGrid1.RowHeights[i] := 3*defHeight;
@@ -324,15 +328,56 @@ begin
 end;
 procedure TfraPicAsm.SetCompiler(cxp0: TCompilerBase);
 var
-  i: Integer;
+  addr, f: Integer;
+  nBytes: byte;
+  opCode: String;
 begin
   pic := cxp0.picCore;
   StringGrid1.DefaultDrawing:=false;
   StringGrid1.OnDrawCell := @StringGrid1DrawCell;
   //Dimensiona la grilla para que pueda mostrar las etIquetas
-  StringGrid1.RowCount := high(pic.ram)+1;
   StringGrid1.BeginUpdate;
-  for i:=0 to high(pic.ram) do ResizeRow(i);
+  StringGrid1.RowCount := high(pic.ram)+1;
+  addr := 0;
+  f    := 0;
+  while addr <= high(pic.ram) do begin
+    StringGrid1.Objects[0,f] := TObject(PtrUInt(addr));
+    //Dimensiona altura de celdas
+    if (pic.ram[addr].topComment<>'') and (pic.ram[addr].topLabel<>'') then begin
+      //Tiene comentario arriba y etiqueta
+      StringGrid1.RowHeights[f] := 3*defHeight;
+    end else if (pic.ram[addr].topComment<>'') or (pic.ram[addr].topLabel<>'') then begin
+      //Tiene comentario arriba
+      StringGrid1.RowHeights[f] := 2*defHeight;
+    end else begin
+      //Deja con la misma altura
+      StringGrid1.RowHeights[f] := defHeight;
+    end;
+    //Coloca texto y direcciones
+    if not pic.ram[addr].used then begin
+      //Celda no usada
+      StringGrid1.RowHeights[addr] := defHeight;
+      StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
+      StringGrid1.Cells[1, f] := '';
+      StringGrid1.Cells[2, f] := '';
+      inc(addr);
+    end else if pic.ram[addr].name<>'' then begin
+      //Es espacio para variable
+      StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
+      StringGrid1.Cells[1, f] := '<< Variable >>';
+      StringGrid1.Cells[2, f] := '';
+      inc(addr);
+    end else begin
+      //Debe ser código
+      StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
+      opCode := pic.DisassemblerAt(addr, nBytes, true);  //Instrucción
+      StringGrid1.Cells[1, f] := opCode;
+      StringGrid1.Cells[2, f] := '';
+      inc(addr, nBytes);
+    end;
+    inc(f);
+  end;
+  StringGrid1.RowCount := f;  //Solo las filas usadas
   StringGrid1.EndUpdate();
 end;
 constructor TfraPicAsm.Create(AOwner: TComponent);

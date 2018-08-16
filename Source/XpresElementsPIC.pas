@@ -999,11 +999,11 @@ begin
   if typ.IsBitSize then begin
     Result := 'bnk'+ IntToStr(adrBit.bank) + ':$' + IntToHex(adrBit.offs, 3) + '.' + IntToStr(adrBit.bit);
   end else if typ.IsByteSize then begin
-    Result := '$' + IntToHex(adrByte0.offs, 3);
+    Result := '$' + IntToHex(adrByte0.addr, 3);
   end else if typ.IsWordSize then begin
-    Result := '$' + IntToHex(adrByte0.offs, 3);
+    Result := '$' + IntToHex(adrByte0.addr, 3);
   end else if typ.IsDWordSize then begin
-    Result := '$' + IntToHex(adrByte0.offs, 3);
+    Result := '$' + IntToHex(adrByte0.addr, 3);
   end else begin
     Result := '';   //Error
   end;
