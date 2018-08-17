@@ -200,7 +200,7 @@ object frmDebugger: TfrmDebugger
     left = 416
     top = 320
     object acGenReset: TAction
-      Caption = 'Reset'
+      Caption = 'Restart'
       Hint = 'Reset'
       ImageIndex = 8
       OnExecute = acGenResetExecute

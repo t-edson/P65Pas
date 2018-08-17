@@ -394,6 +394,7 @@ type //Clases de elementos
     typ    : TxpEleType;   //Referencia al tipo
     pars   : array of TxpParFunc;  //parámetros de entrada
     adrr   : integer;     //Dirección física, en donde se compila
+    adrr2  : integer;     //Punto de entrada adicional
     srcSize: integer;  {Tamaño del código compilado. En la primera pasada, es referencial,
                         porque el tamaño puede variar al reubicarse.}
     {Referencia a la función que implemanta, la rutina de porcesamiento que se debe

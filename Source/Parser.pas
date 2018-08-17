@@ -222,7 +222,6 @@ public   //Tipos de datos a implementar
   typByte : TxpEleType;
   typChar : TxpEleType;
   typWord : TxpEleType;
-  typDWord: TxpEleType;
 public
   ID       : integer;     //Identificador para el compilador.
   Compiling: boolean;     //Bandera para el compilado

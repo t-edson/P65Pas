@@ -261,14 +261,6 @@ begin
       opEve.AddItem('high', 11);
       opEve.AddItem('low' , 11);
     end;
-    if xVar.typ = cxp.typDWord then begin
-      opEve.AddItem('Low', 11);
-      opEve.AddItem('High', 11);
-      opEve.AddItem('Extra', 11);
-      opEve.AddItem('Ultra', 11);
-      opEve.AddItem('LowWord', 11);
-      opEve.AddItem('HighWord', 11);
-    end;
   end else begin
     //No implementado en otro elemento
     exit;

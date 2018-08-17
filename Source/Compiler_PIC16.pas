@@ -766,8 +766,6 @@ begin
       Op.SetAsConst(typByte);
     end else if (n>= 0) and (n<=$FFFF) then begin
       Op.SetAsConst(typWord);
-    end else if (n>= 0) and (n<=$FFFFFFFF) then begin
-      Op.SetAsConst(typDWord);
     end else  begin //no encontró
       GenError(ER_NOTYPDEF_NU);
       Op.SetAsNull;
@@ -805,7 +803,7 @@ begin
   if HayError then exit;
   if fun.IsInterrupt then begin
     //Las interrupciones terminan así
-    _RETFIE
+    _RTI;
   end else begin
     //Para los procedimeintos, podemos terminar siemrpe con un i_RETURN u optimizar,
     if OptRetProc then begin

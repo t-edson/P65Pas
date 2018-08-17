@@ -328,7 +328,7 @@ begin
 end;
 procedure TfraPicAsm.SetCompiler(cxp0: TCompilerBase);
 var
-  addr, f: Integer;
+  addr, f, minUsed: Integer;
   nBytes: byte;
   opCode: String;
 begin
@@ -340,6 +340,7 @@ begin
   StringGrid1.RowCount := high(pic.ram)+1;
   addr := 0;
   f    := 0;
+  minUsed := -1;
   while addr <= high(pic.ram) do begin
     StringGrid1.Objects[0,f] := TObject(PtrUInt(addr));
     //Dimensiona altura de celdas
@@ -369,6 +370,8 @@ begin
       inc(addr);
     end else begin
       //Debe ser código
+      if minUsed<>-1 then minUsed := addr;
+      //Decodifica instrucción
       StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
       opCode := pic.DisassemblerAt(addr, nBytes, true);  //Instrucción
       StringGrid1.Cells[1, f] := opCode;

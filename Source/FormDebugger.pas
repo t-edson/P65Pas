@@ -219,16 +219,23 @@ begin
     MsgBox('Hola');
   end;
 end;
+procedure TfrmDebugger.FormClose(Sender: TObject; var CloseAction: TCloseAction
+  );
+begin
+  acGenPauseExecute(self);
+end;
 ////////////////////// Acciones ////////////////////
 procedure TfrmDebugger.acGenResetExecute(Sender: TObject);
 begin
-  pic.Reset;
+  //pic.Reset;   //No hace reset para no perder el programa
+  pic.Reset(false);
+
   Timer1.Enabled := false;
   Timer2.Enabled := false;
   acGenRun.Enabled := true;
   acGenPause.Enabled := false;
   RefreshScreen;
-  lstMessages.AddItem('Resetting device.', nil);
+  lstMessages.AddItem('Restarting.', nil);
 end;
 procedure TfrmDebugger.acGenRunExecute(Sender: TObject);
 {Ejecuta el programa, desde la posición actual}
@@ -265,15 +272,16 @@ begin
 end;
 procedure TfrmDebugger.acGenSetPCExecute(Sender: TObject);
 //Fija el puntero del programa en la instrucción seleccionada.
+var
+  row: Integer;
 begin
   if fraPicAsm.StringGrid1.Row=-1 then exit;
-  pic.WritePC(fraPicAsm.StringGrid1.Row);
+  row := fraPicAsm.StringGrid1.Row;
+  //La dirección real está en el campo Objects[]
+  if fraPicAsm.StringGrid1.Objects[0, row] = nil then exit;
+  row := PtrUInt(fraPicAsm.StringGrid1.Objects[0, row]);
+  pic.WritePC(row);
   fraPicAsm.StringGrid1.Invalidate;
-end;
-procedure TfrmDebugger.FormClose(Sender: TObject; var CloseAction: TCloseAction
-  );
-begin
-  acGenPauseExecute(self);
 end;
 procedure TfrmDebugger.acGenExecHerExecute(Sender: TObject);
 {Ejecuta una instrucción hasta la dirección seleccionada.}
@@ -308,8 +316,19 @@ begin
 end;
 procedure TfrmDebugger.acGenStepExecute(Sender: TObject);
 {Ejecuta una instrucción sin entrar a subrutinas}
+var
+  pc: DWord;
 begin
-  pic.ExecStep;
+  if pic.ram[pic.ReadPC].value = 0 then begin
+    //Salta memoria no usada
+    pc := pic.ReadPC;
+    while (pc < high(pic.ram)) and (pic.ram[pc].value = 0) do begin
+      pc := pc + 1;  //Incrementa
+      pic.WritePC(pc);
+    end;
+  end else begin
+    pic.ExecStep;
+  end;
   RefreshScreen;
 end;
 procedure TfrmDebugger.acGenStepInExecute(Sender: TObject);
