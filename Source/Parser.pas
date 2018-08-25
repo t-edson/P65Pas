@@ -113,7 +113,8 @@ protected
   procedure IdentifyField(xOperand: TOperand);
   procedure LogExpLevel(txt: string);
   function IsTheSameBitVar(var1, var2: TxpEleVar): boolean; inline;
-  function AddCallerTo(elem: TxpElement; callerElem: TxpElement = nil): TxpEleCaller;
+  function AddCallerTo(elem: TxpElement): TxpEleCaller;
+  function AddCallerTo(elem: TxpElement; callerElem: TxpElement): TxpEleCaller;
   function AddCallerTo(elem: TxpElement; const curPos: TSrcPos): TxpEleCaller;
 protected  //Eventos del compilador
   {This is the way the Parser can communicate with the Code Generator, considering this
@@ -317,6 +318,13 @@ public
   devicesPath: string; //Ruta de las unidades de dispositivos
   property ProplistRegAux: TPicRegister_list read listRegAux;
   property ProplistRegAuxBit: TPicRegisterBit_list read listRegAuxBit;
+protected
+  procedure RefreshAllElementLists;
+  procedure RemoveUnusedFunc;
+  procedure RemoveUnusedVars;
+  procedure RemoveUnusedCons;
+  procedure RemoveUnusedTypes;
+  procedure UpdateCallersToUnits;
 public    //Inicialización
   constructor Create; virtual;
   destructor Destroy; override;
@@ -963,13 +971,12 @@ física}
 begin
   Result := (var1.addr0 = var2.addr0) and (var1.bit0 = var2.bit0);
 end;
-function TCompilerBase.AddCallerTo(elem: TxpElement; callerElem: TxpElement=nil): TxpEleCaller;
+function TCompilerBase.AddCallerTo(elem: TxpElement): TxpEleCaller;
 {Agregar una llamada a un elemento de la sintaxis.
-Agrega información sobre el elemento "llamador", es decir, el elemento que hace
-referencia a este elemento.
-El elemento llamador es "callerElem". Si no se especifica se asumirá un elemento
-llamador por defecto, que debería ser la función/cuerpo desde donde se hace la llamada.
-Devuelve la referencia al elemento llamador, cuando es efectiva al agregación.}
+Para el elemento llamador, se usa el nodo actual, que debería ser la función/cuerpo
+desde donde se hace la llamada.
+Devuelve la referencia al elemento llamador, cuando es efectiva la agregación, de otra
+forma devuelve NIL.}
 var
   fc: TxpEleCaller;
 begin
@@ -980,16 +987,18 @@ begin
   end;
   fc:= TxpEleCaller.Create;
   //Carga información del estado actual del parser
-  if callerElem = nil then begin
-    {Por defecto se toma el nodo actual que es el ceurpo de alguna función o el cuerpo
-    del programa principal.}
-    fc.caller := TreeElems.curNode;
-  end else begin
-    fc.caller := callerElem;
-  end;
+  fc.caller := TreeElems.curNode;
   fc.curPos := cIn.ReadSrcPos;
   elem.lstCallers.Add(fc);
   Result := fc;
+end;
+function TCompilerBase.AddCallerTo(elem: TxpElement; callerElem: TxpElement): TxpEleCaller;
+{El elemento llamador es "callerElem". Agrega información sobre el elemento "llamador", es decir, el elemento que hace
+referencia a este elemento.}
+begin
+  Result := AddCallerTo(elem);
+  if Result = nil then exit;
+  Result.caller := callerElem;
 end;
 function TCompilerBase.AddCallerTo(elem: TxpElement; const curPos: TSrcPos): TxpEleCaller;
 {Versión de AddCallerTo() que agrega además la posición de la llamada, en lugar de usar
@@ -1464,6 +1473,290 @@ end;
 function TCompilerBase.mainFilePath: string;
 begin
   Result := mainFile;
+end;
+procedure TCompilerBase.RefreshAllElementLists;
+begin
+  TreeElems.RefreshAllFuncs;
+  TreeElems.RefreshAllCons;
+  TreeElems.RefreshAllUnits;
+  TreeElems.RefreshAllVars;
+  TreeElems.RefreshAllTypes;
+end;
+procedure TCompilerBase.RemoveUnusedFunc;
+{Explora las funciones, para quitarle las referencias de funciones no usadas.
+Para que esta función trabaje bien, debe haberse llamado a RefreshAllElementLists(). }
+  function RemoveUnusedFuncReferences: integer;
+  {Explora las funciones, para quitarle las referencias de funciones no usadas.
+  Devuelve la cantidad de funciones no usadas.
+  Para que esta función trabaje bien, debe estar actualizada "TreeElems.AllFuncs". }
+  var
+    fun, fun2: TxpEleFun;
+  begin
+    Result := 0;
+    for fun in TreeElems.AllFuncs do begin
+      if fun.nCalled = 0 then begin
+        inc(Result);   //Lleva la cuenta
+        //Si no se usa la función, tampoco sus elementos locales
+        fun.SetElementsUnused;
+        //También se quita las llamadas que hace a otras funciones
+        for fun2 in TreeElems.AllFuncs do begin
+          fun2.RemoveCallsFrom(fun.BodyNode);
+//          debugln('Eliminando %d llamadas desde: %s', [n, fun.name]);
+        end;
+        //Incluyendo a funciones del sistema
+        for fun2 in listFunSys do begin
+          fun2.RemoveCallsFrom(fun.BodyNode);
+        end;
+      end;
+    end;
+  end;
+var
+  noUsed, noUsedPrev: Integer;
+begin
+  //Explora las funciones, para identifcar a las no usadas
+  noUsed := 0;
+  repeat  //Explora en varios niveles
+    noUsedPrev := noUsed;   //valor anterior
+    noUsed := RemoveUnusedFuncReferences;
+  until noUsed = noUsedPrev;
+end;
+procedure TCompilerBase.RemoveUnusedVars;
+{Explora las variables de todo el programa, para detectar las que no son usadas
+(quitando las referencias que se hacen a ellas)).
+Para que esta función trabaje bien, debe haberse llamado a RefreshAllElementLists()
+y a RemoveUnusedFunc(). }
+  function RemoveUnusedVarReferences: integer;
+  {Explora las variables de todo el programa, de modo que a cada una:
+  * Le quita las referencias hechas por variables no usadas.
+  Devuelve la cantidad de variables no usadas.}
+  var
+    xvar, xvar2: TxpEleVar;
+    fun: TxpEleFun;
+  begin
+    Result := 0;
+    {Quita, a las variables, las referencias de variables no usadas.
+    Una referencia de una variable a otra se da, por ejemplo, en el caso:
+    VAR
+      STATUS_IRP: bit absolute STATUS.7;
+    En este caso, la variable STATUS_IRP, hace referencia a STATUS.
+    Si STATUS_IRP no se usa, esta referencia debe quitarse.
+    }
+    for xvar in TreeElems.AllVars do begin
+      if xvar.nCalled = 0 then begin
+        //Esta es una variable no usada
+        inc(Result);   //Lleva la cuenta
+        //Quita las llamadas que podría estar haciendo a otras variables
+        for xvar2 in TreeElems.AllVars do begin
+          xvar2.RemoveCallsFrom(xvar);
+//            debugln('Eliminando llamada a %s desde: %s', [xvar2.name, xvar.name]);
+        end;
+      end;
+    end;
+    //Ahora quita las referencias de funciones no usadas
+    for fun in TreeElems.AllFuncs do begin
+      if fun.nCalled = 0 then begin
+        //Esta es una función no usada
+        inc(Result);   //Lleva la cuenta
+        for xvar2 in TreeElems.AllVars do begin
+          xvar2.RemoveCallsFrom(fun.BodyNode);
+//          debugln('Eliminando llamada a %s desde: %s', [xvar2.name, xvar.name]);
+        end;
+      end;
+    end;
+  end;
+var
+  noUsed, noUsedPrev: Integer;
+begin
+  noUsed := 0;
+  repeat  //Explora en varios niveles
+    noUsedPrev := noUsed;   //valor anterior
+    noUsed := RemoveUnusedVarReferences;
+  until noUsed = noUsedPrev;   //Ya no se eliminan más variables
+end;
+procedure TCompilerBase.RemoveUnusedCons;
+{Explora las constantes de todo el programa, para detectar las que no son usadas
+(quitando las referencias que se hacen a ellas)).
+Para que esta función trabaje bien, debe haberse llamado a RefreshAllElementLists()
+y a RemoveUnusedFunc(). }
+  function RemoveUnusedConsReferences: integer;
+  {Explora las constantes de todo el programa, de modo que a cada una:
+  * Le quita las referencias hechas por constantes no usadas.
+  Devuelve la cantidad de constantes no usadas.}
+  var
+    cons, cons2: TxpEleCon;
+    xvar: TxpEleVar;
+    fun: TxpEleFun;
+  begin
+    Result := 0;
+    {Quita, a las constantes, las referencias de constantes no usadas.
+    Una referencia de una constante a otra se da, por ejemplo, en el caso:
+    CONST
+      CONST_2 = CONST_1 + 1;
+    En este caso, la constante CONST_2, hace referencia a CONST_1.
+    Si CONST_2 no se usa, esta referencia debe quitarse.
+    }
+    for cons in TreeElems.AllCons do begin
+      if cons.nCalled = 0 then begin
+        //Esta es una constante no usada
+        inc(Result);   //Lleva la cuenta
+        //Quita las llamadas que podría estar haciendo a otras constantes
+        for cons2 in TreeElems.AllCons do begin
+          cons2.RemoveCallsFrom(cons);
+//            debugln('Eliminando llamada a %s desde: %s', [cons2.name, cons.name]);
+        end;
+      end;
+    end;
+    {Si se incluye la posibilidad de definir variables a partir de constantes,
+    como en:
+    VAR mi_var: byte absolute CONST_DIR;
+    Entonces es necesario este código:}
+    for xvar in TreeElems.AllVars do begin
+      if xvar.nCalled = 0 then begin
+        //Esta es una variable no usada
+        inc(Result);   //Lleva la cuenta
+        //Quita las llamadas que podría estar haciendo a constantes
+        for cons2 in TreeElems.AllCons do begin
+          cons2.RemoveCallsFrom(xvar);
+//            debugln('Eliminando llamada a %s desde: %s', [cons2.name, xvar.name]);
+        end;
+      end;
+    end;
+    //Ahora quita las referencias de funciones no usadas
+    for fun in TreeElems.AllFuncs do begin
+      if fun.nCalled = 0 then begin
+        //Esta es una función no usada
+        inc(Result);   //Lleva la cuenta
+        for cons2 in TreeElems.AllCons do begin
+          cons2.RemoveCallsFrom(fun.BodyNode);
+//          debugln('Eliminando llamada a %s desde: %s', [cons2.name, cons.name]);
+        end;
+      end;
+    end;
+  end;
+var
+  noUsed, noUsedPrev: Integer;
+begin
+  noUsed := 0;
+  repeat  //Explora en varios niveles
+    noUsedPrev := noUsed;   //valor anterior
+    noUsed := RemoveUnusedConsReferences;
+  until noUsed = noUsedPrev;   //Ya no se eliminan más constantes
+end;
+procedure TCompilerBase.RemoveUnusedTypes;
+{Explora los tipos (definidos por el usuario) de todo el programa, para detectar
+los que no son usados (quitando las referencias que se hacen a ellos)).
+Para que esta función trabaje bien, debe haberse llamado a RefreshAllElementLists()
+y a RemoveUnusedFunc(). }
+  function RemoveUnusedTypReferences: integer;
+  {Explora los tipos de todo el programa, de modo que a cada uno:
+  * Le quita las referencias hechas por constantes, variables, tipos y funciones no usadas.
+  Devuelve la cantidad de tipos no usados.
+  ////////// POR REVISAR ///////////}
+  var
+    cons: TxpEleCon;
+    xvar: TxpEleVar;
+    xtyp, xtyp2: TxpEleType;
+    fun : TxpEleFun;
+  begin
+    Result := 0;
+    {Quita, a los tipos, las referencias de constantes no usadas (de ese tipo).}
+    for cons in TreeElems.AllCons do begin
+      if cons.nCalled = 0 then begin
+        //Esta es una constante no usada
+        inc(Result);   //Lleva la cuenta
+        //Quita las llamadas que podría estar haciendo a otras constantes
+        for xtyp in TreeElems.AllTypes do begin
+          xtyp.RemoveCallsFrom(cons);
+//            debugln('Eliminando llamada a %s desde: %s', [xtyp.name, cons.name]);
+        end;
+      end;
+    end;
+    {Quita, a los tipos, las referencias de variables no usadas (de ese tipo).}
+    for xvar in TreeElems.AllVars do begin
+      if xvar.nCalled = 0 then begin
+        //Esta es una variable no usada
+        inc(Result);   //Lleva la cuenta
+        //Quita las llamadas que podría estar haciendo a constantes
+        for xtyp in TreeElems.AllTypes do begin
+          xtyp.RemoveCallsFrom(xvar);
+//            debugln('Eliminando llamada a %s desde: %s', [xtyp.name, xvar.name]);
+        end;
+      end;
+    end;
+    {Quita, a los tipos, las referencias de otros tipos no usadas.
+    Como en los tipos que se crean a partir de otros tipos}
+    for xtyp2 in TreeElems.AllTypes do begin
+      if xtyp2.nCalled = 0 then begin
+        //Esta es una variable no usada
+        inc(Result);   //Lleva la cuenta
+        //Quita las llamadas que podría estar haciendo a constantes
+        for xtyp in TreeElems.AllTypes do begin
+          xtyp.RemoveCallsFrom(xtyp2);
+//            debugln('Eliminando llamada a %s desde: %s', [xtyp.name, xtyp2.name]);
+        end;
+      end;
+    end;
+    //Ahora quita las referencias de funciones no usadas (de ese tipo)
+    for fun in TreeElems.AllFuncs do begin
+      if fun.nCalled = 0 then begin
+        //Esta es una función no usada
+        inc(Result);   //Lleva la cuenta
+        for xtyp in TreeElems.AllTypes do begin
+          xtyp.RemoveCallsFrom(fun.BodyNode);
+//          debugln('Eliminando llamada a %s desde: %s', [xtyp.name, cons.name]);
+        end;
+      end;
+    end;
+  end;
+var
+  noUsed, noUsedPrev: Integer;
+begin
+  noUsed := 0;
+  repeat  //Explora en varios niveles
+    noUsedPrev := noUsed;   //valor anterior
+    noUsed := RemoveUnusedTypReferences;
+  until noUsed = noUsedPrev;   //Ya no se eliminan más constantes
+end;
+procedure TCompilerBase.UpdateCallersToUnits;
+{Explora recursivamente el arbol de sintaxis para encontrar( y agregar) las
+llamadas que se hacen a una unidad desde el programa o unidad que la incluye.
+El objetivo final es determinar los accesos a las unidades.}
+  procedure ScanUnits(nod: TxpElement);
+  var
+    ele, eleInter , eleCaller: TxpElement;
+    uni : TxpEleUnit;
+    cal , c: TxpEleCaller;
+  begin
+    if nod.elements<>nil then begin
+      for ele in nod.elements do begin
+        if ele.idClass = eltUnit then begin
+          //"ele" es una unidad de "nod". Verifica si es usada
+          uni := TxpEleUnit(ele);    //Accede a la unidad.
+          uni.ReadInterfaceElements; //Accede a sus campos
+          {Buscamos por los elementos de la interfaz de la unidad para ver si son
+           usados}
+          for eleInter in uni.InterfaceElements do begin
+            //Explora por los llamadores de este elemento.
+            for cal in eleInter.lstCallers do begin
+              eleCaller := cal.caller;
+              if eleCaller.Parent = nod then begin
+                {Este llamador está contenido en "nod". Lo ponemos como llamador de
+                la unidad.}
+                c := AddCallerTo(uni);
+                //c.curBnk := cal.curBnk;
+                c.curPos := cal.curPos;
+              end;
+            end;
+          end;
+        end else begin
+          if ele.elements<>nil then
+            ScanUnits(ele);  //recursivo
+        end;
+      end;
+    end;
+  end;
+begin
+  ScanUnits(TreeElems.main);
 end;
 //Inicialización
 constructor TCompilerBase.Create;

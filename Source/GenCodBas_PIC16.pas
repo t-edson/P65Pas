@@ -30,7 +30,7 @@ type
     procedure word_SetItem(const OpPtr: pointer);
   protected
     //Registros de trabajo
-    W      : TPicRegister;     //Registro Interno.
+    A      : TPicRegister;     //Registro Interno.
     Z      : TPicRegisterBit;  //Registro Interno.
     C      : TPicRegisterBit;  //Registro Interno.
     H      : TPicRegister;     //Registros de trabajo. Se crean siempre.
@@ -90,6 +90,7 @@ type
     procedure SetResultVarRef(rVarBase: TxpEleVar);
     procedure SetResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType; ChkRTState: boolean = true);
     //Fija el resultado de ROB como constante.
+    procedure SetROBResultConst_bool(valBool: Boolean);
     procedure SetROBResultConst_byte(valByte: integer);
     procedure SetROBResultConst_char(valByte: integer);
     procedure SetROBResultConst_word(valWord: integer);
@@ -118,16 +119,8 @@ type
     function _CLOCK: integer;
     procedure _LABEL(igot: integer);
     //Instrucciones simples
-    procedure _ADDLW(const k: word);
-    procedure _ADDWF(const f: byte; d: TPIC16destin);
-    procedure _ANDLW(const k: word);
-    procedure _ANDWF(const f: byte; d: TPIC16destin);
     procedure _BTFSC(const f, b: byte);
     procedure _BTFSS(const f, b: byte);
-    procedure _CLRW;
-    procedure _DECF(const f: byte; d: TPIC16destin);
-    procedure _DECFSZ(const f: byte; d: TPIC16destin);
-    procedure _INCF(const f: byte; d: TPIC16destin);
 
     procedure _ADC(const k: word);  //AND Absolute/Zeropage
     procedure _ADC(const f: TPicRegister);  //AND Absolute/Zeropage
@@ -137,14 +130,14 @@ type
     procedure _ASLa;
     procedure _LSR(const f: word);
     procedure _LSRa;
-    procedure _JMP(const a: word);
+    procedure _JMP(const ad: word);
     procedure _JMP_lbl(out igot: integer);
-    procedure _JSR(const a: word);
-    procedure _BEQ(const a: ShortInt);
+    procedure _JSR(const ad: word);
+    procedure _BEQ(const ad: ShortInt);
     procedure _BEQ_lbl(out ibranch: integer);
-    procedure _BNE(const a: ShortInt);
+    procedure _BNE(const ad: ShortInt);
     procedure _BNE_lbl(out ibranch: integer);
-    procedure _BCC(const a: ShortInt);
+    procedure _BCC(const ad: ShortInt);
     procedure _CLC;
     procedure _DEX;
     procedure _DEY;
@@ -666,6 +659,12 @@ begin
   res.Inverted := false;
 end;
 //Fija el resultado de ROP como constante
+procedure TGenCodBas.SetROBResultConst_bool(valBool: Boolean);
+begin
+  GenerateROBdetComment;
+  SetResultConst(typBool);
+  res.valBool := valBool;
+end;
 procedure TGenCodBas.SetROBResultConst_byte(valByte: integer);
 begin
   GenerateROBdetComment;
@@ -716,7 +715,7 @@ begin
 end;
 procedure TGenCodBas.SetROBResultExpres_byte(Opt: TxpOperation);
 {Define el resultado como una expresión de tipo Byte, y se asegura de reservar el
-registro W, para devolver la salida. Debe llamarse cuando se tienen los operandos de
+registro A, para devolver la salida. Debe llamarse cuando se tienen los operandos de
 la oepración en p1^y p2^, porque toma información de allí.}
 begin
   GenerateROBdetComment;
@@ -732,7 +731,7 @@ begin
 end;
 procedure TGenCodBas.SetROBResultExpres_char(Opt: TxpOperation);
 {Define el resultado como una expresión de tipo Char, y se asegura de reservar el
-registro W, para devolver la salida. Debe llamarse cuando se tienen los operandos de
+registro A, para devolver la salida. Debe llamarse cuando se tienen los operandos de
 la oepración en p1^y p2^, porque toma información de allí.}
 begin
   GenerateROBdetComment;
@@ -748,7 +747,7 @@ begin
 end;
 procedure TGenCodBas.SetROBResultExpres_word(Opt: TxpOperation);
 {Define el resultado como una expresión de tipo Word, y se asegura de reservar los
-registros H,W, para devolver la salida.}
+registros H,A, para devolver la salida.}
 begin
   GenerateROBdetComment;
   //Se van a usar los RT. Verificar si los RT están ocupadoa
@@ -783,7 +782,7 @@ begin
 end;
 procedure TGenCodBas.SetROUResultExpres_byte;
 {Define el resultado como una expresión de tipo Byte, y se asegura de reservar el
-registro W, para devolver la salida. Se debe usar solo para operaciones unarias.}
+registro A, para devolver la salida. Se debe usar solo para operaciones unarias.}
 begin
   GenerateROUdetComment;
   //Se van a usar los RT. Verificar si los RT están ocupadoa
@@ -895,46 +894,6 @@ begin
 end;
 //Instrucciones simples
 {Estas instrucciones no guardan la instrucción compilada en "lastOpCode".}
-procedure TGenCodBas._ADDLW(const k: word); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsmK(i_ADDLW, k);
-end;
-procedure TGenCodBas._ANDLW(const k: word); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsmK(i_ANDLW, k);
-end;
-procedure TGenCodBas._ADDWF(const f: byte; d: TPIC16destin); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_ADDWF, f,d);
-end;
-procedure TGenCodBas._ANDWF(const f: byte; d: TPIC16destin); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_ANDWF, f,d);
-end;
-procedure TGenCodBas._CLRW; inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_CLRW);
-end;
-procedure TGenCodBas._DECF(const f: byte; d: TPIC16destin); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_DECF, f,d);
-end;
-procedure TGenCodBas._DECFSZ(const f: byte; d: TPIC16destin); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_DECFSZ, f,d);
-end;
-procedure TGenCodBas._INCF(const f: byte; d: TPIC16destin); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsm(i_INCF, f,d);
-end;
 procedure TGenCodBas._BTFSC(const f, b: byte); inline;
 begin
 //  pic.flash[pic.iRam].curBnk := CurrBank;
@@ -994,9 +953,9 @@ procedure TGenCodBas._LSRa;
 begin
   pic.codAsm(i_LSR, aAcumulat, 0);
 end;
-procedure TGenCodBas._JMP(const a: word); inline;
+procedure TGenCodBas._JMP(const ad: word);
 begin
-  pic.codAsm(i_JMP, aAbsolute, a);  //pone salto indefinido
+  pic.codAsm(i_JMP, aAbsolute, ad);  //pone salto indefinido
 end;
 procedure TGenCodBas._JMP_lbl(out igot: integer);
 {Escribe una instrucción GOTO, pero sin precisar el destino aún. Devuelve la dirección
@@ -1006,16 +965,16 @@ begin
   igot := pic.iRam;  //guarda posición de instrucción de salto
   pic.codAsm(i_JMP, aAbsolute, 0);  //1 en Offset indica que se completará con salto absoluto
 end;
-procedure TGenCodBas._JSR(const a: word); inline;
+procedure TGenCodBas._JSR(const ad: word);
 begin
-  pic.codAsm(i_JSR, aAbsolute, a);  //1 en Offset indica que se completará con salto absoluto
+  pic.codAsm(i_JSR, aAbsolute, ad);  //1 en Offset indica que se completará con salto absoluto
 end;
-procedure TGenCodBas._BEQ(const a: ShortInt);
+procedure TGenCodBas._BEQ(const ad: ShortInt);
 begin
-  if a>=0 then begin
-    pic.codAsm(i_BEQ, aRelative, a);
+  if ad>=0 then begin
+    pic.codAsm(i_BEQ, aRelative, ad);
   end else begin
-    pic.codAsm(i_BEQ, aRelative, 256+a);
+    pic.codAsm(i_BEQ, aRelative, 256+ad);
   end;
 end;
 procedure TGenCodBas._BEQ_lbl(out ibranch: integer);
@@ -1023,12 +982,12 @@ begin
   ibranch := pic.iRam+1;  //guarda posición del offset de salto
   pic.codAsm(i_BEQ, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
 end;
-procedure TGenCodBas._BNE(const a: ShortInt);
+procedure TGenCodBas._BNE(const ad: ShortInt);
 begin
-  if a>=0 then begin
-    pic.codAsm(i_BNE, aRelative, a);
+  if ad>=0 then begin
+    pic.codAsm(i_BNE, aRelative, ad);
   end else begin
-    pic.codAsm(i_BNE, aRelative, 256+a);
+    pic.codAsm(i_BNE, aRelative, 256+ad);
   end;
 end;
 procedure TGenCodBas._BNE_lbl(out ibranch: integer);
@@ -1036,12 +995,12 @@ begin
   ibranch := pic.iRam+1;  //guarda posición del offset de salto
   pic.codAsm(i_BNE, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
 end;
-procedure TGenCodBas._BCC(const a: ShortInt);
+procedure TGenCodBas._BCC(const ad: ShortInt);
 begin
-  if a>=0 then begin
-    pic.codAsm(i_BCC, aRelative, a);
+  if ad>=0 then begin
+    pic.codAsm(i_BCC, aRelative, ad);
   end else begin
-    pic.codAsm(i_BCC, aRelative, 256+a);
+    pic.codAsm(i_BCC, aRelative, 256+ad);
   end;
 end;
 procedure TGenCodBas._CLC;
@@ -1283,23 +1242,23 @@ begin
   stVariab: begin
     _LDA(Op^.rVar.adrByte0.addr);
   end;
-  stExpres: begin  //ya está en w
+  stExpres: begin  //ya está en A
   end;
   stVarRefVar: begin
     ////Se tiene una variable puntero dereferenciada: x^
     //varPtr := Op^.rVar;  //Guarda referencia a la variable puntero
-    ////Mueve a W
+    ////Mueve a A
     //kMOVF(varPtr.adrByte0, toW);
     //kMOVWF(FSR);  //direcciona
-    //kMOVF(INDF, toW);  //deje en W
+    //kMOVF(INDF, toW);  //deje en A
   end;
   stVarRefExp: begin
 //    //Es una expresión derefernciada (x+a)^.
 //    {Se asume que el operando tiene su resultado en los RT. Si estuvieran en la pila
 //    no se aplicaría.}
-//    //Mueve a W
+//    //Mueve a A
 //    _MOVWF(FSR.addr);  //direcciona
-//    _MOVF(0, toW);  //deje en W
+//    _MOVF(0, toW);  //deje en A
   end;
   else
     //Almacenamiento no implementado
@@ -1308,7 +1267,7 @@ begin
 end;
 procedure TGenCodBas.byte_DefineRegisters;
 begin
-  //No es encesario, definir registros adicionales a W
+  //No es encesario, definir registros adicionales a A
 end;
 procedure TGenCodBas.byte_SaveToStk;
 begin
@@ -1337,17 +1296,17 @@ begin
 //      end;
 //    stVariab: begin
 //        SetResultExpres(arrVar.typ.refType, true);  //Es array de bytes, o Char, devuelve Byte o Char
-//        LoadToRT(idx);   //Lo deja en W
+//        LoadToRT(idx);   //Lo deja en A
 //        _ADDLW(arrVar.addr0);   //agrega OFFSET
 //        _MOVWF(04);     //direcciona con FSR
-//        _MOVF(0, toW);  //lee indexado en W
+//        _MOVF(0, toW);  //lee indexado en A
 //    end;
 //    stExpres: begin
 //        SetResultExpres(arrVar.typ.refType, false);  //Es array de bytes, o Char, devuelve Byte o Char
-//        LoadToRT(idx);   //Lo deja en W
+//        LoadToRT(idx);   //Lo deja en A
 //        _ADDLW(arrVar.addr0);   //agrega OFFSET
 //        _MOVWF(04);     //direcciona con FSR
-//        _MOVF(0, toW);  //lee indexado en W
+//        _MOVF(0, toW);  //lee indexado en A
 //      end;
 //    end;
 //  end else begin
@@ -1386,7 +1345,7 @@ begin
 //          _STA(idxTar);
 //        end else begin
 //          //Sabemos que hay una expresión byte
-//          LoadToRT(value); //Carga resultado en W
+//          LoadToRT(value); //Carga resultado en A
 //          _MOVWF(idxTar);  //Mueve a arreglo
 //        end;
 //      end;
@@ -1417,10 +1376,10 @@ begin
 //          _MOVF(value.offs, toW);
 //          _MOVWF($00);   //Escribe valor
 //        end else begin
-//          //Es una expresión. El resultado está en W
+//          //Es una expresión. El resultado está en A
 //          //hay que mover value a arrVar[idx.rvar]
 //          typWord.DefineRegister;   //Para usar H
-//          _MOVWF(H.offs);  //W->H   salva H
+//          _MOVWF(H.offs);  //A->H   salva H
 //          _MOVF(idx.offs, toW);  //índice
 //          _ADDLW(arrVar.addr0);  //Dirección de inicio
 //          _MOVWF($04);  //Direcciona
@@ -1429,7 +1388,7 @@ begin
 //        end;
 //      end;
 //    stExpres: begin
-//      //El índice es una expresión y está en W.
+//      //El índice es una expresión y está en A.
 //      if not GetValueToAssign(WithBrack, arrVar, value) then exit;
 //      //Sabemos que hay una expresión byte
 //      if (value.Sto = stConst) and (value.valInt=0) then begin
@@ -1451,9 +1410,9 @@ begin
 //        _MOVF(value.offs, toW);
 //        _MOVWF($00);   //Escribe valor
 //      end else begin
-//        //Es una expresión. El valor a asignar está en W, y el índice en la pila
+//        //Es una expresión. El valor a asignar está en A, y el índice en la pila
 //        typWord.DefineRegister;   //Para usar H
-//        _MOVWF(H.offs);  //W->H   salva valor a H
+//        _MOVWF(H.offs);  //A->H   salva valor a H
 //        rVar := GetVarByteFromStk;  //toma referencia de la pila
 //        _MOVF(rVar.adrByte0.offs, toW);  //índice
 //        _ADDLW(arrVar.addr0);  //Dirección de inicio
@@ -1523,7 +1482,7 @@ begin
 //      _STA(xvar.addr0+4);
 //      _STA(xvar.addr0+5);
 //    end else begin
-//      //Implementa lazo, usando W como índice
+//      //Implementa lazo, usando A como índice
 //      _LDA(xvar.adrByte0.offs);  //dirección inicial
 //      _MOVWF($04);   //FSR
 //      _LDA(256-xvar.typ.arrSize);
@@ -1531,7 +1490,7 @@ begin
 //      _LDA(0);
 //      _STA(0);
 //      _INCF($04, toF);    //Siguiente
-//      _ADDLW(1);   //W = W + 1
+//      _ADDLW(1);   //A = A + 1
 //      _BTFSS(_STATUS, _Z);
 //      _JMP(j1);
 //    end;
@@ -1566,25 +1525,25 @@ begin
   stVarRefVar: begin
     ////Se tiene una variable puntero dereferenciada: x^
     //varPtr := Op^.rVar;  //Guarda referencia a la variable puntero
-    ////Mueve a W
-    //kINCF(varPtr.adrByte0, toW);  //varPtr.addr+1 -> W  (byte alto)
+    ////Mueve a A
+    //kINCF(varPtr.adrByte0, toW);  //varPtr.addr+1 -> A  (byte alto)
     //_MOVWF(FSR.addr);  //direcciona byte alto
-    //_MOVF(0, toW);  //deje en W
+    //_MOVF(0, toW);  //deje en A
     //_MOVWF(H.addr);  //Guarda byte alto
     //_DECF(FSR.addr,toF);
-    //_MOVF(0, toW);  //deje en W byte bajo
+    //_MOVF(0, toW);  //deje en A byte bajo
   end;
   stVarRefExp: begin
 //    //Es una expresión desrefernciada (x+a)^.
 //    {Se asume que el operando tiene su resultado en los RT. Si estuvieran en la pila
 //    no se aplicaría.}
-//    //Mueve a W
+//    //Mueve a A
 //    _MOVWF(FSR.addr);  //direcciona byte bajo
 //    _INCF(FSR.addr,toF);  //apunta a byte alto
-//    _MOVF(0, toW);  //deje en W
+//    _MOVF(0, toW);  //deje en A
 //    _MOVWF(H.addr);  //Guarda byte alto
 //    _DECF(FSR.addr,toF);
-//    _MOVF(0, toW);  //deje en W byte bajo
+//    _MOVF(0, toW);  //deje en A byte bajo
   end;
   else
     //Almacenamiento no implementado
@@ -1593,7 +1552,7 @@ begin
 end;
 procedure TGenCodBas.word_DefineRegisters;
 begin
-  //Aparte de W, solo se requiere H
+  //Aparte de A, solo se requiere H
   if not H.assigned then begin
     AssignRAM(H.addr, '_H', false);
     H.assigned := true;
@@ -1642,10 +1601,10 @@ begin
       //_RLF(idx.offs, toW);           //Multiplica Idx por 2
       //_ADDLW(arrVar.addr0+1);   //Agrega OFFSET + 1
       //_MOVWF(FSR.offs);     //direcciona con FSR
-      //_MOVF(0, toW);  //lee indexado en W
+      //_MOVF(0, toW);  //lee indexado en A
       //_MOVWF(H.offs);    //byte alto
       //_DECF(FSR.offs, toF);
-      //_MOVF(0, toW);  //lee indexado en W
+      //_MOVF(0, toW);  //lee indexado en A
     end;
     stExpres: begin
       SetResultExpres(arrVar.typ.refType, false);  //Es array de word, devuelve word
@@ -1654,10 +1613,10 @@ begin
       //_RLF(FSR.offs, toW);         //Multiplica Idx por 2
       //_ADDLW(arrVar.addr0+1);   //Agrega OFFSET + 1
       //_MOVWF(FSR.offs);     //direcciona con FSR
-      //_MOVF(0, toW);  //lee indexado en W
+      //_MOVF(0, toW);  //lee indexado en A
       //_MOVWF(H.offs);    //byte alto
       //_DECF(FSR.offs, toF);
-      //_MOVF(0, toW);  //lee indexado en W
+      //_MOVF(0, toW);  //lee indexado en A
     end;
     end;
   end else begin
@@ -1712,7 +1671,7 @@ begin
 //          //El valor a asignar es variable o expresión
 //          typWord.DefineRegister;   //Para usar H
 //          //Sabemos que hay una expresión word
-//          LoadToRT(value); //Carga resultado en H,W
+//          LoadToRT(value); //Carga resultado en H,A
 //          _MOVWF(idxTar);  //Byte bajo
 //          _MOVF(H.offs, toW);
 //          _MOVWF(idxTar+1);  //Byte alto
@@ -1759,11 +1718,11 @@ begin
 //          _MOVF(value.Hoffs, toW);
 //          _MOVWF($00);   //Escribe
 //        end else begin
-//          //El valor a escribir, es una expresión y está en H,W
+//          //El valor a escribir, es una expresión y está en H,A
 //          //hay que mover value a arrVar[idx.rvar]
 //          aux := GetAuxRegisterByte;
 //          typWord.DefineRegister;   //Para usar H
-//          _MOVWF(aux.offs);  //W->   salva W (Valor.H)
+//          _MOVWF(aux.offs);  //A->   salva A (Valor.H)
 //          //Calcula dirección de byte bajo
 //          _BCF(_STATUS, _C);
 //          _RLF(idx.offs, toW);  //índice * 2
@@ -1780,11 +1739,11 @@ begin
 //        end;
 //      end;
 //    stExpres: begin
-//      //El índice es una expresión y está en W.
+//      //El índice es una expresión y está en A.
 //      if not GetValueToAssign(WithBrack, arrVar, value) then exit;
 //      if value.Sto = stConst then begin
 //        //El valor a asignar, es una constante
-//        _MOVWF(FSR.offs);   //Salva W.
+//        _MOVWF(FSR.offs);   //Salva A.
 //        _BCF(_STATUS, _C);
 //        _RLF(FSR.offs, toW);  //idx * 2
 //        _ADDLW(arrVar.addr0);  //Dirección de inicio
@@ -1805,7 +1764,7 @@ begin
 //          _MOVWF($00);
 //        end;
 //      end else if value.Sto = stVariab then begin
-//        _MOVWF(FSR.offs);   //Salva W.
+//        _MOVWF(FSR.offs);   //Salva A.
 //        _BCF(_STATUS, _C);
 //        _RLF(FSR.offs, toW);  //idx * 2
 //        _ADDLW(arrVar.addr0);  //Dirección de inicio
@@ -1818,10 +1777,10 @@ begin
 //        _MOVF(value.Hoffs, toW);
 //        _MOVWF($00);
 //      end else begin
-//        //El valor a asignar está en H,W, y el índice (byte) en la pila
+//        //El valor a asignar está en H,A, y el índice (byte) en la pila
 //        typWord.DefineRegister;   //Para usar H
 //        aux := GetAuxRegisterByte;
-//        _MOVWF(aux.offs);  //W->aux   salva W
+//        _MOVWF(aux.offs);  //A->aux   salva A
 //        rVar := GetVarByteFromStk;  //toma referencia de la pila
 //        //Calcula dirección de byte bajo
 //        _BCF(_STATUS, _C);
@@ -2008,10 +1967,10 @@ begin
   listRegStkBit:= TPicRegisterBit_list.Create(true);
   stackTop     := 0;  //Apunta a la siguiente posición libre
   stackTopBit  := 0;  //Apunta a la siguiente posición libre
-  {Crea registro de trabajo W. El registro W, es el registro interno del PIC, y no
+  {Crea registro de trabajo A. El registro A, es el registro interno del PIC, y no
   necesita un mapeo en RAM. Solo se le crea aquí, para poder usar su propiedad "used"}
-  W := TPicRegister.Create;
-  W.assigned := false;   //se le marca así, para que no se intente usar
+  A := TPicRegister.Create;
+  A.assigned := false;   //se le marca así, para que no se intente usar
   {Crea registro de trabajo Z. El registro Z, es el registro interno del PIC, y está
   siempre asignado en RAM. }
   Z := TPicRegisterBit.Create;
@@ -2040,7 +1999,7 @@ begin
   FSR.Destroy;
   C.Destroy;
   Z.Destroy;
-  W.Destroy;
+  A.Destroy;
   listRegAuxBit.Destroy;
   listRegStkBit.Destroy;
   listRegStk.Destroy;

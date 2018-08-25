@@ -66,12 +66,12 @@ begin
     _LDA(byte2);
     _AND(value1);
   end;
-  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
     if value1 = 0 then begin  //Caso especial
       SetROBResultConst_byte(0);  //puede generar error
       exit;
     end else if value1 = 255 then begin  //Caso especial
-      SetROBResultExpres_byte(Opt);  //No es necesario hacer nada. Ya está en W
+      SetROBResultExpres_byte(Opt);  //No es necesario hacer nada. Ya está en A
       exit;
     end;
     SetROBResultExpres_byte(Opt);
@@ -92,24 +92,24 @@ begin
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);
     _LDA(byte2);
-    _AND(byte1);   //leave in W
+    _AND(byte1);   //leave in A
   end;
-  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _AND(byte1);
   end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     if value2 = 0 then begin  //Caso especial
       SetROBResultConst_byte(0);  //puede generar error
       exit;
     end else if value1 = 255 then begin  //Caso especial
-      SetROBResultExpres_byte(Opt);  //No es necesario hacer nada. Ya está en W
+      SetROBResultExpres_byte(Opt);  //No es necesario hacer nada. Ya está en A
       exit;
     end;
     SetROBResultExpres_byte(Opt);
     _AND(value2)
   end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _AND(byte2);
   end;
@@ -150,9 +150,9 @@ begin
     _LDA(value1);
     _ORA(byte2);
   end;
-  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
     if value1 = 0 then begin  //Caso especial
-      SetROBResultExpres_byte(Opt);  //No es necesario hacer nada. Ya está en W
+      SetROBResultExpres_byte(Opt);  //No es necesario hacer nada. Ya está en A
       exit;
     end else if value1 = 255 then begin  //Caso especial
       SetROBResultConst_byte(255);
@@ -178,13 +178,13 @@ begin
     _LDA(byte1);
     _ORA(byte2);
   end;
-  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _ORA(byte1);
   end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     if value2 = 0 then begin  //Caso especial
-      SetROBResultExpres_byte(Opt);  //No es necesario hacer nada. Ya está en W
+      SetROBResultExpres_byte(Opt);  //No es necesario hacer nada. Ya está en A
       exit;
     end else if value2 = 255 then begin  //Caso especial
       SetROBResultConst_byte(255);
@@ -193,7 +193,7 @@ begin
     SetROBResultExpres_byte(Opt);
     _ORA(value2);
   end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _ORA(byte2);
   end;
@@ -245,11 +245,11 @@ begin
     SetROBResultExpres_byte(Opt);
     _EOR(byte1);
   end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _EORi(value2);
   end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _EOR(byte2);
   end;
@@ -275,23 +275,23 @@ begin
   if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin  //compara constantes. Caso especial
-    SetROBResultConst_byte(ord(value1 = value2));
+    SetROBResultConst_bool(value1 = value2);
   end;
   stConst_Variab: begin
-    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
     if value1 = 0 then begin  //caso especial
       _EORi(0);  //si iguales _Z=1
     end else if value1 = 1 then begin  //caso especial
-      _DECF(p2^.offs, toW);  //si el resultado es cero _Z=1
+      _DEC(byte2);  //si el resultado es cero _Z=1
     end else if value1 = 255 then begin  //caso especial
-      _INCF(p2^.offs, toW);  //si el resultado es cero _Z=1
+      _INC(byte2);  //si el resultado es cero _Z=1
     end else begin
       _LDA(value1);
       _EOR(byte2);
     end;
   end;
-  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
-    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
+    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
     _EORi(value1);  //Si son iguales Z=1.
   end;
   stVariab_Const: begin
@@ -299,24 +299,24 @@ begin
     ROB_byte_equal_byte(Opt, SetRes);
   end;
   stVariab_Variab:begin
-    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
     _LDA(byte1);
     _EOR(byte2);  //si iguales _Z=1
   end;
-  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
-    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
+    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
     _EOR(byte1);  //si iguales _Z=1
   end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
-    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
+    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
     _EORi(value2);  //Si son iguales Z=1.
   end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
-    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
+    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
     _EOR(byte2);  //Si son iguales Z=1.
   end;
   stExpres_Expres:begin
-    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
     //la expresión p1 debe estar salvada y p2 en el acumulador
     rVar := GetVarByteFromStk;
     _EOR(rVar.adrByte0);  //Si son iguales Z=1.
@@ -355,7 +355,7 @@ begin
       _LDA(byte2H);
       _STA(byte1H);
     end;
-    stExpres: begin   //se asume que se tiene en (H,w)
+    stExpres: begin   //se asume que se tiene en (H,A)
       SetROBResultExpres_word(Opt);  //Realmente, el resultado no es importante
       _STA(byte1L);
       _LDA(H);
@@ -398,10 +398,10 @@ begin
 //      kMOVF(byte2H, toW);
 //      _MOVWF(0);
 //    end;
-//    stExpres: begin  //ya está en H,w
+//    stExpres: begin  //ya está en H,A
 //      //Caso especial de asignación a puntero dereferenciado: variable^
 //      aux := GetAuxRegisterByte;
-//      _MOVWF(aux.offs);   //Salva W (p2.L)
+//      _MOVWF(aux.offs);   //Salva A (p2.L)
 //      //Apunta con p1
 //      kMOVF(byte1, toW);
 //      _MOVWF(FSR.offs);  //direcciona a byte bajo
@@ -438,7 +438,7 @@ begin
       _LDA(0);
       _STA(byte1H);
     end;
-    stExpres: begin   //se asume que está en w
+    stExpres: begin   //se asume que está en A
       SetROBResultExpres_word(Opt);  //Realmente, el resultado no es importante
       _STA(byte1L);
       _LDA(0);
@@ -511,7 +511,7 @@ begin
 //  _LABEL(sale);
 //    end;
 //  end;
-//  stConst_Expres: begin  //la expresión p2 se evaluó p2 esta en W
+//  stConst_Expres: begin  //la expresión p2 se evaluó p2 esta en A
 //    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
 //    tmp := GetAuxRegisterByte;
 //    if HayError then exit;
@@ -541,7 +541,7 @@ begin
 //    //Si p1=p2 -> Z=1. Si no son iguales -> Z=0, A<>0.
 //_LABEL(sale);
 //  end;
-//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
+//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
 //    tmp := GetAuxRegisterByte;
 //    _MOVWF(tmp.offs);   //salva byte bajo de Expresión
@@ -556,16 +556,16 @@ begin
 //    tmp.used := false;
 //_LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
 //  end;
-//  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
+//  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
 //    ExchangeP1_P2;  //Convierte a stConst_Expres;
 //    ROB_word_equal_word(Opt, SetRes);
 //  end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
+//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
 //    ExchangeP1_P2;  //Convierte a stVariab_Expres;
 //    ROB_word_equal_word(Opt, SetRes);
 //  end;
 //  stExpres_Expres:begin
-//    //La expresión p1, debe estar salvada y p2 en (H,W)
+//    //La expresión p1, debe estar salvada y p2 en (H,A)
 //    p1^.SetAsVariab(GetVarWordFromStk);
 //    //Luego el caso es similar a variable-expresión
 //    ROB_word_equal_word(Opt, SetRes);
@@ -593,9 +593,9 @@ begin
     _LDA(value1);
     _AND(byte2L);
   end;
-  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (W)
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
     SetROBResultExpres_byte(Opt);
-    _andlw(value1L);      //Deja en W
+    _AND(value1L);      //Deja en A
   end;
   stVariab_Const: begin
     SetROBResultExpres_byte(Opt);
@@ -607,21 +607,21 @@ begin
     _LDA(byte1L);
     _AND(byte2L);
   end;
-  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,W)
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
     SetROBResultExpres_byte(Opt);
     _AND(byte1);
   end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,W)
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
     SetROBResultExpres_byte(Opt);
-    _ANDLW(value2L);
+    _AND(value2L);
   end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,W)
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
     SetROBResultExpres_byte(Opt);
     _AND(byte2L);
   end;
   stExpres_Expres:begin
     SetROBResultExpres_byte(Opt);
-    //p1 está salvado en pila y p2 en (W)
+    //p1 está salvado en pila y p2 en (A)
     p1^.SetAsVariab(GetVarWordFromStk);  //Convierte a variable
     //Luego el caso es similar a stVariab_Expres
     _AND(byte1);

@@ -280,6 +280,7 @@ begin
     nodMain := TreeView1.Items.AddChild(nil, TIT_MAIN);
     nodMain.ImageIndex := 1;
     nodMain.SelectedIndex := 1;
+    nodMain.Data := syntaxTree.main;  //Elemento raiz
     RefreshByGroups(nodMain, syntaxTree.main);
     TreeView1.Items.EndUpdate;
   end;
@@ -292,6 +293,7 @@ begin
     nodMain := TreeView1.Items.AddChild(nil, TIT_MAIN);
     nodMain.ImageIndex := 1;
     nodMain.SelectedIndex := 1;
+    nodMain.Data := syntaxTree.main;  //Elemento raiz
     RefreshByDeclar(nodMain, syntaxTree.main);
     TreeView1.Items.EndUpdate;
   end;

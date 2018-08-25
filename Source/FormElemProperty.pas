@@ -164,6 +164,10 @@ begin
     adicInformation := 'Address: $' + IntToHex(xbod.adrr, 3) + LineEnding +
            'Begin: ' + xbod.srcDec.RowColString  + LineEnding +
            'End: ' + elem.srcEnd.RowColString;
+  end else if elem.idClass = eltMain then begin
+    txtEleType.Caption := 'Main';
+    ImageList1.GetBitmap(1, Image1.Picture.Bitmap);
+    adicInformation := '';
   end else begin
     txtEleType.Caption := 'Unknown';
     ImageList1.GetBitmap(13, Image1.Picture.Bitmap);

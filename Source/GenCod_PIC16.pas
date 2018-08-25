@@ -11,15 +11,16 @@ Solo se manejan datos de tipo bit, boolean, byte y word, y operaciones sencillas
 }
 {La arquitectura definida aquí contempla:
 
-Un registro de trabajo W, de 8 bits (el acumulador del PIC).
-Dos registros adicionales  H y L de 8 bits cada uno (Creados a demanda).
+Un registro de trabajo A, de 8 bits (el acumulador del PIC).
+Dos registros auxiliares X e Y.
+Tres egistros de trabajo adicionales  U,E y H de 8 bits cada uno (Creados a demanda).
 
 Los resultados de una expresión se dejarán en:
 
-1. En Bit Z o C, de STATUS -> Si el resultado es de tipo bit o boolean.
-2. El acumulador W         -> Si el resultado es de tipo byte o char.
-3. Los registros (H,w)     -> Si el resultado es tipo word.
-4. Los registros (U,E,H,w) -> Si el resultado es tipo dword.
+1. El bit Z, de SR         -> Si el resultado es de tipo bit o boolean.
+2. El acumulador A         -> Si el resultado es de tipo byte o char.
+3. Los registros (H,A)     -> Si el resultado es tipo word.
+4. Los registros (U,E,H,A) -> Si el resultado es tipo dword.
 
 Opcionalmente, si estos registros ya están ocupados, se guardan primero en la pila, o se
 usan otros registros auxiliares.
@@ -55,13 +56,11 @@ type
     private  //Operaciones con Bit
 //      f_byteXbyte_byte: TxpEleFun;  //índice para función
       f_byte_mul_byte_16: TxpEleFun;  //índice para función
-      f_byte_div_byte: TxpEleFun;  //índice para función
       f_word_mul_word_16: TxpEleFun;  //índice para función
       procedure mul_byte_16(fun: TxpEleFun);
       procedure Copy_Z_to_A;
       procedure Copy_C_to_A;
       procedure fun_Byte(fun: TxpEleFun);
-      procedure ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROU_addr_word(Opr: TxpOperator; SetRes: boolean);
       procedure ROU_not_byte(Opr: TxpOperator; SetRes: boolean);
       procedure ROU_addr_byte(Opr: TxpOperator; SetRes: boolean);
@@ -191,7 +190,7 @@ procedure TGenCod.expr_start;
 //Se ejecuta siempre al iniciar el procesamiento de una expresión.
 begin
   //Inicia banderas de estado para empezar a calcular una expresión
-  W.used := false;        //Su ciclo de vida es de instrucción
+  A.used := false;        //Su ciclo de vida es de instrucción
   Z.used := false;        //Su ciclo de vida es de instrucción
   if H<>nil then
     H.used := false;      //Su ciclo de vida es de instrucción
@@ -260,12 +259,12 @@ begin
     //  kMOVWF(INDF);
     //end;
     //stExpres: begin
-    //  //La dirección está en la pila y la expresión en W
+    //  //La dirección está en la pila y la expresión en A
     //  aux := GetAuxRegisterByte;
-    //  kMOVWF(aux);   //Salva W (p2)
+    //  kMOVWF(aux);   //Salva A (p2)
     //  //Apunta con p1
     //  rVar := GetVarByteFromStk;
-    //  kMOVF(rVar.adrByte0, toW);  //Opera directamente al dato que había en la pila. Deja en W
+    //  kMOVF(rVar.adrByte0, toW);  //Opera directamente al dato que había en la pila. Deja en A
     //  kMOVWF(FSR);  //direcciona
     //  //Asignación normal
     //  kMOVF(aux, toW);
@@ -300,10 +299,10 @@ begin
     //  kMOVF(byte2, toW);
     //  kMOVWF(INDF);
     //end;
-    //stExpres: begin  //ya está en w
+    //stExpres: begin  //ya está en A
     //  //Caso especial de asignación a puntero derefrrenciado: variable^
     //  aux := GetAuxRegisterByte;
-    //  kMOVWF(aux);   //Salva W (p2)
+    //  kMOVWF(aux);   //Salva A (p2)
     //  //Apunta con p1
     //  kMOVF(byte1, toW);
     //  kMOVWF(FSR);  //direcciona
@@ -348,7 +347,7 @@ begin
       _ADC(byte2);
       _STA(byte1);
     end;
-    stExpres: begin  //ya está en w
+    stExpres: begin  //ya está en A
       _CLC;
       _ADC(byte1);
       _STA(byte1);
@@ -377,12 +376,12 @@ begin
 //      _ADDWF(0, toF);
 //    end;
 //    stExpres: begin
-//      //La dirección está en la pila y la expresión en W
+//      //La dirección está en la pila y la expresión en A
 //      aux := GetAuxRegisterByte;
-//      kMOVWF(aux);   //Salva W (p2)
+//      kMOVWF(aux);   //Salva A (p2)
 //      //Apunta con p1
 //      rVar := GetVarByteFromStk;
-//      kMOVF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en W
+//      kMOVF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en A
 //      kMOVWF(FSR);  //direcciona
 //      //Asignación normal
 //      kMOVF(aux, toW);
@@ -416,10 +415,10 @@ begin
 //      kMOVF(byte2, toW);
 //      _ADDWF(0, toF);
 //    end;
-//    stExpres: begin  //ya está en w
+//    stExpres: begin  //ya está en A
 //      //Caso especial de asignación a puntero derefrrenciado: variable^
 //      aux := GetAuxRegisterByte;
-//      kMOVWF(aux);   //Salva W (p2)
+//      kMOVWF(aux);   //Salva A (p2)
 //      //Apunta con p1
 //      kMOVF(byte1, toW);
 //      kMOVWF(FSR);  //direcciona
@@ -463,7 +462,7 @@ begin
       _SBC(byte2);
       _STA(byte1);
     end;
-    stExpres: begin  //ya está en w
+    stExpres: begin  //ya está en A
       _SEC;
       _SBC(byte1);   //a - p1 -> a
       //Invierte
@@ -497,12 +496,12 @@ begin
 //      _SUBWF(0, toF);
 //    end;
 //    stExpres: begin
-//      //La dirección está en la pila y la expresión en W
+//      //La dirección está en la pila y la expresión en A
 //      aux := GetAuxRegisterByte;
-//      kMOVWF(aux);   //Salva W (p2)
+//      kMOVWF(aux);   //Salva A (p2)
 //      //Apunta con p1
 //      rVar := GetVarByteFromStk;
-//      kMOVF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en W
+//      kMOVF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en A
 //      kMOVWF(FSR);  //direcciona
 //      //Asignación normal
 //      kMOVF(aux, toW);
@@ -536,10 +535,10 @@ begin
 //      kMOVF(byte2, toW);
 //      _SUBWF(0, toF);
 //    end;
-//    stExpres: begin  //ya está en w
+//    stExpres: begin  //ya está en A
 //      //Caso especial de asignación a puntero derefrrenciado: variable^
 //      aux := GetAuxRegisterByte;
-//      kMOVWF(aux);   //Salva W (p2)
+//      kMOVWF(aux);   //Salva A (p2)
 //      //Apunta con p1
 //      kMOVF(byte1, toW);
 //      kMOVWF(FSR);  //direcciona
@@ -599,17 +598,17 @@ begin
     _LDA(byte1);
     _ADC(byte2);
   end;
-  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _CLC;
     _ADC(byte1);
   end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _CLC;
     _ADC(value2);
   end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _CLC;
     _ADC(byte2);
@@ -619,7 +618,7 @@ begin
     //La expresión p1 debe estar salvada y p2 en el acumulador
     rVar := GetVarByteFromStk;
     _CLC;
-    _ADC(rVar.adrByte0);  //opera directamente al dato que había en la pila. Deja en W
+    _ADC(rVar.adrByte0);  //opera directamente al dato que había en la pila. Deja en A
     FreeStkRegisterByte;   //libera pila porque ya se uso
   end;
   else
@@ -646,7 +645,7 @@ begin
     _LDA(value1);
     _SBC(byte2);
   end;
-  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     typWord.DefineRegister;   //Asegura que exista H
     _STA(H);
@@ -666,7 +665,7 @@ begin
     _LDA(byte1);
     _SBC(byte2);
   end;
-  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _SEC;
     _SBC(byte1);   //a - p1 -> a
@@ -675,12 +674,12 @@ begin
     _CLC;
     _ADC(1);
   end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _SEC;
     _SBC(value2);
   end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _SEC;
     _SBC(byte2);
@@ -698,12 +697,12 @@ begin
   end;
 end;
 procedure TGenCod.mul_byte_16(fun: TxpEleFun);
-//E * W -> [H:W]  Usa registros: W,H,E,U
+//E * A -> [H:A]  Usa registros: A,H,E,U
 //Basado en código de Andrew Warren http://www.piclist.com
 var
   LOOP: Word;
 begin
-//    typDWord.DefineRegister;   //Asegura que exista W,H,E,U
+//    typDWord.DefineRegister;   //Asegura que exista A,H,E,U
 //    _CLRF (H.offs);
 //    _CLRF (U.offs);
 //    _BSF  (U.offs,3);  //8->U
@@ -715,107 +714,9 @@ begin
 //    _RRF   (E.offs,toF);
 //    _DECFSZ(U.offs, toF);
 //    _JMP  (LOOP);
-//    //Realmente el algortimo es: E*W -> [H:E], pero lo convertimos a: E*W -> [H:W]
+//    //Realmente el algortimo es: E*A -> [H:E], pero lo convertimos a: E*A -> [H:A]
 //    _MOVF(E.offs, toW);
 //    _RTS;
-end;
-procedure TGenCod.ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
-begin
-//  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
-//    GenError('Too complex pointer expression.'); exit;
-//  end;
-//  if not ChangePointerToExpres(p1^) then exit;
-//  if not ChangePointerToExpres(p2^) then exit;
-//  case stoOperation of
-//  stConst_Const:begin  //producto de dos constantes. Caso especial
-//    if value1*value2 < $100 then begin
-//      SetROBResultConst_byte((value1*value2) and $FF);  //puede generar error
-//    end else begin
-//      SetROBResultConst_word((value1*value2) and $FFFF);  //puede generar error
-//    end;
-//    exit;  //sale aquí, porque es un caso particular
-//  end;
-//  stConst_Variab: begin
-//    if value1=0 then begin  //caso especial
-//      SetROBResultConst_byte(0);
-//      exit;
-//    end else if value1=1 then begin  //caso especial
-//      SetROBResultVariab(p2^.rVar);
-//      exit;
-//    end else if value1=2 then begin
-//      SetROBResultExpres_word(Opt);
-//      _CLRF(H.offs);
-//      _BCF(_STATUS, _C);
-//      kRLF(byte2, toW);
-//      _RLF(H.offs, toF);
-//      exit;
-//    end;
-//    SetROBResultExpres_word(Opt);
-//    kMOVF(byte2, toW);
-//    _MOVWF(E.offs);
-//    _JSR(f_byte_mul_byte_16.adrr);
-//    AddCallerTo(f_byte_mul_byte_16);
-//  end;
-//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
-//    SetROBResultExpres_word(opt);
-//    kMOVWF(E);
-//    _JSR(f_byte_mul_byte_16.adrr);
-//    AddCallerTo(f_byte_mul_byte_16);
-//  end;
-//  stVariab_Const: begin
-//    SetROBResultExpres_word(opt);
-//    kMOVF(byte1, toW);
-//    _MOVWF(E.offs);
-//    _JSR(f_byte_mul_byte_16.adrr);
-//    AddCallerTo(f_byte_mul_byte_16);
-//  end;
-//  stVariab_Variab:begin
-//    SetROBResultExpres_word(Opt);
-//    kMOVF(byte1, toW);
-//    _MOVWF(E.offs);
-//    kMOVF(byte2, toW);
-//    _JSR(f_byte_mul_byte_16.adrr);
-//    AddCallerTo(f_byte_mul_byte_16);
-//  end;
-//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
-//    SetROBResultExpres_word(Opt);
-//    _MOVWF(E.offs);  //p2 -> E
-//    kMOVF(byte1, toW); //p1 -> W
-//    _JSR(f_byte_mul_byte_16.adrr);
-//    AddCallerTo(f_byte_mul_byte_16);
-//  end;
-//  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
-//    SetROBResultExpres_word(Opt);
-//    _MOVWF(E.offs);  //p1 -> E
-//    _JSR(f_byte_mul_byte_16.adrr);
-//    AddCallerTo(f_byte_mul_byte_16);
-//  end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
-//    SetROBResultExpres_word(Opt);
-//    _MOVWF(E.offs);  //p1 -> E
-//    kMOVF(byte2, toW); //p2 -> W
-//    _JSR(f_byte_mul_byte_16.adrr);
-//    AddCallerTo(f_byte_mul_byte_16);
-//  end;
-//  stExpres_Expres:begin
-//    SetROBResultExpres_word(Opt);
-//    //la expresión p1 debe estar salvada y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-//    _MOVWF(E.offs);  //p2 -> E
-//    kMOVF(rVar.adrByte0, toW); //p1 -> W
-//    _JSR(f_byte_mul_byte_16.adrr);
-//    FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
-//    {Se podría ahorrar el paso de mover la variable de la pila a W (y luego a una
-//    variable) temporal, si se tuviera una rutina de multiplicación que compilara a
-//    partir de la direccion de una variable (en este caso de la pila, que se puede
-//    modificar), pero es un caso puntual, y podría no reutilizar el código apropiadamente.}
-//    AddCallerTo(f_byte_mul_byte_16);
-//  end;
-//  else
-//    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-//  end;
 end;
 procedure TGenCod.ROB_byte_great_byte(Opt: TxpOperation; SetRes: boolean);
 var
@@ -843,7 +744,7 @@ begin
       Copy_C_to_A; //Pasa C a Z (invirtiendo)
     end;
   end;
-  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
     if value1 = 0 then begin
       //0 es mayor que nada
       SetROBResultConst_byte(0);
@@ -853,7 +754,7 @@ begin
       //Se necesita asegurar que p1, es mayo que cero.
       SetROBResultExpres_byte(Opt);  //invierte la lógica
       typWord.DefineRegister;   //Asegura que exista H
-      //p2, ya está en W
+      //p2, ya está en A
       _STA(H);
       _SEC;
       _LDA(value1);
@@ -881,7 +782,7 @@ begin
     _SBC(byte2);
     Copy_C_to_A; //Pasa C a Z (invirtiendo)
   end;
-  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     tmp := GetAuxRegisterByte;  //Se pide registro auxiliar
     _STA(tmp);
@@ -891,7 +792,7 @@ begin
     Copy_C_to_A; //Pasa C a Z (invirtiendo)
     tmp.used := false;  //libera
   end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     if value2 = 255 then begin
       //Nada es mayor que 255
       SetROBResultConst_byte(0);
@@ -903,7 +804,7 @@ begin
       Copy_C_to_A; //Pasa C a Z (invirtiendo)
     end;
   end;
-  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     _SEC;
     _SBC(byte2);
@@ -969,7 +870,7 @@ begin
   end;
 //  stConst_Variab: begin
 //  end;
-//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
+//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
 //  end;
   stVariab_Const: begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
@@ -1013,9 +914,9 @@ begin
     _DEX;
     _BNE(-4);  //loop1
   end;
-//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
+//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
 //  end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
     if value2 = 0 then begin
@@ -1042,7 +943,7 @@ begin
       _BNE(-4);  //loop1
     end;
   end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
+//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
 //  end;
 //  stExpres_Expres:begin
 //  end;
@@ -1065,13 +966,13 @@ begin
   end;
 //  stConst_Variab: begin
 //  end;
-//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en W
+//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
 //  end;
   stVariab_Const: begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
     if value2 = 0 then begin
-      _LDA(byte1);  //solo devuelve lo mismo en W
+      _LDA(byte1);  //solo devuelve lo mismo en A
     end else if value2 = 1 then begin
       _LDA(byte1);
       _ASLa;
@@ -1109,9 +1010,9 @@ begin
     _DEX;
     _BNE(-4);  //loop1
   end;
-//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en W
+//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
 //  end;
-  stExpres_Const: begin   //la expresión p1 se evaluó y esta en W
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
     if value2 = 0 then begin
@@ -1138,7 +1039,7 @@ begin
       _BNE(-4);  //loop1
     end;
   end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en W
+//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
 //  end;
 //  stExpres_Expres:begin
 //  end;
@@ -1164,7 +1065,7 @@ begin
     _LDA(byte2);
     _STA(byte1);
   end;
-  stExpres: begin  //ya está en w
+  stExpres: begin  //ya está en A
     SetROBResultExpres_char(Opt);  //Realmente, el resultado no es importante
     _STA(byte1);
   end;
@@ -1286,7 +1187,7 @@ begin
   fun.adrr := pic.iRam;  {Se hace justo antes de generar código por si se crea
                           la variable _H}
   {Esta rutina recibe los milisegundos en los registros en (H,A) o en (A)
-  En cualquier caso, siempre usa el registros H , el acumulador "w" y un reg. auxiliar.
+  En cualquier caso, siempre usa el registros H , el acumulador "A" y un reg. auxiliar.
   Se supone que para pasar los parámetros, ya se requirió H, así que no es necesario
   crearlo.}
   _LDX(0);     PutComm(' ;enter when parameters in (0,A)');
@@ -1320,10 +1221,10 @@ begin
   LoadToRT(res);   //Carga en registro de trabajo
   if HayError then exit;
   if res.Typ = typByte then begin
-    //El parámetro byte, debe estar en W
+    //El parámetro byte, debe estar en A
     _JSR(fun.adrr);
   end else if res.Typ = typWord then begin
-    //El parámetro word, debe estar en (H, W)
+    //El parámetro word, debe estar en (H, A)
     _JSR(fun.adrr2);
   end else begin
     GenError(MSG_INVAL_PARTYP, [res.Typ.name]);
@@ -1398,12 +1299,12 @@ begin
     if (res.Typ = typByte) or (res.Typ = typChar) then begin
       _INC(res.rVar.adrByte0);
     end else if res.Typ = typWord then begin
-      _INCF(res.Loffs, toF);
+      _INC(res.rVar.adrByte0);
       _BTFSC(_STATUS, _Z);
-      _INCF(res.Hoffs, toF);
+      _INC(res.rVar.adrByte0);
     end else if res.Typ.catType = tctPointer then begin
       //Es puntero corto
-      _INCF(res.offs, toF);
+      _INC(res.rVar.adrByte0);
     end else begin
       GenError(MSG_INVAL_PARTYP, [res.Typ.name]);
       exit;
@@ -1432,7 +1333,7 @@ begin
 //      exit;
 //    end;
 //  end;
-  stExpres: begin  //se asume que ya está en (_H,w)
+  stExpres: begin  //se asume que ya está en (_H,A)
     GenError('Cannot increase an expression.'); exit;
   end;
   else
@@ -1455,7 +1356,7 @@ begin
   end;
   stVariab: begin
     if (res.Typ = typByte) or (res.Typ = typChar) then begin
-      _DECF(res.offs, toF);
+      _DEC(res.rVar.adrByte0);
     end else if res.Typ = typWord then begin
       _LDA(res.rVar.adrByte0);
       _BNE(lbl1);
@@ -1464,13 +1365,13 @@ _LABEL(lbl1);
       _DEC(res.rVar.adrByte0);
     end else if res.Typ.catType = tctPointer then begin
       //Es puntero corto
-      _DECF(res.offs, toF);
+      _DEC(res.rVar.adrByte0);
     end else begin
       GenError(MSG_INVAL_PARTYP, [res.Typ.name]);
       exit;
     end;
   end;
-  stExpres: begin  //se asume que ya está en (_H,w)
+  stExpres: begin  //se asume que ya está en (_H,A)
     GenError('Cannot decrease an expression.'); exit;
   end;
   else
@@ -1524,7 +1425,7 @@ begin
       GenError('Cannot convert to ordinal.'); exit;
     end;
   end;
-  stExpres: begin  //se asume que ya está en (w)
+  stExpres: begin  //se asume que ya está en (A)
     if res.Typ = typChar then begin
       //Es la misma expresión, solo que ahora es Byte.
       res.SetAsExpres(typByte); //No se puede usar SetROBResultExpres_byte, porque no hay p1 y p2
@@ -1563,7 +1464,7 @@ begin
       GenError('Cannot convert to char.'); exit;
     end;
   end;
-  stExpres: begin  //se asume que ya está en (w)
+  stExpres: begin  //se asume que ya está en (A)
     if res.Typ = typByte then begin
       //Es la misma expresión, solo que ahora es Char.
       res.SetAsExpres(typChar); //No se puede usar SetROBResultExpres_char, porque no hay p1 y p2;
@@ -1613,15 +1514,15 @@ begin
       GenError('Cannot convert to byte.'); exit;
     end;
   end;
-  stExpres: begin  //se asume que ya está en (w)
+  stExpres: begin  //se asume que ya está en (A)
     if res.Typ = typByte then begin
-      //Ya está en W
+      //Ya está en A
       //Ya es Byte
     end else if res.Typ = typChar then begin
-      //Ya está en W
+      //Ya está en A
       res.SetAsExpres(typByte);  //Solo cambia el tipo
     end else if res.Typ = typWord then begin
-      //Ya está en W el byte bajo
+      //Ya está en A el byte bajo
       res.SetAsExpres(typByte);  //Cambia el tipo
     end else begin
       GenError('Cannot convert to byte.'); exit;
@@ -1676,21 +1577,21 @@ begin
 //      GenError('Cannot convert this variable to word.'); exit;
 //    end;
 //  end;
-//  stExpres: begin  //se asume que ya está en (w)
+//  stExpres: begin  //se asume que ya está en (A)
 //    typWord.DefineRegister;
 //    if res.Typ = typByte then begin
 //      res.SetAsExpres(typWord);
-//      //Ya está en W el byte bajo
+//      //Ya está en A el byte bajo
 //      _CLRF(H.offs);
 //    end else if res.Typ = typChar then begin
 //      res.SetAsExpres(typWord);
-//      //Ya está en W el byte bajo
+//      //Ya está en A el byte bajo
 //      _CLRF(H.offs);
 //    end else if res.Typ = typWord then begin
 ////      Ya es word
 //    end else if res.Typ = typDWord then begin
 //      res.SetAsExpres(typWord);
-//      //Ya está en H,W el word bajo
+//      //Ya está en H,A el word bajo
 //    end else begin
 //      GenError('Cannot convert expression to word.'); exit;
 //    end;
@@ -1819,8 +1720,6 @@ begin
   opr.CreateOperation(typByte,@ROB_byte_add_byte);
   opr:=typByte.CreateBinaryOperator('-',4,'subs');  //suma
   opr.CreateOperation(typByte,@ROB_byte_sub_byte);
-  opr:=typByte.CreateBinaryOperator('*',5,'mult');  //byte*byte -> word
-  opr.CreateOperation(typByte,@ROB_byte_mul_byte);
 
   opr:=typByte.CreateBinaryOperator('AND',5,'and');  //suma
   opr.CreateOperation(typByte,@ROB_byte_and_byte);

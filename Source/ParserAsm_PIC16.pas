@@ -34,7 +34,7 @@ type
     asmRow : integer;     //número de fila explorada
     procedure AddLabel(name: string; addr: integer);
     procedure AddUJump(name: string; addr: integer; idInst: TP6502Inst);
-    function CaptureAddress(const idInst: TP6502Inst; var a: word): boolean;
+    function CaptureAddress(const idInst: TP6502Inst; var ad: word): boolean;
     function CaptureBitVar(out f, b: byte): boolean;
     function CaptureByte(out k: byte): boolean;
     function CaptureComma: boolean;
@@ -489,7 +489,7 @@ begin
     exit;
   end;
 end;
-function TParserAsm.CaptureAddress(const idInst: TP6502Inst; var a: word
+function TParserAsm.CaptureAddress(const idInst: TP6502Inst; var ad: word
   ): boolean;
 {Captura una dirección a una instrucción y devuelve en "a". Si no encuentra genera
 error y devuelve FALSE.}
@@ -508,7 +508,7 @@ begin
     //Puede tener + o -
     if (lexAsm.GetToken= '') or (lexAsm.GetToken = ';') then begin
       //Termina la instrucción sin o con es comentario
-      a := pic.iRam;
+      ad := pic.iRam;
       Result := true;
       exit;
     end else if lexAsm.GetToken = '+' then begin
@@ -518,7 +518,7 @@ begin
       CaptureByte(offset);  //captura desplazamiento
       if HayError then exit(false);
       Result := true;
-      a := pic.iRam + offset;
+      ad := pic.iRam + offset;
       exit;
     end else if lexAsm.GetToken = '-' then begin
       //Es dirección restada
@@ -527,7 +527,7 @@ begin
       CaptureByte(offset);  //captura desplazamiento
       if HayError then exit(false);
       Result := true;
-      a := pic.iRam - offset;
+      ad := pic.iRam - offset;
       exit;
     end else begin
       //Sigue otra cosa
@@ -535,13 +535,13 @@ begin
     end;
   end else if tokType = lexAsm.tnNumber then begin
     //Es una dirección numérica
-    a := StrToInt(lexAsm.GetToken);
+    ad := StrToInt(lexAsm.GetToken);
     lexAsm.Next;
     Result := true;
     exit;
   end else if (tokType = lexAsm.tnIdentif) and IsLabel(lexAsm.GetToken, dir) then begin
     //Es un identificador de etiqueta
-    a := dir;
+    ad := dir;
     lexAsm.Next;
     Result := true;
     exit;
@@ -551,13 +551,13 @@ begin
       //Es un identificador de función del árbol de sintaxis
       xfun := TxpEleFun(ele);
       AddCallerTo(xfun);  //lleva la cuenta
-      a := xfun.adrr;   //lee su dirección
+      ad := xfun.adrr;   //lee su dirección
       lexAsm.Next;
       Result := true;
       exit;
     end;
     //Es un identificador, no definido. Puede definirse luego.
-    a := $00;
+    ad := $00;
     //Los saltos indefinidos, se guardan en la lista "uJumps"
     AddUJump(lexAsm.GetToken, pic.iRam, idInst);
     lexAsm.Next;
@@ -605,7 +605,7 @@ var
   f : byte;
   d: TPIC16destin;
   b: byte;
-  a: word;
+  ad: word;
   k: byte;
 begin
   tok := lexAsm.GetToken;
@@ -613,8 +613,8 @@ begin
   if upcase(tok) = 'ORG' then begin
     lexAsm.Next;
     idInst := i_JMP;  //no debería ser necesario
-    if not CaptureAddress(idInst, a) then exit;
-    pic.iRam := a;   //¡CUIDADO! cambia PC
+    if not CaptureAddress(idInst, ad) then exit;
+    pic.iRam := ad;   //¡CUIDADO! cambia PC
     exit;
   end;
   //debería ser una instrucción
@@ -638,7 +638,7 @@ begin
   //end;
   //'fb':begin  //para instrucciones de tipo bit
   //  if CaptureBitVar(f, b) then begin
-  //    //Es una referencia a variable bit.
+  //    //Es una referencia ad variable bit.
   //  end else begin
   //    if not CaptureRegister(f) then exit;
   //    if not CaptureComma then exit;
@@ -646,9 +646,9 @@ begin
   //  end;
   //  pic.codAsmFB(idInst, f, b);
   //end;
-  //'a': begin  //i_CALL y GOTO
-  //  if not CaptureAddress(idInst, a) then exit;
-  //  pic.codAsmA(idInst, a);
+  //'ad': begin  //i_CALL y GOTO
+  //  if not CaptureAddress(idInst, ad) then exit;
+  //  pic.codAsmA(idInst, ad);
   //end;
   //'k': begin  //i_MOVLW
   //   if not CaptureByte(k) then exit;
