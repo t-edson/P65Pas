@@ -1,4 +1,4 @@
-P65Pas 0.0
+P65Pas 0.1
 ==========
 
 Multi-platform Pascal cross-compiler for 6502 CPU.
@@ -635,6 +635,4 @@ To have more information about the compiler, check the Technical Documentation (
 ## Libraries
 
 P65Pas is a new project and it's still in development and there are not dedicated libraries for the compiler. 
-
-The best repository for libraries and useful code is in: https://github.com/AguHDz/P65Pas-Librerias_y_Programas
 
