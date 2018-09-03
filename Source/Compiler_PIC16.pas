@@ -638,7 +638,7 @@ procedure TCompiler_PIC16.CompileFOR;
 {Compila uan extructura WHILE}
 var
   l1: Word;
-  dg: Integer;
+  dg, LABEL1: Integer;
   Op1, Op2: TOperand;
   opr1: TxpOperator;
 begin
@@ -691,8 +691,9 @@ begin
       _INC(Op1.rVar.adrByte0);
     end else if Op1.Typ = typWord then begin
       _INC(Op1.rVar.adrByte0);
-      _BTFSC(_STATUS, _Z);
-      _INC(Op1.rVar.adrByte0);
+      _BNE_lbl(LABEL1);  //label
+      _INC(Op1.rVar.adrByte1);
+_LABEL(LABEL1);
     end;
     _JMP(l1);  //repite el lazo
     //ya se tiene el destino del salto

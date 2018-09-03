@@ -4,7 +4,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
   ComCtrls, ExtCtrls, StdCtrls, Grids, ActnList, Menus, LCLType, Parser,
-  FrameRamExplorer, FrameRomExplorer, FramePicRegisters, FrameRegWatcher,
+  FrameRamExplorer, FramePicRegisters, FrameRegWatcher,
   P6502utils, CPUCore, MisUtils, FramePicAsm;
 type
   { TfrmDebugger }
@@ -25,19 +25,14 @@ type
     ImageList16: TImageList;
     lstMessages: TListBox;
     MenuItem7: TMenuItem;
-    Panel1: TPanel;
-    Panel2: TPanel;
+    PanASM: TPanel;
+    PanWatcher: TPanel;
     Panel3: TPanel;
     Panel4: TPanel;
     panRAM: TPanel;
-    panROM: TPanel;
-    panStatis: TPanel;
     PopupMenu2: TPopupMenu;
     Splitter1: TSplitter;
     Splitter2: TSplitter;
-    Splitter3: TSplitter;
-    Splitter4: TSplitter;
-    Splitter5: TSplitter;
     Splitter6: TSplitter;
     StatusBar1: TStatusBar;
     Timer1: TTimer;
@@ -68,7 +63,6 @@ type
     defHeight: LongInt;
     margInstrc: Integer;
     fraRamExp: TfraRamExplorer;
-    fraRomExp: TfraRomExplorer;
     fraPicReg: TfraPicRegisters;
     fraRegWat: TfraRegWatcher;
     fraPicAsm: TfraPicAsm;
@@ -154,8 +148,6 @@ begin
 
   //Muestra Frames
   fraRamExp.SetCompiler(cxp);
-  fraRomExp.SetCompiler(cxp);
-  fraRomExp.panGraph.Invalidate;  //Se refresca aquí porque no se incluye su refresco en RefreshScreen().
   fraPicReg.SetCompiler(cxp);
   fraRegWat.SetCompiler(cxp);
   fraPicAsm.SetCompiler(cxp);
@@ -186,20 +178,16 @@ begin
   fraRamExp.Parent := panRAM;
   fraRamExp.Align := alClient;
 
-  fraRomExp:= TfraRomExplorer.Create(self);
-  fraRomExp.Parent := panROM;
-  fraRomExp.Align := alClient;
-
   fraPicReg:= TfraPicRegisters.Create(self);
-  fraPicReg.Parent := panStatis;
+  fraPicReg.Parent := Panel3;
   fraPicReg.Align := alClient;
 
   fraRegWat := TfraRegWatcher.Create(self);
-  fraRegWat.Parent := Panel2;
+  fraRegWat.Parent := PanWatcher;
   fraRegWat.Align := alClient;
 
   fraPicAsm:= TfraPicAsm.Create(self);
-  fraPicAsm.Parent := Panel1;
+  fraPicAsm.Parent := PanASM;
   fraPicAsm.Align := alClient;
 
   //Altura de fila de la grilla por defecto

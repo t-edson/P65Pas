@@ -1287,6 +1287,8 @@ begin
   res.SetAsNull;  //No es función
 end;
 procedure TGenCod.fun_Inc(fun: TxpEleFun);
+var
+  LABEL1: integer;
 begin
   if not CaptureTok('(') then exit;
   res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
@@ -1300,8 +1302,9 @@ begin
       _INC(res.rVar.adrByte0);
     end else if res.Typ = typWord then begin
       _INC(res.rVar.adrByte0);
-      _BTFSC(_STATUS, _Z);
-      _INC(res.rVar.adrByte0);
+      _BNE_lbl(LABEL1);  //label
+      _INC(res.rVar.adrByte1);
+_LABEL(LABEL1);
     end else if res.Typ.catType = tctPointer then begin
       //Es puntero corto
       _INC(res.rVar.adrByte0);

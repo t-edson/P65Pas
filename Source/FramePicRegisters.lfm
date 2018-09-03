@@ -6,8 +6,8 @@ object fraPicRegisters: TfraPicRegisters
   ClientHeight = 329
   ClientWidth = 400
   TabOrder = 0
-  DesignLeft = 248
-  DesignTop = 144
+  DesignLeft = 503
+  DesignTop = 143
   object Label1: TLabel
     Left = 0
     Height = 17
@@ -81,8 +81,8 @@ object fraPicRegisters: TfraPicRegisters
     Left = 16
     Height = 16
     Top = 24
-    Width = 54
-    Caption = 'W register'
+    Width = 50
+    Caption = 'A register'
     Font.CharSet = ANSI_CHARSET
     Font.Color = clBlue
     Font.Height = -13
@@ -113,7 +113,7 @@ object fraPicRegisters: TfraPicRegisters
     Left = 16
     Height = 46
     Top = 112
-    Width = 242
+    Width = 227
     ColCount = 10
     FixedCols = 2
     Options = [goFixedVertLine, goFixedHorzLine, goHorzLine, goRangeSelect, goSmoothScroll]
@@ -124,10 +124,10 @@ object fraPicRegisters: TfraPicRegisters
       29
       26
       24
-      27
-      28
+      21
+      21
       23
-      23
+      21
       21
       20
       18
@@ -142,28 +142,28 @@ object fraPicRegisters: TfraPicRegisters
       'Hex.'
       2
       0
-      'IRP'
+      'C'
       3
       0
-      'RP1'
+      'Z'
       4
       0
-      'RP0'
+      'I'
       5
       0
-      'TO'
+      'D'
       6
       0
-      'PD'
+      'B'
       7
       0
-      ' Z'
+      '-'
       8
       0
-      'DC'
+      'V'
       9
       0
-      'C'
+      'N'
     )
   end
 end

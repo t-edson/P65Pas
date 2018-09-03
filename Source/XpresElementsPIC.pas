@@ -91,9 +91,13 @@ type  //TxpElement y clases previas
   TxpEleBody = class;
 
   //Datos sobre la llamada a un elemento desde otro elemento
+
+  { TxpEleCaller }
+
   TxpEleCaller = class
     curPos: TSrcPos;    //Posición desde donde es llamado
     caller: TxpElement; //función que llama a esta función
+    function CallerUnit: TxpElement;  //Unidad/Programa de donde se llama
   end;
   TxpListCallers = specialize TFPGObjectList<TxpEleCaller>;
 
@@ -525,6 +529,27 @@ var
   nullOper : TxpOperator;
 
 implementation
+
+{ TxpEleCaller }
+
+function TxpEleCaller.CallerUnit: TxpElement;
+{Devuelve el elemento unidad o programa principal, desde donde se hace esta llamada.}
+var
+  container: TxpElement;
+begin
+  {Se asume que la llamda se puede hacer solo desde dos puntos:
+   - Desde una declaración.
+   - Desde el cuerpo de una función.
+  }
+  if caller = nil then exit(nil);
+  //La idea es retorceder hasta encontrar una unidad o el programa principal
+  container := caller;
+  repeat
+    container := container.Parent;
+  until container.idClass in [eltUnit, eltMain];
+  Result := container;
+  //No debería haber otro caso
+end;
 
 { TxpExitCall }
 function TxpExitCall.IsObligat: boolean;

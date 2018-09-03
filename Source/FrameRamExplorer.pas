@@ -297,29 +297,24 @@ begin
 end;
 procedure TfraRamExplorer.panGraphPaint(Sender: TObject);
 var
-  bordlat, ancPag, x0, i, separ, alto, bordSup, y0: Integer;
+  bordlat, ancPag, x0, alto, bordSup, y0: Integer;
 begin
   ////////////////////////
   if pic = nil then exit;
   //Espaciado entre bancos
-  ancPag := panGraph.width;
-  bordlat := ancPag div 2;
-  separ := 0;
+  bordlat := panGraph.width div 10;
+  ancPag := panGraph.width - 2*bordlat;
   if ancPag>15 then begin
     Dec(ancPag,5);
-    separ := 5;
   end;
 
-  bordSup := panGraph.height div 15;  //espacio superior
+  bordSup := panGraph.height div 30;  //espacio superior
   alto := panGraph.height - 2* bordSup;
 //debugln('panGraph.width: %d bordLat: %d', [panGraph.width, bordlat]);
   x0 := bordlat;
   y0 := bordsup;
 
-  for i:=0 to 0 do begin
-    DrawRAMbank(Rect(x0, y0, x0+ancPag+1, y0+alto), true);
-    x0 := x0 + ancPag + separ;
-  end;
+  DrawRAMbank(Rect(x0, y0, x0+ancPag+1, y0+alto), true);
 end;
 procedure TfraRamExplorer.SetCompiler(cxp0: TCompilerBase);
 begin

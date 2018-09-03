@@ -68,7 +68,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="29">
+    <Units Count="28">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -205,37 +205,30 @@
         <ResourceBaseClass Value="Form"/>
       </Unit23>
       <Unit24>
-        <Filename Value="FrameRomExplorer.pas"/>
-        <IsPartOfProject Value="True"/>
-        <ComponentName Value="fraRomExplorer"/>
-        <HasResources Value="True"/>
-        <ResourceBaseClass Value="Frame"/>
-      </Unit24>
-      <Unit25>
         <Filename Value="FramePicRegisters.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraPicRegisters"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit25>
-      <Unit26>
+      </Unit24>
+      <Unit25>
         <Filename Value="FrameRegWatcher.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraRegWatcher"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit26>
-      <Unit27>
+      </Unit25>
+      <Unit26>
         <Filename Value="ParserDirec.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit27>
-      <Unit28>
+      </Unit26>
+      <Unit27>
         <Filename Value="FramePicAsm.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraPicAsm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit28>
+      </Unit27>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

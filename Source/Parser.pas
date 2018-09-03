@@ -1723,34 +1723,40 @@ llamadas que se hacen a una unidad desde el programa o unidad que la incluye.
 El objetivo final es determinar los accesos a las unidades.}
   procedure ScanUnits(nod: TxpElement);
   var
-    ele, eleInter , eleCaller: TxpElement;
+    ele, eleInter , eleUnit: TxpElement;
     uni : TxpEleUnit;
     cal , c: TxpEleCaller;
   begin
+debugln('+Scanning in:'+nod.name);
     if nod.elements<>nil then begin
       for ele in nod.elements do begin
+        //Solo se explora a las unidades
         if ele.idClass = eltUnit then begin
+debugln('  Unit:'+ele.name);
           //"ele" es una unidad de "nod". Verifica si es usada
           uni := TxpEleUnit(ele);    //Accede a la unidad.
           uni.ReadInterfaceElements; //Accede a sus campos
           {Buscamos por los elementos de la interfaz de la unidad para ver si son
            usados}
           for eleInter in uni.InterfaceElements do begin
+debugln('    Interface Elem:'+eleInter.name);
             //Explora por los llamadores de este elemento.
             for cal in eleInter.lstCallers do begin
-              eleCaller := cal.caller;
-              if eleCaller.Parent = nod then begin
+              eleUnit := cal.CallerUnit;   //Unidad o programa
+              if eleUnit = nod then begin
                 {Este llamador está contenido en "nod". Lo ponemos como llamador de
                 la unidad.}
                 c := AddCallerTo(uni);
-                //c.curBnk := cal.curBnk;
+                c.caller := cal.caller;
+//                c.curBnk := cal.curBnk;
                 c.curPos := cal.curPos;
+                debugln('      Added caller to %s from %s (%d,%d)',
+                        [uni.name, c.curPos.fil, c.curPos.row, c.curPos.col]);
               end;
             end;
           end;
-        end else begin
-          if ele.elements<>nil then
-            ScanUnits(ele);  //recursivo
+          //Ahora busca recursivamente, por si la unidad incluyea a otras unidades
+          ScanUnits(ele);  //recursivo
         end;
       end;
     end;

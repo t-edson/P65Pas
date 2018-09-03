@@ -1974,13 +1974,11 @@ begin
   {Crea registro de trabajo Z. El registro Z, es el registro interno del PIC, y está
   siempre asignado en RAM. }
   Z := TPicRegisterBit.Create;
-  Z.addr := _STATUS;
   Z.bit := _Z;
   Z.assigned := true;   //ya está asignado desde el principio
   {Crea registro de trabajo C. El registro C, es el registro interno del PIC, y está
   siempre asignado en RAM. }
   C := TPicRegisterBit.Create;
-  C.addr := _STATUS;
   C.bit := _C;
   C.assigned := true;   //ya está asignado desde el principio
   //Crea registro interno INDF

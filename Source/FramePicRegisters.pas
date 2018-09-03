@@ -53,13 +53,13 @@ procedure TfraPicRegisters.SetCompiler(cxp0: TCompilerBase);
 var
   pic : TCPUCore;
 begin
-//  cxp := cxp0;
-//  pic := cxp0.picCore;
-//  //Configura registros de acuerdo al tipo de arquitectura del compilador
-//  WREGptr := nil;
-//  STATptr := nil;
-//  //Obtiene referencias a los registros importantes
-//  WREGptr := @(TPIC16(pic).W);
+  cxp := cxp0;
+  pic := cxp0.picCore;
+  //Configura registros de acuerdo al tipo de arquitectura del compilador
+  WREGptr := nil;
+  STATptr := nil;
+  //Obtiene referencias a los registros importantes
+  WREGptr := @(TP6502(pic).W);
 //  StringGrid2.Cells[2,0] := 'IRP';
 //  StringGrid2.Cells[3,0] := 'RP1';
 //  StringGrid2.Cells[4,0] := 'RP0';
