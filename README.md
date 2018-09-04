@@ -7,7 +7,7 @@ Multi-platform Pascal cross-compiler for 6502 CPU.
 
 P65Pas is a Pascal compiler and IDE, written in Lazarus, which generates binary and ASM code for the 6502 CPU.
 
-No additional libraries or software required to compile. P65Pas generates the *.hex file directly.
+No additional libraries or software required to compile. P65Pas generates the *.prg file directly. Additionally a BASIC Commodore program (POKE's) can be generated to charge the machine code. 
 
 P65Pas works with a simplified version of the Pascal language, that has been adapted to work with limited resources small devices.
 
