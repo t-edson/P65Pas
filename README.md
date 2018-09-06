@@ -303,6 +303,78 @@ end;
 REGISTER parameters are fast, because they use the W register, so only one REGISTER parameter can be used. 
 As REGISTER parameter is stored in W register, any operation using the W register, could lose its value, so the first operation in a procedure, using a REGISTER parameter must be read this parameter.
 
+### ASM blocks
+
+P65Pas have a complete support for inserting ASM code inside the Pascal source.
+
+ASM blocks must be included between the delimiters ASM and END:
+
+```
+procedure DoSomething;
+begin
+  x := 10;
+  asm
+    ;Load 3 to Acumulator 
+    LDA #03
+    RTS
+  end
+end;
+```
+
+ASM blocks are not instructions, that's why they are not finished with ";". It lets the ASM block, to be included in almost any place of the source code, like a comment.
+
+WARNING: Changing some register used by compiler, inside an ASM block, can generate errors in compilation or in the code compiled.
+
+Absolute and relative Labels can be used too:
+
+```
+asm 
+  JMP $+3	;Jump to next instruction
+  RTS
+end
+```
+
+```
+asm 
+  ;infinite loop
+label:
+  NOP
+  JMP label
+end
+```
+
+Program variables can be accessed, using his common name:
+
+```
+var 
+ byte1: byte; 
+ car1: char; 
+ word1: word;
+begin
+  //Low level clear
+  asm 
+    INC byte1
+    INC car1
+    INC word1.Low
+  end
+end.
+```
+
+Constant can be accessed too, using the same way. 
+
+It's possible to use the directive ORG inside a ASM block, too:
+
+```
+  asm 
+    org $-2
+  end
+  vbit := 1;
+```
+
+The address in ORG, can be absolute or relative. 
+
+WARNING: Changing the PC pointer with ORG, can generate errors in the compilation or in execution.
+
 ## Directives
 
 Directives are special instructions inserted in the source code that are interpreted and executed by the compiler when compiling the source code (in compilation time).
