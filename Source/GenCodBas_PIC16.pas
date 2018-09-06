@@ -113,8 +113,6 @@ type
     procedure ChangeResultCharToByte;
     function ChangePointerToExpres(var ope: TOperand): boolean;
   protected  //Instrucciones que no manejan el cambio de banco
-    procedure CodAsmFD(const inst: TP6502Inst; const f: byte; d: TPIC16destin);
-    procedure CodAsmK(const inst: TP6502Inst; const k: byte);
     function _PC: word;
     function _CLOCK: integer;
     procedure _LABEL(igot: integer);
@@ -849,21 +847,7 @@ begin
     RTstate := ope.Typ;
   end;
 end;
-//Rutinas generales para la codificación
-procedure TGenCodBas.CodAsmFD(const inst: TP6502Inst; const f: byte;
-  d: TPIC16destin);
-begin
-  pic.codAsm(inst, aImmediat, f);
-end;
-procedure TGenCodBas.CodAsmK(const inst: TP6502Inst; const k: byte);
-begin
-  pic.codAsm(inst, aImmediat, k);
-end;
-{procedure CodAsm(const inst: TPIC16Inst; const f, b: byte); inline;
-begin
-  pic.codAsmFB(inst, f, b);
-end;}
-//rutinas que facilitan la codifición de instrucciones
+//Rutinas que facilitan la codifición de instrucciones
 function TGenCodBas._PC: word; inline;
 {Devuelve la dirección actual en Flash}
 begin

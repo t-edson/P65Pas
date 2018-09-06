@@ -5,7 +5,7 @@ unit Compiler_PIC16;
 interface
 uses
   Classes, SysUtils, lclProc, SynEditHighlighter, types, MisUtils, XpresBas,
-  XpresTypesPIC, XpresElementsPIC, P6502Utils, Parser, ParserDirec,
+  XpresTypesPIC, XpresElementsPIC, P6502utils, Parser, ParserDirec,
   GenCodBas_PIC16, GenCod_PIC16, ParserDirec_PIC16, Globales,
   FormConfig {Por diseño, FormConfig, no debería accederse desde aquí};
 type
@@ -2166,7 +2166,7 @@ begin
     end;
   end;
   //Compila cuerpo del programa principal
-  pic.codGotoAt(iniMain, _PC);   //termina de codificar el salto
+  pic.cod_JMP_at(iniMain, _PC);   //termina de codificar el salto
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   if bod = nil then begin
     GenError('Body program not found.');

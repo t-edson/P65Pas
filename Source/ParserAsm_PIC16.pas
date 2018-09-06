@@ -35,17 +35,15 @@ type
     procedure AddLabel(name: string; addr: integer);
     procedure AddUJump(name: string; addr: integer; idInst: TP6502Inst);
     function CaptureAddress(const idInst: TP6502Inst; var ad: word): boolean;
-    function CaptureBitVar(out f, b: byte): boolean;
     function CaptureByte(out k: byte): boolean;
     function CaptureComma: boolean;
-    function CaptureDestinat(out d: TPIC16destin): boolean;
     function CaptureNbit(var b: byte): boolean;
     function CaptureRegister(out f: byte): boolean;
     procedure EndASM;
     procedure GenErrorAsm(msg: string);
     procedure GenErrorAsm(msg: string; const Args: array of const);
     procedure GenWarnAsm(msg: string);
-    function GetFaddress(addr: integer): byte;
+    function GetFaddressByte(addr: integer): byte;
     function HaveByteInformation(out bytePos: byte): boolean;
     function IsLabel(txt: string; out dir: integer): boolean;
     function IsStartASM(var lin: string): boolean;
@@ -118,7 +116,7 @@ begin
     lexAsm.Next;
   //después de un comentario no se espera nada.
 end;
-function TParserAsm.GetFaddress(addr: integer): byte;
+function TParserAsm.GetFaddressByte(addr: integer): byte;
 {Obtiene una dirección de registro para una isntrucción ASM, truncando, si es necesario,
 los bits adicionales.}
 begin
@@ -270,7 +268,7 @@ begin
       xvar := TxpEleVar(ele);
       AddCallerTo(xvar);  //lleva la cuenta
       n := xvar.addr;
-      k := GetFaddress(n);
+      k := GetFaddressByte(n);
       lexAsm.Next;
       exit(true);
     end else begin
@@ -286,26 +284,6 @@ begin
     exit(true);
   end else begin
     GenErrorAsm(ER_EXPECT_BYTE);
-    exit(false);
-  end;
-end;
-function TParserAsm.CaptureDestinat(out d: TPIC16destin): boolean;
-{Captura el destino de una instrucción y devuelve en "d". Si no encuentra devuelve error}
-var
-  dest: String;
-begin
-  skipWhites;
-  dest := lexAsm.GetToken;
-  if (LowerCase(dest)='f') or (dest='1') then begin
-    d := toF;
-    lexAsm.Next;
-    exit(true);
-  end else if (LowerCase(dest)='w') or (dest='0') then begin
-    d := toW;
-    lexAsm.Next;
-    exit(true);
-  end else begin
-    GenErrorAsm(ER_EXPECT_W_F);
     exit(false);
   end;
 end;
@@ -350,29 +328,6 @@ begin
     exit;
   end;
 end;
-function TParserAsm.CaptureBitVar(out f, b: byte): boolean;
-{Captura una variable de tipo Bit. Si no encuentra, devuelve FALSE (no genera error).}
-var
-  ele: TxpElement;
-  xvar: TxpEleVar;
-begin
-  skipWhites;
-  if tokType <> lexAsm.tnIdentif then exit(false);  //no es identificador
-  //Hay un identificador
-  ele := TreeElems.FindFirst(lexAsm.GetToken);  //identifica elemento
-  if ele = nil then exit(false);  //no se identifica
-  //Se identificó elemento
-  if ele.idClass <> eltVar then exit(false);
-  //Es variable
-  xvar := TxpEleVar(ele);
-  if not xvar.typ.IsBitSize then exit(false);
-  //Es variable bit o boolean
-  lexAsm.Next;   //toma identificador
-  AddCallerTo(xvar);  //lleva la cuenta
-  f := GetFaddress(xvar.adrBit.offs);
-  b := xvar.adrBit.bit;
-  exit(true);
-end;
 function TParserAsm.CaptureRegister(out f: byte): boolean;
 {Captura la referencia a un registro y devuelve en "f". Si no encuentra devuelve error}
 var
@@ -389,7 +344,7 @@ begin
       GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
       exit;
     end;
-    f := GetFaddress(n);
+    f := GetFaddressByte(n);
     lexAsm.Next;
     Result := true;
     exit;
@@ -424,7 +379,7 @@ begin
       AddCallerTo(xvar);  //lleva la cuenta
       if xvar.typ.IsByteSize then begin
         n := xvar.addr;
-        f := GetFaddress(n);
+        f := GetFaddressByte(n);
         lexAsm.Next;
         Result := true;
         exit;
@@ -434,17 +389,17 @@ begin
           //Hay precisión de byte
           if bytePos = 0 then begin  //Byte bajo
             n := xvar.adrByte0.addr;
-            f := GetFaddress(n);
+            f := GetFaddressByte(n);
           end else if bytePos = 1 then begin        //Byte alto
             n := xvar.adrByte1.addr;
-            f := GetFaddress(n);
+            f := GetFaddressByte(n);
           end else begin
              GenErrorAsm(ER_NOGETADD_VAR);
              exit(false);
           end;
         end else begin
            n := xvar.addr;
-           f := GetFaddress(n);
+           f := GetFaddressByte(n);
         end;
         exit(true);
       end else if xvar.typ.IsDWordSize then begin
@@ -453,23 +408,23 @@ begin
           //Hay precisión de byte
           if bytePos = 0 then begin  //Byte bajo
             n := xvar.adrByte0.addr;
-            f := GetFaddress(n);
+            f := GetFaddressByte(n);
           end else if bytePos = 1 then begin        //Byte alto
             n := xvar.adrByte1.addr;
-            f := GetFaddress(n);
+            f := GetFaddressByte(n);
           end else if bytePos = 2 then begin        //Byte alto
             n := xvar.adrByte2.addr;
-            f := GetFaddress(n);
+            f := GetFaddressByte(n);
           end else if bytePos = 3 then begin        //Byte alto
             n := xvar.adrByte3.addr;
-            f := GetFaddress(n);
+            f := GetFaddressByte(n);
           end else begin
              GenErrorAsm(ER_NOGETADD_VAR);
              exit(false);
           end;
         end else begin
            n := xvar.addr;
-           f := GetFaddress(n);
+           f := GetFaddressByte(n);
         end;
         exit(true);
       end else begin
@@ -491,13 +446,15 @@ begin
 end;
 function TParserAsm.CaptureAddress(const idInst: TP6502Inst; var ad: word
   ): boolean;
-{Captura una dirección a una instrucción y devuelve en "a". Si no encuentra genera
+{Captura una dirección a una instrucción y devuelve en "aD". Si no encuentra genera
 error y devuelve FALSE.}
 var
   dir: integer;
-  offset: byte;
+  offset, bytePos: byte;
   ele: TxpElement;
   xfun: TxpEleFun;
+  xvar: TxpEleVar;
+  n: Word;
 begin
   Result := false;
   skipWhites;
@@ -527,7 +484,12 @@ begin
       CaptureByte(offset);  //captura desplazamiento
       if HayError then exit(false);
       Result := true;
-      ad := pic.iRam - offset;
+      if FirstPass then begin
+        //Para evitar errores, proque en Primera pasada se trabaja todo en $0000
+        ad := 00;
+      end else begin
+        ad := (pic.iRam - offset) and $FFFF;
+      end;
       exit;
     end else begin
       //Sigue otra cosa
@@ -541,7 +503,13 @@ begin
     exit;
   end else if (tokType = lexAsm.tnIdentif) and IsLabel(lexAsm.GetToken, dir) then begin
     //Es un identificador de etiqueta
-    ad := dir;
+    if pic.IsRelJump(idInst) then begin
+      //Salto relativo BEQ, BNE, ...
+      ad := (dir-pic.iRam-2) and $ff;
+    end else begin
+      //Se debe dejar 2 bytes de espacio
+      ad := dir;
+    end;
     lexAsm.Next;
     Result := true;
     exit;
@@ -556,8 +524,64 @@ begin
       Result := true;
       exit;
     end;
+    if (ele <> nil) and (ele.idClass = eltVar) then begin
+      //Es identificador de variable
+      xvar := TxpEleVar(ele);
+      AddCallerTo(xvar);  //lleva la cuenta
+      if xvar.typ.IsByteSize then begin
+        ad := xvar.addr;
+        lexAsm.Next;
+        Result := true;
+        exit;
+      end else if xvar.typ.IsWordSize then begin
+        lexAsm.Next;
+        if HaveByteInformation(bytePos) then begin
+          //Hay precisión de byte
+          if bytePos = 0 then begin  //Byte bajo
+            ad := xvar.adrByte0.addr;
+          end else if bytePos = 1 then begin        //Byte alto
+            ad := xvar.adrByte1.addr;
+          end else begin
+             GenErrorAsm(ER_NOGETADD_VAR);
+             exit(false);
+          end;
+        end else begin
+           ad := xvar.addr;
+        end;
+        exit(true);
+      end else if xvar.typ.IsDWordSize then begin
+        lexAsm.Next;
+        if HaveByteInformation(bytePos) then begin
+          //Hay precisión de byte
+          if bytePos = 0 then begin  //Byte bajo
+            ad := xvar.adrByte0.addr;
+          end else if bytePos = 1 then begin        //Byte alto
+            ad := xvar.adrByte1.addr;
+          end else if bytePos = 2 then begin        //Byte alto
+            ad := xvar.adrByte2.addr;
+          end else if bytePos = 3 then begin        //Byte alto
+            ad := xvar.adrByte3.addr;
+          end else begin
+             GenErrorAsm(ER_NOGETADD_VAR);
+             exit(false);
+          end;
+        end else begin
+           ad := xvar.addr;
+        end;
+        exit(true);
+      end else begin
+        GenErrorAsm(ER_NOGETADD_VAR);
+        exit(false);
+      end;
+    end;
     //Es un identificador, no definido. Puede definirse luego.
-    ad := $00;
+    if pic.IsRelJump(idInst) then begin
+      //Deben ser instrucciones de salto relativo BNE, BEQ, ...
+      ad := $FF;
+    end else begin
+      //Debe ser JMP o JSR. Se debe dejar 2 bytes de espacio
+      ad := $FFFF;
+    end;
     //Los saltos indefinidos, se guardan en la lista "uJumps"
     AddUJump(lexAsm.GetToken, pic.iRam, idInst);
     lexAsm.Next;
@@ -585,10 +609,10 @@ begin
     for jmp in uJumps do begin
       if IsLabel(jmp.txt, loc) then begin
         //Si existe la etiqueta
-        if jmp.idInst = i_JMP then
-          pic.codGotoAt(jmp.add, loc)
-        else  //Solo puede ser i_CALL
-          pic.codCallAt(jmp.add, loc);
+        if jmp.idInst in [i_JMP, i_JSR] then
+          pic.cod_JMP_at(jmp.add, loc)
+        else  //Deberían ser BEQ, BNE, ...
+          pic.cod_REL_JMP_at(jmp.add, loc-jmp.add-2);
       end else begin
         //No se enuentra
         GenErrorAsm(ER_UNDEF_LABEL_, [jmp.txt]);
@@ -602,11 +626,8 @@ procedure TParserAsm.ProcInstrASM;
 var
   idInst: TP6502Inst;
   tok: String;
-  f : byte;
-  d: TPIC16destin;
-  b: byte;
   ad: word;
-  k: byte;
+  n: integer;
 begin
   tok := lexAsm.GetToken;
   //verifica directiva ORG
@@ -617,48 +638,14 @@ begin
     pic.iRam := ad;   //¡CUIDADO! cambia PC
     exit;
   end;
-  //debería ser una instrucción
+  //Debería ser una instrucción
   idInst := pic.FindOpcode(tok);
   if idInst = i_Inval then begin
     GenErrorAsm(ER_INV_ASMCODE, [tok]);
     exit;
   end;
-  //es un código válido
+  //Es un código válido
   lexAsm.Next;
-  //case stx of
-  //'fd': begin   //se espera 2 parámetros
-  //  if not CaptureRegister(f) then exit;
-  //  if not CaptureComma then exit;
-  //  if not CaptureDestinat(d) then exit;
-  //  pic.codAsm(idInst, f, d);
-  //end;
-  //'f':begin
-  //  if not CaptureRegister(f) then exit;
-  //  pic.codAsmF(idInst, f);
-  //end;
-  //'fb':begin  //para instrucciones de tipo bit
-  //  if CaptureBitVar(f, b) then begin
-  //    //Es una referencia ad variable bit.
-  //  end else begin
-  //    if not CaptureRegister(f) then exit;
-  //    if not CaptureComma then exit;
-  //    if not CaptureNbit(b) then exit;
-  //  end;
-  //  pic.codAsmFB(idInst, f, b);
-  //end;
-  //'ad': begin  //i_CALL y GOTO
-  //  if not CaptureAddress(idInst, ad) then exit;
-  //  pic.codAsmA(idInst, ad);
-  //end;
-  //'k': begin  //i_MOVLW
-  //   if not CaptureByte(k) then exit;
-  //   pic.codAsmK(idInst, k);
-  //end;
-  //'': begin
-  //  pic.codAsm(idInst);
-  //end;
-  //end;
-  //no debe quedar más que espacios o comentarios
   skipWhites;
   if tokType = lexAsm.tnEol then begin
     //Sin parámetros. Puede ser Implícito o Acumulador
@@ -666,11 +653,83 @@ begin
     if pic.MsjError<>'' then begin
       GenErrorAsm(pic.MsjError);
     end;
+  end else if lexAsm.GetToken = '#' then begin
+    //Inmediato
+    lexAsm.Next;
+    if tokType <> lexAsm.tnNumber then begin
+      GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+      exit;
+    end;
+    n := StrToInt(lexAsm.GetToken);
+    if (n>255) then begin
+      GenErrorAsm(ER_EXPECT_BYTE);
+      exit;
+    end;
+    lexAsm.Next;
+    pic.codAsm(idInst, aImmediat, n);
+    if pic.MsjError<>'' then begin
+      GenErrorAsm(pic.MsjError);
+    end;
+  end else if tokType in [lexAsm.tnNumber, lexAsm.tnIdentif] then begin
+    //Puede ser abosluto o página cero.
+    //n := StrToInt(lexAsm.GetToken);
+    if not CaptureAddress(idInst, ad) then begin
+      GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+      exit;
+    end;
+    if (ad>255) then begin
+      lexAsm.Next;
+      skipWhites;
+      //Verifica si sigue ,X o ,Y
+      if lexAsm.GetToken = ',' then begin
+        lexAsm.Next;
+        skipWhites;
+        if lexAsm.GetToken = 'X' then begin
+          lexAsm.Next;
+          pic.codAsm(idInst, aAbsolutX, ad);
+        end else if lexAsm.GetToken = 'Y' then begin
+          lexAsm.Next;
+          pic.codAsm(idInst, aAbsolutY, ad);
+        end else begin
+          GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+          exit;
+        end;
+      end else begin
+          pic.codAsm(idInst, aAbsolute, ad);
+      end;
+    end else begin  //<255
+      lexAsm.Next;
+      skipWhites;
+      //Verifica si sigue ,X o ,Y
+      if lexAsm.GetToken = ',' then begin
+        lexAsm.Next;
+        skipWhites;
+        if lexAsm.GetToken = 'X' then begin
+          lexAsm.Next;
+          pic.codAsm(idInst, aZeroPagX, ad);
+        end else if lexAsm.GetToken = 'Y' then begin
+          lexAsm.Next;
+          pic.codAsm(idInst, aZeroPagY, ad);
+        end else begin
+          GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+          exit;
+        end;
+      end else begin
+        //El parámetro es de un solo byte
+        if pic.IsRelJump(idInst) then begin  //Es BEQ, BNE o similar
+          pic.codAsm(idInst, aRelative, ad);
+        end else begin
+          pic.codAsm(idInst, aZeroPage, ad);
+        end;
+      end;
+    end;
+    if pic.MsjError<>'' then begin
+      GenErrorAsm(pic.MsjError);
+    end;
   end else begin
     GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
     exit;
   end;
-
 end;
 procedure TParserAsm.ProcASM(const AsmLin: string);
 {Procesa una línea en ensamblador.}
@@ -710,6 +769,8 @@ procedure TParserAsm.ProcASM(const AsmLin: string);
       exit(false)
     end;
   end;
+var
+  n: LongInt;
 begin
   inc(asmRow);   //cuenta líneas
   if Trim(AsmLin) = '' then exit;
@@ -734,6 +795,22 @@ begin
         //Es instrucción
         ProcInstrASM;
         if HayError then exit;
+      end else if tokType = lexAsm.tnNumber then begin
+        //Era un número. Se codifica directamente la instrucción.
+        //Por ahora solo soporta un código: ASM $ff END
+        //No soporta la forma: ASM $ff,$ff,$ff END
+        //Solo reconocerá el primer valor.
+        if not TryStrToInt(lexAsm.GetToken, n) then begin
+          //Es otra cosa
+          GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+          exit;
+        end;
+        if (n>255) then begin
+          GenErrorAsm(ER_EXPECT_BYTE);
+          exit;
+        end;
+        pic.codByte(n);
+        lexAsm.Next;
       end else if Extractlabel then begin
         //Era una etiqueta
       end else begin
@@ -801,7 +878,7 @@ begin
     //puede incluir también al delimitador "end"
     if IsEndASM(lin) then begin
       ProcASM(lin);  //procesa por si queda código
-      EndASM;
+      EndASM;  //También termina porque es instrucción de una sola línea
     end else begin
       ProcASM(lin);  //procesa por si queda código
     end;
@@ -809,7 +886,7 @@ begin
     //Es la última línea de ensamblador
     tokIni2 := 0;   //En el margen izquierdo, porque no está el delimit. inicial "ASM"
     ProcASM(lin);  //procesa por si queda código
-    EndASM;
+    EndASM;  //Termina porque es la última instrucción
   end else begin
     //Es una línea común
     tokIni2 := 0;   //una línea común, siempre empieza en al margen izquierdo
