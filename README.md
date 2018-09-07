@@ -3,7 +3,7 @@ P65Pas 0.1
 
 Multi-platform Pascal cross-compiler for 6502 CPU.
 
-![P65Pas IDE](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2018/09/Sin-título.png "P65Pas IDE")
+![P65Pas IDE](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/04/P65Pas.png "P65Pas IDE")
 
 P65Pas is a Pascal compiler and IDE, written in Lazarus, which generates binary and ASM code for the 6502 CPU.
 
@@ -424,6 +424,12 @@ There are some system variables, accessible from the directives language. They a
 ### List of Directives
 
 The next directives are supported by P65Pas:
+
+#### $COMMODORE64
+
+Indicates the compiler to compile to a Commodore 64 system. 
+
+In this mode when compiling at $0801, the compiler generates the instruction "SYS 2062" in the BASIC buffer, to run automatically the program after loading the PRG file.
 
 #### $FREQUENCY
 
