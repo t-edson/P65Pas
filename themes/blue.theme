@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <language Val="en - English"/>
+  <StateStatusbar Val="1"/>
+  <chkLoadLast Val="True"/>
+  <SplitterCol Val="4718592"/>
+  <MessPanPan Val="4718592"/>
+  <VerPanMensaj Val="True"/>
+  <VerStatusbar Val="True"/>
+  <VerBarHerram Val="True"/>
+  <ViewSynTree Val="True"/>
+  <SynTreeWidth Val="1"/>
+  <viewMode Val="2"/>
+  <MessPanBack Val="4718592"/>
+  <MessPanText Val="16777215"/>
+  <MessPanErr Val="255"/>
+  <MessPanSel Val="8388608"/>
+  <CodExplBack Val="4718592"/>
+  <CodExplText Val="16777215"/>
+  <grpFiltypes Val="0"/>
+  <TamLet Val="10"/>
+  <TipLet Val="DejaVu Sans Mono"/>
+  <VerBarDesV Val="True"/>
+  <VerBarDesH Val="False"/>
+  <TabEdiState Val="0"/>
+  <AutSynChk Val="True"/>
+  <Edit>
+    <cTxtNor Val="16777215"/>
+    <cFonEdi Val="4718592"/>
+    <cLinAct Val="8388608"/>
+    <Autoindent Val="True"/>
+    <MarLinAct Val="True"/>
+    <ResPalCur Val="True"/>
+    <ResPalCFon Val="15780518"/>
+    <ResPalCTxt Val="0"/>
+    <ResPalCBor Val="15780518"/>
+    <ResPalFWord Val="True"/>
+    <VerPanVer Val="True"/>
+    <VerNumLin Val="False"/>
+    <VerMarPle Val="True"/>
+    <cFonPan Val="4718592"/>
+    <cTxtPan Val="0"/>
+    <recient Val="D:\Proyectos_Software\Lazarus\PicPas-0.7.6\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\PicPas-0.7.6\units\LCDlib.pas
+D:\Proyectos_Software\Lazarus\PicPas-0.7.6\temp\aaa.pas
+D:\Proyectos_Software\Lazarus\PicPas-0.7.6\units\PIC16F84A.pas
+D:\Proyectos_Software\Lazarus\PicPas-0.7.5\temp\NewFile2.pas
+"/>
+  </Edit>
+  <IncHeadMpu Val="True"/>
+  <IncDecVar Val="True"/>
+  <VarDecType Val="1"/>
+  <IncAddress Val="False"/>
+  <IncComment Val="True"/>
+  <IncComment2 Val="False"/>
+  <ExcUnused Val="True"/>
+  <IncVarName Val="True"/>
+  <ShowErMsg Val="False"/>
+  <OptimLev Val="1"/>
+  <OptBnkAftIF Val="True"/>
+  <OptBnkBefPro Val="True"/>
+  <OptBnkAftPro Val="True"/>
+  <ExternTool>
+    <extern_tools Val="Editor	                        	notepad	$(hexFile)	F	F					
+"/>
+  </ExternTool>
+</CONFIG>
+<!-->
+f:D:\Proyectos_Software\Lazarus\PicPas-0.7.6\syntax\P65Pas_AsmPic.xml
+Directive	16711935	0	F	F	F				
+Label	28672	0	F	F	F				
+Keyword	65280	0	V	F	F				
+Comment	16777088	0	F	F	F				
+f:D:\Proyectos_Software\Lazarus\PicPas-0.7.6\syntax\P65Pas_P6502.xml
+Keyword	15901696	0	V	F	F				
+Boolean	65535	0	F	F	F				
+Comment	9276813	0	F	F	F				
+Number	16711935	0	F	F	F				
+String	65280	0	F	F	F				
+Directive	16199422	0	F	F	F				
+Asm	6340704	0	F	F	F				
+Types	65535	0	F	F	F				
+Symbol	32768	0	F	F	F				
+
+<-->
