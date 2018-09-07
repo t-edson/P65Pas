@@ -38,6 +38,7 @@ type
     function CaptureByte(out k: byte): boolean;
     function CaptureComma: boolean;
     function CaptureNbit(var b: byte): boolean;
+    function CaptureParenthes: boolean;
     function CaptureRegister(out f: byte): boolean;
     procedure EndASM;
     procedure GenErrorAsm(msg: string);
@@ -64,7 +65,7 @@ type
 
 implementation
 var  //Mensajes
-  ER_EXPEC_COMMA, ER_EXP_ADR_VAR, ER_EXP_CON_VAL, ER_NOGETADD_VAR,
+  ER_EXPEC_COMMA, ER_EXPEC_PAREN, ER_EXP_ADR_VAR, ER_EXP_CON_VAL, ER_NOGETADD_VAR,
   ER_NOGETVAL_CON,  ER_INV_ASMCODE: String;
   ER_EXPECT_W_F, ER_SYNTAX_ERR_, ER_DUPLIC_LBL_, ER_EXPE_NUMBIT: String;
   ER_EXPECT_ADDR, ER_EXPECT_BYTE, WA_ADDR_TRUNC, ER_UNDEF_LABEL_: String;
@@ -328,6 +329,20 @@ begin
     exit;
   end;
 end;
+function TParserAsm.CaptureParenthes: boolean;
+{Captura el paréntesis ')'. Si no encuentra devuelve error}
+begin
+  skipWhites;
+  if lexAsm.GetToken = ')' then begin
+    lexAsm.Next;   //toma la coma
+    Result := true;
+    exit;
+  end else begin
+    Result := false;
+    GenErrorAsm(ER_EXPEC_PAREN);
+    exit;
+  end;
+end;
 function TParserAsm.CaptureRegister(out f: byte): boolean;
 {Captura la referencia a un registro y devuelve en "f". Si no encuentra devuelve error}
 var
@@ -454,7 +469,6 @@ var
   ele: TxpElement;
   xfun: TxpEleFun;
   xvar: TxpEleVar;
-  n: Word;
 begin
   Result := false;
   skipWhites;
@@ -628,6 +642,8 @@ var
   tok: String;
   ad: word;
   n: integer;
+  xcon: TxpEleCon;
+  ele: TxpElement;
 begin
   tok := lexAsm.GetToken;
   //verifica directiva ORG
@@ -656,19 +672,35 @@ begin
   end else if lexAsm.GetToken = '#' then begin
     //Inmediato
     lexAsm.Next;
-    if tokType <> lexAsm.tnNumber then begin
+    if tokType = lexAsm.tnNumber then begin
+      n := StrToInt(lexAsm.GetToken);
+      if (n>255) then begin
+        GenErrorAsm(ER_EXPECT_BYTE);
+        exit;
+      end;
+      lexAsm.Next;
+      pic.codAsm(idInst, aImmediat, n);
+      if pic.MsjError<>'' then begin
+        GenErrorAsm(pic.MsjError);
+      end;
+    end else if tokType = lexAsm.tnIdentif then begin
+      ele := TreeElems.FindFirst(lexAsm.GetToken);  //identifica elemento
+      if (ele <> nil) and (ele.idClass = eltCons) then begin
+        //Es un identificador de constante del árbol de sintaxis
+        xcon := TxpEleCon(ele);
+        AddCallerTo(xcon);  //lleva la cuenta
+        lexAsm.Next;
+        pic.codAsm(idInst, aImmediat, xcon.val.ValInt and $FF);
+        if pic.MsjError<>'' then begin
+          GenErrorAsm(pic.MsjError);
+        end;
+      end else begin
+        GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+        exit;
+      end;
+    end else begin
       GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
       exit;
-    end;
-    n := StrToInt(lexAsm.GetToken);
-    if (n>255) then begin
-      GenErrorAsm(ER_EXPECT_BYTE);
-      exit;
-    end;
-    lexAsm.Next;
-    pic.codAsm(idInst, aImmediat, n);
-    if pic.MsjError<>'' then begin
-      GenErrorAsm(pic.MsjError);
     end;
   end else if tokType in [lexAsm.tnNumber, lexAsm.tnIdentif] then begin
     //Puede ser abosluto o página cero.
@@ -722,6 +754,60 @@ begin
           pic.codAsm(idInst, aZeroPage, ad);
         end;
       end;
+    end;
+    if pic.MsjError<>'' then begin
+      GenErrorAsm(pic.MsjError);
+    end;
+  end else if lexAsm.GetToken = '(' then begin
+    //Direccionamiento Indirecto: (indirect), (indirect,X) o (indirect),Y
+    lexAsm.Next;
+    if tokType = lexAsm.tnNumber then begin
+      n := StrToInt(lexAsm.GetToken);
+      if (n>$FFFF) then begin
+        GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+        exit;
+      end else if n>255 then begin
+        //Es un word. Solo podría ser del tiipo JMP ($FFFF)
+        pic.codAsm(idInst, aIndirect, n);
+        lexAsm.Next;  //Toma número
+        CaptureParenthes;  //Captura ')'
+      end else begin
+        //Es un byte. Solo podría ser (indirect,X) o (indirect),Y
+        lexAsm.Next;  //Toma número
+        skipWhites;
+        if lexAsm.GetToken = ',' then begin
+          //Solo puede ser (indirect,X)
+          lexAsm.Next;  //Toma número
+          skipWhites;
+          if UpCase(lexAsm.GetToken) <> 'X' then begin
+            GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+            exit;
+          end;
+          pic.codAsm(idInst, aIdxIndir, n);
+          //Faltaría verificar  ')'
+        end else if lexAsm.GetToken = ')' then begin
+          //Solo puede ser (indirect),Y
+          lexAsm.Next;  //Toma número
+          skipWhites;
+          if lexAsm.GetToken <> ',' then begin
+            GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+            exit;
+          end;
+          pic.codAsm(idInst, aIndirIdx, n);
+          lexAsm.Next;  //Toma número
+          skipWhites;
+          if UpCase(lexAsm.GetToken) <> 'Y' then begin
+            GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+            exit;
+          end;
+        end else begin
+          GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+          exit;
+        end;
+      end;
+    end else begin
+      GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+      exit;
     end;
     if pic.MsjError<>'' then begin
       GenErrorAsm(pic.MsjError);
@@ -809,7 +895,7 @@ begin
           GenErrorAsm(ER_EXPECT_BYTE);
           exit;
         end;
-        pic.codByte(n);
+        pic.codByte(n, false);
         lexAsm.Next;
       end else if Extractlabel then begin
         //Era una etiqueta
@@ -922,6 +1008,8 @@ begin
   lexAsm.AddIdentSpecList('ORG', lexAsm.tnKeyword);
   lexAsm.DefTokDelim(';','', lexAsm.tnComment);
   lexAsm.DefTokDelim('''','''', lexAsm.tnString);
+  lexAsm.AddSymbSpec('(', lexAsm.tnSymbol);
+  lexAsm.AddSymbSpec(')', lexAsm.tnSymbol);
   lexAsm.Rebuild;
 end;
 destructor TParserAsm.Destroy;

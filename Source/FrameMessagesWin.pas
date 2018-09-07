@@ -28,7 +28,6 @@ type
     lblWarns: TLabel;
     lblRAM: TLabel;
     lblROM: TLabel;
-    lblSTACK: TLabel;
     lblErrors: TLabel;
     mnCopyRow: TMenuItem;
     mnClearAll: TMenuItem;
@@ -325,7 +324,6 @@ begin
 
   lblRAM.Font.Color := Avalue;
   lblROM.Font.Color := Avalue;
-  lblSTACK.Font.Color := Avalue;
 end;
 procedure TfraMessagesWin.SetTextErrColor(AValue: TColor);
 begin
@@ -497,7 +495,6 @@ begin
   cv := panStatis.Canvas;
   Barra(lblRAM.Left + 5, lblRAM.Top + 20, panStatis.Height-35, usedRAM);
   Barra(lblROM.Left + 5, lblROM.Top + 20, panStatis.Height-35, usedROM);
-  Barra(lblSTACK.Left+ 5, lblSTACK.Top + 20, panStatis.Height-35, usedSTK);
 end;
 //Inicialización
 constructor TfraMessagesWin.Create(AOwner: TComponent);
