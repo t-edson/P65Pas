@@ -28,10 +28,6 @@ ER_UNEXP_ENDIF := trans('Unexpected "$ENDIF".' , 'No se esperaba "$ENDIF".', '',
                         ''                     , 'Непередбачений "$ENDIF".','Непредвиденный "$ENDIF".', '"$ENDIF" non attendu.');
 ER_UNEXP_ELSE  := trans('Unexpected "$ELSE".'  , 'No se esperaba "$ELSE".' , '',
                         ''                     , 'Непередбачений "$ELSE".','Непредвиденный "$ELSE".', '"$ELSE" non attendu.');
-ER_CONF_UNDEF_ := trans('Undefined Config. Bit: %s', 'Bit de Config. no definido: %s' , '',
-                        ''                       , 'Невизначений біт конфігурації: %s','Неопределённый бит конфигурации: %s', 'Bit de configuration non défini : %s');
-ER_INVAL_CBIT_ := trans('Invalid Config. Bit: %s', 'Bit de Config. inválido: %s' , '',
-                        ''                       , 'Помилковий біт конфігурації: %s','Ошибочный бит конфигурации: %s', 'Bit de configuration invalide : %s');
 ER_FILE_NO_FND_:= trans('File no found: %s'      , 'Archivo no encontrado: %s' , '',
                         ''                       , 'Файл не знайдено: %s','Файл не найден: %s', 'Fichier non trouvé : %s');
 ER_ERIN_NUMBER_:= trans('Error in number: %s'    , 'Error en número: %s' , '',

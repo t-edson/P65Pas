@@ -120,8 +120,6 @@ TIT_CFG_SYNTAX      := Trans('Syntax'                 , 'Sintaxis'              
 ////////////////////////////////////////////////////////////////////////////
 TIT_CFG_ASSEMB       := Trans('Assembler'              , 'Ensamblador'              , '',
                                  'Assembler','Асемблер','Ассемблер', 'Assembleur');
-chkIncHeadMpu.Caption:= Trans('Include MPU &Header'    , 'Incluir &Encabezado de MPU','',
-                              'MPU &Kopfzeilen einbinden','Включити MPU заголовок','Включить MPU заголовок', 'Inclure les directives de processeur');
 chkIncDecVar.Caption := Trans('Include &Variables declaration', 'Incluir Declaración de variables', '',
                               'Variablendeklaration einfügen','Включити декларування змінних','Включить объявление переменных', 'Inclure les déclarations de &variables');
 RadioGroup2.Caption  := Trans('Style'                  , 'Estilo'                   , '',

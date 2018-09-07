@@ -1,6 +1,8 @@
 //ASM blocks errors
 ER_EXPEC_COMMA := trans('Expected ",".'  , 'Se esperaba ","', '',
                         '"," erwartet.'  , 'Очікується ",".','Ожидается ",".', 'Attendu ",".');
+ER_EXPEC_PAREN := trans('Expected ")".'  , 'Se esperaba ")"', '',
+                        '")" erwartet.'  , 'Очікується ")".','Ожидается ")".', 'Attendu ")".');
 ER_EXP_ADR_VAR := trans('Expected address or variable name.'   ,'Se esperaba dirección o variable.','',
                         'Adresse oder Variablenname erwartete.','Очікується адреса або змінна.','Ожидается адрес или имя переменной.', 'Attendu: adresse ou nom de variable.');
 ER_EXP_CON_VAL := trans('Expected constant or value.'    ,'Se esperaba constante o variable.','',
