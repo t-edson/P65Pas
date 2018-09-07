@@ -28,13 +28,13 @@ TAX TAY TSX TXA TXS TYA
 	DB DW DD DF DP DQ DT
 	ORG
 	PROC EQU
+	processor
 	</Directive>
   </Identifiers>
   <!--Token CharsStart="0..9" Content = '0..9' Attribute="NUMBER"> </Token-->
   <String Start="'" End="'"></String>
   <String Start="&quot;" End="&quot;"></String>
   <Comment Start=";" ></Comment>
-  <Token Start="#" End="" Attribute="Directive"/>
   <Token Start="LIST" End="" Attribute="Directive"/>
   <Token Start="__" Content = "A..Za..z0..9_" Attribute="Label"/>
   <Section Start=":"/>
