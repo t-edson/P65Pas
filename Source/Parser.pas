@@ -860,7 +860,7 @@ begin
     Result.valInt := cod;
     cIn.Next;    //Pasa al siguiente
   end else if cIn.tokType = tnString then begin  //constante cadena
-    if length(cIn.tok)=2 then begin  //Es ''
+    if length(cIn.tok)<=2 then begin  //Es ' o ''
       GenError('Char expected.');
       exit;
     end else if length(cIn.tok)>3 then begin  //Es 'aaaa...'

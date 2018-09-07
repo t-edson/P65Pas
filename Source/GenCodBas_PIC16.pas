@@ -546,6 +546,8 @@ begin
     AssignRAMinByte(absAdd, nVar.addr0, varName, shared);
   end else if typ = typChar then begin
     AssignRAMinByte(absAdd, nVar.addr0, varName, shared);
+  end else if typ = typBool then begin
+    AssignRAMinByte(absAdd, nVar.addr0, varName, shared);
   end else if typ = typWord then begin
     //Registra variable en la tabla
     if absAdd = -1 then begin  //Variable normal

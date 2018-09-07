@@ -27,7 +27,6 @@ type
     cxp: TCompilerBase;
     pic: TCPUCore;
     blockSta: array of TRamBlock;
-    blockMap: array of TRamBlock;
     blockUse: array of TRamBlock;
     procedure SplitInStateRAM(dir1, dir2: word);
     procedure SplitInUsedRAM(dir1, dir2: word);
@@ -241,7 +240,7 @@ procedure TfraRamExplorer.DrawRAMbank(const marcoRam: TRect; selected: boolean);
 {Dibuja el banco de RAM completo, en el área "marcoRam", separando por bloques
 de acuerdo al campo "state" }
 var
-  i, ancMargenDir, j: integer;
+  i, ancMargenDir: integer;
   cv: TCanvas;
   lbl: String;
   tmp: integer;
