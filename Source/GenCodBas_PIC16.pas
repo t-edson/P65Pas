@@ -14,6 +14,10 @@ const
   MAX_REGS_STACK_BIT = 4;  //cantidad máxima de registros a usar en la pila
 
 type
+  {Información sobre los saltos con la instrucción kIF_TRUE}
+  TIfInfo = record
+    igoto  : integer;   //Address where is GOTO
+  end;
   { TGenCodBas }
   TGenCodBas = class(TParserDirecBase)
   private
@@ -167,6 +171,8 @@ type
     procedure _TAY;
     procedure _TYA;
     procedure _TXA;
+    procedure IF_TRUE(OpRes: TOperandPtr; out info: TIfInfo);
+    procedure IF_TRUE_END(const info: TIfInfo);
   public     //Acceso a registro de trabajo
     property H_register: TPicRegister read H;
     property E_register: TPicRegister read E;
@@ -948,7 +954,7 @@ procedure TGenCodBas._JMP_lbl(out igot: integer);
  donde se escribe el GOTO, para poder completarla posteriormente.
 }
 begin
-  igot := pic.iRam;  //guarda posición de instrucción de salto
+  igot := pic.iRam+1;  //guarda posición de instrucción de salto
   pic.codAsm(i_JMP, aAbsolute, 0);  //1 en Offset indica que se completará con salto absoluto
 end;
 procedure TGenCodBas._JSR(const ad: word);
@@ -1152,6 +1158,45 @@ end;
 procedure TGenCodBas._TXA;
 begin
   pic.codAsm(i_TXA, aImplicit, 0);
+end;
+procedure TGenCodBas.IF_TRUE(OpRes: TOperandPtr; out info: TIfInfo);
+{Conditional instruction. Test if last expression is TRUE. In this case, execute
+the following block. The syntax is:
+
+IF_TRUE(offset, bit)
+<block of code>
+IF_TRUE_END
+
+This instruction require to call to IF_TRUE_END() to define the End of the block.
+
+The block of code can be one or more instructions. The instructions used in the jump
+must be optimized, according to the length of the block.
+}
+begin
+  if OpRes^.Sto = stVariab then begin
+    //Result in variable
+    if OpRes^.Inverted then begin
+      _LDA(OpRes^.addr);
+      _BEQ_lbl(info.igoto);
+    end else begin
+      _LDA(OpRes^.addr);
+      _BNE_lbl(info.igoto);
+    end;
+  end else if OpRes^.Sto = stExpres then begin
+    //Result in Z flag
+    if OpRes^.Inverted then begin
+      _BEQ_lbl(info.igoto);
+    end else begin
+      _BNE_lbl(info.igoto);
+    end;
+  end else begin
+    genError('Not implemented.');
+  end;
+end;
+procedure TGenCodBas.IF_TRUE_END(const info: TIfInfo);
+{Define the End of the block, created with IF_TRUE().}
+begin
+  _LABEL(info.igoto);  //termina de codificar el salto
 end;
 
 function TGenCodBas.PICName: string;

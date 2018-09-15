@@ -93,7 +93,7 @@ public  //Campos de acceso a los valores constantes
   procedure CopyConsValTo(var c: TxpEleCon);
   procedure GetConsValFrom(const c: TxpEleCon);
 end;
-
+TOperandPtr = ^TOperand;
 { TCompilerBase }
 {Clase base para crear a los objetos compiladores.
 Esta clase debe ser el ancestro común de todos los compialdores a usar en PicPas.

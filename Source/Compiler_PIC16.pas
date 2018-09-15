@@ -463,7 +463,8 @@ end;
 procedure TCompiler_PIC16.CompileIF;
 {Compila una extructura IF}
 var
-  jFALSE, jEND_TRUE: integer;
+  jEND_TRUE: integer;
+  lbl1: TIfInfo;
 begin
   if not GetExpressionBool then exit;
   if not CaptureStr('then') then exit; //toma "then"
@@ -509,8 +510,9 @@ begin
     end;
   end;
   stVariab, stExpres:begin
-    Cod_JumpIfTrue;
-    _JMP_lbl(jFALSE);  //salto pendiente
+    IF_TRUE(@res, lbl1);
+//    Cod_JumpIfTrue;
+//    _JMP_lbl(jFALSE);  //salto pendiente
     //Compila la parte THEN
     if not CompileConditionalBody then exit;
     //Verifica si sigue el ELSE
@@ -518,7 +520,7 @@ begin
       //Es: IF ... THEN ... ELSE ... END
       cIn.Next;   //toma "else"
       _JMP_lbl(jEND_TRUE);  //llega por aquí si es TRUE
-      _LABEL(jFALSE);   //termina de codificar el salto
+      IF_TRUE_END( lbl1);
       if not CompileConditionalBody then exit;
       _LABEL(jEND_TRUE);   //termina de codificar el salto
       VerifyEND;   //puede salir con error
@@ -526,14 +528,14 @@ begin
       //Es: IF ... THEN ... ELSIF ...
       cIn.Next;
       _JMP_lbl(jEND_TRUE);  //llega por aquí si es TRUE
-      _LABEL(jFALSE);   //termina de codificar el salto
+      IF_TRUE_END( lbl1);
       CompileIF;  //más fácil es la forma recursiva
       if HayError then exit;
       _LABEL(jEND_TRUE);   //termina de codificar el salto
       //No es necesario verificar el END final.
     end else begin
       //Es: IF ... THEN ... END. (Puede ser recursivo)
-      _LABEL(jFALSE);   //termina de codificar el salto
+      IF_TRUE_END( lbl1);
       VerifyEND;  //puede salir con error
     end;
   end;
@@ -1879,7 +1881,7 @@ begin
 end;
 procedure TCompiler_PIC16.CompileProgram;
 {Compila un programa en el contexto actual. Empieza a codificar el código a partir de
-la posición actual de memoria en el PIC (iFlash).}
+la posición actual de memoria en el PIC (iRam).}
 var
   bod: TxpEleBody;
 begin
@@ -2185,7 +2187,7 @@ begin
     end;
   end;
   //Compila cuerpo del programa principal
-  pic.cod_JMP_at(iniMain, _PC);   //termina de codificar el salto
+  _LABEL(iniMain);   //Termina de codificar el salto
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   if bod = nil then begin
     GenError('Body program not found.');

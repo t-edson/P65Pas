@@ -783,7 +783,7 @@ begin
             GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
             exit;
           end;
-          pic.codAsm(idInst, aIdxIndir, n);
+          pic.codAsm(idInst, aIndirecX, n);
           //Faltaría verificar  ')'
         end else if lexAsm.GetToken = ')' then begin
           //Solo puede ser (indirect),Y
@@ -793,7 +793,7 @@ begin
             GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
             exit;
           end;
-          pic.codAsm(idInst, aIndirIdx, n);
+          pic.codAsm(idInst, aIndirecY, n);
           lexAsm.Next;  //Toma número
           skipWhites;
           if UpCase(lexAsm.GetToken) <> 'Y' then begin

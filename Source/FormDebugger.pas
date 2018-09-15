@@ -223,6 +223,7 @@ begin
   acGenRun.Enabled := true;
   acGenPause.Enabled := false;
   RefreshScreen;
+  lstMessages.Clear;
   lstMessages.AddItem('Restarting.', nil);
 end;
 procedure TfrmDebugger.acGenRunExecute(Sender: TObject);
@@ -314,8 +315,13 @@ begin
       pc := pc + 1;  //Incrementa
       pic.WritePC(pc);
     end;
+    //MsgBox('$%x %d', [pc, pic.ram[pc].value]);
   end else begin
+    pic.MsjError := '';
     pic.ExecStep;
+    if pic.MsjError<>'' then begin
+      lstMessages.AddItem(pic.MsjError, nil);
+    end;
   end;
   RefreshScreen;
 end;

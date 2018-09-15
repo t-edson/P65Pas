@@ -33,10 +33,12 @@ type
     defHeightFold: Integer;  //Altura de fila plegada
     margInstrc: Integer;
     curVarName: string;
+    function AddressFromRow(ARow: integer): Integer;
     function FindNextLabel(row: integer): integer;
     function FindPrevLabel(row: integer): integer;
     procedure Fold(row1, row2: integer);
     function RowFolded(row: integer): boolean;
+    function RowFromAddress(add: Integer): Integer;
     procedure StringGrid1DrawCell(Sender: TObject; aCol, aRow: Integer;
       aRect: TRect; aState: TGridDrawState);
     procedure Unfold(row1, row2: integer);
@@ -52,6 +54,19 @@ implementation
 {$R *.lfm}
 
 { TfraPicAsm }
+function TfraPicAsm.AddressFromRow(ARow: integer): Integer;  inline;
+var
+  add: TObject;
+begin
+  {La dirección de una fila está codificada en su campo Object[]}
+  add := StringGrid1.Objects[0, ARow];
+  Result := PtrUInt(add);  //Lee dirección física
+end;
+function TfraPicAsm.RowFromAddress(add: Integer): Integer; inline;
+{Obtiene la fila de la grilla que corresponde a una dirección.}
+begin
+  Result := pic.ram[add].rowGrid;
+end;
 procedure TfraPicAsm.StringGrid1DrawCell(Sender: TObject; aCol,
   aRow: Integer; aRect: TRect; aState: TGridDrawState);
 var
@@ -60,11 +75,10 @@ var
   ramCell: ^TCPURamCell;  //Referencia a la celda RAM
   PC    : Word;
   rowHeight: LongInt;
-  nBytes : byte;
   addr   : integer;
 begin
   cv := StringGrid1.Canvas;  //referencia al Lienzo
-  addr := PtrUInt(StringGrid1.Objects[0, ARow]);  //Lee dirección física
+  addr := AddressFromRow(ARow);  //Lee dirección física
   ramCell := @pic.ram[addr];
   //Fija color de texto y relleno
   if gdFixed in aState then begin
@@ -293,7 +307,7 @@ begin
       if (i1 = -1) or (i2 = -1) then exit;
       Unfold(i1, i2);
     end;
-    StringGrid1.Row := pc;
+    StringGrid1.Row := RowFromAddress(pc);
   end;
   StringGrid1.Invalidate;
 end;
@@ -337,12 +351,13 @@ begin
   StringGrid1.OnDrawCell := @StringGrid1DrawCell;
   //Dimensiona la grilla para que pueda mostrar las etIquetas
   StringGrid1.BeginUpdate;
-  StringGrid1.RowCount := high(pic.ram)+1;
+  StringGrid1.RowCount := high(pic.ram)+1;  //Máxima cantidad de filas
   addr := 0;
   f    := 0;
   minUsed := -1;
   while addr <= high(pic.ram) do begin
     StringGrid1.Objects[0,f] := TObject(PtrUInt(addr));
+    pic.ram[addr].rowGrid := f;  //Guarda referencia a la fila de la grilla en la RAM
     //Dimensiona altura de celdas
     if (pic.ram[addr].topComment<>'') and (pic.ram[addr].topLabel<>'') then begin
       //Tiene comentario arriba y etiqueta
@@ -360,6 +375,7 @@ begin
       StringGrid1.RowHeights[addr] := defHeight;
       StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
       StringGrid1.Cells[1, f] := '';
+//StringGrid1.Cells[1, f] := IntToStr(pic.ram[addr].value);
       StringGrid1.Cells[2, f] := '';
       inc(addr);
     end else if pic.ram[addr].name<>'' then begin

@@ -197,8 +197,8 @@ begin
 
   cv := panGraph.Canvas;
   //Convierte direcciones a texto y1
-  etiqIni := IntToHex(dirIni, 3);
-  etiqFin := IntToHex(dirFin, 3);
+  etiqIni := IntToHex(dirIni, 4);
+  etiqFin := IntToHex(dirFin, 4);
   //Dibuja barra de fondo
   DibBar(x1+ancMargenDir, x2, y1, y2, lbl);
   //Dibuja etiquetas de dirección
@@ -247,7 +247,7 @@ var
 begin
   cv := panGraph.Canvas;
   //Calcula el ancho de las etqiuetas
-  ancMargenDir := cv.TextWidth('XXX');
+  ancMargenDir := cv.TextWidth('FFFF');
   if ancMargenDir>(marcoRam.Right - marcoRam.Left)*0.5 then begin
     ancMargenDir := 0;
   end;
@@ -274,7 +274,7 @@ begin
     cs_impleGPR: begin
 //      cv.Brush.Color := clWhite;
       cv.Brush.Color := clNone;
-      lbl := 'GPR';
+      lbl := 'RAM';
     end;
     cs_unimplem: begin
       cv.Brush.Color := clGray;
