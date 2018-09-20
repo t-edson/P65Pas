@@ -63,13 +63,13 @@ begin
 //  StringGrid2.Cells[2,0] := 'IRP';
 //  StringGrid2.Cells[3,0] := 'RP1';
 //  StringGrid2.Cells[4,0] := 'RP0';
-//  STATptr := @(pic.ram[Pic16Utils._STATUS].dvalue);
+  STATptr := @(TP6502(pic).SR);
 end;
 procedure TfraPicRegisters.Refrescar;
 {Refresca valores de los registros}
 begin
-//  ShowRegister(WREGptr^, StringGrid1);
-//  ShowRegister(STATptr^, StringGrid2);
+  ShowRegister(WREGptr^, StringGrid1);
+  ShowRegister(STATptr^, StringGrid2);
 end;
 constructor TfraPicRegisters.Create(AOwner: TComponent);
 begin

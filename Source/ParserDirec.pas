@@ -96,9 +96,6 @@ type
     function ScanIFDEF(out tok: string): boolean;
     procedure ProcCLEAR_STATE_RAM;
     procedure ProcSET_STATE_RAM;
-    procedure ProcMAP_RAM_TO_PIN;
-    procedure ProcRESET_PINS;
-    procedure ProcSET_PIN_NAME;
     procedure ProcERROR;
     procedure ProcINFO;
     procedure ProcWARNING;
@@ -122,13 +119,11 @@ type
     function read_ORG: Single;
     function read_PIC_MAXFREQ: Single;
     function read_PIC_MODEL: string;
-    function read_PIC_NPINS: Single;
     function read_SYN_MODE: String;
     procedure write_PIC_FREQUEN(AValue: Single);
     procedure write_ORG(AValue: Single);
     procedure write_PIC_MAXFREQ(AValue: Single);
     procedure write_PIC_MODEL(AValue: string);
-    procedure write_PIC_NPINS(AValue: Single);
     procedure write_SYN_MODE(AValue: String);
   private  //Macros
     macroList : TDirMacro_list;  //List of macros
@@ -1111,31 +1106,6 @@ procedure TParserDirecBase.ProcCLEAR_STATE_RAM;
 begin
    picCore.DisableAllRAM;
 end;
-procedure TParserDirecBase.ProcRESET_PINS;
-begin
-  picCore.ResetPins;
-end;
-procedure TParserDirecBase.ProcSET_PIN_NAME;
-var
-  txtMsg: String;
-begin
-  lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
-  if HayError then exit;
-  picCore.SetPinName(txtMsg);
-  if picCore.MsjError<>'' then GenErrorDir(picCore.MsjError);
-end;
-procedure TParserDirecBase.ProcMAP_RAM_TO_PIN;
-{Mapea pines del encapsulado a direcciones de memoria}
-var
-  txtMsg: String;
-begin
-  lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
-  if HayError then exit;
-  picCore.MapRAMtoPIN(txtMsg);
-  if picCore.MsjError<>'' then GenErrorDir(picCore.MsjError);
-end;
 procedure TParserDirecBase.ProcINFO;
 var
   txtMsg: String;
@@ -1285,14 +1255,6 @@ end;
 procedure TParserDirecBase.write_ORG(AValue: Single);
 begin
   picCore.iRam:= round(AValue);
-end;
-function TParserDirecBase.read_PIC_NPINS: Single;
-begin
-  Result := picCore.Npins;
-end;
-procedure TParserDirecBase.write_PIC_NPINS(AValue: Single);
-begin
-  picCore.Npins := round(AValue);
 end;
 function TParserDirecBase.read_SYN_MODE: String;
 begin
@@ -1497,9 +1459,6 @@ begin
   'SET'       : ProcSET;
   'CLEAR_STATE_RAM': ProcCLEAR_STATE_RAM;
   'SET_STATE_RAM'  : ProcSET_STATE_RAM;
-  'RESET_PINS'     : ProcRESET_PINS;
-  'SET_PIN_NAME'   : ProcSET_PIN_NAME;
-  'MAP_RAM_TO_PIN' : ProcMAP_RAM_TO_PIN;
   else
     //Puede ser una instrucción, macro o variable
     if DefinedInstruc(lexDir.GetToken, dins) then begin
@@ -1594,7 +1553,6 @@ begin
   AddSysVariableString('PIC_MODEL'   , @read_PIC_MODEL  , @write_PIC_MODEL);
   AddSysVariableNumber('PIC_FREQUEN' , @read_PIC_FREQUEN, @write_PIC_FREQUEN);
   AddSysVariableNumber('PIC_MAXFREQ' , @read_PIC_MAXFREQ, @write_PIC_MAXFREQ);
-  AddSysVariableNumber('PIC_NPINS'   , @read_PIC_NPINS  , @write_PIC_NPINS);
   AddSysVariableNumber('PIC_ORG'     , @read_ORG        , @write_ORG);
   AddSysVariableString('SYN_MODE'    , @read_SYN_MODE   , @write_SYN_MODE);
   AddSysVariableString('CURRBLOCK'   , @read_CURRBLOCK  , nil);
