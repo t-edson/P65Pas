@@ -210,7 +210,7 @@ type //Clases de elementos
 
   { TxpEleCodeCont }
   {Clase que define a un elemento que puede servir como contenedor general de código,
-  como el programa principal, un procedimeinto o una unidad}
+  como el programa principal, un procedimiento o una unidad.}
   TxpEleCodeCont = class(TxpElement)
   public
     function BodyNode: TxpEleBody;
