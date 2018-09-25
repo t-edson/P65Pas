@@ -1,17 +1,16 @@
-//{$ORG $0801}
-////////////////////////////////////////////
-// New program created in 2-8-18}
-////////////////////////////////////////////
 program NewProgram;
 //Declarations here
-var 
-  b: boolean;
-//c: char;
+procedure DelayMs(n: word);
 begin
-  b := true;
-  
-  c := 'A';
+  asm CLC end 
+end; 
+var 
+  c: char;
+begin
+  DelayMs(2000);
   if c='A' then
-    inc(c);  
-  end; 
+    inc(c);
+  else 
+    c := #0;  
+  end;  
 end.

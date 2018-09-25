@@ -1,15 +1,16 @@
-{$ORG $0801}
-{$COMMODORE64}
-program ClearScreen;
+uses Commodore64;
+type
+  //Tpantalla = array[1024] of char; 
+  Tpantalla = ^char; 
 var
-  borde: byte absolute 53280;
-  i: byte;
+  border: byte absolute 53280;
+  screen: Tpantalla;
+  x: word;
 begin
-  i := 0;
-  while true do
-    borde := i;
-    inc(i);
-    delay_ms(1000);
-  end; 
-  asm RTS end
-end.
+//  screen^ := 'A';
+  x := 1;
+//  while true do
+//    inc(border);
+//    delay_ms(100);
+//  end; 
+end. 
