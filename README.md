@@ -1,4 +1,4 @@
-P65Pas 0.1
+P65Pas 0.2
 ==========
 
 Multi-platform Pascal cross-compiler for 6502 CPU.
