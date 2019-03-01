@@ -13,9 +13,9 @@ interface
 uses
   Classes, SysUtils, fgl;
 
-type  //tipos enumerados
+type  //Enumerated types
 
-  //Grupos de tipo de datos
+  //Groups of data types.
   TTypeGroup=(
     t_integer,  //números enteros
     t_uinteger, //enteros sin signo
@@ -35,59 +35,36 @@ type  //tipos enumerados
     ValStr  : string;   //Para alojar a los valores t_string
   end;
 
-  //Almacenamiento de Operando
+  //Operand storage
   TStoOperand = (
-    stConst =%000,   {El operando es una Constante y por lo tanto su valor se almacena
-                      directamente en el operando sin usar memoria del PIC. Incluyendo
-                      expresiones de constantes evaluadas.}
-    stVariab=%001,   {El operando es una Variable simple (atómica), y tampoco ocupa
-                      espacio en la memoria física, sino que solo se guarda su dirección
-                      (y número de bit para el caso de los tipos boolean o bit).}
-    stExpres=%010,   {El operando es una Expresión, por lo general es el resultado de
-                      algún cálculo entre variables y constantes. (incluyendo el resulatdo
-                      de a una función). Se valor está siempre en los RT}
-    stVarRefVar=%011,{El operando es la referencia a una variable, y esta referencia se
-                      calcula en base a otras variables. No ocupa espacio a memoria,
-                      porque su dirección real, se puede calcular, con parámetros
-                      constantes (dirección, desplazamiento, y número de bit).}
-    stVarRefExp=%100 {El operando es la referencia a una variable, y esta referencia se
-                      encuentra en los RT. Para obtener la dirección real de la variable
-                      se debe calcular primero la dirección, usando el valor de los RT y
-                      el desplazamiento, y número de bit}
+    stConst  = %000, {Operand is constant and its value is stored directly in the Operand
+                      without use CPU resources. Includes evaluated constant expressions.}
+    stExpres = %001, {Operand value is stored in RT. Generally is the result of a
+                      expression, or the result of a function call.}
+    stVariab = %010, {Operand is addressed by a constants address.}
+    stVarRef = %011, {Operand is addressed by the value of a variable. Doesn't use RT.}
+    stVarConRef=%100,{Operand is addressed by the value of a variable plus a constant
+                      offset. Doesn't use RT.}
+    stExpRef = %101  {Operand is addressed by the value stored in RT}
   );
   {Almacenamiento combinado para una ROB. Se construye para poder representar dos valores
   de TStoOperand en una solo valor byte (juntando sus bits), para facilitar el uso de un
   CASE ... OF}
   TStoOperandsROB =(
-    stConst_Const      = %000000,
-    stConst_Variab     = %000001,
-    stConst_Expres     = %000010,
-    stConst_VarRefVar  = %000011,
-    stConst_VarRefExp  = %000100,
+    stConst_Const    = %000000,
+    stConst_Expres   = %000001,
+    stConst_Variab   = %000010,
+    stConst_VarRef   = %000011,
 
-    stVariab_Const     = %001000,
-    stVariab_Variab    = %001001,
-    stVariab_Expres    = %001010,
-    stVariab_VarRefVar = %001011,
-    stVariab_VarRefExp = %001100,
+    stExpres_Const   = %001000,
+    stExpres_Expres  = %001001,
+    stExpres_Variab  = %001010,
+    stExpres_VarRef  = %001011,
 
-    stExpres_Const     = %010000,
-    stExpres_Variab    = %010001,
-    stExpres_Expres    = %010010,
-    stExpres_VarRefVar = %010011,
-    stExpres_VarRefExp = %010100,
-
-    stVarRefVar_Const     = %011000,
-    stVarRefVar_Variab    = %011001,
-    stVarRefVar_Expres    = %011010,
-    stVarRefVar_VarRefVar = %011011,
-    stVarRefVar_VarRefExp = %011100,
-
-    stVarRefExp_Const     = %100000,
-    stVarRefExp_Variab    = %100001,
-    stVarRefExp_Expres    = %100010,
-    stVarRefExp_VarRefVar = %100011,
-    stVarRefExp_VarRefExp = %100100
+    stVariab_Const   = %010000,
+    stVariab_Expres  = %010001,
+    stVariab_Variab  = %010010,
+    stVariab_VarRef  = %010011
   );
 
 

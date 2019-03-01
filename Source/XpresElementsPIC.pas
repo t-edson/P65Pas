@@ -232,6 +232,8 @@ type //Clases de elementos
     destructor Destroy; override;
   end;
 
+  TxpEleTypes= specialize TFPGObjectList<TxpEleType>; //lista de variables
+
   { TxpEleType }
   {Clase para modelar a los tipos definidos por el usuario y a los tipos del sistema.
   Es una clase relativamente extensa, debido a la flxibilidad que ofrecen lso tipos en
@@ -264,9 +266,14 @@ type //Clases de elementos
     copyOf  : TxpEleType;  //Indica que es una copia de otro tipo
     grp     : TTypeGroup;  //Grupo del tipo (numérico, cadena, etc)
     size    : smallint;    //Tamaño en bytes del tipo (para bits se usa números negativos)
-    catType : TxpCatType;
+    catType : TxpCatType;  //Categoría del tipo
     arrSize : integer;     //Tamaño, cuando es tctArray
-    refType : TxpEleType;  //Referencia a otro tipo. Valido cuando es puntero o arreglo.
+    refType : TxpEleType;  {Referencia a otro tipo. Valido cuando es puntero o arreglo.
+                                TPtr = ^integer;       //refType = integer
+                                TArr = array[255] of byte;  //refType = byte
+                           }
+    refTypes: TxpEleTypes; {Lista de tipos cuando se trata de un Registro:
+                                TRec = RECORD ... END;  }
   public  //Campos de operadores
     Operators: TxpOperators;      //Operadores soportados
     operAsign: TxpOperator;       //Se guarda una referencia al operador de aignación
@@ -293,7 +300,6 @@ type //Clases de elementos
     constructor Create; override;
     destructor Destroy; override;
   end;
-  TxpEleTypes= specialize TFPGObjectList<TxpEleType>; //lista de variables
 
   { TxpEleCon }
   //Clase para modelar a las constantes

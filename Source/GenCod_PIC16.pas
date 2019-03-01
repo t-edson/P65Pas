@@ -263,7 +263,7 @@ procedure TGenCod.ROB_byte_and_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
   end;
   if not ChangePointerToExpres(p1^) then exit;
@@ -278,7 +278,7 @@ begin
       SetROBResultConst_byte(0);  //puede generar error
       exit;
     end else if value1 = 255 then begin  //Caso especial
-      SetROBResultVariab(p2^.rVar);  //puede generar error
+      SetROBResultVariab(p2^.rVar, 0);  //puede generar error
       exit;
     end;
     SetROBResultExpres_byte(Opt);
@@ -301,7 +301,7 @@ begin
       SetROBResultConst_byte(0);  //puede generar error
       exit;
     end else if value1 = 255 then begin  //Caso especial
-      SetROBResultVariab(p1^.rVar);  //puede generar error
+      SetROBResultVariab(p1^.rVar, 0);  //puede generar error
       exit;
     end;
     SetROBResultExpres_byte(Opt);
@@ -347,7 +347,7 @@ procedure TGenCod.ROB_byte_or_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
   end;
   if not ChangePointerToExpres(p1^) then exit;
@@ -359,7 +359,7 @@ begin
   end;
   stConst_Variab: begin
     if value1 = 0 then begin  //Caso especial
-      SetROBResultVariab(p2^.rVar);
+      SetROBResultVariab(p2^.rVar, 0);
       exit;
     end else if value1 = 255 then begin  //Caso especial
       SetROBResultConst_byte(255);
@@ -382,7 +382,7 @@ begin
   end;
   stVariab_Const: begin
     if value2 = 0 then begin  //Caso especial
-      SetROBResultVariab(p1^.rVar);
+      SetROBResultVariab(p1^.rVar, 0);
       exit;
     end else if value1 = 255 then begin  //Caso especial
       SetROBResultConst_byte(255);
@@ -431,7 +431,7 @@ procedure TGenCod.ROB_byte_xor_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
   end;
   if not ChangePointerToExpres(p1^) then exit;
@@ -487,7 +487,7 @@ procedure TGenCod.ROB_byte_equal_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
   end;
   if not ChangePointerToExpres(p1^) then exit;
@@ -576,60 +576,16 @@ begin
     else
       GenError(MSG_UNSUPPORTED); exit;
     end;
-  end else if p1^.Sto = stVarRefExp then begin
-    //{Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
-    //cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
-    //SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
-    //case p2^.Sto of
-    //stConst : begin
-    //  kMOVWF(FSR);  //direcciona
-    //  //Asignación normal
-    //  if value2=0 then begin
-    //    //caso especial
-    //    kCLRF(INDF);
-    //  end else begin
-    //    kMOVWF(INDF);
-    //  end;
-    //end;
-    //stVariab: begin
-    //  kMOVWF(FSR);  //direcciona
-    //  //Asignación normal
-    //  kMOVF(byte2, toW);
-    //  kMOVWF(INDF);
-    //end;
-    //stExpres: begin
-    //  //La dirección está en la pila y la expresión en A
-    //  aux := GetAuxRegisterByte;
-    //  kMOVWF(aux);   //Salva A (p2)
-    //  //Apunta con p1
-    //  rVar := GetVarByteFromStk;
-    //  kMOVF(rVar.adrByte0, toW);  //Opera directamente al dato que había en la pila. Deja en A
-    //  kMOVWF(FSR);  //direcciona
-    //  //Asignación normal
-    //  kMOVF(aux, toW);
-    //  kMOVWF(INDF);
-    //  aux.used := false;
-    //  exit;
-    //end;
-    //else
-    //  GenError(MSG_UNSUPPORTED); exit;
-    //end;
-  end else if p1^.Sto = stVarRefVar then begin
-    ////Asignación a una variable
-    //SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
-    //case p2^.Sto of
-    //stConst : begin
-    //  //Caso especial de asignación a puntero desreferenciado: variable^
-    //  kMOVF(byte1, toW);
-    //  kMOVWF(FSR);  //direcciona
-    //  //Asignación normal
-    //  if value2=0 then begin
-    //    //caso especial
-    //    kCLRF(INDF);
-    //  end else begin
-    //    kMOVWF(INDF);
-    //  end;
-    //end;
+  end else if p1^.Sto = stVarRef then begin
+    //Asignación a una variable referenciada pro variable
+    SetResultNull;  //Fomalmente, una asignación no devuelve valores en Pascal
+    case p2^.Sto of
+    stConst : begin
+      //Caso especial de asignación a puntero desreferenciado: variable^
+      _LDA(value2);
+//      _STA();
+
+    end;
     //stVariab: begin
     //  //Caso especial de asignación a puntero derefrrenciado: variable^
     //  kMOVF(byte1, toW);
@@ -652,7 +608,7 @@ begin
     //end;
     //else
     //  GenError(MSG_UNSUPPORTED); exit;
-    //end;
+    end;
   end else begin
     GenError('Cannot assign to this Operand.'); exit;
   end;
@@ -694,7 +650,7 @@ begin
     else
       GenError(MSG_UNSUPPORTED); exit;
     end;
-  end else if p1^.Sto = stVarRefExp then begin
+  end else if p1^.Sto = stExpRef then begin
 //    {Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
 //    cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
 //    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
@@ -731,7 +687,7 @@ begin
 //    else
 //      GenError(MSG_UNSUPPORTED); exit;
 //    end;
-  end else if p1^.Sto = stVarRefVar then begin
+  end else if p1^.Sto = stVarRef then begin
 //    //Asignación a una variable
 //    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
 //    case p2^.Sto of
@@ -814,7 +770,7 @@ begin
     else
       GenError(MSG_UNSUPPORTED); exit;
     end;
-  end else if p1^.Sto = stVarRefExp then begin
+  end else if p1^.Sto = stExpRef then begin
 //    {Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
 //    cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
 //    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
@@ -851,7 +807,7 @@ begin
 //    else
 //      GenError(MSG_UNSUPPORTED); exit;
 //    end;
-  end else if p1^.Sto = stVarRefVar then begin
+  end else if p1^.Sto = stVarRef then begin
 //    //Asignación a una variable
 //    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
 //    case p2^.Sto of
@@ -897,7 +853,7 @@ procedure TGenCod.ROB_byte_add_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
   end;
   if not ChangePointerToExpres(p1^) then exit;
@@ -909,7 +865,7 @@ begin
   stConst_Variab: begin
     if value1 = 0 then begin
       //Caso especial
-      SetROBResultVariab(p2^.rVar);  //devuelve la misma variable
+      SetROBResultVariab(p2^.rVar, 0);  //devuelve la misma variable
       exit;
     end else if value1 = 1 then begin
       //Caso especial
@@ -968,7 +924,7 @@ procedure TGenCod.ROB_byte_sub_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
   end;
   if not ChangePointerToExpres(p1^) then exit;
@@ -1061,7 +1017,7 @@ procedure TGenCod.ROB_byte_great_byte(Opt: TxpOperation; SetRes: boolean);
 var
   tmp: TPicRegister;
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
   end;
   if not ChangePointerToExpres(p1^) then exit;
@@ -1151,7 +1107,7 @@ begin
   end;
   stExpres_Expres:begin
     //la expresión p1 debe estar salvada y p2 en el acumulador
-    p1^.SetAsVariab(GetVarByteFromStk);  //Convierte a variable
+    p1^.SetAsVariab(GetVarByteFromStk, 0);  //Convierte a variable
     //Luego el caso es similar a stVariab_Expres
     ROB_byte_great_byte(Opt, true);
     FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
@@ -1162,7 +1118,7 @@ begin
 end;
 procedure TGenCod.ROB_byte_less_byte(Opt: TxpOperation; SetRes: boolean);
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
   end;
   if not ChangePointerToExpres(p1^) then exit;
@@ -1173,7 +1129,7 @@ begin
     {Este es el único caso que no se puede invertir, por la posición de los operandos en
      la pila.}
     //la expresión p1 debe estar salvada y p2 en el acumulador
-    p1^.SetAsVariab(GetVarByteFromStk);  //Convierte a variable
+    p1^.SetAsVariab(GetVarByteFromStk, 0);  //Convierte a variable
     //Luego el caso es similar a stVariab_Expres
     ROB_byte_less_byte(Opt, SetRes);
     FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
@@ -1198,7 +1154,7 @@ procedure TGenCod.ROB_byte_shr_byte(Opt: TxpOperation; SetRes: boolean);  //Desp
 var
   aux: TPicRegister;
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
   end;
   if not ChangePointerToExpres(p1^) then exit;
@@ -1294,7 +1250,7 @@ procedure TGenCod.ROB_byte_shl_byte(Opt: TxpOperation; SetRes: boolean);   //Des
 var
   aux: TPicRegister;
 begin
-  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
   end;
   if not ChangePointerToExpres(p1^) then exit;
@@ -1457,7 +1413,7 @@ begin
     else
       GenError(MSG_UNSUPPORTED); exit;
     end;
-  end else if p1^.Sto = stVarRefVar then begin
+  end else if p1^.Sto = stVarRef then begin
 //    //Asignación a una variable
 //    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
 //    case p2^.Sto of
@@ -1549,7 +1505,7 @@ var
   tmp: TPicRegister;
   sale: integer;
 begin
-//  if (p1^.Sto = stVarRefExp) and (p2^.Sto = stVarRefExp) then begin
+//  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
 //    GenError('Too complex pointer expression.'); exit;
 //  end;
 //  if not ChangePointerToExpres(p1^) then exit;
@@ -1715,7 +1671,7 @@ begin
   stExpres_Expres:begin
     SetROBResultExpres_byte(Opt);
     //p1 está salvado en pila y p2 en (A)
-    p1^.SetAsVariab(GetVarWordFromStk);  //Convierte a variable
+    p1^.SetAsVariab(GetVarWordFromStk, 0);  //Convierte a variable
     //Luego el caso es similar a stVariab_Expres
     _AND(byte1);
     FreeStkRegisterWord;   //libera pila
@@ -1748,27 +1704,7 @@ end;
 //////////// Operaciones con Char
 procedure TGenCod.ROB_char_asig_char(Opt: TxpOperation; SetRes: boolean);
 begin
-  if p1^.Sto <> stVariab then begin  //validación
-    GenError('Only variables can be assigned.'); exit;
-  end;
-  case p2^.Sto of
-  stConst : begin
-    SetROBResultExpres_char(Opt);  //Realmente, el resultado no es importante
-    _LDA(value2);
-    _STA(byte1);
-  end;
-  stVariab: begin
-    SetROBResultExpres_char(Opt);  //Realmente, el resultado no es importante
-    _LDA(byte2);
-    _STA(byte1);
-  end;
-  stExpres: begin  //ya está en A
-    SetROBResultExpres_char(Opt);  //Realmente, el resultado no es importante
-    _STA(byte1);
-  end;
-  else
-    GenError(MSG_UNSUPPORTED); exit;
-  end;
+  ROB_byte_asig_byte(Opt, SetRes);
 end;
 procedure TGenCod.ROB_char_equal_char(Opt: TxpOperation; SetRes: boolean);
 begin
@@ -1829,11 +1765,11 @@ begin
     //Se asume que devuelve una variable de tipo Byte.
     tmpVar := CreateTmpVar('', typByte);
     tmpVar.addr0 := value1;  //Fija dirección de constante
-    SetROUResultVariab(tmpVar);
+    SetROUResultVariab(tmpVar, 0);
   end;
   stVariab: begin
     //Caso común: ptrWord^
-    //La desreferencia de una variable "tctPointer" es un stVarRefVar.
+    //La desreferencia de una variable "tctPointer" es un stVarRef.
     SetROUResultVarRef(p1^.rVar);
   end;
   stExpres: begin
@@ -2010,7 +1946,7 @@ _LABEL(LABEL1);
       exit;
     end;
   end;
-//  stVarRefVar: begin
+//  stVarRef: begin
 //    if (res.Typ = typByte) or (res.Typ = typChar) then begin
 //      _INCF(res.offs, toF);
 //    end else if res.Typ = typWord then begin
@@ -2120,7 +2056,7 @@ begin
       //Sigue siendo variable
       tmpVar := CreateTmpVar('', typByte);   //crea variable temporal Byte
       tmpVar.addr0 := res.rVar.addr0; //apunta al mismo byte
-      SetResultVariab(tmpVar);  //Actualiza "res"
+      SetResultVariab(tmpVar, 0);  //Actualiza "res"
     end else begin
       GenError('Cannot convert to ordinal.'); exit;
     end;
@@ -2159,7 +2095,7 @@ begin
       //Sigue siendo variable
       tmpVar := CreateTmpVar('', typChar);   //crea variable temporal
       tmpVar.addr0 := res.rVar.addr0; //apunta al mismo byte
-      SetResultVariab(tmpVar);
+      SetResultVariab(tmpVar, 0);
     end else begin
       GenError('Cannot convert to char.'); exit;
     end;
@@ -2202,14 +2138,14 @@ begin
       //Crea varaible que apunte al byte bajo
       tmpVar := CreateTmpVar('', typByte);   //crea variable temporal Byte
       tmpVar.addr0 := res.rVar.addr0;  //apunta al mismo byte
-      SetResultVariab(tmpVar);
+      SetResultVariab(tmpVar, 0);
     end else if res.Typ = typByte then begin
       //Es lo mismo
     end else if res.Typ = typWord then begin
       //Crea varaible que apunte al byte bajo
       tmpVar := CreateTmpVar('', typByte);   //crea variable temporal Byte
       tmpVar.addr0 := res.rVar.addr0;  //apunta al mismo byte
-      SetResultVariab(tmpVar);
+      SetResultVariab(tmpVar, 0);
     end else begin
       GenError('Cannot convert to byte.'); exit;
     end;

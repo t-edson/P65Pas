@@ -28,13 +28,13 @@ TOperType = (operUnary,  //Operación Unaria
              operBinary  //Operación Binaria
              );
 { TOperand }
-//Objeto Operando. Para información sobre operandos, ver la documentación técnica.
+//Operand Object.
 TOperand = object
 private
-  FSto   : TStoOperand; //Almacenamiento del operando
+  FSto   : TStoOperand; //Operand storage.
   FTyp   : TxpEleType;  //Tipo del operando, cuando no es stVariab
-  FVar   : TxpEleVar;   //Referencia a variable
-  //FVarOff: TxpEleVar;   //Referencia a variable
+  FVar   : TxpEleVar;   //Referencia a variable, cuando es stVariab o stVarRef.
+  Foffset: integer;   //Referencia a variable, cuando es stVarRef.
   FVal   : TConsValue;  //Valores constantes, cuando el operando es constante
   function GetTyp: TxpEleType;
   procedure SetvalBool(AValue: boolean);
@@ -52,10 +52,10 @@ public  //Campos generales
   como se hacía en versiones anteriores).}
   property Sto : TStoOperand read FSto;  //Alamcenamiento de operando
   property Typ : TxpEleType read GetTyp; //Tipo del operando
-  property rVar: TxpEleVar  read FVar;   //Referencia a la variable.
-  //property rVarOff: TxpEleVar read FVarOff;   //Referencia a la variable.
+  property rVar: TxpEleVar  read FVar;   //Referencia a la variable, cuando es stVariab o stVarRef.
+  property Offset: integer read Foffset;   //Referencia a la variable, cuando es stVarRef.
   procedure SetAsConst(xtyp: TxpEleType);
-  procedure SetAsVariab(xvar: TxpEleVar);
+  procedure SetAsVariab(xvar: TxpEleVar; offAddress: integer);
   procedure SetAsExpres(xtyp: TxpEleType);
   procedure SetAsVarRef(VarBase: TxpEleVar);
   procedure SetAsVarRef(VarBase: TxpEleVar; ValOff: integer);
@@ -616,7 +616,7 @@ begin
       LoadToRT(Op2);
     end else begin
       //Crea un operando-variable para generar código de asignación
-      Op1.SetAsVariab(par.pvar); //Apunta a la variable
+      Op1.SetAsVariab(par.pvar, 0); //Apunta a la variable
       AddCallerTo(par.pvar);  //Agrega la llamada
       op := Op1.Typ.operAsign;
       Oper(Op1, op, Op2);   //Codifica la asignación
@@ -734,7 +734,7 @@ begin
       Op.DefineRegister;
     end else begin
       //Es una variable común
-      Op.SetAsVariab(xvar);   //Guarda referencia a la variable (y actualiza el tipo).
+      Op.SetAsVariab(xvar, 0);   //Guarda referencia a la variable (y actualiza el tipo).
       {$IFDEF LogExpres} Op.txt:= xvar.name; {$ENDIF}   //toma el texto
       //Verifica si tiene referencia a campos con "."
       if (cIn.tok = '.') or (cIn.tok = '[') then begin
@@ -770,7 +770,7 @@ begin
     OnReqStopCodeGen();
     RTstate0 := RTstate;    //Guarda porque se va a alterar con CaptureParams().
     {Crea func0 localmente, para permitir la recursividad en las llamadas a las funciones.
-    Adicionalmenet, deberái plantearse otor método en la exploración de parámetros, tal
+    Adicionalmente, debería plantearse otro método en la exploración de parámetros, tal
     vez la creeación de un árbol de funciones sobrecargdas. Y así se podría incluso
     implementar más fácilmente la adpatación de parámetros como byte->word.}
     try
@@ -1821,10 +1821,10 @@ end;
 function TOperand.offs: TVarOffs;
 {Dirección de memoria, cuando es de tipo Char, Byte, Bit o Boolean.}
 begin
-  if FSto = stVarRefVar then begin
-    //Caso especial, de stVarRefVar
+  if FSto = stVarRef then begin
+    //Caso especial, de stVarRef
 //    if FVar = nil then
-//      Result := FVarOff.offs
+//      Result := Foffset.offs
 //    else
       Result := FVar.offs;
   end else begin
@@ -1939,11 +1939,11 @@ function TOperand.GetTyp: TxpEleType;
 begin
   if Sto = stVariab then begin
     Result := FVar.typ;
-  end else if Sto = stVarRefVar then begin
+  end else if Sto = stVarRef then begin
     //Variable referenciada por variables.
     //Se implementa de acuerdo a la Doc. Técnica - Sección "Operandos sVarRef"
     Result := FVar.typ.refType;   //¿No debería ser solo FVar.typ?
-  end else if Sto = stVarRefExp then begin
+  end else if Sto = stExpRef then begin
     //Variable referenciada por expresión.
     //Se implementa de acuerdo a la Doc. Técnica - Sección "Operandos sExpRef"
     if FVar = nil then begin
@@ -1979,11 +1979,12 @@ begin
   FTyp := xtyp;
   rVarBase := nil;  //Inicia a este valor
 end;
-procedure TOperand.SetAsVariab(xvar: TxpEleVar);
-{Fija el almacenamiento del Operando como Variable, del tipo de la variable}
+procedure TOperand.SetAsVariab(xvar: TxpEleVar; offAddress: integer);
+{Set the operand storage to stVariab}
 begin
   FSto := stVariab;
   FVar := xvar;    //No hace falta actualziar el tipo
+  Foffset := offAddress;  //Offset from FVar address
   rVarBase := nil;  //Inicia a este valor
 end;
 procedure TOperand.SetAsExpres(xtyp: TxpEleType);
@@ -1994,23 +1995,23 @@ begin
   rVarBase := nil;  //Inicia a este valor
 end;
 procedure TOperand.SetAsVarRef(VarBase: TxpEleVar);
-{Fija el operando como de tipo stVarRefVar.}
+{Fija el operando como de tipo stVarRef.}
 begin
-  FSto := stVarRefVar;
+  FSto := stVarRef;
   FVar := VarBase;
   rVarBase := nil;  //Inicia a este valor
 end;
 procedure TOperand.SetAsVarRef(VarBase: TxpEleVar; ValOff: integer);
 {Versión de SetAsVarRef(), con desplazamiento constante.}
 begin
-  FSto := stVarRefVar;
+  FSto := stVarRef;
   FVar := VarBase;
   Fval.ValInt := ValOff;
   rVarBase := nil;  //Inicia a este valor
 end;
 procedure TOperand.SetAsExpRef(VarBase: TxpEleVar; Etyp: TxpEleType);
 begin
-  FSto := stVarRefExp;
+  FSto := stExpRef;
   FVar := VarBase;
   FTyp := Etyp;
   rVarBase := nil;  //Inicia a este valor
@@ -2028,7 +2029,7 @@ function TOperand.StoOpStr: string;
 begin
   case Sto of
   stConst : exit('Constant');
-  stVariab, stVarRefVar, stVarRefExp: exit('Variable');
+  stVariab, stVarRef, stExpRef: exit('Variable');
   stExpres: exit('Expression');
   else
     exit('');

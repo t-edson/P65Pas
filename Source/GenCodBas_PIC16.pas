@@ -89,7 +89,7 @@ type
     //Métodos básicos
     procedure SetResultNull;
     procedure SetResultConst(typ: TxpEleType);
-    procedure SetResultVariab(rVar: TxpEleVar; Inverted: boolean = false);
+    procedure SetResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean = false);
     procedure SetResultExpres(typ: TxpEleType; ChkRTState: boolean = true);
     procedure SetResultVarRef(rVarBase: TxpEleVar);
     procedure SetResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType; ChkRTState: boolean = true);
@@ -99,7 +99,7 @@ type
     procedure SetROBResultConst_char(valByte: integer);
     procedure SetROBResultConst_word(valWord: integer);
     //Fija el resultado de ROB como variable
-    procedure SetROBResultVariab(rVar: TxpEleVar; Inverted: boolean = false);
+    procedure SetROBResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean = false);
     //Fija el resultado de ROB como expresión
     {El parámetro "Opt", es más que nada para asegurar que solo se use con Operaciones
      binarias.}
@@ -109,7 +109,7 @@ type
     procedure SetROBResultExpres_word(Opt: TxpOperation);
     //Fija el resultado de ROU
     procedure SetROUResultConst_byte(valByte: integer);
-    procedure SetROUResultVariab(rVar: TxpEleVar; Inverted: boolean = false);
+    procedure SetROUResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean = false);
     procedure SetROUResultVarRef(rVarBase: TxpEleVar);
     procedure SetROUResultExpres_byte;
     procedure SetROUResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType);
@@ -121,9 +121,6 @@ type
     function _CLOCK: integer;
     procedure _LABEL(igot: integer);
     //Instrucciones simples
-    procedure _BTFSC(const f, b: byte);
-    procedure _BTFSS(const f, b: byte);
-
     procedure _ADC(const k: word);  //AND Absolute/Zeropage
     procedure _ADC(const f: TPicRegister);  //AND Absolute/Zeropage
     procedure _AND(const k: word);
@@ -172,7 +169,8 @@ type
     procedure _TYA;
     procedure _TXA;
     procedure IF_TRUE(OpRes: TOperandPtr; out info: TIfInfo);
-    procedure IF_TRUE_END(const info: TIfInfo);
+    procedure IF_FALSE(OpRes: TOperandPtr; out info: TIfInfo);
+    procedure IF_END(const info: TIfInfo);
   public     //Acceso a registro de trabajo
     property H_register: TPicRegister read H;
     property E_register: TPicRegister read E;
@@ -610,11 +608,11 @@ begin
   que en este caso, tenemos control pleno de su valor}
   res.Inverted := false;
 end;
-procedure TGenCodBas.SetResultVariab(rVar: TxpEleVar; Inverted: boolean = false);
+procedure TGenCodBas.SetResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean = false);
 {Fija los parámetros del resultado de una subexpresion. Este método se debe ejcutar,
 siempre antes de evaluar cada subexpresión.}
 begin
-  res.SetAsVariab(rVar);
+  res.SetAsVariab(rVar, offAddress);
   BooleanFromC:=false;   //para limpiar el estado
   //"Inverted" solo tiene sentido, para los tipos bit y boolean
   res.Inverted := Inverted;
@@ -694,10 +692,10 @@ begin
   res.valInt := valWord;
 end;
 //Fija el resultado de ROP como variable
-procedure TGenCodBas.SetROBResultVariab(rVar: TxpEleVar; Inverted: boolean);
+procedure TGenCodBas.SetROBResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean);
 begin
   GenerateROBdetComment;
-  SetResultVariab(rVar, Inverted);
+  SetResultVariab(rVar, offAddress, Inverted);
 end;
 //Fija el resultado de ROP como expresión
 procedure TGenCodBas.SetROBResultExpres_bool(Opt: TxpOperation;
@@ -775,13 +773,13 @@ begin
   SetResultConst(typByte);
   res.valInt := valByte;
 end;
-procedure TGenCodBas.SetROUResultVariab(rVar: TxpEleVar; Inverted: boolean);
+procedure TGenCodBas.SetROUResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean);
 begin
   GenerateROUdetComment;
-  SetResultVariab(rVar, Inverted);
+  SetResultVariab(rVar, offAddress, Inverted);
 end;
 procedure TGenCodBas.SetROUResultVarRef(rVarBase: TxpEleVar);
-{Fija el resultado como una referencia de tipo stVarRefVar}
+{Fija el resultado como una referencia de tipo stVarRef}
 begin
   GenerateROUdetComment;
   SetResultVarRef(rVarBase);
@@ -802,7 +800,7 @@ begin
   end;
 end;
 procedure TGenCodBas.SetROUResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType);
-{Define el resultado como una expresión stVarRefExp, protegiendo los RT si es necesario.
+{Define el resultado como una expresión stExpRef, protegiendo los RT si es necesario.
 Se debe usar solo para operaciones unarias.}
 begin
   GenerateROUdetComment;
@@ -827,7 +825,7 @@ para que pueda ser evaluado, sin problemas, por las ROP.
 Si hay error devuelve false.}
 begin
   Result := true;
-  if ope.Sto = stVarRefVar then begin
+  if ope.Sto = stVarRef then begin
     //Se tiene una variable puntero dereferenciada: x^
     {Convierte en expresión, verificando los RT}
     if RTstate<>nil then begin
@@ -842,7 +840,7 @@ begin
     ope.SetAsExpres(ope.Typ);  //"ope.Typ" es el tipo al que apunta
     BooleanFromC:=false;
     RTstate := ope.Typ;
-  end else if ope.Sto = stVarRefExp then begin
+  end else if ope.Sto = stExpRef then begin
     //Es una expresión.
     {Se asume que el operando tiene su resultado en los RT. SI estuvieran en la pila
     no se aplicaría.}
@@ -885,18 +883,6 @@ begin
   end;
 end;
 //Instrucciones simples
-{Estas instrucciones no guardan la instrucción compilada en "lastOpCode".}
-procedure TGenCodBas._BTFSC(const f, b: byte); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsmFB(i_BTFSC, f, b);
-end;
-procedure TGenCodBas._BTFSS(const f, b: byte); inline;
-begin
-//  pic.flash[pic.iRam].curBnk := CurrBank;
-//  pic.codAsmFB(i_BTFSS, f, b);
-end;
-
 procedure TGenCodBas._ADC(const k: word);
 begin
   pic.codAsm(i_ADC, aImmediat, k);
@@ -1163,9 +1149,9 @@ procedure TGenCodBas.IF_TRUE(OpRes: TOperandPtr; out info: TIfInfo);
 {Conditional instruction. Test if last expression is TRUE. In this case, execute
 the following block. The syntax is:
 
-IF_TRUE(offset, bit)
+IF_TRUE(@OpRes, info)
 <block of code>
-IF_TRUE_END
+IF_TRUE_END(info)
 
 This instruction require to call to IF_TRUE_END() to define the End of the block.
 
@@ -1190,10 +1176,33 @@ begin
       _BNE_lbl(info.igoto);
     end;
   end else begin
+    genError('Expression storage not supported.');
+  end;
+end;
+procedure TGenCodBas.IF_FALSE(OpRes: TOperandPtr; out info: TIfInfo);
+//Negated version of IF_TRUE()
+begin
+  if OpRes^.Sto = stVariab then begin
+    //Result in variable
+    if OpRes^.Inverted then begin
+      _LDA(OpRes^.addr);
+      _BNE_lbl(info.igoto);
+    end else begin
+      _LDA(OpRes^.addr);
+      _BEQ_lbl(info.igoto);
+    end;
+  end else if OpRes^.Sto = stExpres then begin
+    //Result in Z flag
+    if OpRes^.Inverted then begin
+      _BNE_lbl(info.igoto);
+    end else begin
+      _BEQ_lbl(info.igoto);
+    end;
+  end else begin
     genError('Not implemented.');
   end;
 end;
-procedure TGenCodBas.IF_TRUE_END(const info: TIfInfo);
+procedure TGenCodBas.IF_END(const info: TIfInfo);
 {Define the End of the block, created with IF_TRUE().}
 begin
   _LABEL(info.igoto);  //termina de codificar el salto
@@ -1271,11 +1280,11 @@ begin
     _LDA(Op^.valInt);
   end;
   stVariab: begin
-    _LDA(Op^.rVar.adrByte0.addr);
+    _LDA(Op^.rVar.adrByte0);
   end;
   stExpres: begin  //ya está en A
   end;
-  stVarRefVar: begin
+  stVarRef: begin
     ////Se tiene una variable puntero dereferenciada: x^
     //varPtr := Op^.rVar;  //Guarda referencia a la variable puntero
     ////Mueve a A
@@ -1283,7 +1292,7 @@ begin
     //kMOVWF(FSR);  //direcciona
     //kMOVF(INDF, toW);  //deje en A
   end;
-  stVarRefExp: begin
+  stExpRef: begin
 //    //Es una expresión derefernciada (x+a)^.
 //    {Se asume que el operando tiene su resultado en los RT. Si estuvieran en la pila
 //    no se aplicaría.}
@@ -1547,13 +1556,13 @@ begin
     _LDA(Op^.LByte);
   end;
   stVariab: begin
-    _LDA(Op^.rVar.adrByte1.addr);
+    _LDA(Op^.rVar.adrByte1);
     _STA(H);
-    _LDA(Op^.rVar.adrByte0.addr);
+    _LDA(Op^.rVar.adrByte0);
   end;
   stExpres: begin  //se asume que ya está en (H,A)
   end;
-  stVarRefVar: begin
+  stVarRef: begin
     ////Se tiene una variable puntero dereferenciada: x^
     //varPtr := Op^.rVar;  //Guarda referencia a la variable puntero
     ////Mueve a A
@@ -1564,7 +1573,7 @@ begin
     //_DECF(FSR.addr,toF);
     //_MOVF(0, toW);  //deje en A byte bajo
   end;
-  stVarRefExp: begin
+  stExpRef: begin
 //    //Es una expresión desrefernciada (x+a)^.
 //    {Se asume que el operando tiene su resultado en los RT. Si estuvieran en la pila
 //    no se aplicaría.}
@@ -1599,26 +1608,27 @@ begin
   _PHA;
 end;
 procedure TGenCodBas.word_GetItem(const OpPtr: pointer);
-//Función que devuelve el valor indexado
+//Función que devuelve el valor indexado, de un arreglo del tipo Word.
 var
   Op: ^TOperand;
   arrVar, tmpVar: TxpEleVar;
   idx: TOperand;
   WithBrack: Boolean;
 begin
+  //Busca la forma .item() o []
   if not GetIdxParArray(WithBrack, idx) then exit;
   //Procesa
-  Op := OpPtr;
-  if Op^.Sto = stVariab then begin  //Se aplica a una variable
+  Op := OpPtr;   //El operador actual
+  if (Op^.Sto = stVariab) and (Op^.Offset = 0) then begin  //Se aplica a una variable común.
     arrVar := Op^.rVar;  //referencia a la variable.
     typWord.DefineRegister;
     //Genera el código de acuerdo al índice
     case idx.Sto of
     stConst: begin  //ïndice constante
-      tmpVar := CreateTmpVar('', typWord);
+      tmpVar := CreateTmpVar('', typWord);  //Genera una variable
       tmpVar.addr0 := arrVar.addr0+idx.valInt*2;  //¿Y si es de otro banco?
       tmpVar.addr1 := arrVar.addr0+idx.valInt*2+1;  //¿Y si es de otro banco?
-      SetResultVariab(tmpVar);
+      SetResultVariab(tmpVar, 0);
 //        SetResultExpres(arrVar.typ.refType, true);  //Es array de word, devuelve word
 //        //Como el índice es constante, se puede acceder directamente
 //        add0 := arrVar.adrByte0.offs+idx.valInt*2;
@@ -1857,7 +1867,7 @@ begin
     //Crea una variable temporal que representará al campo
     tmpVar := CreateTmpVar(xvar.name+'.L', typByte);   //crea variable temporal
     tmpVar.addr0 :=  xvar.addr0;  //byte bajo
-    res.SetAsVariab(tmpVar);
+    res.SetAsVariab(tmpVar, 0);
   end;
   stConst: begin
     //Se devuelve una constante bit
@@ -1883,7 +1893,7 @@ begin
     //Crea una variable temporal que representará al campo
     tmpVar := CreateTmpVar(xvar.name+'.H', typByte);
     tmpVar.addr0 := xvar.addr1;  //byte alto
-    res.SetAsVariab(tmpVar);
+    res.SetAsVariab(tmpVar, 0);
   end;
   stConst: begin
     //Se devuelve una constante bit
@@ -1942,7 +1952,7 @@ begin
   picCore := pic;   //Referencia picCore
   ///////////Crea tipos
   ClearTypes;
-  //////////////// Tipo Byte /////////////
+  //////////////// Tipo Boolean /////////////
   typBool := CreateSysType('boolean',t_uinteger,1);   //de 1 byte
   typBool.OnLoadToRT   := @byte_LoadToRT;
   typBool.OnDefRegister:= @byte_DefineRegisters;

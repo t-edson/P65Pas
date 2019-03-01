@@ -24,7 +24,6 @@ type
     procedure CompileTypeDeclar(IsInterface: boolean; typName: string = '');
     function GetAdicVarDeclar(out IsBit: boolean): TAdicVarDec;
     procedure cInNewLine(lin: string);
-    procedure Cod_JumpIfTrue;
     function CompileStructBody(GenCode: boolean): boolean;
     function CompileConditionalBody: boolean;
     function CompileNoConditionBody(GenCode: boolean): boolean;
@@ -520,7 +519,7 @@ begin
       //Es: IF ... THEN ... ELSE ... END
       cIn.Next;   //toma "else"
       _JMP_lbl(jEND_TRUE);  //llega por aquí si es TRUE
-      IF_TRUE_END( lbl1);
+      IF_END( lbl1);
       if not CompileConditionalBody then exit;
       _LABEL(jEND_TRUE);   //termina de codificar el salto
       VerifyEND;   //puede salir con error
@@ -528,57 +527,24 @@ begin
       //Es: IF ... THEN ... ELSIF ...
       cIn.Next;
       _JMP_lbl(jEND_TRUE);  //llega por aquí si es TRUE
-      IF_TRUE_END( lbl1);
+      IF_END( lbl1);
       CompileIF;  //más fácil es la forma recursiva
       if HayError then exit;
       _LABEL(jEND_TRUE);   //termina de codificar el salto
       //No es necesario verificar el END final.
     end else begin
       //Es: IF ... THEN ... END. (Puede ser recursivo)
-      IF_TRUE_END( lbl1);
+      IF_END( lbl1);
       VerifyEND;  //puede salir con error
     end;
   end;
-  end;
-end;
-procedure TCompiler_PIC16.Cod_JumpIfTrue;
-{Codifica una instrucción de salto, si es que el resultado de la última expresión es
-verdadera. Se debe asegurar que la expresión es de tipo booleana y de almacenamiento
-stVariab o stExpres.}
-begin
-  if res.Sto = stVariab then begin
-    //Las variables booleanas, pueden estar invertidas
-    if res.Inverted then begin
-      _BTFSC(res.offs, res.bit);  //verifica condición
-    end else begin
-      _BTFSS(res.offs, res.bit);  //verifica condición
-    end;
-  end else if res.Sto = stExpres then begin
-    //Los resultados de expresión, pueden optimizarse
-    if BooleanFromC then begin
-      //El resultado de la expresión, está en Z, pero a partir una copia negada de C
-      //Se optimiza, eliminando las instrucciones de copia de C a Z
-      pic.iRam := pic.iRam-2;
-      //La lógica se invierte
-      if res.Inverted then begin //_Lógica invertida
-        _BTFSS(C.offs, C.bit);   //verifica condición
-      end else begin
-        _BTFSC(C.offs, C.bit);   //verifica condición
-      end;
-    end else begin
-      //El resultado de la expresión, está en Z. Caso normal
-      if res.Inverted then begin //Lógica invertida
-        _BTFSC(Z.offs, Z.bit);   //verifica condición
-      end else begin
-        _BTFSS(Z.offs, Z.bit);   //verifica condición
-      end;
-    end;
   end;
 end;
 procedure TCompiler_PIC16.CompileREPEAT;
 {Compila uan extructura WHILE}
 var
   l1: Word;
+  info: TIfInfo;
 begin
   l1 := _PC;        //guarda dirección de inicio
   CompileCurBlock;
@@ -596,8 +562,9 @@ begin
     end;
   end;
   stVariab, stExpres: begin
-    Cod_JumpIfTrue;
+    IF_FALSE(@res, info);   { TODO : Se debería optimizar. Hay un salto innecesario, útil solo para bloques largos. }
     _JMP(l1);
+    IF_END(info)
     //sale cuando la condición es verdadera
   end;
   end;
@@ -606,7 +573,7 @@ procedure TCompiler_PIC16.CompileWHILE;
 {Compila una extructura WHILE}
 var
   l1: Word;
-  dg: Integer;
+  info: TIfInfo;
 begin
   l1 := _PC;        //guarda dirección de inicio
   if not GetExpressionBool then exit;  //Condición
@@ -626,13 +593,11 @@ begin
     end;
   end;
   stVariab, stExpres: begin
-    Cod_JumpIfTrue;
-    _JMP_lbl(dg);  //salto pendiente
+    IF_TRUE(@res, info);
     if not CompileConditionalBody then exit;
-    _JMP(l1);   //salta a evaluar la condición
+    _JMP(l1);
+    IF_END(info);
     if not VerifyEND then exit;
-    //ya se tiene el destino del salto
-    _LABEL(dg);   //termina de codificar el salto
   end;
   end;
 end;
@@ -643,6 +608,7 @@ var
   dg, LABEL1: Integer;
   Op1, Op2: TOperand;
   opr1: TxpOperator;
+  info: TIfInfo;
 begin
   Op1 :=  GetOperand;
   if Op1.Sto <> stVariab then begin
@@ -683,9 +649,8 @@ begin
       exit;
     end;
     Op2 := res;   //Copia porque la operación Oper() modificará res
-    Oper(Op1, opr1, Op2);   //"res" mantiene la constante o variable
-    Cod_JumpIfTrue;
-    _JMP_lbl(dg);  //salto pendiente
+    Oper(Op1, opr1, Op2);   //verifica resultado
+    IF_TRUE(@res, info);
     if not CompileConditionalBody then exit;
     if not VerifyEND then exit;
     //Incrementa variable cursor
@@ -699,7 +664,7 @@ _LABEL(LABEL1);
     end;
     _JMP(l1);  //repite el lazo
     //ya se tiene el destino del salto
-    _LABEL(dg);   //termina de codificar el salto
+    IF_END(info);   //termina de codificar el salto
   end else begin
     GenError('Last value must be Constant or Variable');
     exit;
@@ -2069,7 +2034,8 @@ begin
   if Commodore64 then begin
     //En modo Commodore 64
     if pic.iRam = $801 then begin
-      //Se pide compilar en la sección del BASIC
+      //Se pide compilar en el espacio de memoria del BASIC
+      PutTopComm('      ;BASIC starter code: 10 SYS 2062');
       pic.codByte($0C, true);  //Dirección de siguiente línea
       pic.codByte($08, true);
       pic.codByte($0A, true);  //Número de línea
