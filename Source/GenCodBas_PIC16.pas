@@ -890,9 +890,9 @@ end;
 procedure TGenCodBas._ADC(const f: TPicRegister);  //AND Absolute/Zeropage
 begin
   if f.addr<256 then begin
-    pic.codAsm(i_AND, aZeroPage, f.addr);
+    pic.codAsm(i_ADC, aZeroPage, f.addr);
   end else begin
-    pic.codAsm(i_AND, aAbsolute, f.addr);
+    pic.codAsm(i_ADC, aAbsolute, f.addr);
   end;
 end;
 procedure TGenCodBas._AND(const k: word);
