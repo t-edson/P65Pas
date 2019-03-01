@@ -29,35 +29,46 @@ When starting, P65Pas could generate warning messsages, if not needed folders ex
 
 ## Hello World
 
-As an example the following code can be tested in a Commodore64:
+P65Pas can compile to a general 6502 system, and it's not possible to do a general "Hello World" program.
+
+If we are going to compile for Commodore 64, we can use the Commodore64 unit and use the CHROUT procedure to send chars to screen:
 
 ```
-{Change the back color of a Commodore 64 screen}
-program C64ChamgeBack;
-var
-  border: byte absolute 53280;
+{"Hello World" P65Pas program.}
+program Hello;
+uses Commodore64;
 begin
-  while true do
-    inc(border);
-  end;
+  ChrOUT('H');
+  ChrOUT('E');
+  ChrOUT('L');
+  ChrOUT('L');
+  ChrOUT('O');
+  asm RTS end 
 end.
 ```
+This code can generate a PRG program, to send the message "Hello" on the screen of the Commodore 64.
 
-The CPU clock is defined using the directive {$FREQUENCY } and must be after the USES section.
+The code "asm RTS end" line, generate a RTS assembler instruction in the program. It's needed because the PRG program is called with a JSR instruction. 
 
 ## Devices supported
 
-Currently, only 6502 CPU is supported, but the compiler is designed to include some variants.
+Currently, only 6502 CPU is supported, but the compiler is designed to include some variants. Of course, compatible devices, like 6510, can be targeted too.
 
-Support are implemented using units. So if we need compile to the PIC16f628A, we write:
+Support for differents systems (like Apple II, Atari 800XL, Commodore 64, ...) can be implemented using appropriate units.
+
+Currently there is only a unit to support Commodore 64 system. So, to compile to Commodore 64 system, it's recommended use the unit: "Commodore64":
 
 ```
 program anything;
-uses CPU6502; 
+uses Commodore64; 
 begin
   ...
 end. 
 ```
+
+The unit Commodore64 set the compiler to start compiling in the address $0801, and includes a starting code to run the program after loading the PRG.
+
+Moreover, this unit includes some routines (like CHROUT and CHRIN) to control C64 screen and keyboard.
 
 ## IDE
 
@@ -94,7 +105,7 @@ Some features of the IDE are:
 
 ## Debugger/Simulator
 
-P65Pas includes a graphical debugger/simulator for instructions of the Mid-Range core:
+P65Pas includes a graphical debugger for ASM instructions:
 
 ![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/11/P65Pas-simulator.png "P65Pas debugger-simulator")
 
@@ -528,11 +539,11 @@ Then we can expand a macro, in the code, using the way:
 Following, there a sample code:
 
 ```
-{$DEFINE pin_out=PORTB.0}
-uses PIC16F84A;
+{$DEFINE value=$FF}
+uses Commodore64;
+var x: byte;
 begin
-  SetAsOutput({$pin_out});
-  {$pin_out} := 1;
+  x := {$value};
 end.
 ```
 
@@ -542,7 +553,7 @@ Set a value for a variable. If variables doesn't exist, it will be created.
 
 ```
 {$SET pin_out='PORTB.0'}
-uses PIC16F84A;
+uses Commodore64;
 begin
   SetAsOutput({$pin_out});
   {$pin_out} := 1;
@@ -584,7 +595,7 @@ The next code is an example of use:
 
 ```
 {$DEFINE MyPinOut=PORTB.0}
-uses PIC16F84A;
+uses Commodore64;
 begin
 {$IFDEF MyPinOut}
 {$ELSE}
@@ -601,7 +612,7 @@ This directive is the opposite version of $IFDEF.
 
 ```
 {$DEFINE MyPinOut=PORTB.0}
-uses PIC16F84A;
+uses Commodore64;
 begin
 {$IFNDEF MyPinOut}
   {$DEFINE MyPinOut=PORTB.1}
@@ -676,7 +687,7 @@ It's used before of starting to define the RAM for a device, using the directive
 
 •	Cannot declare arrays or records.
 
-•	No recursion implemented, Because of the limited hardware resources, available in PIC devices.
+•	No recursion implemented, Because of the limited hardware resources.
 
 •	No float point implemented.
 
@@ -697,7 +708,7 @@ To compile P65Pas, it's needed to have the following libraries:
 * SynFacilUtils
 * MisUtils
 * MiConfig
-* PicUtils 
+* P65Utils 
 * t-Xpres 
 * UtilsGrilla
 * ogEditGraf
