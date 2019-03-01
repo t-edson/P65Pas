@@ -1,11 +1,11 @@
-P65Pas 0.2
+P65Pas 0.3
 ==========
 
 Multi-platform Pascal cross-compiler for 6502 CPU.
 
-![P65Pas IDE](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/04/P65Pas.png "P65Pas IDE")
+![P65Pas IDE](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2019/03/Sin-título.png "P65Pas IDE")
 
-P65Pas is a Pascal compiler and IDE, written in Lazarus, which generates binary and ASM code for the 6502 CPU.
+P65Pas is a Pascal compiler and IDE, written in Free Pascal, which generates binary and ASM code for the 6502 CPU.
 
 No additional libraries or software required to compile. P65Pas generates the *.prg file directly. Additionally a BASIC Commodore program (POKE's) can be generated to charge the machine code. 
 
@@ -15,7 +15,7 @@ Currently, it only supports basic types.
 
 It includes a complete IDE/debugger/simulator to facilitate the development.
 
-The PicpPas compiler includes advanced optimization options so the code obtained is generally more compact than the obtained with other compilers.
+The P65Pas compiler includes optimization options so the code obtained is generally compact.
 
 ## Installation
 
@@ -32,7 +32,7 @@ When starting, P65Pas could generate warning messsages, if not needed folders ex
 As an example the following code can be tested in a Commodore64:
 
 ```
-{Change thE back color of a Commodore 64 screen}
+{Change the back color of a Commodore 64 screen}
 program C64ChamgeBack;
 var
   border: byte absolute 53280;

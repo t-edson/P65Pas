@@ -3,8 +3,9 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.1\temp\NewFile2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.1\temp\NewFile1.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.3\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.3\temp\NewFile2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.3\units\Commodore64.pas
 "/>
   <SplitterCol Val="2368548"/>
   <MessPanPan Val="2368548"/>
@@ -44,11 +45,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.1\temp\NewFile1.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.1\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.1\temp\NewFile2.pas
-D:\aaa.txt
-D:\Proyectos_Software\Lazarus\P65Pas-0.1\units\Commodore64.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.1\samples\Commodore Screen.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.3\units\Commodore64.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.3\temp\NewFile2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.3\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.2\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.2\temp\NewFile2.pas
 "/>
   </Edit>
   <IncDecVar Val="True"/>
