@@ -665,9 +665,18 @@ begin
   skipWhites;
   if tokType = lexAsm.tnEol then begin
     //Sin parámetros. Puede ser Implícito o Acumulador
-    pic.codAsm(idInst, aImplicit, 0);
-    if pic.MsjError<>'' then begin
-      GenErrorAsm(pic.MsjError);
+    if aImplicit in PIC16InstName[idInst].addressModes then begin
+      //Tiene modo implícito
+      pic.codAsm(idInst, aImplicit, 0);
+      if pic.MsjError<>'' then begin
+        GenErrorAsm(pic.MsjError);
+      end;
+    end else begin
+      //Debe ser acumulador
+      pic.codAsm(idInst, aAcumulat, 0);
+      if pic.MsjError<>'' then begin
+        GenErrorAsm(pic.MsjError);
+      end;
     end;
   end else if lexAsm.GetToken = '#' then begin
     //Inmediato

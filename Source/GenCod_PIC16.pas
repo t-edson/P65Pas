@@ -2173,46 +2173,39 @@ procedure TGenCod.fun_Word(fun: TxpEleFun);
 var
   tmpVar: TxpEleVar;
 begin
-//  if not CaptureTok('(') then exit;
-//  res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
-//  if HayError then exit;   //aborta
-//  case res.Sto of  //el parámetro debe estar en "res"
-//  stConst : begin
-//    if res.Typ = typByte then begin
-//      res.SetAsConst(typWord);  //solo cambia el tipo
-//    end else if res.Typ = typChar then begin
-//      res.SetAsConst(typWord);  //solo cambia el tipo
-//    end else if res.Typ = typWord then begin
-//      //ya es Word
-//    end else if res.Typ = typDWord then begin
-//      res.SetAsConst(typWord);
-//      res.valInt := res.valInt and $FFFF;
-//    end else begin
-//      GenError('Cannot convert this constant to word.'); exit;
-//    end;
-//  end;
-//  stVariab: begin
-//    typWord.DefineRegister;
-//    if res.Typ = typByte then begin
-//      SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
-//      _CLRF(H.offs);
-//      _MOVF(res.offs, toW);
-//    end else if res.Typ = typChar then begin
-//      SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
-//      _CLRF(H.offs);
-//      _MOVF(res.offs, toW);
-//    end else if res.Typ = typWord then begin
-//      //ya es Word
-//    end else if res.Typ = typDWord then begin
-//      //Crea varaible que apunte al word bajo
-//      tmpVar := CreateTmpVar('', typWord);   //crea variable temporal Word
-//      tmpVar.addr0 := res.rVar.addr0; //apunta al byte L
-//      tmpVar.addr1 := res.rVar.addr1; //apunta al byte H
-//      SetResultVariab(tmpVar);
-//    end else begin
-//      GenError('Cannot convert this variable to word.'); exit;
-//    end;
-//  end;
+  if not CaptureTok('(') then exit;
+  res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
+  if HayError then exit;   //aborta
+  case res.Sto of  //el parámetro debe estar en "res"
+  stConst : begin
+    if res.Typ = typByte then begin
+      res.SetAsConst(typWord);  //solo cambia el tipo
+    end else if res.Typ = typChar then begin
+      res.SetAsConst(typWord);  //solo cambia el tipo
+    end else if res.Typ = typWord then begin
+      //ya es Word
+    end else begin
+      GenError('Cannot convert this constant to word.'); exit;
+    end;
+  end;
+  stVariab: begin
+    typWord.DefineRegister;
+    if res.Typ = typByte then begin
+      SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
+      _LDA(0);
+      _STA(H);
+      _LDA(res.rVar.adrByte0);
+    end else if res.Typ = typChar then begin
+      SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
+      _LDA(0);
+      _STA(H);
+      _LDA(res.rVar.adrByte0);
+    end else if res.Typ = typWord then begin
+      //ya es Word
+    end else begin
+      GenError('Cannot convert this variable to word.'); exit;
+    end;
+  end;
 //  stExpres: begin  //se asume que ya está en (A)
 //    typWord.DefineRegister;
 //    if res.Typ = typByte then begin
@@ -2225,17 +2218,14 @@ begin
 //      _CLRF(H.offs);
 //    end else if res.Typ = typWord then begin
 ////      Ya es word
-//    end else if res.Typ = typDWord then begin
-//      res.SetAsExpres(typWord);
-//      //Ya está en H,A el word bajo
 //    end else begin
 //      GenError('Cannot convert expression to word.'); exit;
 //    end;
 //  end;
-//  else
-//    genError('Not implemented "%s" for this operand.', [fun.name]);
-//  end;
-//  if not CaptureTok(')') then exit;
+  else
+    genError('Not implemented "%s" for this operand.', [fun.name]);
+  end;
+  if not CaptureTok(')') then exit;
 end;
 procedure TGenCod.StartSyntax;
 //Se ejecuta solo una vez al inicio
