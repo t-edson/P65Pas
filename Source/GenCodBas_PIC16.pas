@@ -89,7 +89,7 @@ type
     //Métodos básicos
     procedure SetResultNull;
     procedure SetResultConst(typ: TxpEleType);
-    procedure SetResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean = false);
+    procedure SetResultVariab(rVar: TxpEleVar; offAddress: integer; logic: TLogicType = logNormal);
     procedure SetResultExpres(typ: TxpEleType; ChkRTState: boolean = true);
     procedure SetResultVarRef(rVarBase: TxpEleVar);
     procedure SetResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType; ChkRTState: boolean = true);
@@ -99,20 +99,20 @@ type
     procedure SetROBResultConst_char(valByte: integer);
     procedure SetROBResultConst_word(valWord: integer);
     //Fija el resultado de ROB como variable
-    procedure SetROBResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean = false);
+    procedure SetROBResultVariab(rVar: TxpEleVar; offAddress: integer; logic: TLogicType = logNormal);
     //Fija el resultado de ROB como expresión
     {El parámetro "Opt", es más que nada para asegurar que solo se use con Operaciones
      binarias.}
-    procedure SetROBResultExpres_bool(Opt: TxpOperation; Inverted: boolean);
+    procedure SetROBResultExpres_bool(Opt: TxpOperation; logic: TLogicType = logNormal);
     procedure SetROBResultExpres_byte(Opt: TxpOperation);
     procedure SetROBResultExpres_char(Opt: TxpOperation);
     procedure SetROBResultExpres_word(Opt: TxpOperation);
     //Fija el resultado de ROU
     procedure SetROUResultConst_bool(valBool: boolean);
     procedure SetROUResultConst_byte(valByte: integer);
-    procedure SetROUResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean = false);
+    procedure SetROUResultVariab(rVar: TxpEleVar; offAddress: integer; logic: TLogicType = logNormal);
     procedure SetROUResultVarRef(rVarBase: TxpEleVar);
-    procedure SetROUResultExpres_bool(Inverted: boolean);
+    procedure SetROUResultExpres_bool(logic: TLogicType);
     procedure SetROUResultExpres_byte;
     procedure SetROUResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType);
     //Adicionales
@@ -139,6 +139,9 @@ type
     procedure _BNE(const ad: ShortInt);
     procedure _BNE_lbl(out ibranch: integer);
     procedure _BCC(const ad: ShortInt);
+    procedure _BCC_lbl(out ibranch: integer);
+    procedure _BCS(const ad: ShortInt);
+    procedure _BCS_lbl(out ibranch: integer);
     procedure _CLC;
     procedure _CMP(const k: word);  //immidiate
     procedure _CMP(const f: TPicRegister);  //Absolute/Zeropage
@@ -602,27 +605,31 @@ procedure TGenCodBas.SetResultNull;
 {Fija el resultado como NULL.}
 begin
   res.SetAsNull;
-  BooleanFromC:=false;   //para limpiar el estado
-  res.Inverted := false;
+  BooleanFromC:=0;   //para limpiar el estado
+  BooleanFromZ:=0;
+  res.logic := logNormal;
 end;
 procedure TGenCodBas.SetResultConst(typ: TxpEleType);
 {Fija los parámetros del resultado de una subexpresion. Este método se debe ejcutar,
 siempre antes de evaluar cada subexpresión.}
 begin
   res.SetAsConst(typ);
-  BooleanFromC:=false;   //para limpiar el estado
+  BooleanFromC:=0;   //para limpiar el estado
+  BooleanFromZ:=0;
   {Se asume que no se necesita invertir la lógica, en una constante (booleana o bit), ya
   que en este caso, tenemos control pleno de su valor}
-  res.Inverted := false;
+  res.logic := logNormal;
 end;
-procedure TGenCodBas.SetResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean = false);
+procedure TGenCodBas.SetResultVariab(rVar: TxpEleVar; offAddress: integer;
+  logic: TLogicType);
 {Fija los parámetros del resultado de una subexpresion. Este método se debe ejcutar,
 siempre antes de evaluar cada subexpresión.}
 begin
   res.SetAsVariab(rVar, offAddress);
-  BooleanFromC:=false;   //para limpiar el estado
+  BooleanFromC:=0;   //para limpiar el estado
+  BooleanFromZ:=0;
   //"Inverted" solo tiene sentido, para los tipos bit y boolean
-  res.Inverted := Inverted;
+  res.logic := logic;
 end;
 procedure TGenCodBas.SetResultExpres(typ: TxpEleType; ChkRTState: boolean = true);
 {Fija los parámetros del resultado de una subexpresion (en "res"). Este método se debe
@@ -641,17 +648,18 @@ begin
   //Fija como expresión
   res.SetAsExpres(typ);
   //Limpia el estado. Esto es útil que se haga antes de generar el código para una operación
-  BooleanFromC:=false;
-  BooleanFromZ:=false;
+  BooleanFromC:=0;
+  BooleanFromZ:=0;
   //Actualiza el estado de los registros de trabajo.
   RTstate := typ;
 end;
 procedure TGenCodBas.SetResultVarRef(rVarBase: TxpEleVar);
 begin
   res.SetAsVarRef(rVarBase);
-  BooleanFromC:=false;   //para limpiar el estado
+  BooleanFromC:=0;   //para limpiar el estado
+  BooleanFromZ:=0;
   //No se usa "Inverted" en este almacenamiento
-  res.Inverted := false;
+  res.logic := logNormal;
 end;
 procedure TGenCodBas.SetResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType; ChkRTState: boolean = true);
 begin
@@ -665,9 +673,10 @@ begin
     end;
   end;
   res.SetAsExpRef(rVarBase, typ);
-  BooleanFromC:=false;   //para limpiar el estado
+  BooleanFromC:=0;   //para limpiar el estado
+  BooleanFromZ:=0;
   //No se usa "Inverted" en este almacenamiento
-  res.Inverted := false;
+  res.logic := logNormal;
 end;
 //Fija el resultado de ROP como constante
 procedure TGenCodBas.SetROBResultConst_bool(valBool: Boolean);
@@ -699,14 +708,15 @@ begin
   res.valInt := valWord;
 end;
 //Fija el resultado de ROP como variable
-procedure TGenCodBas.SetROBResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean);
+procedure TGenCodBas.SetROBResultVariab(rVar: TxpEleVar; offAddress: integer;
+  logic: TLogicType);
 begin
   GenerateROBdetComment;
-  SetResultVariab(rVar, offAddress, Inverted);
+  SetResultVariab(rVar, offAddress, logic);
 end;
 //Fija el resultado de ROP como expresión
 procedure TGenCodBas.SetROBResultExpres_bool(Opt: TxpOperation;
-  Inverted: boolean);
+  logic: TLogicType);
 {Define el resultado como una expresión de tipo Boolean, y se asegura de reservar el
 registro Z, para devolver la salida. Debe llamarse cuando se tienen los operandos de
 la oepración en p1^y p2^, porque toma información de allí.}
@@ -722,7 +732,7 @@ begin
     SetResultExpres(typBool);  //actualiza "RTstate"
   end;
   //Fija la lógica
-  res.Inverted := Inverted;
+  res.logic := logic;
 end;
 procedure TGenCodBas.SetROBResultExpres_byte(Opt: TxpOperation);
 {Define el resultado como una expresión de tipo Byte, y se asegura de reservar el
@@ -788,10 +798,11 @@ begin
   SetResultConst(typByte);
   res.valInt := valByte;
 end;
-procedure TGenCodBas.SetROUResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean);
+procedure TGenCodBas.SetROUResultVariab(rVar: TxpEleVar; offAddress: integer;
+  logic: TLogicType);
 begin
   GenerateROUdetComment;
-  SetResultVariab(rVar, offAddress, Inverted);
+  SetResultVariab(rVar, offAddress, logic);
 end;
 procedure TGenCodBas.SetROUResultVarRef(rVarBase: TxpEleVar);
 {Fija el resultado como una referencia de tipo stVarRef}
@@ -799,7 +810,7 @@ begin
   GenerateROUdetComment;
   SetResultVarRef(rVarBase);
 end;
-procedure TGenCodBas.SetROUResultExpres_bool(Inverted: boolean);
+procedure TGenCodBas.SetROUResultExpres_bool(logic: TLogicType);
 begin
   GenerateROUdetComment;
   //Se van a usar los RT. Verificar si los RT están ocupadoa
@@ -812,7 +823,7 @@ begin
     SetResultExpres(typBool);  //actualiza "RTstate"
   end;
   //Fija la lógica
-  res.Inverted := Inverted;
+  res.logic := logic;
 end;
 procedure TGenCodBas.SetROUResultExpres_byte;
 {Define el resultado como una expresión de tipo Byte, y se asegura de reservar el
@@ -868,7 +879,8 @@ begin
     if HayError then exit(false);  //Por si no está implementado
     //COnfigura después SetAsExpres(), para que LoadToRT(), sepa el almacenamiento de "op"
     ope.SetAsExpres(ope.Typ);  //"ope.Typ" es el tipo al que apunta
-    BooleanFromC:=false;
+    BooleanFromC:=0;
+    BooleanFromZ:=0;
     RTstate := ope.Typ;
   end else if ope.Sto = stExpRef then begin
     //Es una expresión.
@@ -879,7 +891,8 @@ begin
     if HayError then exit(false);  //Por si no está implementado
     //COnfigura después SetAsExpres(), para que LoadToRT(), sepa el almacenamiento de "op"
     ope.SetAsExpres(ope.Typ);  //"ope.Typ" es el tipo al que apunta
-    BooleanFromC:=false;
+    BooleanFromC:=0;
+    BooleanFromZ:=0;
     RTstate := ope.Typ;
   end;
 end;
@@ -1010,6 +1023,24 @@ begin
   end else begin
     pic.codAsm(i_BCC, aRelative, 256+ad);
   end;
+end;
+procedure TGenCodBas._BCC_lbl(out ibranch: integer);
+begin
+  ibranch := pic.iRam+1;  //guarda posición del offset de salto
+  pic.codAsm(i_BCC, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
+end;
+procedure TGenCodBas._BCS(const ad: ShortInt);
+begin
+  if ad>=0 then begin
+    pic.codAsm(i_BCS, aRelative, ad);
+  end else begin
+    pic.codAsm(i_BCS, aRelative, 256+ad);
+  end;
+end;
+procedure TGenCodBas._BCS_lbl(out ibranch: integer);
+begin
+  ibranch := pic.iRam+1;  //guarda posición del offset de salto
+  pic.codAsm(i_BCS, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
 end;
 procedure TGenCodBas._CLC;
 begin
@@ -1215,7 +1246,7 @@ must be optimized, according to the length of the block.
 begin
   if OpRes^.Sto = stVariab then begin
     //Result in variable
-    if OpRes^.Inverted then begin
+    if OpRes^.logic = logInverted then begin
       _LDA(OpRes^.rVar.adrByte0);
       _BNE_lbl(info.igoto);
     end else begin
@@ -1223,11 +1254,33 @@ begin
       _BEQ_lbl(info.igoto);
     end;
   end else if OpRes^.Sto = stExpres then begin
-    //Result in Z flag
-    if OpRes^.Inverted then begin
-      _BNE_lbl(info.igoto);
+    {We first evaluate the case when it could be done an optimization}
+    if BooleanFromC<>0 then begin
+      //Expression result has been copied from C to A
+      pic.iRam := BooleanFromC;   //Delete last instructions
+      //Check C flag
+      if OpRes^.logic = logInverted then begin
+        _BCS_lbl(info.igoto);
+      end else begin
+        _BCC_lbl(info.igoto);
+      end;
+    end else if BooleanFromZ<>0 then begin
+      //Expression result has been copied from Z to A
+      pic.iRam := BooleanFromZ;   //Delete last instructions
+      //Check Z flag
+      if OpRes^.logic = logInverted then begin
+        _BEQ_lbl(info.igoto);
+      end else begin
+        _BNE_lbl(info.igoto);
+      end;
     end else begin
-      _BEQ_lbl(info.igoto);
+      {We assume if boolean result is in A, then boolean result is in Z flag, too.
+      So we just need to check the Z flag}
+      if OpRes^.logic = logInverted then begin
+        _BNE_lbl(info.igoto);
+      end else begin
+        _BEQ_lbl(info.igoto);
+      end;
     end;
   end else begin
     genError('Expression storage not supported.');
@@ -1238,7 +1291,7 @@ procedure TGenCodBas.IF_FALSE(OpRes: TOperandPtr; out info: TIfInfo);
 begin
   if OpRes^.Sto = stVariab then begin
     //Result in variable
-    if OpRes^.Inverted then begin
+    if OpRes^.logic = logInverted then begin
       _LDA(OpRes^.addr);
       _BNE_lbl(info.igoto);
     end else begin
@@ -1247,7 +1300,7 @@ begin
     end;
   end else if OpRes^.Sto = stExpres then begin
     //Result in Z flag
-    if OpRes^.Inverted then begin
+    if OpRes^.logic = logInverted then begin
       _BNE_lbl(info.igoto);
     end else begin
       _BEQ_lbl(info.igoto);

@@ -16,7 +16,12 @@ uses
 const
   TIT_BODY_ELE = 'Body';
 type
-//Tipo de expresión, de acuerdo a la posición en que aparece
+//Logic level type.
+TLogicType = (
+  logNormal,   //Normal logic
+  logInverted  //Inverted logic
+);
+//Expression type, according the position it appears.
 TPosExpres = (pexINDEP,  //Expresión independiente
               pexASIG,   //Expresión de asignación
               pexPROC,   //Expresión de procedimiento
@@ -41,9 +46,9 @@ private
   procedure SetvalFloat(AValue: extended);
   procedure SetvalInt(AValue: Int64);
 public  //Campos generales
-  txt     : string;   //Texto del operando o expresión, tal como aparece en la fuente
-  Inverted: boolean; {Este campo se usa para cuando el operando es de tipo Bit o Boolean.
-                      Indica que la lógica debe leerse de forma invertida.}
+  txt    : string;  //Text of operand or expression, as it apperas in source.
+  logic  : TLogicType; {Used when operand is Boolean type. Indicates the type of logic of
+                        the operand value.}
   rVarBase: TxpEleVar;  {Referencia a variable base, cuando el operando es de tipo:
                          <variable>.<campo>.<campo>. }
   {"Sto", "Typ" y "rVar" se consideran de solo lectura. Para cambiarlos, se han definido
@@ -103,12 +108,12 @@ protected  //Variables de expresión.
   {Estas variables, se inician al inicio de cada expresión y su valor es válido
   hasta el final de la expresión.}
   //Variables de estado de las expresiones booleanas
-  BooleanFromC: boolean; {Indica que el resultado de una expresión Booleana, se
-                          ha obtenido, en la última subexpresion, usando el bit C.
-                          Se usa para opciones de optimización de código.}
-  BooleanFromZ: boolean; {Indica que el resultado de una expresión Booleana, se
-                          ha obtenido, en la última subexpresion, usando el bit Z.
-                          Se usa para opciones de optimización de código.}
+  BooleanFromC: integer; {Flag and index. When <>0, indicates the boolean expression result
+                          was obtained, in the last expression, using the bit C and moved
+                          to A. Used for code optimization.}
+  BooleanFromZ: integer; {Flag and index. When <>0, indicates the boolean expression result
+                          was obtained, in the last expression, using the bit Z and moved
+                          to A. Used for code optimization.}
 protected
   procedure IdentifyField(xOperand: TOperand);
   procedure LogExpLevel(txt: string);
@@ -840,7 +845,7 @@ var
 begin
   //cIn.SkipWhites;
   ProcComments;
-  Result.Inverted := false;   //inicia campo
+  Result.logic := logNormal;   //inicia campo
   if cIn.tokType = tnNumber then begin  //constantes numéricas
     {$IFDEF LogExpres} Result.txt:= cIn.tok; {$ENDIF}   //toma el texto
     TipDefecNumber(Result, cIn.tok); //encuentra tipo de número, tamaño y valor
@@ -1250,9 +1255,7 @@ begin
   {$ENDIF}
 end;
 procedure TCompilerBase.LoadToRT(Op: TOperand);
-{Carga un operando a los Registros de Trabajo (RT).
-El parámetrto "modReturn", indica que se quiere generar un RETURN, dejando en ls RT
-el valor de la expresión.}
+{Carga un operando a los Registros de Trabajo (RT).}
 begin
   if Op.Typ.OnLoadToRT=nil then begin
     //No implementado
@@ -1865,11 +1868,11 @@ end;
 procedure TOperand.Invert;
 begin
   if Sto = stConst then begin
-    //Para constantes, no se puede negar la lógica, sino el valor
+    //In constants, logic is not used. We can change teh value
     valBool := not valBool;
   end else begin
-    //Variables y expresiones, sí.
-    Inverted := not Inverted;  //invierte lógica
+    //Variables and expresions, yes.
+    if logic = logNormal then logic := logInverted else logic := logNormal;
   end;
 end;
 function TOperand.aWord: word; inline;

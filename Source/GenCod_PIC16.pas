@@ -68,6 +68,7 @@ type
       procedure Copy_Z_to_A;
       procedure Copy_C_to_A;
       procedure fun_Byte(fun: TxpEleFun);
+      procedure ROB_bool_and_bool(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROU_addr_word(Opr: TxpOperator; SetRes: boolean);
       procedure ROU_not_bool(Opr: TxpOperator; SetRes: boolean);
@@ -174,18 +175,18 @@ end;
 procedure TGenCod.Copy_Z_to_A;
 begin
   //Result in Z. Move to A.
+  BooleanFromZ := _PC;  //Activates flag, and get current address.
   _PHP;
   _PLA;
   _AND($02);
-  BooleanFromZ := true;  //Activa bandera para que se pueda optimizar
 end;
 procedure TGenCod.Copy_C_to_A;
 begin
   //Result in C. Move to A.
+  BooleanFromC := _PC;  //Activates flag, and get current address.
   _PHP;
   _PLA;
   _AND($01);
-  BooleanFromC := true;  //Activa bandera para que se pueda optimizar
 end;
 ////////////rutinas obligatorias
 procedure TGenCod.Cod_StartProgram;
@@ -267,7 +268,7 @@ begin
     SetROUResultConst_bool(not p1^.valBool);
   end;
   stVariab: begin
-    SetROUResultExpres_bool(false);
+    SetROUResultExpres_bool(logNormal);
     //We have to return logical value inverted in A
     _LDA(p1^.rVar.adrByte0);   //Result of "NOT var" in Z
     Copy_Z_to_A;
@@ -519,7 +520,7 @@ begin
     SetROBResultConst_bool(value1 = value2);
   end;
   stConst_Variab: begin
-    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
+    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
     if value1 = 0 then begin  //caso especial
       _EORi(0);  //si iguales _Z=1
     end else if value1 = 1 then begin  //caso especial
@@ -532,7 +533,7 @@ begin
     end;
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
-    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
+    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
     _EORi(value1);  //Si son iguales Z=1.
   end;
   stVariab_Const: begin
@@ -540,24 +541,24 @@ begin
     ROB_byte_equal_byte(Opt, SetRes);
   end;
   stVariab_Variab:begin
-    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
+    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
     _LDA(byte1);
     _EOR(byte2);  //si iguales _Z=1
   end;
   stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
-    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
+    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
     _EOR(byte1);  //si iguales _Z=1
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
-    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
+    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
     _EORi(value2);  //Si son iguales Z=1.
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
-    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
+    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
     _EOR(byte2);  //Si son iguales Z=1.
   end;
   stExpres_Expres:begin
-    SetROBResultExpres_bool(Opt, false);   //Se pide Z para el resultado
+    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
     //la expresión p1 debe estar salvada y p2 en el acumulador
     rVar := GetVarByteFromStk;
     _EOR(rVar.adrByte0);  //Si son iguales Z=1.
@@ -1059,11 +1060,10 @@ begin
       SetROBResultConst_byte(0);
 //      GenWarn('Expression will always be FALSE.');  //o TRUE si la lógica Está invertida
     end else begin
-      SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-      _SEC;
-      _LDA(value1);
-      _SBC(byte2);
-      Copy_C_to_A; //Pasa C a Z (invirtiendo)
+      SetROBResultExpres_bool(Opt, logInverted);
+      _LDA(byte2);
+      _CMP(value1); //Result in C (inverted)
+      Copy_C_to_A; //Copy C to A (still inverted)
     end;
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
@@ -1072,16 +1072,11 @@ begin
       SetROBResultConst_byte(0);
 //      GenWarn('Expression will always be FALSE.');  //o TRUE si la lógica Está invertida
     end else begin
-      //Optimiza rutina, usando: A>B  equiv. NOT (B<=A-1)
       //Se necesita asegurar que p1, es mayo que cero.
-      SetROBResultExpres_byte(Opt);  //invierte la lógica
-      typWord.DefineRegister;   //Asegura que exista H
-      //p2, ya está en A
-      _STA(H);
-      _SEC;
-      _LDA(value1);
-      _SBC(H);
-      Copy_C_to_A; //Pasa C a Z (invirtiendo)
+      SetROBResultExpres_bool(Opt, logInverted);
+      //p2, already in A
+      _CMP(value1); //Result in C (inverted)
+      Copy_C_to_A; //Copy C to A (still inverted)
     end;
   end;
   stVariab_Const: begin
@@ -1090,29 +1085,23 @@ begin
       SetROBResultConst_bool(false);
       GenWarn('Expression will always be FALSE or TRUE.');
     end else begin
-      SetROBResultExpres_bool(Opt, true);   //Se pide Z para el resultado
-      _SEC;
-      _LDA(byte1);
-      _SBC(value2);
-      Copy_C_to_A; //Pasa C a Z (invirtiendo)
+      SetROBResultExpres_bool(Opt, logInverted);
+      _LDA(value2);
+      _CMP(byte1); //Result in C (inverted)
+      Copy_C_to_A; //Copy C to A (still inverted)
     end;
   end;
   stVariab_Variab:begin
-    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-    _SEC;
-    _LDA(byte1);
-    _SBC(byte2);
-    Copy_C_to_A; //Pasa C a Z (invirtiendo)
+    SetROBResultExpres_bool(Opt, logNormal);
+    _LDA(byte2);
+    _CMP(byte1); //Result in C (inverted)
+    Copy_C_to_A; //Copy C to A (still inverted)
   end;
   stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
-    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-    tmp := GetAuxRegisterByte;  //Se pide registro auxiliar
-    _STA(tmp);
-    _SEC;
-    _LDA(byte1);
-    _SBC(tmp);
-    Copy_C_to_A; //Pasa C a Z (invirtiendo)
-    tmp.used := false;  //libera
+    SetROBResultExpres_bool(Opt, logInverted);
+    //p2, already in A
+    _CMP(byte1); //Result in C (inverted)
+    Copy_C_to_A; //Copy C to A (still inverted)
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     if value2 = 255 then begin
@@ -1120,25 +1109,25 @@ begin
       SetROBResultConst_byte(0);
 //      GenWarn('Expression will always be FALSE.');  //o TRUE si la lógica Está invertida
     end else begin
-      SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-      _SEC;
-      _SBC(value2);
-      Copy_C_to_A; //Pasa C a Z (invirtiendo)
+      SetROBResultExpres_bool(Opt, logNormal);
+      //p1, already in A
+      _CMP(value2+1); //p1 >= p2+1. We've verified value2<255
+      Copy_C_to_A; //Copy C to A
     end;
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
-    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
-    _SEC;
+    SetROBResultExpres_bool(Opt, logNormal);
+    _CLC;   //A trick to get p1>p2 in C, after _SBC
     _SBC(byte2);
-    Copy_C_to_A; //Pasa C a Z (invirtiendo)
+    Copy_C_to_A; //Copy C to A
   end;
-  stExpres_Expres:begin
-    //la expresión p1 debe estar salvada y p2 en el acumulador
-    p1^.SetAsVariab(GetVarByteFromStk, 0);  //Convierte a variable
-    //Luego el caso es similar a stVariab_Expres
-    ROB_byte_great_byte(Opt, true);
-    FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
-  end;
+  //stExpres_Expres:begin
+  //  //la expresión p1 debe estar salvada y p2 en el acumulador
+  //  p1^.SetAsVariab(GetVarByteFromStk, 0);  //Convierte a variable
+  //  //Luego el caso es similar a stVariab_Expres
+  //  ROB_byte_great_byte(Opt, true);
+  //  FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
+  //end;
   else
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
@@ -1403,6 +1392,77 @@ begin
     end;
   end else begin
     GenError('Cannot assign to this Operand.'); exit;
+  end;
+end;
+procedure TGenCod.ROB_bool_and_bool(Opt: TxpOperation; SetRes: boolean);
+begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
+    GenError('Too complex pointer expression.'); exit;
+  end;
+  if not ChangePointerToExpres(p1^) then exit;
+  if not ChangePointerToExpres(p2^) then exit;
+  case stoOperation of
+  stConst_Const: begin  //Special case. Comapares constants.
+    SetROBResultConst_bool(p1^.valBool and p2^.valBool);
+  end;
+  stConst_Variab: begin
+    if p1^.valBool = false then begin  //Special case.
+      SetROBResultConst_bool(false);
+      exit;
+    end else if p1^.valBool = true then begin  //Special case.
+      SetROBResultVariab(p2^.rVar, 0);  //Can be problematic return "var". Formaly it should be an expression.
+      exit;
+    end;
+  end;
+  stConst_Expres: begin  //Expression p2 evaluated in A
+    if p1^.valBool = false then begin  //Special case.
+      SetROBResultConst_bool(false);
+      exit;
+    end else if p1^.valBool = true then begin  //Special case.
+      SetROBResultExpres_bool(Opt);  //No needed do anything. Result already in A
+      exit;
+    end;
+  end;
+  stVariab_Const: begin
+    if p2^.valBool = false then begin  //Special case.
+      SetROBResultConst_bool(false);
+      exit;
+    end else if p2^.valBool = true then begin  //Special case.
+      SetROBResultVariab(p1^.rVar, 0);  //Can be problematic return "var". Formaly it should be an expression.
+      exit;
+    end;
+  end;
+//  stVariab_Variab:begin
+//    SetROBResultExpres_byte(Opt);
+//    _LDA(byte2);
+//    _AND(byte1);   //leave in A
+//  end;
+//  stVariab_Expres:begin   //Expresion p2 evaluated in A
+//    SetROBResultExpres_byte(Opt);
+//    _AND(byte1);
+//  end;
+  stExpres_Const: begin   //Expresion p1 evaluated in A
+    if p2^.valBool = false then begin  //Special case.
+      SetROBResultConst_bool(false);
+      exit;
+    end else if p2^.valBool = true then begin  //Special case.
+      SetROBResultExpres_bool(Opt);  //No needed do anything. Result already in A
+      exit;
+    end;
+  end;
+//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
+//    SetROBResultExpres_byte(Opt);
+//    _AND(byte2);
+//  end;
+//  stExpres_Expres:begin
+//    SetROBResultExpres_byte(Opt);
+//    //p1 está en la pila y p2 en el acumulador
+//    rVar := GetVarByteFromStk;
+//    _AND(rVar.adrByte0);
+//    FreeStkRegisterByte;   //libera pila porque ya se uso
+//  end;
+  else
+    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
 end;
 ////////////operaciones con Word
@@ -1933,6 +1993,7 @@ begin
         exit;
       end;
       LoadToRT(res);  //Carga expresión en RT y genera i_RETURN o i_RETLW
+      _RTS;
     end;
   end else begin
     //Faltaría implementar en cuerpo de TxpEleUni
@@ -2359,8 +2420,9 @@ begin
   //////////////////////////////////////////
   opr:=typBool.CreateBinaryOperator(':=',2,'asig');  //asignación
   opr.CreateOperation(typBool, @ROB_bool_asig_bool);
-
   opr:=typBool.CreateUnaryPreOperator('NOT', 6, 'not', @ROU_not_bool);
+  opr:=typBool.CreateBinaryOperator('AND',5,'and');
+  opr.CreateOperation(typBool,@ROB_bool_and_bool);
 
   //////////////////////////////////////////
   //////// Operaciones con Byte ////////////

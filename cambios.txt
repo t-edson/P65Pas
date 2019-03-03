@@ -15,16 +15,20 @@ Se corrrige la asignación de constantes a valores booleanos.
 Se implementan nuevas rutinas TGenCodBas.SetROU* para el tipo booleano.
 Se corrigen las rutinas TGenCod.Copy_Z_to_A() y TGenCod.Copy_C_to_A().
 Se corrige la rutina TGenCodBas.IF_TRUE(). 
+Se convierten las banderas BooleanFromC y BooleanFromZ a integer.
+Se revisa y corrige la implementación de TGenCod.ROB_byte_great_byte().
+Se cambia el tipo de parámetro "Inverted" de las funciones de tipo TGenCodBas.SetROBResult*()
+y se crea el enumerado TLogicType.
+Se implementan instruCciones nuevas en la unidad GenCodBas_PIC16.
+Se mejora TGenCodBas.IF_TRUE(), para que considere la optimización.
 
 Se ha mejorado la implementación del tipo Booleano, agregando y revisando al operador
 NOT. QUedaría pendiente implementar las operaciones AND y OR.
 La documentación también refleja el avance, porque se ha estudiado y se ha definido mejor
 los tipos de almacenamientos que se van a implementar en el compilador.
-Para los tipos booleanos, faltaría implementar la optimización que considera las banderas
-BooleanFromC y BooleanFromZ. Se recomienda convertir esas banderas a Integer y hacer que 
-apunten a la dirección anterior a la rutina de conversión.
 Se debe revisar la documentación y completarla también con los avances. Además quedan
 todavía en la documentación, muchos rezagos de la documentación de PicPas.
+
 Los otros tipos aún tienen que revisarse.
 Se ha analizado considerablemente la posibilidad de permitir implementar herencia de tipos
 básicos, como:
@@ -32,6 +36,10 @@ type MiByte = object(byte)
 		procedure Add()
 	      end;
 Implementar esta funcionalidad en etapas tempranas daría la ventaja de que el lenguaje nacería ya con soporte básico a objetos.
+OTra de las tareas pendientes es hacer que la creación de funciones de sistema sea igual 
+que las funciones definidas por el usuario (incluyendo el uso de variabels locales).
+Pero este acercamiento, debe también darse del lado de las funciones definidas por el usuario. De modo que se permita especificar parámetros REGISTER, difeenciados. Se recomienda implementar las palabras resrevadas REGISTERA, REGISTERX, REGISTERY, REGISTERSP,...
+
 
 P65PAS 0.2
 ==========
