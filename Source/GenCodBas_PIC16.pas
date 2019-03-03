@@ -108,9 +108,11 @@ type
     procedure SetROBResultExpres_char(Opt: TxpOperation);
     procedure SetROBResultExpres_word(Opt: TxpOperation);
     //Fija el resultado de ROU
+    procedure SetROUResultConst_bool(valBool: boolean);
     procedure SetROUResultConst_byte(valByte: integer);
     procedure SetROUResultVariab(rVar: TxpEleVar; offAddress: integer; Inverted: boolean = false);
     procedure SetROUResultVarRef(rVarBase: TxpEleVar);
+    procedure SetROUResultExpres_bool(Inverted: boolean);
     procedure SetROUResultExpres_byte;
     procedure SetROUResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType);
     //Adicionales
@@ -121,8 +123,8 @@ type
     function _CLOCK: integer;
     procedure _LABEL(igot: integer);
     //Instrucciones simples
-    procedure _ADC(const k: word);  //AND Absolute/Zeropage
-    procedure _ADC(const f: TPicRegister);  //AND Absolute/Zeropage
+    procedure _ADC(const k: word);  //immidiate
+    procedure _ADC(const f: TPicRegister);  //Absolute/Zeropage
     procedure _AND(const k: word);
     procedure _AND(const f: TPicRegister);
     procedure _ASL(const f: word);
@@ -138,6 +140,8 @@ type
     procedure _BNE_lbl(out ibranch: integer);
     procedure _BCC(const ad: ShortInt);
     procedure _CLC;
+    procedure _CMP(const k: word);  //immidiate
+    procedure _CMP(const f: TPicRegister);  //Absolute/Zeropage
     procedure _DEX;
     procedure _DEY;
     procedure _DEC(const f: TPicRegister);
@@ -156,6 +160,9 @@ type
     procedure _ORA(const k: word);
     procedure _ORA(const f: TPicRegister);
     procedure _PHA; inline;
+    procedure _PHP; inline;
+    procedure _PLA; inline;
+    procedure _PLP; inline;
     procedure _RTS;
     procedure _RTI;
     procedure _SEC;
@@ -765,6 +772,14 @@ begin
   end;
 end;
 //Fija el resultado de ROU
+procedure TGenCodBas.SetROUResultConst_bool(valBool: boolean);
+begin
+  GenerateROUdetComment;
+  //if not ValidateBoolRange(valByte) then
+  //  exit;  //Error de rango
+  SetResultConst(typBool);
+  res.valBool := valBool;
+end;
 procedure TGenCodBas.SetROUResultConst_byte(valByte: integer);
 begin
   GenerateROUdetComment;
@@ -783,6 +798,21 @@ procedure TGenCodBas.SetROUResultVarRef(rVarBase: TxpEleVar);
 begin
   GenerateROUdetComment;
   SetResultVarRef(rVarBase);
+end;
+procedure TGenCodBas.SetROUResultExpres_bool(Inverted: boolean);
+begin
+  GenerateROUdetComment;
+  //Se van a usar los RT. Verificar si los RT están ocupadoa
+  if (p1^.Sto = stExpres) then begin
+    //Alguno de los operandos de la operación actual, está usando algún RT
+    SetResultExpres(typBool, false);  //actualiza "RTstate"
+  end else begin
+    {Los RT no están siendo usados, por la operación actual.
+     Pero pueden estar ocupados por la operación anterior (Ver doc. técnica).}
+    SetResultExpres(typBool);  //actualiza "RTstate"
+  end;
+  //Fija la lógica
+  res.Inverted := Inverted;
 end;
 procedure TGenCodBas.SetROUResultExpres_byte;
 {Define el resultado como una expresión de tipo Byte, y se asegura de reservar el
@@ -985,6 +1015,18 @@ procedure TGenCodBas._CLC;
 begin
   pic.codAsm(i_CLC, aImplicit, 0);
 end;
+procedure TGenCodBas._CMP(const k: word);
+begin
+  pic.codAsm(i_CMP, aImmediat, k);
+end;
+procedure TGenCodBas._CMP(const f: TPicRegister);
+begin
+  if f.addr<256 then begin
+    pic.codAsm(i_CMP, aZeroPage, f.addr);
+  end else begin
+    pic.codAsm(i_CMP, aAbsolute, f.addr);
+  end;
+end;
 procedure TGenCodBas._DEX;
 begin
   pic.codAsm(i_DEX, aImplicit, 0);
@@ -1085,6 +1127,18 @@ procedure TGenCodBas._PHA; inline;
 begin
   pic.codAsm(i_PHA, aImplicit, 0);
 end;
+procedure TGenCodBas._PHP;
+begin
+  pic.codAsm(i_PHP, aImplicit, 0);
+end;
+procedure TGenCodBas._PLA;
+begin
+  pic.codAsm(i_PLA, aImplicit, 0);
+end;
+procedure TGenCodBas._PLP;
+begin
+  pic.codAsm(i_PLP, aImplicit, 0);
+end;
 procedure TGenCodBas._RTS; inline;
 begin
   pic.codAsm(i_RTS, aImplicit, 0);
@@ -1162,18 +1216,18 @@ begin
   if OpRes^.Sto = stVariab then begin
     //Result in variable
     if OpRes^.Inverted then begin
-      _LDA(OpRes^.addr);
-      _BEQ_lbl(info.igoto);
-    end else begin
-      _LDA(OpRes^.addr);
+      _LDA(OpRes^.rVar.adrByte0);
       _BNE_lbl(info.igoto);
+    end else begin
+      _LDA(OpRes^.rVar.adrByte0);
+      _BEQ_lbl(info.igoto);
     end;
   end else if OpRes^.Sto = stExpres then begin
     //Result in Z flag
     if OpRes^.Inverted then begin
-      _BEQ_lbl(info.igoto);
-    end else begin
       _BNE_lbl(info.igoto);
+    end else begin
+      _BEQ_lbl(info.igoto);
     end;
   end else begin
     genError('Expression storage not supported.');
@@ -1952,7 +2006,7 @@ begin
   picCore := pic;   //Referencia picCore
   ///////////Crea tipos
   ClearTypes;
-  //////////////// Tipo Boolean /////////////
+  //////////////// Boolean type /////////////
   typBool := CreateSysType('boolean',t_uinteger,1);   //de 1 byte
   typBool.OnLoadToRT   := @byte_LoadToRT;
   typBool.OnDefRegister:= @byte_DefineRegisters;
@@ -1961,7 +2015,7 @@ begin
   typBool.OnGetItem    := @byte_GetItem;
 //  typBool.OnSetItem    := @byte_SetItem;
   typBool.OnClearItems := @byte_ClearItems;
-  //////////////// Tipo Byte /////////////
+  //////////////// Byte type /////////////
   typByte := CreateSysType('byte',t_uinteger,1);   //de 1 byte
   typByte.OnLoadToRT   := @byte_LoadToRT;
   typByte.OnDefRegister:= @byte_DefineRegisters;
@@ -1971,7 +2025,7 @@ begin
 //  typByte.OnSetItem    := @byte_SetItem;
   typByte.OnClearItems := @byte_ClearItems;
 
-  //////////////// Tipo Char /////////////
+  //////////////// Char type /////////////
   //Tipo caracter
   typChar := CreateSysType('char',t_uinteger,1);   //de 1 byte. Se crea como uinteger para leer/escribir su valor como número
   typChar.OnLoadToRT   := @byte_LoadToRT;  //Es lo mismo
@@ -1981,7 +2035,7 @@ begin
 //  typChar.OnSetItem    := @byte_SetItem;
   typChar.OnClearItems := @byte_ClearItems;
 
-  //////////////// Tipo Word /////////////
+  //////////////// Word type /////////////
   //Tipo numérico de dos bytes
   typWord := CreateSysType('word',t_uinteger,2);   //de 2 bytes
   typWord.OnLoadToRT   := @word_LoadToRT;

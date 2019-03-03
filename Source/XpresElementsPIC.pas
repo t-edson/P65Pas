@@ -179,9 +179,9 @@ type  //TxpElement y clases previas
     procedure AddCalledAll_FromList(lstCalled0: TxpListCalled);
     procedure UpdateCalledAll;
   public
-    name : string;        //Nombre de la variable, constante, unidad, tipo, ...
-    Parent: TxpElement;   //Referencia al elemento padre
-    idClass: TxpIDClass;  //Para no usar RTTI
+    name    : string;      //Nombre de la variable, constante, unidad, tipo, ...
+    Parent  : TxpElement;  //Referencia al elemento padre
+    idClass : TxpIDClass;  //Para no usar RTTI
     elements: TxpElements; //Referencia a nombres anidados, cuando sea función
     {Bandera para indicar si la función, ha sido declarada en la sección INTERFACE. Este
     campo es úitl para cuando se procesan unidades.}

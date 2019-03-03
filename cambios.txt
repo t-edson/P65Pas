@@ -5,7 +5,33 @@ para hacerlos más consistentes con el documento "Modos de Almacenamiento de Oper
 Se cambia el nombre del valor enumerado "stVarRefVar" por "stVarRef"
 Se cambia el nombre del valor enumerado "stVarRefExp" por "stExpRef"
 Se agrega comentario al código BASIC generado en modo COmmodore64.
-Se corrige TGenCodBas.byte_LoadToRT() para el caso de varaibles.
+Se corrige TGenCodBas.byte_LoadToRT() para el caso de variables.
+Se corrige el uso de instrucciones con direccionamiento acumulador en lso bloques ASM.
+Se implementan algunos casos de TGenCod.fun_Word()
+Se corrige la codificación de la instrucción ADC. 
+Se agregan envoltorios a funciones del Kernal y BASIC en las unidad Commodore64.
+Se corrige el tipo que devuelve la expresión a>b, para algunos casos.
+Se corrrige la asignación de constantes a valores booleanos.
+Se implementan nuevas rutinas TGenCodBas.SetROU* para el tipo booleano.
+Se corrigen las rutinas TGenCod.Copy_Z_to_A() y TGenCod.Copy_C_to_A().
+Se corrige la rutina TGenCodBas.IF_TRUE(). 
+
+Se ha mejorado la implementación del tipo Booleano, agregando y revisando al operador
+NOT. QUedaría pendiente implementar las operaciones AND y OR.
+La documentación también refleja el avance, porque se ha estudiado y se ha definido mejor
+los tipos de almacenamientos que se van a implementar en el compilador.
+Para los tipos booleanos, faltaría implementar la optimización que considera las banderas
+BooleanFromC y BooleanFromZ. Se recomienda convertir esas banderas a Integer y hacer que 
+apunten a la dirección anterior a la rutina de conversión.
+Se debe revisar la documentación y completarla también con los avances. Además quedan
+todavía en la documentación, muchos rezagos de la documentación de PicPas.
+Los otros tipos aún tienen que revisarse.
+Se ha analizado considerablemente la posibilidad de permitir implementar herencia de tipos
+básicos, como:
+type MiByte = object(byte)
+		procedure Add()
+	      end;
+Implementar esta funcionalidad en etapas tempranas daría la ventaja de que el lenguaje nacería ya con soporte básico a objetos.
 
 P65PAS 0.2
 ==========

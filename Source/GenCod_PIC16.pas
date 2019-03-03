@@ -64,11 +64,13 @@ type
 //      f_byteXbyte_byte: TxpEleFun;  //índice para función
       f_byte_mul_byte_16: TxpEleFun;  //índice para función
       f_word_mul_word_16: TxpEleFun;  //índice para función
-      procedure mul_byte_16(fun: TxpEleFun);
+      procedure byte_mul_byte_16(fun: TxpEleFun);
       procedure Copy_Z_to_A;
       procedure Copy_C_to_A;
       procedure fun_Byte(fun: TxpEleFun);
+      procedure ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROU_addr_word(Opr: TxpOperator; SetRes: boolean);
+      procedure ROU_not_bool(Opr: TxpOperator; SetRes: boolean);
       procedure ROU_not_byte(Opr: TxpOperator; SetRes: boolean);
       procedure ROU_addr_byte(Opr: TxpOperator; SetRes: boolean);
 
@@ -171,18 +173,18 @@ begin
 end;
 procedure TGenCod.Copy_Z_to_A;
 begin
-  //El resultado está en Z y lo mueve a A
-  _LDA(0);
-  _BNE(_PC+2);
-  _LDA(1);
+  //Result in Z. Move to A.
+  _PHP;
+  _PLA;
+  _AND($02);
   BooleanFromZ := true;  //Activa bandera para que se pueda optimizar
 end;
 procedure TGenCod.Copy_C_to_A;
 begin
-  //El resultado está en C y lo mueve a A
-  _LDA(0);
-  _BCC(_PC+2);
-  _LDA(1);
+  //Result in C. Move to A.
+  _PHP;
+  _PLA;
+  _AND($01);
   BooleanFromC := true;  //Activa bandera para que se pueda optimizar
 end;
 ////////////rutinas obligatorias
@@ -222,7 +224,6 @@ procedure TGenCod.ROU_not_byte(Opr: TxpOperator; SetRes: boolean);
 begin
   case p1^.Sto of
   stConst : begin
-    {Actualmente no existen constantes de tipo "Bit", pero si existieran, sería así}
     SetROUResultConst_byte((not p1^.valInt) and $FF);
   end;
   stVariab: begin
@@ -258,7 +259,28 @@ begin
     genError('Cannot obtain address of this operand.');
   end;
 end;
-////////////operaciones con Byte
+procedure TGenCod.ROU_not_bool(Opr: TxpOperator; SetRes: boolean);
+begin
+  case p1^.Sto of
+  stConst : begin
+    //NOT for a constant is defined easily
+    SetROUResultConst_bool(not p1^.valBool);
+  end;
+  stVariab: begin
+    SetROUResultExpres_bool(false);
+    //We have to return logical value inverted in A
+    _LDA(p1^.rVar.adrByte0);   //Result of "NOT var" in Z
+    Copy_Z_to_A;
+  end;
+//  stExpres: begin
+//    SetROUResultExpres_byte;
+//    //////
+//  end;
+  else
+    genError('Not implemented: "%s"', [Opr.OperationString]);
+  end;
+end;
+////////////Byte operations
 procedure TGenCod.ROB_byte_and_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
@@ -991,13 +1013,14 @@ begin
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
 end;
-procedure TGenCod.mul_byte_16(fun: TxpEleFun);
+procedure TGenCod.byte_mul_byte_16(fun: TxpEleFun);
+//Routine to multiply 8 bits X 8 bits
 //E * A -> [H:A]  Usa registros: A,H,E,U
 //Basado en código de Andrew Warren http://www.piclist.com
 var
   LOOP: Word;
 begin
-//    typDWord.DefineRegister;   //Asegura que exista A,H,E,U
+    typWord.DefineRegister;   //Ensure H register exists.
 //    _CLRF (H.offs);
 //    _CLRF (U.offs);
 //    _BSF  (U.offs,3);  //8->U
@@ -1012,6 +1035,10 @@ begin
 //    //Realmente el algortimo es: E*A -> [H:E], pero lo convertimos a: E*A -> [H:A]
 //    _MOVF(E.offs, toW);
 //    _RTS;
+end;
+procedure TGenCod.ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
+begin
+
 end;
 procedure TGenCod.ROB_byte_great_byte(Opt: TxpOperation; SetRes: boolean);
 var
@@ -1060,10 +1087,10 @@ begin
   stVariab_Const: begin
     if value2 = 255 then begin
       //Nada es mayor que 255
-      SetROBResultConst_byte(0);
+      SetROBResultConst_bool(false);
       GenWarn('Expression will always be FALSE or TRUE.');
     end else begin
-      SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+      SetROBResultExpres_bool(Opt, true);   //Se pide Z para el resultado
       _SEC;
       _LDA(byte1);
       _SBC(value2);
@@ -1360,7 +1387,7 @@ begin
         _LDA(1);
         _STA(byte1);
       end else begin
-        _LDA(1);
+        _LDA(0);
         _STA(byte1);
       end;
     end;
@@ -1368,11 +1395,9 @@ begin
       _LDA(byte2);
       _STA(byte1);
     end;
-//    stExpres: begin  //ya está en Z
-//      _LDA(0);
-//
-//      _STA(byte1);
-//    end;
+    stExpres: begin  //ya está en A
+      _STA(byte1);
+    end;
     else
       GenError(MSG_UNSUPPORTED); exit;
     end;
@@ -2206,22 +2231,24 @@ begin
       GenError('Cannot convert this variable to word.'); exit;
     end;
   end;
-//  stExpres: begin  //se asume que ya está en (A)
-//    typWord.DefineRegister;
-//    if res.Typ = typByte then begin
-//      res.SetAsExpres(typWord);
-//      //Ya está en A el byte bajo
-//      _CLRF(H.offs);
-//    end else if res.Typ = typChar then begin
-//      res.SetAsExpres(typWord);
-//      //Ya está en A el byte bajo
-//      _CLRF(H.offs);
-//    end else if res.Typ = typWord then begin
-////      Ya es word
-//    end else begin
-//      GenError('Cannot convert expression to word.'); exit;
-//    end;
-//  end;
+  stExpres: begin  //se asume que ya está en (A)
+    typWord.DefineRegister;
+    if res.Typ = typByte then begin
+      res.SetAsExpres(typWord);
+      //Ya está en A el byte bajo
+      _LDX(0);
+      _STX(H);
+    end else if res.Typ = typChar then begin
+      res.SetAsExpres(typWord);
+      //Ya está en A el byte bajo
+      _LDX(0);
+      _STX(H);
+    end else if res.Typ = typWord then begin
+//      Ya es word
+    end else begin
+      GenError('Cannot convert expression to word.'); exit;
+    end;
+  end;
   else
     genError('Not implemented "%s" for this operand.', [fun.name]);
   end;
@@ -2333,6 +2360,8 @@ begin
   opr:=typBool.CreateBinaryOperator(':=',2,'asig');  //asignación
   opr.CreateOperation(typBool, @ROB_bool_asig_bool);
 
+  opr:=typBool.CreateUnaryPreOperator('NOT', 6, 'not', @ROU_not_bool);
+
   //////////////////////////////////////////
   //////// Operaciones con Byte ////////////
   //////////////////////////////////////////
@@ -2344,16 +2373,18 @@ begin
   opr:=typByte.CreateBinaryOperator('-=',2,'asub');  //asignación-resta
   opr.CreateOperation(typByte,@ROB_byte_asub_byte);
 
-  opr:=typByte.CreateBinaryOperator('+',4,'add');  //suma
+  opr:=typByte.CreateBinaryOperator('+',4,'add');  //add
   opr.CreateOperation(typByte,@ROB_byte_add_byte);
-  opr:=typByte.CreateBinaryOperator('-',4,'subs');  //suma
+  opr:=typByte.CreateBinaryOperator('-',4,'subs');  //sub
   opr.CreateOperation(typByte,@ROB_byte_sub_byte);
+  opr:=typByte.CreateBinaryOperator('*',4,'subs');  //sub
+  opr.CreateOperation(typByte,@ROB_byte_mul_byte);
 
-  opr:=typByte.CreateBinaryOperator('AND',5,'and');  //suma
+  opr:=typByte.CreateBinaryOperator('AND',5,'and');
   opr.CreateOperation(typByte,@ROB_byte_and_byte);
-  opr:=typByte.CreateBinaryOperator('OR',4,'or');  //suma
+  opr:=typByte.CreateBinaryOperator('OR',4,'or');
   opr.CreateOperation(typByte,@ROB_byte_or_byte);
-  opr:=typByte.CreateBinaryOperator('XOR',4,'xor');  //suma
+  opr:=typByte.CreateBinaryOperator('XOR',4,'xor');
   opr.CreateOperation(typByte,@ROB_byte_xor_byte);
 
   opr:=typByte.CreateUnaryPreOperator('NOT', 6, 'not', @ROU_not_byte);
@@ -2449,7 +2480,7 @@ begin
   //Multiplicación byte por byte a word
   f_byte_mul_byte_16 := CreateSysFunction('byte_mul_byte_16', nil, nil);
   f_byte_mul_byte_16.adrr:=$0;
-  f_byte_mul_byte_16.compile := @mul_byte_16;
+  f_byte_mul_byte_16.compile := @byte_mul_byte_16;
   //Multiplicación word por word a word
   f_word_mul_word_16 := CreateSysFunction('word_mul_word_16', nil, nil);
   f_word_mul_word_16.adrr:=$0;
