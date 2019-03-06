@@ -104,20 +104,22 @@ TOperandPtr = ^TOperand;
 Esta clase debe ser el ancestro común de todos los compialdores a usar en PicPas.
 Contiene métodos abstractos que deben ser impleemntados en las clases descendeintes.}
 TCompilerBase = class
-protected  //Variables de expresión.
-  {Estas variables, se inician al inicio de cada expresión y su valor es válido
-  hasta el final de la expresión.}
-  //Variables de estado de las expresiones booleanas
+protected  //Flags for boolean type.
+  {This variables are reset at the begginig of each ROU or ROB. They contains the state
+  of the Register/Satus-flags if the last ROU or ROB is executed.  }
   BooleanFromC: integer; {Flag and index. When <>0, indicates the boolean expression result
                           was obtained, in the last expression, using the bit C and moved
                           to A. Used for code optimization.}
   BooleanFromZ: integer; {Flag and index. When <>0, indicates the boolean expression result
                           was obtained, in the last expression, using the bit Z and moved
                           to A. Used for code optimization.}
+  AcumStatInZ: boolean;  {Indicates the Z flag contains the status of the value in A
+                          register. For example if A = 0, Z wil be 1.
+                          }
 protected
   procedure IdentifyField(xOperand: TOperand);
   procedure LogExpLevel(txt: string);
-  function IsTheSameBitVar(var1, var2: TxpEleVar): boolean; inline;
+  function IsTheSameVar(var1, var2: TxpEleVar): boolean; inline;
   function AddCallerTo(elem: TxpElement): TxpEleCaller;
   function AddCallerTo(elem: TxpElement; callerElem: TxpElement): TxpEleCaller;
   function AddCallerTo(elem: TxpElement; const curPos: TSrcPos): TxpEleCaller;
@@ -970,7 +972,7 @@ procedure TCompilerBase.LogExpLevel(txt: string);
 begin
   debugln(space(3*ExprLevel)+ txt );
 end;
-function TCompilerBase.IsTheSameBitVar(var1, var2: TxpEleVar): boolean; inline;
+function TCompilerBase.IsTheSameVar(var1, var2: TxpEleVar): boolean; inline;
 {Indica si dos variables bit son la misma, es decir que apuntan, a la misma dirección
 física}
 begin

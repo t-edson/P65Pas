@@ -3,9 +3,7 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.3\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.3\temp\NewFile2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.3\units\Commodore64.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.3\testcode65\Simul_1\Test2_Bit.pas
 "/>
   <SplitterCol Val="2368548"/>
   <MessPanPan Val="2368548"/>
@@ -13,7 +11,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.3\units\Commodore64.pas
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="176"/>
+  <SynTreeWidth Val="233"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="2"/>
   <MessPanBack Val="2368548"/>
@@ -45,21 +43,21 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.3\units\Commodore64.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.3\units\Commodore64.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.3\temp\NewFile2.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.3\testcode65\Simul_1\Test2_Bit.pas
+D:\tmp\P65Pas-0.3\testcode65\Simul_1\Test2_Bit.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.3\testcode65\Simul_1\Test1_Vars.pas
 D:\Proyectos_Software\Lazarus\P65Pas-0.3\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.2\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.2\temp\NewFile2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.3\units\Commodore64.pas
 "/>
   </Edit>
   <IncDecVar Val="True"/>
   <VarDecType Val="0"/>
   <IncAddress Val="True"/>
-  <IncComment Val="False"/>
+  <IncComment Val="True"/>
   <IncComment2 Val="False"/>
   <ExcUnused Val="True"/>
   <IncVarName Val="True"/>
-  <ShowErMsg Val="True"/>
+  <ShowErMsg Val="False"/>
   <OptimLev Val="1"/>
   <OptBnkAftIF Val="True"/>
   <OptBnkBefPro Val="True"/>

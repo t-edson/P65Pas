@@ -69,6 +69,8 @@ type
       procedure Copy_C_to_A;
       procedure fun_Byte(fun: TxpEleFun);
       procedure ROB_bool_and_bool(Opt: TxpOperation; SetRes: boolean);
+      procedure ROB_bool_difer_bool(Opt: TxpOperation; SetRes: boolean);
+      procedure ROB_bool_equal_bool(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROU_addr_word(Opr: TxpOperator; SetRes: boolean);
       procedure ROU_not_bool(Opr: TxpOperator; SetRes: boolean);
@@ -507,8 +509,6 @@ begin
   end;
 end;
 procedure TGenCod.ROB_byte_equal_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
 begin
   if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
@@ -522,48 +522,62 @@ begin
   stConst_Variab: begin
     SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
     if value1 = 0 then begin  //caso especial
-      _EORi(0);  //si iguales _Z=1
-    end else if value1 = 1 then begin  //caso especial
-      _DEC(byte2);  //si el resultado es cero _Z=1
-    end else if value1 = 255 then begin  //caso especial
-      _INC(byte2);  //si el resultado es cero _Z=1
+      _LDA(byte2);
     end else begin
-      _LDA(value1);
-      _EOR(byte2);
+      _LDA(byte2);
+      _CMP(value1);
     end;
+    Copy_Z_to_A;
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
-    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
-    _EORi(value1);  //Si son iguales Z=1.
+    if not AcumStatInZ then _TAX;   //Update Z, if needed.
+    if value1 = 0 then begin  //caso especial
+      //Nothing
+    end else begin
+      _CMP(value1);
+    end;
+    Copy_Z_to_A;
   end;
   stVariab_Const: begin
-    ExchangeP1_P2;  //Convierte a stConst_Variab
-    ROB_byte_equal_byte(Opt, SetRes);
+    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
+    if value2 = 0 then begin  //caso especial
+      _LDA(byte1);
+    end else begin
+      _LDA(byte1);
+      _CMP(value2);
+    end;
+    Copy_Z_to_A;
   end;
   stVariab_Variab:begin
     SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
-    _LDA(byte1);
-    _EOR(byte2);  //si iguales _Z=1
+    _LDA(byte2);
+    _CMP(byte1);
+    Copy_Z_to_A;
   end;
   stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
-    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
-    _EOR(byte1);  //si iguales _Z=1
+    _CMP(byte1);
+    Copy_Z_to_A;
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
-    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
-    _EORi(value2);  //Si son iguales Z=1.
+    if not AcumStatInZ then _TAX;   //Update Z, if needed.
+    if value2 = 0 then begin  //caso especial
+      //Nothing
+    end else begin
+      _CMP(value2);
+    end;
+    Copy_Z_to_A;
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
-    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
-    _EOR(byte2);  //Si son iguales Z=1.
+    _CMP(byte2);
+    Copy_Z_to_A;
   end;
-  stExpres_Expres:begin
-    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
-    //la expresión p1 debe estar salvada y p2 en el acumulador
-    rVar := GetVarByteFromStk;
-    _EOR(rVar.adrByte0);  //Si son iguales Z=1.
-    FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
-  end;
+//  stExpres_Expres:begin
+//    SetROBResultExpres_bool(Opt, logNormal);   //Se pide Z para el resultado
+//    //la expresión p1 debe estar salvada y p2 en el acumulador
+//    rVar := GetVarByteFromStk;
+//    _EOR(rVar.adrByte0);  //Si son iguales Z=1.
+//    FreeStkRegisterByte;   //libera pila porque se usará el dato ahí contenido
+//  end;
   else
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
@@ -1395,6 +1409,8 @@ begin
   end;
 end;
 procedure TGenCod.ROB_bool_and_bool(Opt: TxpOperation; SetRes: boolean);
+var
+  sale0: integer;
 begin
   if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;
@@ -1408,10 +1424,8 @@ begin
   stConst_Variab: begin
     if p1^.valBool = false then begin  //Special case.
       SetROBResultConst_bool(false);
-      exit;
-    end else if p1^.valBool = true then begin  //Special case.
+    end else begin  //Special case.
       SetROBResultVariab(p2^.rVar, 0);  //Can be problematic return "var". Formaly it should be an expression.
-      exit;
     end;
   end;
   stConst_Expres: begin  //Expression p2 evaluated in A
@@ -1432,15 +1446,26 @@ begin
       exit;
     end;
   end;
-//  stVariab_Variab:begin
-//    SetROBResultExpres_byte(Opt);
-//    _LDA(byte2);
-//    _AND(byte1);   //leave in A
-//  end;
-//  stVariab_Expres:begin   //Expresion p2 evaluated in A
-//    SetROBResultExpres_byte(Opt);
-//    _AND(byte1);
-//  end;
+  stVariab_Variab: begin
+    SetROBResultExpres_bool(Opt, logInverted);
+    _LDX(byte1);
+    _BEQ_lbl(sale0);  //p1=0
+    _LDX(byte2);
+_LABEL(sale0);
+    //Here: Z = 0 if p1<>0 and p2<>0
+    Copy_Z_to_A;  //Logic inverted
+  end;
+  stVariab_Expres:begin   //Expresion p2 evaluated in A
+    //Algorith like in "stVariab_Variab"
+    SetROBResultExpres_bool(Opt, logInverted);
+    //Obviously, the last RO was what generates the expression, so we can check "AcumStatInZ".
+    if not AcumStatInZ then _TAX;   //Update Z, if needed.
+    //Here, we have Z updated with the value of A
+    _BEQ_lbl(sale0);  //p1=0
+    _LDX(byte1);
+_LABEL(sale0);
+    Copy_Z_to_A;  //Logic inverted
+  end;
   stExpres_Const: begin   //Expresion p1 evaluated in A
     if p2^.valBool = false then begin  //Special case.
       SetROBResultConst_bool(false);
@@ -1450,10 +1475,17 @@ begin
       exit;
     end;
   end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
-//    SetROBResultExpres_byte(Opt);
-//    _AND(byte2);
-//  end;
+  stExpres_Variab:begin  //Expresion p1 evaluated in A
+    //Algorith like in "stVariab_Variab"
+    SetROBResultExpres_bool(Opt, logInverted);
+    //Obviously, the last RO was what generates the expression, so we can check "AcumStatInZ".
+    if not AcumStatInZ then _TAX;   //Update Z, if needed.
+    //Here, we have Z updated with the value of A
+    _BEQ_lbl(sale0);  //p1=0
+    _LDX(byte2);
+_LABEL(sale0);
+    Copy_Z_to_A;  //Logic inverted
+  end;
 //  stExpres_Expres:begin
 //    SetROBResultExpres_byte(Opt);
 //    //p1 está en la pila y p2 en el acumulador
@@ -1464,6 +1496,146 @@ begin
   else
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
+end;
+procedure TGenCod.ROB_bool_equal_bool(Opt: TxpOperation; SetRes: boolean);
+var
+  sale0: integer;
+  false0: ShortInt;
+begin
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
+    GenError('Too complex pointer expression.'); exit;
+  end;
+  if not ChangePointerToExpres(p1^) then exit;
+  if not ChangePointerToExpres(p2^) then exit;
+  case stoOperation of
+  stConst_Const: begin  //Special case. Comapares constants.
+    SetROBResultConst_bool(p1^.valBool = p2^.valBool);
+  end;
+  stConst_Variab: begin
+    if p1^.valBool = false then begin  //Special case.
+      SetROBResultExpres_bool(Opt);
+      _LDA(byte2);  //if equals Z=1
+      Copy_Z_to_A;
+    end else begin  //Special case.
+      SetROBResultExpres_bool(Opt, logInverted);
+      _LDA(byte2);  //if equals Z=0
+      Copy_Z_to_A;
+    end;
+  end;
+  stConst_Expres: begin  //Expression p2 evaluated in A
+    if p1^.valBool = false then begin  //Special case.
+      SetROBResultExpres_bool(Opt);
+      if not AcumStatInZ then _TAX;   //Update Z, if needed.
+      //if equals Z=1
+      Copy_Z_to_A;
+    end else begin  //Special case.
+      SetROBResultExpres_bool(Opt, logInverted);
+      if not AcumStatInZ then _TAX;   //Update Z, if needed.
+      //if equals Z=0
+      Copy_Z_to_A;
+    end;
+  end;
+  stVariab_Const: begin
+    if p2^.valBool = false then begin  //Special case.
+      SetROBResultExpres_bool(Opt);
+      _LDA(byte1);  //if equals Z=1
+      Copy_Z_to_A;
+    end else begin  //Special case.
+      SetROBResultExpres_bool(Opt, logInverted);
+      _LDA(byte1);  //if equals Z=0
+      Copy_Z_to_A;
+    end;
+  end;
+  stVariab_Variab: begin
+    if IsTheSameVar(p1^.rVar, p2^.rVar) then begin
+      SetROBResultConst_bool(true);
+      exit;
+    end;
+    SetROBResultExpres_bool(Opt);
+    typWord.DefineRegister;  //To use _H
+    _LDA(byte1);
+    _PHP;     //Save SR
+    _PLA;
+    _STA(H);  //In H
+    _LDA(byte2);
+    _PHP;     //Save SR
+    _PLA;     //In A
+    _EOR(H);  //0 if equals
+    _AND($02);//Mask position of bit Z. if equals -> Z = 1
+    Copy_Z_to_A;  //Logic inverted
+    {//Alternative version (not tested)
+    SetROBResultExpres_bool(Opt);
+    _LDA(byte1);  //if FALSE, Z=1
+    _BEQ(false0); //Jump if FALSE
+    //It's TRUE
+    _LDA(byte2);  //if FALSE (different), Z=1
+    //Invert Z
+    _PHP;
+    _PLA;
+    _AND($02);  //if Z was 1, set Z to 0, if Z was 0, set Z to 1
+    _JMP_lbl(exit0);  //exit with result in Z
+_LABEL(false0):
+    _LDA(byte2);  //if equal, Z=1
+_LABEL(exit0):
+    Copy_Z_to_A;
+  end; }
+  end;
+  stVariab_Expres:begin   //Expresion p2 evaluated in A
+    SetROBResultExpres_bool(Opt);
+    typWord.DefineRegister;  //To use _H
+    if not AcumStatInZ then _TAX;   //Update Z, if needed.
+    _PHP;     //Save SR
+    _PLA;
+    _STA(H);  //In H
+    _LDA(byte1);
+    _PHP;     //Save SR
+    _PLA;     //In A
+    _EOR(H);  //0 if equals
+    _AND($02);//Mask position of bit Z. if equals -> Z = 1
+    Copy_Z_to_A;  //Logic inverted
+  end;
+  stExpres_Const: begin   //Expresion p1 evaluated in A
+    if p2^.valBool = false then begin  //Special case.
+      SetROBResultExpres_bool(Opt);
+      if not AcumStatInZ then _TAX;   //Update Z, if needed.
+      //if equals Z=1
+      Copy_Z_to_A;
+    end else begin  //Special case.
+      SetROBResultExpres_bool(Opt, logInverted);
+      if not AcumStatInZ then _TAX;   //Update Z, if needed.
+      //if equals Z=0
+      Copy_Z_to_A;
+    end;
+  end;
+  stExpres_Variab:begin  //Expresion p1 evaluated in A
+    SetROBResultExpres_bool(Opt);
+    typWord.DefineRegister;  //To use _H
+    if not AcumStatInZ then _TAX;   //Update Z, if needed.
+    _PHP;     //Save SR
+    _PLA;
+    _STA(H);  //In H
+    _LDA(byte2);
+    _PHP;     //Save SR
+    _PLA;     //In A
+    _EOR(H);  //0 if equals
+    _AND($02);//Mask position of bit Z. if equals -> Z = 1
+    Copy_Z_to_A;  //Logic inverted
+  end;
+//  stExpres_Expres:begin
+//    SetROBResultExpres_byte(Opt);
+//    //p1 está en la pila y p2 en el acumulador
+//    rVar := GetVarByteFromStk;
+//    _AND(rVar.adrByte0);
+//    FreeStkRegisterByte;   //libera pila porque ya se uso
+//  end;
+  else
+    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+  end;
+end;
+procedure TGenCod.ROB_bool_difer_bool(Opt: TxpOperation; SetRes: boolean);
+begin
+  ROB_bool_equal_bool(Opt, SetRes);
+  res.Invert;
 end;
 ////////////operaciones con Word
 procedure TGenCod.ROB_word_asig_word(Opt: TxpOperation; SetRes: boolean);
@@ -1588,63 +1760,27 @@ end;
 procedure TGenCod.ROB_word_equal_word(Opt: TxpOperation; SetRes: boolean);
 var
   tmp: TPicRegister;
-  sale: integer;
+  sale, sale0: integer;
 begin
-//  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-//    GenError('Too complex pointer expression.'); exit;
-//  end;
-//  if not ChangePointerToExpres(p1^) then exit;
-//  if not ChangePointerToExpres(p2^) then exit;
-//  case stoOperation of
-//  stConst_Const: begin  //compara constantes. Caso especial
-//    SetROBResultConst_byte(ORD(value1 = value2));
-//  end;
-//  stConst_Variab: begin
-//    SetROBResultExpres_bool(Opt, true);  //El res. estará en A invertido
-//    ////////// Compara byte alto
-//    if value1H = 0 then begin  //caso especial
-//      _LDA(value2H);
-//      _EOR(byte2);
-//
-//      kMOVF(byte2H, toW); //p2-p1
-//      _BTFSS(Z.offs, Z.bit);
-//      _JMP_lbl(sale);  //no son iguales
-//    end else if value1H = 1 then begin  //caso especial
-//      kDECF(byte2H, toW); //p2-p1
-//      _BTFSS(Z.offs, Z.bit);
-//      {De no ser porque se tiene que devolver siempre, el valor de Z,
-//      las 2 instrucciones anteriores, se podrían reemplazar con un i_DECFSZ,
-//      pero i_DECFSZ, no actualiza Z}
-//      _JMP_lbl(sale);  //no son iguales
-//    end else if value1H = 255 then begin  //caso especial
-//      kINCF(byte2H, toW); //p2-p1
-//      _BTFSS(Z.offs, Z.bit);
-//      {De no ser porque se tiene que devolver siempre, el valor de Z,
-//      las 2 instrucciones anteriores, se podrían reemplazar con un i_DECFSZ,
-//      pero i_DECFSZ, no actualiza Z}
-//      _JMP_lbl(sale);  //no son iguales
-//    end else begin  //caso general
-//      _LDA(value1H);
-//      _EOR(byte2H); //p2-p1
-//      _BNE_lbl(sale);  //no son iguales, sale con Z=0, A<>0
-//    end;
-//    //////////  Son iguales, comparar el byte bajo
-//    if value1L = 0 then begin  //caso especial
-//      kMOVF(byte2L,toW);	//p2-p1
-//  _LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
-//    end else if value1L = 1 then begin  //caso especial
-//      kDECF(byte2L,toW);	//p2-p1
-//  _LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
-//    end else if value1L = 255 then begin  //caso especial
-//      kINCF(byte2L,toW);	//p2-p1
-//  _LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
-//    end else begin
-//      _LDA(value1L);
-//      _EOR(byte2L);	//p2-p1
-//      //Si p1=p2 -> Z=1. Si no son iguales -> Z=0, A<>0.
-//  _LABEL(sale);
-//    end;
-//  end;
+  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
+    GenError('Too complex pointer expression.'); exit;
+  end;
+  if not ChangePointerToExpres(p1^) then exit;
+  if not ChangePointerToExpres(p2^) then exit;
+  case stoOperation of
+  stConst_Const: begin  //compara constantes. Caso especial
+    SetROBResultConst_byte(ORD(value1 = value2));
+  end;
+  stConst_Variab: begin
+    SetROBResultExpres_bool(Opt);
+    _LDA(value1L);
+    _CMP(byte2L);
+    _BNE_lbl(sale0);  //different, exit with Z=0.
+    _LDA(value1H);
+    _CMP(byte2H);  //different, ends with Z=0.
+_LABEL(sale0);
+    Copy_Z_to_A;  //Logic inverted
+  end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó p2 esta en A
 //    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
 //    tmp := GetAuxRegisterByte;
@@ -1659,22 +1795,26 @@ begin
 //_LABEL(sale); //Si p1=p2 -> Z=1. Si p1>p2 -> C=0.
 //    tmp.used := false;
 //  end;
-//  stVariab_Const: begin
-//    ExchangeP1_P2;  //Convierte a stConst_Variab
-//    ROB_word_equal_word(Opt, SetRes);
-//  end;
-//  stVariab_Variab:begin
-//    SetROBResultExpres_bool(Opt, true);
-//    //Compara byte alto
-//    _LDA(byte1H);
-//    _EOR(byte2H); //p2-p1
-//    _BNE_lbl(sale);  //no son iguales, sale con Z=0, A<>0
-//    //Son iguales, comparar el byte bajo
-//    _LDA(byte1L);
-//    _EOR(byte2L);	//p2-p1
-//    //Si p1=p2 -> Z=1. Si no son iguales -> Z=0, A<>0.
-//_LABEL(sale);
-//  end;
+  stVariab_Const: begin
+    SetROBResultExpres_bool(Opt);
+    _LDA(byte1L);
+    _CMP(value2L);
+    _BNE_lbl(sale0);  //different, exit with Z=0.
+    _LDA(byte1H);
+    _CMP(value2H);  //different, ends with Z=0.
+_LABEL(sale0);
+    Copy_Z_to_A;  //Logic inverted
+  end;
+  stVariab_Variab:begin
+    SetROBResultExpres_bool(Opt);
+    _LDA(byte1L);
+    _CMP(byte2L);
+    _BNE_lbl(sale0);  //different, exit with Z=0.
+    _LDA(byte1H);
+    _CMP(byte2H);  //different, ends with Z=0.
+_LABEL(sale0);
+    Copy_Z_to_A;  //Logic inverted
+  end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
 //    tmp := GetAuxRegisterByte;
@@ -1705,9 +1845,9 @@ begin
 //    ROB_word_equal_word(Opt, SetRes);
 //    FreeStkRegisterWord;
 //  end;
-//  else
-//    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-//  end;
+  else
+    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+  end;
 end;
 procedure TGenCod.ROB_word_difer_word(Opt: TxpOperation; SetRes: boolean);
 begin
@@ -2423,6 +2563,10 @@ begin
   opr:=typBool.CreateUnaryPreOperator('NOT', 6, 'not', @ROU_not_bool);
   opr:=typBool.CreateBinaryOperator('AND',5,'and');
   opr.CreateOperation(typBool,@ROB_bool_and_bool);
+  opr:=typBool.CreateBinaryOperator('=',3,'equal');
+  opr.CreateOperation(typBool,@ROB_bool_equal_bool);
+  opr:=typBool.CreateBinaryOperator('<>',3,'difer');
+  opr.CreateOperation(typBool,@ROB_bool_difer_bool);
 
   //////////////////////////////////////////
   //////// Operaciones con Byte ////////////

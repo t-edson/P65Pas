@@ -1588,15 +1588,18 @@ procedure TCompiler_PIC16.CompileInstructionDummy;
 var
   p, InvertedFromZ0: Integer;
   InvertedFromC0: Integer;
+  AcumStatInZ0: Boolean;
 begin
   p := pic.iRam;
   InvertedFromC0 := BooleanFromC; //Guarda estado
   InvertedFromZ0 := BooleanFromZ; //Guarda estado
+  AcumStatInZ0  := AcumStatInZ;
 
   CompileInstruction;  //Compila solo para mantener la sintaxis
 
   BooleanFromC := InvertedFromC0; //Restaura
   BooleanFromZ := InvertedFromZ0; //Restaura
+  AcumStatInZ  := AcumStatInZ0;
   pic.iRam := p;     //Elimina lo compilado
   //puede salir con error
   { TODO : Debe limpiar la memoria flash que ocupó, para dejar la casa limpia. }
@@ -1626,15 +1629,18 @@ procedure TCompiler_PIC16.CompileCurBlockDummy;
 var
   p: Integer;
   InvertedFromC0, InvertedFromZ0: Integer;
+  AcumStatInZ0: Boolean;
 begin
   p := pic.iRam;
   InvertedFromC0 := BooleanFromC; //Guarda estado
   InvertedFromZ0 := BooleanFromZ; //Guarda estado
+  AcumStatInZ0  := AcumStatInZ;
 
   CompileCurBlock;  //Compila solo para mantener la sintaxis
 
   BooleanFromC := InvertedFromC0; //Restaura
   BooleanFromZ := InvertedFromZ0; //Restaura
+  AcumStatInZ  := AcumStatInZ0;
   pic.iRam := p;     //Elimina lo compilado
   //puede salir con error
   { TODO : Debe limpiar la memoria flash que ocupó, para dejar la casa limpia. }

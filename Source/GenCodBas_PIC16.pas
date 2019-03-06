@@ -607,6 +607,7 @@ begin
   res.SetAsNull;
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
+  AcumStatInZ := true;
   res.logic := logNormal;
 end;
 procedure TGenCodBas.SetResultConst(typ: TxpEleType);
@@ -616,6 +617,7 @@ begin
   res.SetAsConst(typ);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
+  AcumStatInZ := true;
   {Se asume que no se necesita invertir la lógica, en una constante (booleana o bit), ya
   que en este caso, tenemos control pleno de su valor}
   res.logic := logNormal;
@@ -628,6 +630,7 @@ begin
   res.SetAsVariab(rVar, offAddress);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
+  AcumStatInZ := true;
   //"Inverted" solo tiene sentido, para los tipos bit y boolean
   res.logic := logic;
 end;
@@ -650,6 +653,7 @@ begin
   //Limpia el estado. Esto es útil que se haga antes de generar el código para una operación
   BooleanFromC:=0;
   BooleanFromZ:=0;
+  AcumStatInZ := true;
   //Actualiza el estado de los registros de trabajo.
   RTstate := typ;
 end;
@@ -658,6 +662,7 @@ begin
   res.SetAsVarRef(rVarBase);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
+  AcumStatInZ := true;
   //No se usa "Inverted" en este almacenamiento
   res.logic := logNormal;
 end;
@@ -675,6 +680,7 @@ begin
   res.SetAsExpRef(rVarBase, typ);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
+  AcumStatInZ := true;
   //No se usa "Inverted" en este almacenamiento
   res.logic := logNormal;
 end;
@@ -881,6 +887,7 @@ begin
     ope.SetAsExpres(ope.Typ);  //"ope.Typ" es el tipo al que apunta
     BooleanFromC:=0;
     BooleanFromZ:=0;
+    AcumStatInZ := true;
     RTstate := ope.Typ;
   end else if ope.Sto = stExpRef then begin
     //Es una expresión.
@@ -893,6 +900,7 @@ begin
     ope.SetAsExpres(ope.Typ);  //"ope.Typ" es el tipo al que apunta
     BooleanFromC:=0;
     BooleanFromZ:=0;
+    AcumStatInZ := true;
     RTstate := ope.Typ;
   end;
 end;
@@ -1274,12 +1282,22 @@ begin
         _BNE_lbl(info.igoto);
       end;
     end else begin
-      {We assume if boolean result is in A, then boolean result is in Z flag, too.
-      So we just need to check the Z flag}
-      if OpRes^.logic = logInverted then begin
-        _BNE_lbl(info.igoto);
+      {Cannot be (or should be) optimized }
+      if AcumStatInZ then begin
+        //Still we can use the optimizaction of testing Z flag
+        if OpRes^.logic = logInverted then begin
+          _BNE_lbl(info.igoto);
+        end else begin
+          _BEQ_lbl(info.igoto);
+        end;
       end else begin
-        _BEQ_lbl(info.igoto);
+        //Operand value in A but not always in Z
+        _TAX;  //To update Z
+        if OpRes^.logic = logInverted then begin
+          _BNE_lbl(info.igoto);
+        end else begin
+          _BEQ_lbl(info.igoto);
+        end;
       end;
     end;
   end else begin
@@ -1289,25 +1307,9 @@ end;
 procedure TGenCodBas.IF_FALSE(OpRes: TOperandPtr; out info: TIfInfo);
 //Negated version of IF_TRUE()
 begin
-  if OpRes^.Sto = stVariab then begin
-    //Result in variable
-    if OpRes^.logic = logInverted then begin
-      _LDA(OpRes^.addr);
-      _BNE_lbl(info.igoto);
-    end else begin
-      _LDA(OpRes^.addr);
-      _BEQ_lbl(info.igoto);
-    end;
-  end else if OpRes^.Sto = stExpres then begin
-    //Result in Z flag
-    if OpRes^.logic = logInverted then begin
-      _BNE_lbl(info.igoto);
-    end else begin
-      _BEQ_lbl(info.igoto);
-    end;
-  end else begin
-    genError('Not implemented.');
-  end;
+  OpRes^.Invert;   //Change logic
+  IF_TRUE(OpRes, info);
+  OpRes^.Invert;   //Restore logic
 end;
 procedure TGenCodBas.IF_END(const info: TIfInfo);
 {Define the End of the block, created with IF_TRUE().}
