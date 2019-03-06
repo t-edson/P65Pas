@@ -1,0 +1,24 @@
+1.21
+===
+Incluye las versiones SynfacilSyn 1.21 y SynFacilCompletion 1.21.
+Se cambia el nombre del campo NomArc a FileName.
+
+1.2
+===
+Incluye la versión 1.19 de SynFacilCompletion.
+Se quita las opciones implementadas para emular el funcionamiento en modo columna, ya
+que la nueva versión de SynEdit, ya incluye el modo de múltiples cursores.
+Se hace virtual al constructor de TSynFacilEditor.
+Se mueven varios métodos privados a protegidos, para poder modificarlos.
+
+1.1
+===
+Incluye la versión 1.18 de SynFacilSyn y 1.18 de SynFacilCompletion.
+Se agrega el método TSynFacilEditor.SelectAll;
+Se convierten en virtuales algunos métodos de TSynFacilEditor.
+
+1.0
+===
+* Incluye la versión 1.17 de SynFacilSyn y 1.17 de SynFacilCompletion.
+
+
