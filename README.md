@@ -21,7 +21,7 @@ The P65Pas compiler includes optimization options so the code obtained is genera
 
 P65Pas doesn't need installation, and have not dependencies, except the commons of the operative system, where it's runnig.
 
-To run, it's only needed to download the folder from GitHub. There is compiled binaries for Windows-64 version (P65Pas-win64.exe), Ubuntu version (P65Pas-linux) and a Mac version (P65Pas-Mac.dmg).
+To run, it's only needed to download the folder from GitHub. There is compiled binaries for Windows-64 version (P65Pas-win64.exe) and Ubuntu version (P65Pas-linux).
 
 If it's required other platform, it need to be compiled from the source code.
 
