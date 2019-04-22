@@ -851,12 +851,10 @@ begin
     Add('////////////////////////////////////////////');
     Add('program NewProgram;');
     if compiler = Compiler16 then begin
-       Add('uses CPU6502;');
+      Add('uses Commodore64;');
     end else begin  //Para los otros casos
-      Add('uses CPU6502;');
+      Add('uses Commodore64;');
     end;
-    Add('{$FREQUENCY 4MHZ}');
-    Add('  ');
     Add('//Declarations here');
     Add('  ');
     Add('begin');

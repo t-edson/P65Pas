@@ -17,7 +17,7 @@ object frmPrincipal: TfrmPrincipal
   OnKeyDown = FormKeyDown
   OnShow = FormShow
   Position = poScreenCenter
-  LCLVersion = '1.8.0.6'
+  LCLVersion = '1.8.4.0'
   object StatusBar1: TStatusBar
     Left = 0
     Height = 23

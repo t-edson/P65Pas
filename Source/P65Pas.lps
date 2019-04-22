@@ -18,8 +18,10 @@
         <ComponentName Value="frmPrincipal"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <TopLine Value="924"/>
-        <CursorPos X="12" Y="1003"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="560"/>
+        <CursorPos X="30" Y="856"/>
+        <FoldState Value=" T4707 T7HI}y T8I2}R2 T3n10H6 piZjG058 pjLjZ0B6]9Qk1031]9d6293]ZYlW0K01J TMnC2[T411E181K121 T6nV01K T0nag2F]lamVnH[94bkfwUE3Fx"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -29,7 +31,7 @@
         </ExtraEditor1>
         <UsageCount Value="219"/>
         <Bookmarks Count="1">
-          <Item0 Y="1006" ID="6"/>
+          <Item0 Y="1004" ID="6"/>
         </Bookmarks>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
@@ -57,16 +59,14 @@
         <Filename Value="GenCod_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <EditorIndex Value="2"/>
-        <TopLine Value="1510"/>
-        <CursorPos Y="1555"/>
-        <FoldState Value=" T4i903 TL'H4F T8iG42018 TMkP011F231 T3kH04418I p0/P0Y]J0m5O2J piZjYI3H]9aifI3L]9ejNN1F pj8j0E58]93jLcb[94DjYcb[j4YkCI5E[j6P3C]9gjK]s[R4j7IW[+4Aj6E8G1611212195 T6nT01V7"/>
+        <WindowIndex Value="1"/>
+        <TopLine Value="613"/>
+        <CursorPos X="11" Y="619"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
-          <IsVisibleTab Value="True"/>
-          <WindowIndex Value="1"/>
-          <TopLine Value="613"/>
-          <CursorPos X="11" Y="619"/>
+          <EditorIndex Value="2"/>
+          <TopLine Value="1510"/>
+          <CursorPos X="35" Y="1555"/>
         </ExtraEditor1>
         <UsageCount Value="202"/>
         <Bookmarks Count="2">
@@ -81,7 +81,6 @@
         <EditorIndex Value="3"/>
         <TopLine Value="1101"/>
         <CursorPos Y="1124"/>
-        <FoldState Value=" TL001024111E T4502 T8Y2I5211]BMo4]V41[F4G]G3m304C pibjD0H5 pj9jY0C7 pkFkb087]RcjC05[96B077]a6jN04E[I5F[+4T0n473J]HanSQ1J264211144611 T6oK01]tE,e01A4"/>
         <ExtraEditorCount Value="2"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
