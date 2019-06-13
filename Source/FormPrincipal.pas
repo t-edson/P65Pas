@@ -258,6 +258,12 @@ implementation
 {$R *.lfm}
 { TfrmPrincipal }
 procedure TfrmPrincipal.SetLanguage(idLang: string);
+{Este método es usado para cambiar el idioma. La idea es llamar al método SetLanguage()
+de todas las unidades accesibles desde aquí. A las unidades a las que no se tiene acceso,
+se les llama de forma indirecta, mediante las unidades que si son accesibles.
+Se puede poner este método (y los demás SetLanguage() ) en la seccion INITIALIZATION de
+las unidades, pero se pone como un método independiente, para poder realizar cambio de
+idioma, en tiempo de ejecución.}
 begin
   if curLanguage = idLang then
     exit;  //no ha habido cambio de idioma
@@ -268,6 +274,7 @@ begin
   fraMessages.SetLanguage;
   frmDebug.SetLanguage;
   Compiler_PIC16.SetLanguage;
+  Parser.SetLanguage;
   //ParserAsm_PIC16.SetLanguage;
   //ParserDirec_PIC16.SetLanguage;
   {$I ..\language\tra_FormPrincipal.pas}

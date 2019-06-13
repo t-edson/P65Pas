@@ -78,13 +78,19 @@ type  //TxpElement y clases previas
                 eltMain,  //Programa principal
                 eltVar,   //Variable
                 eltFunc,  //Función
+                eltInLin, //Función INLINE
                 eltCons,  //Constante
                 eltType,  //Tipo
                 eltUnit,  //Unidad
                 eltBody,  //Cuerpo del programa/procedimiento
                 eltFinal  //Sección FINALIZATION de unidad
                 );
-
+  //Ubicación primaria de un elemento
+  TxpEleLocation = (
+                locMain,       //En el programa principal.
+                locInterface,  //En INTERFACE de una unidad.
+                locImplement   //En IMPLEMENTATION de una unidad.
+  );
   TxpElement = class;
   TxpElements = specialize TFPGObjectList<TxpElement>;
 
@@ -144,7 +150,8 @@ type  //TxpElement y clases previas
     isAbsol   : boolean;   //Indica si es ABSOLUTE
     absVar    : TxpEleVar; //Referencia a variable, cuando es ABSOLUTE <variable>
     absAddr   : integer;   //dirección ABSOLUTE
-    absBit    : byte;      //bit ABSOLUTE
+    hasInit   : boolean;   //Indica si tiene valor inicial
+    iniVal    : TConsValue; //Initial constant value
     //Posición donde empieza la declaración de parámetros adicionales de la variable
     srcDec    : TPosCont;
   end;
@@ -153,6 +160,9 @@ type  //TxpElement y clases previas
   //Clase base para todos los elementos
   TxpElement = class
   private
+    Fname    : string;   //Nombre del elemnto
+    Funame   : string;   //Nombre en mayúscula para acelerar las bísquedas.
+    procedure Setname(AValue: string);
     function AddElement(elem: TxpElement): TxpElement;
   public  //Gestion de llamadas al elemento
     //Lista de funciones que llaman a esta función.
@@ -165,7 +175,7 @@ type  //TxpElement y clases previas
     function RemoveCallsFrom(callElem: TxpElement): integer; //Elimina llamadas
     procedure RemoveLastCaller; //Elimina la última llamada
     procedure ClearCallers;  //limpia lista de llamantes
-    function DuplicateIn(list: TxpElements): boolean; virtual;
+    function ExistsIn(list: TxpElements): boolean;
   public  //Gestión de los elementos llamados
     curNesting: Integer;   //Nivel de anidamiento de llamadas
     maxNesting: Integer;   //Máximo nivel de anidamiento
@@ -179,13 +189,14 @@ type  //TxpElement y clases previas
     procedure AddCalledAll_FromList(lstCalled0: TxpListCalled);
     procedure UpdateCalledAll;
   public
-    name    : string;      //Nombre de la variable, constante, unidad, tipo, ...
     Parent  : TxpElement;  //Referencia al elemento padre
     idClass : TxpIDClass;  //Para no usar RTTI
     elements: TxpElements; //Referencia a nombres anidados, cuando sea función
     {Bandera para indicar si la función, ha sido declarada en la sección INTERFACE. Este
     campo es úitl para cuando se procesan unidades.}
-    InInterface: boolean;
+    location: TxpEleLocation;
+    property name: string read Fname write Setname;
+    property uname: string read Funame;
     function Path: string;
     function FindIdxElemName(const eName: string; var idx0: integer): boolean;
     function LastNode: TxpElement;
@@ -267,7 +278,7 @@ type //Clases de elementos
     grp     : TTypeGroup;  //Grupo del tipo (numérico, cadena, etc)
     size    : smallint;    //Tamaño en bytes del tipo (para bits se usa números negativos)
     catType : TxpCatType;  //Categoría del tipo
-    arrSize : integer;     //Tamaño, cuando es tctArray
+    arrSize : integer;     //Tamaño, cuando es tctArray (-1 si es dinámico.)
     refType : TxpEleType;  {Referencia a otro tipo. Valido cuando es puntero o arreglo.
                                 TPtr = ^integer;       //refType = integer
                                 TArr = array[255] of byte;  //refType = byte
@@ -300,6 +311,13 @@ type //Clases de elementos
     constructor Create; override;
     destructor Destroy; override;
   end;
+
+  { TxpRegType }
+  {Define el tipo de parámetro REGISTER. Depende de la arquitectura del CPU destino}
+  TxpRegType = (
+    regNone,  //No es de tipo registro
+    regA      //Usa registro A
+  );
 
   { TxpEleCon }
   //Clase para modelar a las constantes
@@ -377,10 +395,22 @@ type //Clases de elementos
 
   //Parámetro de una función
   TxpParFunc = record
-    name: string;    //nombre de parámetro
-    typ : TxpEleType;  //Referencia al tipo
-    pvar: TxpEleVar; //referencia a la variable que se usa para el parámetro
+    name: string;     //Nombre de parámetro
+    typ : TxpEleType; //Referencia al tipo
+    reg : TxpRegType; //Tipo de parámetro REGISTER (Si es que es Register)
+    pvar: TxpEleVar;  //Referencia a la variable que se usa para el parámetro
+    srcPos: TSrcPos;  //Posición del parámetro.
   end;
+  TxpParFuncArray = array of TxpParFunc;
+
+  //Parámetro de una función INLINE
+  TxpParInlin = record
+    name: string;     //nombre de parámetro
+    typ : TxpEleType; //Referencia al tipo
+    sto : TStoOperand; //Tipo de almacenamiento
+    srcPos: TSrcPos;  //Posición del parámetro.
+  end;
+  TxpParInlinArray = array of TxpParInlin;
 
   //Clase para modelar al bloque principal
   { TxpEleMain }
@@ -398,12 +428,12 @@ type //Clases de elementos
   TxpEleFun = class(TxpEleCodeCont)
   public
     typ    : TxpEleType;   //Referencia al tipo
-    pars   : array of TxpParFunc;  //parámetros de entrada
+    pars   : TxpParFuncArray;  //parámetros de entrada
     adrr   : integer;     //Dirección física, en donde se compila
     adrr2  : integer;     //Punto de entrada adicional
     srcSize: integer;  {Tamaño del código compilado. En la primera pasada, es referencial,
                         porque el tamaño puede variar al reubicarse.}
-    {Referencia a la función que implemanta, la rutina de porcesamiento que se debe
+    {Referencia a la función que implementa, la rutina de procesamiento que se debe
     hacer, antes de empezar a leer los parámetros de la función.}
     procParam: TProcExecFunction;
     {Referencia a la función que implementa, la llamada a la función en ensamblador.
@@ -420,10 +450,11 @@ type //Clases de elementos
     IsInterrupt : boolean;
     ///////////////
     procedure ClearParams;
-    procedure CreateParam(parName: string; typ0: TxpEleType; pvar: TxpEleVar);
-    function SameParams(Fun2: TxpEleFun): boolean;
+    procedure CreateParam(parName: string; srcPos: TSrcPos; typ0: TxpEleType;
+      pvar: TxpEleVar; regType: TxpRegType);
+    function SameParamsType(const funpars: TxpParFuncArray): boolean;
     function ParamTypesList: string;
-    function DuplicateIn(list: TxpElements): boolean; override;
+    function Duplicated: boolean;
     procedure SetElementsUnused;
   public  //Manejo de referencias
     function nCalled: integer; override; //número de llamadas
@@ -435,6 +466,26 @@ type //Clases de elementos
     destructor Destroy; override;
   end;
   TxpEleFuns = specialize TFPGObjectList<TxpEleFun>;
+
+  { TxpEleInline }
+  //Clase para modelar a las funciones Inline
+  TxpEleInlin = class(TxpEleCodeCont)
+  public
+    typ    : TxpEleType;   //Referencia al tipo
+    pars   : TxpParInlinArray;  //parámetros de entrada
+    {Bandera para indicar si la función, ha sido implementada. Este campo es util, para
+     cuando se usa FORWARD o cuando se compilan unidades.}
+    Implemented: boolean;
+    ///////////////
+    procedure ClearParams;
+    procedure CreateParam(parName: string; typ0: TxpEleType; sto0: TStoOperand);
+    function SameParamsType(const funpars: TxpParInlinArray): boolean;
+    function Duplicated: boolean;
+  public //Inicialización
+    constructor Create; override;
+    destructor Destroy; override;
+  end;
+  TxpEleInlins = specialize TFPGObjectList<TxpEleInlin>;
 
   { TxpEleUnit }
   //Clase para modelar a las constantes
@@ -456,11 +507,8 @@ type //Clases de elementos
     destructor Destroy; override;
   end;
 
-  { TxpEleBody }
-  //Clase para modelar al bloque FINALIZATION de una unidad
-
   { TxpEleFinal }
-
+  //Clase para modelar al bloque FINALIZATION de una unidad
   TxpEleFinal = class(TxpElement)
     adrr   : integer;  //dirección física
     constructor Create; override;
@@ -494,24 +542,20 @@ type //Clases de elementos
     AllVars  : TxpEleVars;
     AllUnits : TxpEleUnits;
     AllFuncs : TxpEleFuns;
+    AllInLns : TxpEleInlins;
     AllTypes : TxpEleTypes;
     OnAddElement: procedure(xpElem: TxpElement) of object;  //Evento
-    OnFindElement: procedure(elem: TxpElement) of object;
+    OnFindElement: procedure(elem: TxpElement) of object;  //Evento de búsqueda
     procedure Clear;
-    procedure RefreshAllCons;
-    procedure RefreshAllVars;
-    procedure RefreshAllFuncs;
     procedure RefreshAllUnits;
-    procedure RefreshAllTypes;
     function CurNodeName: string;
     function CurCodeContainer: TxpEleCodeCont;
     function LastNode: TxpElement;
     function BodyNode: TxpEleBody;
   public  //Funciones para llenado del arbol
-    function AddElement(elem: TxpElement; verifDuplic: boolean=true): boolean;
+    procedure AddElement(elem: TxpElement);
     procedure AddElementAndOpen(elem: TxpElement);
     procedure OpenElement(elem: TxpElement);
-    function ValidateCurElement: boolean;
     procedure CloseElement;
   public  //Métodos para identificación de nombres
     function FindNext: TxpElement;
@@ -523,6 +567,10 @@ type //Clases de elementos
     function GetElementAt(posXY: TPoint): TxpElement;
     function GetElementCalledAt(const srcPos: TSrcPos): TxpElement;
     function GetELementDeclaredAt(const srcPos: TSrcPos): TxpElement;
+    function FunctionExistInCur(funName: string; const pars: TxpParFuncArray
+      ): boolean;
+    function InlineExistInCur(funName: string; const pars: TxpParInlinArray
+      ): boolean;
   public  //constructor y destructror
     constructor Create; virtual;
     destructor Destroy; override;
@@ -537,7 +585,6 @@ var
 implementation
 
 { TxpEleCaller }
-
 function TxpEleCaller.CallerUnit: TxpElement;
 {Devuelve el elemento unidad o programa principal, desde donde se hace esta llamada.}
 var
@@ -556,7 +603,6 @@ begin
   Result := container;
   //No debería haber otro caso
 end;
-
 { TxpExitCall }
 function TxpExitCall.IsObligat: boolean;
 {Indica si el exit se encuentra dentro de código obligatorio}
@@ -599,17 +645,23 @@ begin
   elements.Add(elem);   //agrega a la lista de nombres
   Result := elem;       //no tiene mucho sentido
 end;
+procedure TxpElement.Setname(AValue: string);
+begin
+  if Fname=AValue then Exit;
+  Fname:=AValue;
+  Funame:=Upcase(AValue);
+end;
 function TxpElement.FindIdxElemName(const eName: string; var idx0: integer): boolean;
 {Busca un nombre en su lista de elementos. Inicia buscando desde idx0, hasta el inicio.
  Si encuentra, devuelve TRUE y deja en idx0, la posición en donde se encuentra.}
 var
   i: Integer;
-  uName: String;
+  uEleName: String;
 begin
-  uName := upcase(eName);
+  uEleName := upcase(eName);
   //empieza la búsqueda en "idx0"
   for i := idx0 downto 0 do begin
-    if upCase(elements[i].name) = uName then begin
+    if elements[i].uname = uEleName then begin
       //sale dejando idx0 en la posición encontrada
       idx0 := i;
       exit(true);
@@ -697,15 +749,13 @@ procedure TxpElement.ClearCallers;
 begin
   lstCallers.Clear;
 end;
-function TxpElement.DuplicateIn(list: TxpElements): boolean;
+function TxpElement.ExistsIn(list: TxpElements): boolean;
 {Debe indicar si el elemento está duplicado en la lista de elementos proporcionada.}
 var
-  uName: String;
   ele: TxpElement;
 begin
-  uName := upcase(name);
   for ele in list do begin
-    if upcase(ele.name) = uName then begin
+    if ele.uname = uname then begin
       exit(true);
     end;
   end;
@@ -753,7 +803,6 @@ begin
   {Falta actualizar maxNesting, con las llamadas a funciones del sistema y
    llamadas de interrupciones.}
 end;
-
 function TxpElement.Path: string;
 {Devuelve una cadena, que indica la ruta del elemento, dentro del árbol de sintaxis.}
 var
@@ -1325,30 +1374,33 @@ procedure TxpEleFun.ClearParams;
 begin
   setlength(pars,0);
 end;
-procedure TxpEleFun.CreateParam(parName: string; typ0: TxpEleType; pvar: TxpEleVar);
-//Crea un parámetro para la función
+procedure TxpEleFun.CreateParam(parName: string; srcPos: TSrcPos; typ0: TxpEleType; pvar: TxpEleVar;
+  regType: TxpRegType);
+//Crea un parámetro para la función. **** ¿Se usa realmente?
 var
   n: Integer;
 begin
-  //agrega
+  //Agrega un registro al arreglo
   n := high(pars)+1;
   setlength(pars, n+1);
   pars[n].name := parName;
-  pars[n].typ  := typ0;  //agrega referencia
+  pars[n].typ  := typ0;  //Agrega referencia
   pars[n].pvar := pvar;
+  pars[n].reg  := regType;
+  pars[n].srcPos := srcPos;
 end;
-function TxpEleFun.SameParams(Fun2: TxpEleFun): boolean;
-{Compara los parámetros de la función con las de otra. Si tienen el mismo número
-de parámetros y el mismo tipo, devuelve TRUE.}
+function TxpEleFun.SameParamsType(const funpars: TxpParFuncArray): boolean;
+{Compara los parámetros de la función con una lista de parámetros. Si tienen el mismo
+número de parámetros y el mismo tipo, devuelve TRUE.}
 var
   i: Integer;
 begin
   Result:=true;  //se asume que son iguales
-  if High(pars) <> High(Fun2.pars) then
+  if High(pars) <> High(funpars) then
     exit(false);   //distinto número de parámetros
   //hay igual número de parámetros, verifica
   for i := 0 to High(pars) do begin
-    if pars[i].typ <> Fun2.pars[i].typ then begin
+    if pars[i].typ <> funpars[i].typ then begin
       exit(false);
     end;
   end;
@@ -1369,19 +1421,19 @@ begin
   if length(tmp)>0 then tmp := copy(tmp,1,length(tmp)-2);
   Result := '('+tmp+')';
 end;
-function TxpEleFun.DuplicateIn(list: TxpElements): boolean;
+function TxpEleFun.Duplicated: boolean;
+{Revisa la duplicidad de la función en su entorno. La función ya debe estar ingresada al
+árbol de sintaxis.  *******  ¿Realmente se usa?}
 var
-  uName: String;
   ele: TxpElement;
 begin
-  uName := upcase(name);
-  for ele in list do begin
+  for ele in Parent.elements do begin
     if ele = self then Continue;  //no se compara el mismo
-    if upcase(ele.name) = uName then begin
+    if ele.uname = uname then begin
       //hay coincidencia de nombre
       if ele.idClass = eltFunc then begin
         //para las funciones, se debe comparar los parámetros
-        if SameParams(TxpEleFun(ele)) then begin
+        if SameParamsType(TxpEleFun(ele).pars) then begin
           exit(true);
         end;
       end else begin
@@ -1453,7 +1505,6 @@ begin
     exit(false);
   end;
 end;
-
 //Inicialización
 constructor TxpEleFun.Create;
 begin
@@ -1461,6 +1512,78 @@ begin
   idClass:=eltFunc;
 end;
 destructor TxpEleFun.Destroy;
+begin
+  inherited Destroy;
+end;
+{ TxpEleInline }
+procedure TxpEleInlin.ClearParams;
+//Elimina los parámetros de una función
+begin
+  setlength(pars,0);
+end;
+procedure TxpEleInlin.CreateParam(parName: string; typ0: TxpEleType;
+  sto0: TStoOperand);
+//Crea un parámetro para la función
+var
+  n: Integer;
+begin
+  //agrega
+  n := high(pars)+1;
+  setlength(pars, n+1);
+  pars[n].name := parName;
+  pars[n].typ  := typ0;  //agrega referencia
+  pars[n].sto  := sto0;  //captura almacenamiento
+end;
+function TxpEleInlin.SameParamsType(const funpars: TxpParInlinArray): boolean;
+{Compara los parámetros de la función con las de otra. Si tienen el mismo número
+de parámetros, el mismo tipo y almacenamiento, devuelve TRUE.}
+var
+  i: Integer;
+begin
+  Result:=true;  //se asume que son iguales
+  if High(pars) <> High(funpars) then
+    exit(false);   //distinto número de parámetros
+  //hay igual número de parámetros, verifica
+  for i := 0 to High(pars) do begin
+    if pars[i].typ <> funpars[i].typ then begin
+      exit(false);
+    end;
+    //Estos parámetros tienen el mismo tipo
+    if pars[i].sto<> funpars[i].sto then begin
+      exit(false);  //Pero otro almacenamiento
+    end;
+  end;
+  //si llegó hasta aquí, hay coincidencia, sale con TRUE
+end;
+function TxpEleInlin.Duplicated: boolean;
+{Revisa la duplicidad de la función en su entorno. La función ya debe estar ingresada al
+árbol de sintaxis.  *******  ¿Realmente se usa?}
+var
+  ele: TxpElement;
+begin
+  for ele in parent.elements do begin
+    if ele = self then Continue;  //no se compara el mismo
+    if ele.uname = uname then begin
+      //hay coincidencia de nombre
+      if ele.idClass = eltInLin then begin
+        //para las funciones, se debe comparar los parámetros
+        if SameParamsType(TxpEleInlin(ele).pars) then begin
+          exit(true);
+        end;
+      end else begin
+        //si tiene el mismo nombre que cualquier otro elemento, es conflicto
+        exit(true);
+      end;
+    end;
+  end;
+  exit(false);
+end;
+constructor TxpEleInlin.Create;
+begin
+  inherited;
+  idClass:=eltInLin;
+end;
+destructor TxpEleInlin.Destroy;
 begin
   inherited Destroy;
 end;
@@ -1475,7 +1598,7 @@ begin
   if elements = nil then exit;
   //Solo basta explorar a un nivel
   for ele in elements do begin
-    if ele.InInterface then begin
+    if ele.location = locInterface then begin
        InterfaceElements.Add(ele);
     end;
   end;
@@ -1486,13 +1609,11 @@ begin
   idClass:=eltUnit;
   InterfaceElements:= TxpElements.Create(false);
 end;
-
 destructor TxpEleUnit.Destroy;
 begin
   InterfaceElements.Destroy;
   inherited Destroy;
 end;
-
 { TxpEleBody }
 constructor TxpEleBody.Create;
 begin
@@ -1513,7 +1634,6 @@ destructor TxpEleFinal.Destroy;
 begin
   inherited Destroy;
 end;
-
 { TxpEleDIREC }
 constructor TxpEleDIREC.Create;
 begin
@@ -1534,74 +1654,99 @@ begin
   AllFuncs.Clear;
   AllTypes.Clear;
 end;
-procedure TXpTreeElements.RefreshAllCons;
-{Devuelve una lista de todas las constantes del árbol de sintaxis, incluyendo las de las
-funciones y procedimientos. La lista se obtiene ordenada de acuerdo a como se haría en
-una exploración sintáctica normal.}
-  procedure AddCons(nod: TxpElement);
-  var
-    ele : TxpElement;
-  begin
-    if nod.elements<>nil then begin
-      for ele in nod.elements do begin
-        if ele.idClass = eltCons then begin
-          AllCons.Add(TxpEleCon(ele));
-        end else begin
-          if ele.elements<>nil then
-            AddCons(ele);  //recursivo
-        end;
-      end;
-    end;
-  end;
-begin
-  AllCons.Clear;   //por si estaba llena
-  AddCons(main);
-end;
-procedure TXpTreeElements.RefreshAllVars;
-{Devuelve una lista de todas las variables del árbol de sintaxis, incluyendo las de las
-funciones y procedimientos. La lista se obtiene ordenada de acuerdo a como se haría en
-una exploración sintáctica normal.}
-  procedure AddVars(nod: TxpElement);
-  var
-    ele : TxpElement;
-  begin
-    if nod.elements<>nil then begin
-      for ele in nod.elements do begin
-        if ele.idClass = eltVar then begin
-          AllVars.Add(TxpEleVar(ele));
-        end else begin
-          if ele.elements<>nil then
-            AddVars(ele);  //recursivo
-        end;
-      end;
-    end;
-  end;
-begin
-  AllVars.Clear;   //por si estaba llena
-  AddVars(main);
-end;
-procedure TXpTreeElements.RefreshAllFuncs;
-{Actualiza una lista de todas las funciones del árbol de sintaxis, incluyendo las de las
-unidades.}
-  procedure AddFuncs(nod: TxpElement);
-  var
-    ele : TxpElement;
-  begin
-    if nod.elements<>nil then begin
-      for ele in nod.elements do begin
-        if ele.idClass = eltFunc then begin
-          AllFuncs.Add(TxpEleFun(ele));
-        end else begin
-          if ele.elements<>nil then
-            AddFuncs(ele);  //recursivo
-        end;
-      end;
-    end;
-  end;
-begin
-  AllFuncs.Clear;   //por si estaba llena
-  AddFuncs(main);
-end;
+{********* No se utilizan ya estos métodos porque se está agregando código de
+identificación en TXpTreeElements.AddElement(). }
+//procedure TXpTreeElements.RefreshAllCons;
+//{Devuelve una lista de todas las constantes del árbol de sintaxis, incluyendo las de las
+//funciones y procedimientos. La lista se obtiene ordenada de acuerdo a como se haría en
+//una exploración sintáctica normal.}
+//  procedure AddCons(nod: TxpElement);
+//  var
+//    ele : TxpElement;
+//  begin
+//    if nod.elements<>nil then begin
+//      for ele in nod.elements do begin
+//        if ele.idClass = eltCons then begin
+//          AllCons.Add(TxpEleCon(ele));
+//        end else begin
+//          if ele.elements<>nil then
+//            AddCons(ele);  //recursivo
+//        end;
+//      end;
+//    end;
+//  end;
+//begin
+//  AllCons.Clear;   //por si estaba llena
+//  AddCons(main);
+//end;
+//procedure TXpTreeElements.RefreshAllVars;
+//{Devuelve una lista de todas las variables del árbol de sintaxis, incluyendo las de las
+//funciones y procedimientos. La lista se obtiene ordenada de acuerdo a como se haría en
+//una exploración sintáctica normal.}
+//  procedure AddVars(nod: TxpElement);
+//  var
+//    ele : TxpElement;
+//  begin
+//    if nod.elements<>nil then begin
+//      for ele in nod.elements do begin
+//        if ele.idClass = eltVar then begin
+//          AllVars.Add(TxpEleVar(ele));
+//        end else begin
+//          if ele.elements<>nil then
+//            AddVars(ele);  //recursivo
+//        end;
+//      end;
+//    end;
+//  end;
+//begin
+//  AllVars.Clear;   //por si estaba llena
+//  AddVars(main);
+//end;
+//procedure TXpTreeElements.RefreshAllFuncs;
+//{Actualiza una lista de todas las funciones del árbol de sintaxis, incluyendo las de las
+//unidades.}
+//  procedure AddFuncs(nod: TxpElement);
+//  var
+//    ele : TxpElement;
+//  begin
+//    if nod.elements<>nil then begin
+//      for ele in nod.elements do begin
+//        if ele.idClass = eltFunc then begin
+//          AllFuncs.Add(TxpEleFun(ele));
+//        end else begin
+//          if ele.elements<>nil then
+//            AddFuncs(ele);  //recursivo
+//        end;
+//      end;
+//    end;
+//  end;
+//begin
+//  AllFuncs.Clear;   //por si estaba llena
+//  AddFuncs(main);
+//end;
+//procedure TXpTreeElements.RefreshAllTypes;
+//{Devuelve una lista de todas las constantes del árbol de sintaxis, incluyendo las de las
+//funciones y procedimientos. La lista se obtiene ordenada de acuerdo a como se haría en
+//una exploración sintáctica normal.}
+//  procedure AddTypes(nod: TxpElement);
+//  var
+//    ele : TxpElement;
+//  begin
+//    if nod.elements<>nil then begin
+//      for ele in nod.elements do begin
+//        if ele.idClass = eltType then begin
+//          AllTypes.Add(TxpEleType(ele));
+//        end else begin
+//          if ele.elements<>nil then
+//            AddTypes(ele);  //recursivo
+//        end;
+//      end;
+//    end;
+//  end;
+//begin
+//  AllTypes.Clear;   //por si estaba llena
+//  AddTypes(main);
+//end;
 procedure TXpTreeElements.RefreshAllUnits;
 var
   ele : TxpElement;
@@ -1612,29 +1757,6 @@ begin
        AllUnits.Add( TxpEleUnit(ele) );
     end;
   end;
-end;
-procedure TXpTreeElements.RefreshAllTypes;
-{Devuelve una lista de todas las constantes del árbol de sintaxis, incluyendo las de las
-funciones y procedimientos. La lista se obtiene ordenada de acuerdo a como se haría en
-una exploración sintáctica normal.}
-  procedure AddTypes(nod: TxpElement);
-  var
-    ele : TxpElement;
-  begin
-    if nod.elements<>nil then begin
-      for ele in nod.elements do begin
-        if ele.idClass = eltType then begin
-          AllTypes.Add(TxpEleType(ele));
-        end else begin
-          if ele.elements<>nil then
-            AddTypes(ele);  //recursivo
-        end;
-      end;
-    end;
-  end;
-begin
-  AllTypes.Clear;   //por si estaba llena
-  AddTypes(main);
 end;
 function TXpTreeElements.CurNodeName: string;
 {Devuelve el nombre del nodo actual}
@@ -1672,26 +1794,30 @@ begin
   Result := main.BodyNode;
 end;
 //funciones para llenado del arbol
-function TXpTreeElements.AddElement(elem: TxpElement; verifDuplic: boolean = true): boolean;
+procedure TXpTreeElements.AddElement(elem: TxpElement);
 {Agrega un elemento al nodo actual. Si ya existe el nombre del nodo, devuelve false.
 Este es el punto único de entrada para realizar cambios en el árbol.}
 begin
-  Result := true;
-  //Verifica si hay conflicto. Solo es necesario buscar en el nodo actual.
-  if verifDuplic and elem.DuplicateIn(curNode.elements) then begin
-    exit(false);  //ya existe
-  end;
   //Agrega el nodo
   curNode.AddElement(elem);
   if OnAddElement<>nil then OnAddElement(elem);
+  //Actualiza listas
+  case elem.idClass of
+  eltCons: AllCons.Add(TxpEleCon(elem));
+  eltVar : AllVars.Add(TxpEleVar(elem));
+  eltFunc: AllFuncs.Add(TxpEleFun(elem));
+  eltType: AllTypes.Add(TxpEleType(elem));
+  eltInLin: AllInLns.Add(TxpEleInlin(elem));
+  //No se incluye el código de RefreshAllUnits() porque solo trabaja en el "main".
+  end;
 end;
 procedure TXpTreeElements.AddElementAndOpen(elem: TxpElement);
 {Agrega un elemento y cambia el nodo actual al espacio de este elemento nuevo. Este
 método está reservado para las funciones o procedimientos}
 begin
-  {las funciones o procedimientos no se validan inicialmente, sino hasta que
+  {Las funciones o procedimientos no se validan inicialmente, sino hasta que
   tengan todos sus parámetros agregados, porque pueden ser sobrecargados.}
-  AddElement(elem, false);
+  AddElement(elem);
   //Genera otro espacio de nombres
   elem.elements := TxpElements.Create(true);  //su propia lista
   curNode := elem;  //empieza a trabajar en esta lista
@@ -1700,18 +1826,6 @@ procedure TXpTreeElements.OpenElement(elem: TxpElement);
 {Accede al espacio de nombres del elemento indicado.}
 begin
   curNode := elem;  //empieza a trabajar en esta lista
-end;
-function TXpTreeElements.ValidateCurElement: boolean;
-{Este método es el complemento de OpenElement(). Se debe llamar cuando ya se
- tienen creados los parámetros de la función o procedimiento, para verificar
- si hay duplicidad, en cuyo caso devolverá FALSE}
-begin
-  //Se asume que el nodo a validar ya se ha abierto, con OpenElement() y es el actual
-  if curNode.DuplicateIn(curNode.Parent.elements) then begin  //busca en el nodo anterior
-    exit(false);
-  end else begin
-    exit(true);
-  end;
 end;
 procedure TXpTreeElements.CloseElement;
 {Sale del nodo actual y retorna al nodo padre}
@@ -1730,7 +1844,7 @@ var
   elem: TxpElement;
 begin
 //  debugln(' Explorando nivel: [%s] en pos: %d', [curFindNode.name, curFindIdx - 1]);
-  tmp := UpCase(curFindName);  //convierte pra comparación
+  tmp := UpCase(curFindName);  //convierte para comparación
   repeat
     curFindIdx := curFindIdx - 1;  //Siempre salta a la posición anterior
     if curFindIdx<0 then begin
@@ -1750,10 +1864,10 @@ begin
     end;
     //Verifica ahora este elemento
     elem := curFindNode.elements[curFindIdx];
-    //Genera evento para indicar que está buscando
+    //Genera evento para indicar que está buscando.
     if OnFindElement<>nil then OnFindElement(elem);
     //Compara
-    if UpCase(elem.name) = tmp then begin
+    if elem.uname = tmp then begin
       //Encontró en "curFindIdx"
       Result := elem;
       //La siguiente búsqueda empezará en "curFindIdx-1".
@@ -1808,7 +1922,7 @@ end;
 function TXpTreeElements.FindNextFunc: TxpEleFun;
 {Explora recursivamente haciá la raiz, en el arbol de sintaxis, hasta encontrar el nombre
 de la fución indicada. Debe llamarse después de FindFirst().
-Si no enecuentra devuelve NIL.}
+Si no encuentra devuelve NIL.}
 var
   ele: TxpElement;
 begin
@@ -1827,7 +1941,7 @@ var
 begin
   uName := upcase(varName);
   for ele in curNode.elements do begin
-    if (ele.idClass = eltVar) and (upCase(ele.name) = uName) then begin
+    if (ele.idClass = eltVar) and (ele.uname = uName) then begin
       Result := TxpEleVar(ele);
       exit;
     end;
@@ -1842,7 +1956,7 @@ var
 begin
   uName := upcase(typName);
   for ele in curNode.elements do begin
-    if (ele.idClass = eltType) and (upCase(ele.name) = uName) then begin
+    if (ele.idClass = eltType) and (ele.uname = uName) then begin
       Result := TxpEleType(ele);
       exit;
     end;
@@ -1975,7 +2089,59 @@ begin
   ExploreForDec(main);
   Result := res;
 end;
-//constructor y destructor
+function TXpTreeElements.FunctionExistInCur(funName: string;
+  const pars: TxpParFuncArray): boolean;
+{Indica si la función definida por el nombre y parámetros, existe en el nodo actual.
+La búsqueda se hace bajo la consideración de que dos funciones son iguales si tiene el
+mismo nombre y los mismos tipos de parámetros.}
+var
+  ele: TxpElement;
+  uname: String;
+begin
+  uname := Upcase(funName);
+  for ele in curNode.elements do begin
+    if ele.uname = uname then begin
+      //hay coincidencia de nombre
+      if ele.idClass = eltFunc then begin
+        //para las funciones, se debe comparar los parámetros
+        if TxpEleFun(ele).SameParamsType(pars) then begin
+          exit(true);
+        end;
+      end else begin
+        //Ssi tiene el mismo nombre que cualquier otro elemento, es conflicto
+        exit(true);
+      end;
+    end;
+  end;
+  exit(false);
+end;
+function TXpTreeElements.InlineExistInCur(funName: string;
+  const pars: TxpParInlinArray): boolean;
+{Indica si la función definida por el nombre y parámetros, existe en el nodo actual.
+La búsqueda se hace bajo la consideración de que dos funciones son iguales si tiene el
+mismo nombre y los mismos tipos de parámetros.}
+var
+  ele: TxpElement;
+  uname: String;
+begin
+  uname := Upcase(funName);
+  for ele in curNode.elements do begin
+    if ele.uname = uname then begin
+      //hay coincidencia de nombre
+      if ele.idClass = eltInLin then begin
+        //para las funciones, se debe comparar los parámetros
+        if TxpEleInlin(ele).SameParamsType(pars) then begin
+          exit(true);
+        end;
+      end else begin
+        //si tiene el mismo nombre que cualquier otro elemento, es conflicto
+        exit(true);
+      end;
+    end;
+  end;
+  exit(false);
+end;
+//Constructor y destructor
 constructor TXpTreeElements.Create;
 begin
   main:= TxpEleMain.Create;  //No debería
@@ -1984,8 +2150,9 @@ begin
   AllCons  := TxpEleCons.Create(false);   //Crea lista
   AllVars  := TxpEleVars.Create(false);   //Crea lista
   AllFuncs := TxpEleFuns.Create(false);   //Crea lista
+  AllInLns := TxpEleInlins.Create(false); //Crea lista
   AllUnits := TxpEleUnits.Create(false);  //Crea lista
-  AllTypes := TxpEleTypes.Create(false);
+  AllTypes := TxpEleTypes.Create(false);  //Crea lista
   curNode := main;  //empieza con el nodo principal como espacio de nombres actual
 end;
 destructor TXpTreeElements.Destroy;
@@ -1993,6 +2160,7 @@ begin
   main.Destroy;
   AllTypes.Destroy;
   AllUnits.Destroy;
+  AllInLns.Destroy;
   AllFuncs.Free;
   AllVars.Free;    //por si estaba creada
   AllCons.Free;

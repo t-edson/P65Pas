@@ -644,6 +644,7 @@ var
   n: integer;
   xcon: TxpEleCon;
   ele: TxpElement;
+  xvar: TxpEleVar;
 begin
   tok := lexAsm.GetToken;
   //verifica directiva ORG
@@ -663,6 +664,7 @@ begin
   //Es un código válido
   lexAsm.Next;
   skipWhites;
+  tok := lexAsm.GetToken;
   if tokType = lexAsm.tnEol then begin
     //Sin parámetros. Puede ser Implícito o Acumulador
     if aImplicit in PIC16InstName[idInst].addressModes then begin
@@ -678,11 +680,61 @@ begin
         GenErrorAsm(pic.MsjError);
       end;
     end;
-  end else if lexAsm.GetToken = '#' then begin
-    //Inmediato
+  end else if (tok = '#<') or (tok = '#>')  then begin
+    //Inmediato con operador
     lexAsm.Next;
     if tokType = lexAsm.tnNumber then begin
       n := StrToInt(lexAsm.GetToken);
+      if tok = '#>' then n := n and $FF else n := (n and $ff00) >> 8;
+      lexAsm.Next;
+      pic.codAsm(idInst, aImmediat, n);
+      if pic.MsjError<>'' then begin
+        GenErrorAsm(pic.MsjError);
+      end;
+    end else if tokType = lexAsm.tnIdentif then begin
+      //Identificador
+      ele := TreeElems.FindFirst(lexAsm.GetToken);  //identifica elemento
+      if ele = nil then begin
+        GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+        exit;
+      end else if ele.idClass = eltCons then begin
+        //Es un identificador de constante del árbol de sintaxis
+        xcon := TxpEleCon(ele);
+        AddCallerTo(xcon);  //lleva la cuenta
+        lexAsm.Next;
+        n := xcon.val.ValInt;
+        if tok = '#<' then n := n and $FF else n := (n and $ff00) >> 8;
+        pic.codAsm(idInst, aImmediat, n);
+        if pic.MsjError<>'' then begin
+          GenErrorAsm(pic.MsjError);
+        end;
+      end else if ele.idClass = eltVar then begin
+        //Es un identificador de variable del árbol de sintaxis
+        xvar := TxpEleVar(ele);
+        AddCallerTo(xvar);  //lleva la cuenta
+        lexAsm.Next;
+        n := xvar.addr;  //Lee dirección
+        if tok = '#<' then n := n and $FF else n := (n and $ff00) >> 8;
+        pic.codAsm(idInst, aImmediat, n);
+        if pic.MsjError<>'' then begin
+          GenErrorAsm(pic.MsjError);
+        end;
+      end else begin
+        GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+        exit;
+      end;
+    end else begin
+      GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+      exit;
+    end;
+  end else if tok = '#' then begin
+    //Inmediato
+    lexAsm.Next;
+    if tokType = lexAsm.tnNumber then begin
+      if not TryStrToInt(lexAsm.GetToken, n) then begin
+        GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+        exit;
+      end;
       if (n>255) then begin
         GenErrorAsm(ER_EXPECT_BYTE);
         exit;
@@ -767,7 +819,7 @@ begin
     if pic.MsjError<>'' then begin
       GenErrorAsm(pic.MsjError);
     end;
-  end else if lexAsm.GetToken = '(' then begin
+  end else if tok = '(' then begin
     //Direccionamiento Indirecto: (indirect), (indirect,X) o (indirect),Y
     lexAsm.Next;
     if tokType = lexAsm.tnNumber then begin

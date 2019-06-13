@@ -5,7 +5,7 @@ unit Compiler_PIC16;
 interface
 uses
   Classes, SysUtils, lclProc, SynEditHighlighter, types, MisUtils, XpresBas,
-  XpresTypesPIC, XpresElementsPIC, P6502utils, Parser, ParserDirec,
+  XpresTypesPIC, XpresElementsPIC, P6502utils, CPUCore, Parser, ParserDirec,
   GenCodBas_PIC16, GenCod_PIC16, ParserDirec_PIC16, Globales,
   FormConfig {Por diseño, FormConfig, no debería accederse desde aquí};
 type
@@ -15,32 +15,29 @@ type
 
   TCompiler_PIC16 = class(TParserDirec)
   private   //Funciones básicas
-    function AddType(typName: string; srcPos: TSrcPos): TxpEleType;
-    function AddVariable(varName: string; eleTyp: TxpEleType; srcPos: TSrcPos
-      ): TxpEleVar;
-    procedure ArrayDeclaration(out itemTyp: TxpEleType; out nEle: integer);
     procedure array_high(const OpPtr: pointer);
     procedure array_low(const OpPtr: pointer);
-    procedure CompileTypeDeclar(IsInterface: boolean; typName: string = '');
-    function GetAdicVarDeclar(out IsBit: boolean): TAdicVarDec;
+    procedure CompileInlineBody(fun: TxpEleInlin);
+    procedure CompileTypeDeclar(elemLocat: TxpEleLocation; typName: string='');
+    procedure GetAdicVarDeclar(varType: TxpEleType; out aditVar: TAdicVarDec);
     procedure cInNewLine(lin: string);
     function CompileStructBody(GenCode: boolean): boolean;
     function CompileConditionalBody: boolean;
     function CompileNoConditionBody(GenCode: boolean): boolean;
     procedure CompileFOR;
     procedure CompileLastEnd;
-    procedure CompileProcHeader(out fun: TxpEleFun; ValidateDup: boolean = true);
+    function GetTypeDeclarSimple(): TxpEleType;
+    procedure ReadProcHeader(out procName: String; out retType: TxpEleType; out
+      srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt: Boolean);
+    procedure ReadInlineHeader(out procName: String; out retType: TxpEleType; out
+      srcPos: TSrcPos; out pars: TxpParInlinArray);
     function GetExpressionBool: boolean;
-    function getParamType: TxpEleType;
-    function GetTypeVarDeclar: TxpEleType;
+    function GetTypeDeclar(out decStyle: TTypDeclarStyle): TxpEleType;
     function IsUnit: boolean;
     procedure array_length(const OpPtr: pointer);
     procedure ProcCommentsNoExec;
     function StartOfSection: boolean;
     procedure ResetRAM;
-    procedure getListOfIdent(var itemList: TStringDynArray; out
-      srcPosArray: TSrcPosArray);
-    procedure CaptureDecParams(fun: TxpEleFun);
     procedure CompileIF;
     procedure CompileREPEAT;
     procedure CompileWHILE;
@@ -55,8 +52,9 @@ type
     procedure CompileProcBody(fun: TxpEleFun);
   private //Compilación de secciones
     procedure CompileGlobalConstDeclar;
-    procedure CompileVarDeclar(IsInterface: boolean = false);
-    procedure CompileProcDeclar(IsImplementation: boolean);
+    procedure CompileVarDeclar;
+    procedure CompileProcDeclar;
+    procedure CompileInlineDeclar(elemLocat: TxpEleLocation);
     procedure CompileInstruction;
     procedure CompileInstructionDummy;
     function OpenContextFrom(filePath: string): boolean;
@@ -88,15 +86,14 @@ procedure SetLanguage;
 
 implementation
 var
-  ER_NOT_IMPLEM_, ER_IDEN_EXPECT, ER_DUPLIC_IDEN, ER_INVAL_FLOAT: string;
+  ER_DUPLIC_IDEN, ER_NOT_IMPLEM_, ER_IDEN_EXPECT, ER_INVAL_FLOAT: string;
   ER_ERR_IN_NUMB, ER_NOTYPDEFNUM, ER_UNDEF_TYPE_: string;
   ER_INV_MAD_DEV, ER_EXP_VAR_IDE, ER_INV_MEMADDR, ER_BIT_VAR_REF: String;
-  ER_UNKNOWN_ID_: string;
+  ER_UNKNOWN_ID_, ER_DUPLIC_FUNC_, ER_EQU_EXPECTD : string;
   ER_IDE_CON_EXP, ER_NUM_ADD_EXP, ER_IDE_TYP_EXP, ER_SEM_COM_EXP: String;
   ER_EQU_COM_EXP, ER_END_EXPECTE, ER_EOF_END_EXP, ER_BOOL_EXPECT: String;
   ER_UNKN_STRUCT, ER_PROG_NAM_EX, ER_COMPIL_PROC, ER_CON_EXP_EXP: String;
-  ER_NOT_AFT_END, ER_ELS_UNEXPEC : String;
-  ER_INST_NEV_EXE, ER_ONLY_ONE_REG: String;
+  ER_NOT_AFT_END, ER_ELS_UNEXPEC, ER_INST_NEV_EXE : String;
   ER_VARIAB_EXPEC, ER_ONL_BYT_WORD, ER_ASIG_EXPECT: String;
   ER_FIL_NOFOUND, WA_UNUSED_CON_, WA_UNUSED_VAR_,WA_UNUSED_PRO_: String;
   MSG_RAM_USED, MSG_FLS_USED, ER_NOTYPDEF_NU, ER_ARR_SIZ_BIG: String;
@@ -105,7 +102,7 @@ var
 procedure SetLanguage;
 begin
   ParserDirec_PIC16.SetLanguage;
-{$I ..\language\tra_Parser.pas}
+  {$I ..\language\tra_Compiler.pas}
 end;
 procedure TCompiler_PIC16.cInNewLine(lin: string);
 //Se pasa a una nueva _Línea en el contexto de entrada
@@ -117,7 +114,7 @@ end;
 function TCompiler_PIC16.StartOfSection: boolean;
 begin
   Result := (cIn.tokL ='var') or (cIn.tokL ='const') or
-            (cIn.tokL ='type') or (cIn.tokL ='procedure');
+            (cIn.tokL ='type') or (cIn.tokL ='procedure') or (cIn.tokL ='inline');
 end;
 procedure TCompiler_PIC16.ResetRAM;
 {Reinicia el dispositivo, para empezar a escribir en la posición $000 de la FLASH, y
@@ -126,74 +123,6 @@ begin
   pic.iRam := 0;  //Ubica puntero al inicio.
   pic.ClearMemRAM;  //Pone las celdas como no usadas y elimina nombres.
   StartRegs;        //Limpia registros de trabajo, auxiliares, y de pila.
-end;
-procedure TCompiler_PIC16.getListOfIdent(var itemList: TStringDynArray; out srcPosArray: TSrcPosArray);
-{Lee una lista de identificadores separados por comas, hasta encontra un caracter distinto
-de coma. Si el primer elemento no es un identificador o si después de la coma no sigue un
-identificador, genera error.
-También devuelve una lista de las posiciones de los identificadores, en el código fuente.}
-var
-  item: String;
-  n: Integer;
-begin
-  setlength(srcPosArray,0 );
-  setlength(itemList, 0);  //hace espacio
-  repeat
-    ProcComments;
-    //ahora debe haber un identificador
-    if cIn.tokType <> tnIdentif then begin
-      GenError(ER_IDEN_EXPECT);
-      exit;
-    end;
-    //hay un identificador
-    item := cIn.tok;
-    //sgrega nombre de ítem
-    n := high(itemList)+1;
-    setlength(itemList, n+1);  //hace espacio
-    setlength(srcPosArray, n+1);  //hace espacio
-    itemList[n] := item;  //agrega nombre
-    srcPosArray[n] := cIn.ReadSrcPos;  //agrega ubicación de declaración
-    cIn.Next;  //lo toma identificador despues, de guardar ubicación
-    ProcComments;
-    if cIn.tok <> ',' then break; //sale
-    cIn.Next;  //toma la coma
-  until false;
-end;
-function TCompiler_PIC16.getParamType: TxpEleType;
-{Lee el tipo que acompaña a una declaración de parámetro de un procedimeinto.
-Es muy similar a GetTypeVarDeclaration (excepto porque aquí se verifican los tipos
-copias), y tal vez debería unificarse.}
-var
-  typName: String;
-  typ: TxpEleType;
-  ele: TxpElement;
-begin
-  ProcComments;
-  typName := cIn.tok;   //lee tipo de parámetro
-  //Primero verifica si es un tipo del sistema
-  typ := FindSysEleType(typName);  //tipos básicos
-  if typ <> nil then begin
-    //Es un tipo del sistema
-  end else begin
-    //No es un tipo delñ sistema, debe ser otro tipo
-    ele := TreeElems.FindFirst(typName);  //identifica elemento
-    if ele = nil then begin
-      //No identifica a este elemento
-      GenError('Unknown identifier: %s', [typName]);
-      exit(nil);
-    end;
-    if ele.idClass = eltType then begin
-      //Es un tipo
-      typ := TxpEleType(ele);
-      AddCallerTo(typ);   //lleva la cuenta
-      if typ.copyOf<>nil then typ := typ.copyOf;
-    end else begin
-      GenError(ER_IDE_TYP_EXP);
-      exit(nil);
-    end;
-  end;
-  cIn.Next;
-  Result := typ;
 end;
 procedure TCompiler_PIC16.ProcComments;
 {Procesa comentarios, directivas y bloques ASM. Los bloques ASM, se processan también
@@ -274,120 +203,6 @@ begin
   if not cIn.Eof then begin
     GenError(ER_NOT_AFT_END);
     exit;       //sale
-  end;
-end;
-function TCompiler_PIC16.AddVariable(varName: string; eleTyp: TxpEleType; srcPos: TSrcPos
-  ): TxpEleVar;
-{Crea un elemento variable y lo agrega en el nodo actual del árbol de sintaxis.
-Si no hay errores, devuelve la referencia a la variable. En caso contrario,
-devuelve NIL.
-Notar que este método, no asigna RAM a la variable. En una creación completa de
-variables, se debería llamar a CreateVarInRAM(), después de agregar la variable.}
-var
-  xvar: TxpEleVar;
-begin
-  //Inicia parámetros adicionales de declaración
-  xvar := CreateVar(varName, eleTyp);
-  xvar.srcDec := srcPos;  //Actualiza posición
-  Result := xvar;
-  if not TreeElems.AddElement(xvar) then begin
-    GenErrorPos(ER_DUPLIC_IDEN, [xvar.name], xvar.srcDec);
-    xvar.Destroy;   //Hay una variable creada
-    exit(nil);
-  end;
-end;
-function TCompiler_PIC16.AddType(typName: string; srcPos: TSrcPos): TxpEleType;
-{Crea un elemento tipo y lo agrega en el nodo actual del árbol de sintaxis.
-Si no hay errores, devuelve la referencia al tipo. En caso contrario,
-devuelve NIL.}
-var
-  xtyp: TxpEleType;
-begin
-  //Inicia parámetros adicionales de declaración
-  xtyp := CreateEleType(typName);
-  xtyp.srcDec := srcPos;  //Actualiza posición
-  Result := xtyp;
-  if not TreeElems.AddElement(xtyp) then begin
-    GenErrorPos(ER_DUPLIC_IDEN, [xtyp.name], xtyp.srcDec);
-    xtyp.Destroy;   //Hay una variable creada
-    exit(nil);
-  end;
-end;
-procedure TCompiler_PIC16.CaptureDecParams(fun: TxpEleFun);
-//Lee la declaración de parámetros de una función.
-var
-  typ: TxpEleType;
-  xvar: TxpEleVar;
-  IsRegister: Boolean;
-  itemList: TStringDynArray;
-  srcPosArray: TSrcPosArray;
-  i: Integer;
-begin
-  cIn.SkipWhites;
-  SetLength(itemList, 0);
-  if EOBlock or EOExpres or (cIn.tok = ':') then begin
-    //no tiene parámetros
-  end else begin
-    //Debe haber parámetros
-    if not CaptureTok('(') then exit;
-    cin.SkipWhites;
-    repeat
-      IsRegister := false;
-      if cIn.tokL = 'register' then begin
-        IsRegister := true;
-        cin.Next;
-        cin.SkipWhites;
-      end;
-      getListOfIdent(itemList, srcPosArray);
-      if HayError then begin  //precisa el error
-        GenError(ER_IDEN_EXPECT);
-        exit;
-      end;
-      if not CaptureTok(':') then exit;
-      typ := getParamType;  //lee tipo
-      if HayError then exit;
-      //Ya tiene los nombres y el tipo
-      //Crea el parámetro como una varaible local
-      for i:= 0 to high(itemList) do begin
-        //Crea los parámetros de la lista.
-        if IsRegister then begin
-          //Parámetro REGISTER. Solo puede haber uno
-          if high(itemList)>0 then begin
-            GenErrorPos(ER_ONLY_ONE_REG, [], srcPosArray[1]);
-            exit;
-          end;
-          {Crea como variable absoluta a una posición cualquiera porque esta variable,
-          no debería estar mapeada.}
-          xvar := AddVariable({fun.name + '_' + }itemList[i], typ, srcPosArray[i]);
-          xvar.IsParameter := true;  //Marca bandera
-          xvar.IsRegister := true;
-          //CreateVarInRAM(xvar);  //Crea la variable
-          if HayError then exit;
-        end else begin
-          //Parámetro normal
-          xvar := AddVariable({fun.name + '_' + }itemList[i], typ, srcPosArray[i]);
-          xvar.IsParameter := true;  //Marca bandera
-          xvar.IsRegister := false;
-          //CreateVarInRAM(xvar);  //Crea la variable
-          if HayError then exit;
-        end;
-        //Ahora ya tiene la variable
-        fun.CreateParam(itemList[i], typ, xvar);
-        if HayError then exit;
-      end;
-      //Busca delimitador
-      if cIn.tok = ';' then begin
-        cIn.Next;   //toma separador
-        cIn.SkipWhites;
-      end else begin
-        //no sigue separador de parámetros,
-        //debe terminar la lista de parámetros
-        //¿Verificar EOBlock or EOExpres ?
-        break;
-      end;
-    until false;
-    //busca paréntesis final
-    if not CaptureTok(')') then exit;
   end;
 end;
 function TCompiler_PIC16.CompileStructBody(GenCode: boolean): boolean;
@@ -605,7 +420,7 @@ procedure TCompiler_PIC16.CompileFOR;
 {Compila uan extructura WHILE}
 var
   l1: Word;
-  dg, LABEL1: Integer;
+  LABEL1: Integer;
   Op1, Op2: TOperand;
   opr1: TxpOperator;
   info: TIfInfo;
@@ -629,7 +444,8 @@ begin
   GetExpressionE(0);
   if HayError then exit;
   //Ya se tiene la asignación inicial
-  Oper(Op1, opr1, res);   //codifica asignación
+  Op2 := res;   //Copia porque la operación Oper() modificará res
+  Oper(Op1, opr1, Op2);   //codifica asignación
   if HayError then exit;
   if not CaptureStr('to') then exit;
   //Toma expresión Final
@@ -790,6 +606,12 @@ begin
   //Calcula tamaño
   fun.srcSize := pic.iRam - fun.adrr;
 end;
+procedure TCompiler_PIC16.CompileInlineBody(fun: TxpEleInlin);
+{Compila el cuerpo de un procedimiento INLINE.}
+begin
+  //Faltaría revisar la compilación para que se adecúe a la de un proc. Inline
+  CompileInstructionDummy;
+end;
 function TCompiler_PIC16.OpenContextFrom(filePath: string): boolean;
 {Abre un contexto con el archivo indicado. Si lo logra abrir, devuelve TRUE.}
 var
@@ -845,14 +667,9 @@ begin
     end;
     //Hasta aquí todo bien, crea la(s) constante(s).
     for i:= 0 to high(consNames) do begin
-      //crea constante
-      cons := CreateCons(consNames[i], res.Typ);
-      cons.srcDec := srcPosArray[i];  //guarda punto de declaración
-      if not TreeElems.AddElement(cons) then begin
-        GenErrorPos(ER_DUPLIC_IDEN, [cons.name], cons.srcDec);
-        cons.Destroy;   //hay una constante creada
-        exit;
-      end;
+      //Crea constante
+      cons := AddConstant(consNames[i], res.Typ, srcPosArray[i]);
+      if HayError then exit;
       res.CopyConsValTo(cons); //asigna valor
     end;
 //  end else if cIn.tok = ':' then begin
@@ -864,7 +681,7 @@ begin
   ProcComments;
   //puede salir con error
 end;
-function TCompiler_PIC16.GetAdicVarDeclar(out IsBit: boolean): TAdicVarDec;
+procedure TCompiler_PIC16.GetAdicVarDeclar(varType: TxpEleType; out aditVar: TAdicVarDec) ;
 {Verifica si lo que sigue es la sintaxis ABSOLUTE ... . Si esa así, procesa el texto,
 pone "IsAbs" en TRUE y actualiza los valores "absAddr" y "absBit". }
   function ReadAddres(tok: string): word;
@@ -890,107 +707,125 @@ pone "IsAbs" en TRUE y actualiza los valores "absAddr" y "absBit". }
       {%H-}exit;
     end;
   end;
-  function ReadAddresBit(tok: string): byte;
-  {Lee la parte del bit de una dirección de RAM a partir de una cadena numérica.
-  Puede generar error.}
-  var
-    n: Longint;
-  begin
-    if not TryStrToInt(tok, n) then begin
-      GenError(ER_INV_MEMADDR);
-      {%H-}exit;
-    end;
-    if (n<0) or (n>7) then begin
-      GenError(ER_INV_MEMADDR);
-      {%H-}exit;
-    end;
-    Result := n;   //no debe fallar
-  end;
 var
   xvar: TxpEleVar;
   n: integer;
   Op: TOperand;
 begin
-  Result.srcDec  := cIn.PosAct;  //Posición de inicio de posibles parámetros adic.
-  Result.isAbsol := false;       //Bandera
-  Result.absVar := nil;          //Por defecto
-  if (cIn.tokL <> 'absolute') and (cIn.tok <> '@') then begin
-    exit;  //no es variable absoluta
-  end;
-  //// Hay especificación de dirección absoluta ////
-  Result.isAbsol := true;    //marca bandera
-  cIn.Next;
-  ProcComments;
-  if cIn.tokType = tnNumber then begin
-    if (cIn.tok[1]<>'$') and ((pos('e', cIn.tok)<>0) or (pos('E', cIn.tok)<>0)) then begin
-      //La notación exponencial, no es válida.
-      GenError(ER_INV_MEMADDR);
-      exit;
-    end;
-    n := pos('.', cIn.tok);   //no debe fallar
-    if n=0 then begin
-      //Número entero sin parte decimal
-      Result.absAddr := ReadAddres(cIn.tok);
-      cIn.Next;  //Pasa con o sin error, porque esta rutina es "Pasa siempre."
-      //Puede que siga la parte de bit
-      if cIn.tok = '.' then begin
-        cIn.Next;
-        IsBit := true;  //Tiene parte de bit
-        Result.absBit := ReadAddresBit(cIn.tok);  //Parte decimal
+  aditVar.srcDec  := cIn.PosAct;  //Posición de inicio de posibles parámetros adic.
+  aditVar.isAbsol := false;       //Bandera
+  aditVar.absVar := nil;          //Por defecto
+  if (cIn.tokL = 'absolute') or (cIn.tok = '@') then begin
+    //// Hay especificación de dirección absoluta ////
+    aditVar.isAbsol := true;    //marca bandera
+    cIn.Next;
+    ProcComments;
+    if cIn.tokType = tnNumber then begin
+      if (cIn.tok[1]<>'$') and ((pos('e', cIn.tok)<>0) or (pos('E', cIn.tok)<>0)) then begin
+        //La notación exponencial, no es válida.
+        GenError(ER_INV_MEMADDR);
+        exit;
+      end;
+      n := pos('.', cIn.tok);   //no debe fallar
+      if n=0 then begin
+        //Número entero sin parte decimal
+        aditVar.absAddr := ReadAddres(cIn.tok);
         cIn.Next;  //Pasa con o sin error, porque esta rutina es "Pasa siempre."
       end else begin
-        IsBit := false;  //No tiene parte de bit
+        //Puede ser el formato <dirección>.<bit>, en un solo token, que es válido.
+        GenError('Syntax error.');
+        exit;
+      end;
+    end else if cIn.tokType = tnIdentif then begin
+      //Puede ser variable
+      GetOperandIdent(Op); //
+      if HayError then exit;
+      if Op.Sto <> stVariab then begin
+        GenError(ER_EXP_VAR_IDE);
+        cIn.Next;  //Pasa con o sin error, porque esta rutina es "Pasa siempre."
+        exit;
+      end;
+      //Mapeado a variable. Notar que puede ser una variable temporal, si se usa: <var_byte>.0
+      xvar := Op.rVar;
+      if Op.rVarBase=nil then begin
+        aditVar.absVar := Op.rVar;  //Guarda referencia
+      end else begin
+        {Es un caso como "<Variab.Base>.0", conviene devolver la referencia a <Variab.Base>,
+        en lugar de a la variable "<Variab.Base>.0", considerando que:
+        * GetOperandIdent() usa <Variab.Base>, para registrar la llamada.
+        * Esta referencia se usará luego para ver variables no usadas en
+          TCompiler.CompileLinkProgram().}
+        aditVar.absVar := Op.rVarBase;  //Guarda referencia
+      end;
+      //Ya tiene la variable en "xvar".
+      aditVar.absAddr := xvar.addr;  //debe ser absoluta
+      if aditVar.absAddr = ADRR_ERROR then begin
+        //No se puede obtener la dirección.
+        GenError('Cannot locate variable at: %s', [xvar.name]);
+  //      GenError('Internal Error: TxpEleVar.AbsAddr.');
+        exit;
+      end;
+    end else begin   //error
+      GenError(ER_NUM_ADD_EXP);
+      cIn.Next;    //pasa siempre
+      exit;
+    end;
+  end;
+  //Puede seguir una sección de inicialización: var: char = 'A';
+  if cIn.tok = '=' then begin
+    aditVar.hasInit := true;
+    cIn.Next;   //lo toma
+    ProcComments;
+    //Aquí debe seguir el valor inicial
+    GetExpressionE(0);
+    if HayError then exit;
+    if res.Sto <> stConst then begin
+      GenError(ER_CON_EXP_EXP);
+      exit;
+    end;
+    //Ya se tiene el valor constante para inicializar variable.
+    //Por ahora solo se permite inicializar arreglos.
+    if varType.catType = tctArray then begin
+      //Es un arreglo
+      if varType.refType<>typChar then begin
+        GenError('Only array of CHAR can be initialized.');
+        exit;
+      end;
+      //Aquí ya se sabe que es un arreglo de caracteres, y  hay que inicializar el arreglo.
+      if res.Typ = typChar then begin
+        //Caso especial. Se puede considerar un string
+        res.SetAsConst(typString);
+        res.valStr := chr(res.valInt);
+      end;
+      if res.Typ = typString then begin
+        aditVar.iniVal := res.Value;  //Asigna valor constante.
+        if varType.arrSize= -1 then begin
+          //Tamaño dinámico
+          varType.arrSize := length(res.Value.ValStr);   //actualiza tamaño de arreglo
+        end else begin
+          //Tamaño fijo
+          if varType.arrSize < length(res.Value.ValStr) then begin
+            GenError('Too long string to init array.');
+            //exit
+          end;
+        end;
+      end else begin
+        GenError('String literal expected.');
+        exit;
       end;
     end else begin
-      //Puede ser el formato <dirección>.<bit>, en un solo token, que es válido.
-      IsBit := true;  //Se deduce que tiene punto decimal
-      //Ya sabemos que tiene que ser decimal, con punto
-      Result.absAddr := ReadAddres(copy(cIn.tok, 1, n-1));
-      //Puede haber error
-      Result.absBit := ReadAddresBit(copy(cIn.tok, n+1, 100));  //Parte decimal
-      cIn.Next;  //Pasa con o sin error, porque esta rutina es "Pasa siempre."
+      aditVar.iniVal := res.Value;  //Asigna valor constante.
+      //GenError('Only arrays can be initialized.');
+      //exit;
     end;
-  end else if cIn.tokType = tnIdentif then begin
-    //Puede ser variable
-    GetOperandIdent(Op); //
-    if HayError then exit;
-    if Op.Sto <> stVariab then begin
-      GenError(ER_EXP_VAR_IDE);
-      cIn.Next;  //Pasa con o sin error, porque esta rutina es "Pasa siempre."
+  end else begin
+    //No hay asignación inicial.
+    aditVar.hasInit := false;
+    if (varType.catType = tctArray) and (varType.arrSize = -1) then begin
+      //Es un arreglo dinámico. Debió inicializarse.
+      GenError(ER_EQU_EXPECTD);
       exit;
     end;
-    //Mapeado a variable. Notar que puede ser una variable temporal, si se usa: <var_byte>.0
-    xvar := Op.rVar;
-    if Op.rVarBase=nil then begin
-      Result.absVar := Op.rVar;  //Guarda referencia
-    end else begin
-      {Es un caso como "<Variab.Base>.0", conviene devolver la referencia a <Variab.Base>,
-      en lugar de a la variable "<Variab.Base>.0", considerando que:
-      * GetOperandIdent() usa <Variab.Base>, para registrar la llamada.
-      * Esta referencia se usará luego para ver variables no usadas en
-        TCompiler.CompileLinkProgram().}
-      Result.absVar := Op.rVarBase;  //Guarda referencia
-    end;
-    //Ya tiene la variable en "xvar".
-    if xvar.typ.IsBitSize then begin //boolean o bit
-      IsBit := true;  //Es una dirección de bit
-      Result.absAddr := xvar.addr;  //debe ser absoluta
-      Result.absBit := xvar.adrBit.bit;
-    end else begin
-      //Es cualquier otra variable, que no sea bit. Se intentará
-      IsBit := false;  //Es una dirección normal (byte)
-      Result.absAddr := xvar.addr;  //debe ser absoluta
-    end;
-    if Result.absAddr = ADRR_ERROR then begin
-      //No se puede obtener la dirección.
-      GenError('Cannot locate variable at: %s', [xvar.name]);
-//      GenError('Internal Error: TxpEleVar.AbsAddr.');
-      exit;
-    end;
-  end else begin   //error
-    GenError(ER_NUM_ADD_EXP);
-    cIn.Next;    //pasa siempre
-    exit;
   end;
 end;
 procedure TCompiler_PIC16.array_length(const OpPtr: pointer);
@@ -1048,93 +883,277 @@ begin
     GenError('Syntax error.');
   end;
 end;
-procedure TCompiler_PIC16.ArrayDeclaration(out itemTyp: TxpEleType; out nEle: integer);
-{Compila una declaración de arreglo.}
-var
-  varType: String;
-begin
-  cIn.Next;  //lo toma
-  cIn.SkipWhites;
-  if not CaptureTok('[') then exit;
-  cIn.SkipWhites;
-  if cIn.tokType = tnNumber then begin
-    //Intenta obtener valor
-    if not TryStrToInt(cIn.tok, nEle) then begin
-      //Podría fallar si es un número muy grande o exponencial
-      GenError(ER_ERR_IN_NUMB);
+function TCompiler_PIC16.GetTypeDeclar(out decStyle: TTypDeclarStyle): TxpEleType;
+{Extrae la sección de declaración de tipo (De una variable, parámetro o de una definición
+de tipo). Se debe llamar justo cuando empieza esta declración de tipo. Se puede usar en
+los siguientes casos;
+
+VAR variable: <DECLARACIÓN DE TIPO>;
+
+PROCEDURE nombre(param: <DECLARACIÓN DE TIPO>);
+
+TYPE nombre_tipo = <DECLARACIÓN DE TIPO>;
+
+El parámetro "decStyle" devuelve el estilo de declaración (Ver comentario de
+TTypDeclarStyle).
+
+Si la declaración es de estilo:
+
+ttdDirect -> Devuelve la referencia al tipo, directamente. No crea otro tipo
+             Por ejemplo, la siguiente declaración:
+               a: Alguntipo;
+             Devuelve una referencia al tipo "Alguntipo".
+
+ttdDeclar -> Crea un tipo nuevo con la definición del nuevo tipo especificado, y devuelve
+             la referencia a ese tipo, pero no lo agrega al arbol de sintaxis, porque
+             espera validaciones posteriores.
+             Por ejemplo, la siguiente declaración.
+               a: Array[0..5] of char;
+             Creará un tipo nuevo con la definición: "array[0..5] of char".
+             El tipo nuevo devuelto tiene nombre vacío y debe ser actualizado luego.
+
+Entre "decStyle" y el "catType" del tipo devuelto (Ver comentario de TxpCatType),
+debería quedar completamente especificada la declaración del tipo.
+
+Si encuentra algún problema, genera error, y devuelve NIL.
+}
+  function ReadSizeInBrackets: integer;
+  {Lee el tamaño de un arreglo especificado entre corchetes: []. Si no se
+  especifica el tamaño. Devuelve -1.}
+  begin
+    //Declaración simplificada: []<tipo>
+    cIn.Next; //Toma '['. Se asume que ya se identificó
+    ProcComments;
+    if cIn.tok = ']' then begin
+      //Declaración corta de arreglo sin indicar el tamaño: []byte ;
+      cIn.Next;
+      exit(-1);  //Indica que es dinámico.
+    end else begin
+      //Se espera tamaño de arreglo
+      //Debe seguir una expresión constante, que no genere código
+      GetExpressionE(0);
+      if HayError then exit(0);
+      if res.Sto <> stConst then begin
+        GenError(ER_CON_EXP_EXP);
+        exit(0);
+      end;
+      //Límites físicos predefinidos
+      if res.Typ <> typByte then begin
+        GenError('Only byte type allowed here.');
+        exit(0);
+      end;
+      if res.valInt<0 then begin
+        GenError(ER_INV_ARR_SIZ);
+        exit(0);
+      end;
+      if res.valInt>$FF then begin
+        //Límite físico definido
+        GenError(ER_ARR_SIZ_BIG);
+        exit;
+      end;
+      //Ya se tiene el tamaño del arreglo, se sigue con la declaración.
+      if not CaptureTok(']') then exit(0);  //toma "]"
+      exit(res.valInt);  //Guarda número de elementos.
+    end;
+  end;
+  function ArrayDeclaration(const srcpos: Tsrcpos): TxpEleType;
+  {Procesa la declaración de un tipo arreglo y devuelve el tipo, ya creado para su
+  validación. No agrega el tipo al árbol de sintaxis.
+  Se asume que ya se ha identificado el inicio de la declaración de un arreglo,
+  sea en su forma larga: "ARRAY[] OF BYTE" o en su forma corta: []BYTE }
+  var
+    decStyle: TTypDeclarStyle;
+    itemTyp, xtyp: TxpEleType;
+    nElem: Integer;
+  begin
+    if cIn.tok = '[' then begin
+      //Declaración corta
+      nElem := ReadSizeInBrackets();  //Lee tamaño
+      if HayError then exit;
+    end else begin
+      //Declaración larga: ARRAY[tamaño] OF <tipo>
+      cIn.Next; //Toma 'ARRAY'. Se asume que ya se identificó.
+      ProcComments;
+      if cIn.tok = '[' then begin  //Tamaño espefificado o puede ser []
+        nElem := ReadSizeInBrackets();  //Lee tamaño
+        if HayError then exit;
+      end else begin
+        //No se especifica tamaño. Puede ser la forma corta: ARRAY OF
+        nElem := -1;
+      end;
+      ProcComments;
+      if not CaptureStr('of') then exit(nil);
+    end;
+    //Lee el tipo que sigue. Llamada RECURSIVA.
+    itemTyp := GetTypeDeclar(decStyle);
+    if HayError then exit(nil);
+    if decStyle = ttdDeclar then begin
+      //ARRAY[] of (Otra declaración). No se soporta por ahora.
+      GenError('Too complex type declaration');
       exit;
     end;
-    cIn.Next;  //Pasa con o sin error, porque esta rutina es "Pasa siempre."
-    //Verifica si hay memoria para este arreglo
-
-
-//  end else if cIn.tokType = tnIdentif then begin
-//    //Puede ser variable
-//    GetOperandIdent(Op);
-//    if HayError then exit;
-//    if Op.catOp <> stVariab then begin
-//      GenError(ER_EXP_VAR_IDE);
-//      cIn.Next;  //Pasa con o sin error, porque esta rutina es "Pasa siempre."
-//      exit;
-//    end;
-//    //Es variable. Notar que puede ser una variable temporal, si se usa: <var_byte>.0
-//    xvar := Op.rVar;
-//    //Ya tiene la variable en "xvar".
-//    if xvar.typ.IsSizeBit then begin //boolean o bit
-//      IsBit := true;  //Es una dirección de bit
-//      Result.absAddr := xvar.AbsAddr;  //debe ser absoluta
-//      Result.absBit := xvar.adrBit.bit;
-//    end else begin
-//      IsBit := false;  //Es una dirección normal (byte)
-//      Result.absAddr := xvar.AbsAddr;  //debe ser absoluta
-//    end;
-//    if Result.absAddr = ADRR_ERROR then begin
-//      //No se implemento el tipo. No debería pasar.
-//      GenError('Internal Error: TxpEleVar.AbsAddr.');
-//      exit;
-//    end;
-  end else begin   //error
-    GenError(ER_INV_ARR_SIZ);
-    cIn.Next;    //pasa siempre
-    exit;
+    if itemTyp.arrSize = -1 then begin  //Sin tamaño
+      //ARRAY[] OF ARRAY[] OF ... No se soporta por ahora.
+      GenError('Dynamic array not allowed here.');
+      exit(nil);
+    end;
+    //Se supone que ahora solo tenemos un tipo simple en "itemTyp".
+    //Ya se tiene la información para crear un nuevo tipo array
+    xtyp := CreateEleType('');  //Crea sin nombre por ahora
+    if HayError then exit(nil);     //Sale para ver otros errores
+    xtyp.srcDec   := srcPos;
+    xtyp.catType  := tctArray;  //Tipo arreglo
+    xtyp.arrSize  := nElem;      //Número de ítems
+    xtyp.refType  := itemTyp;   //Tipo de dato
+    //Crea campos comunes del arreglo
+    xtyp.CreateField('length', @array_length);
+    xtyp.CreateField('high', @array_high);
+    xtyp.CreateField('low', @array_low);
+    //Campos que dependen del tipo
+    if itemTyp.OnGetItem=nil then begin
+      GenError('Cannot declare array of type: %s', [itemTyp.name]);
+    end;
+    xtyp.CreateField('item', itemTyp.OnGetItem);
+    if itemTyp.OnClearItems <> nil then begin
+      xtyp.CreateField('clear'  , itemTyp.OnClearItems);
+    end;
+    Result := xtyp;
   end;
-  if not CaptureTok(']') then exit;
-  //Ya se tiene el tamaño del arreglo
-  cIn.SkipWhites;
-  if not CaptureStr('of') then exit;
-  cIn.SkipWhites;
-  if (cIn.tokType <> tnType) then begin
+  function PointerDeclaration(const srcpos: TSrcPos): TxpEleType;
+  {Procesa la declaración de un tipo puntero y devuelve el tipo, ya creado para su
+  validación.
+  Se asume que ya se ha identificado el inicio de la declaración de un puntero,
+  sea en su forma larga: "POINTER TO BYTE" o en su forma corta: ^BYTE }
+  var
+    reftyp, xtyp: TxpEleType;
+  begin
+    if cIn.tok = '^' then begin
+      //Declaración corta
+      cIn.Next;  //Toma '^'
+    end else begin
+      //Declaración larga: POINTER TO <tipo>
+      cIn.Next; //Toma 'POINTER'. Se asume que ya se identificó.
+      ProcComments;
+      if not CaptureStr('to') then exit;
+    end;
+    //Por ahora solo permitiremos identificadores de tipos
+    reftyp := FindSysEleType(cIn.tok); //Busca elemento
+    if reftyp = nil then begin
+      //No es un tipo del sistema, pero puede ser un tipo prdefinido
+      reftyp := TreeElems.FindType(cIn.tok); //Busca elemento
+      if reftyp = nil then begin
+        GenError('Expected a type identifier.');
+        exit;
+      end;
+    end;
+    //Encontró un tipo
+    cIn.Next;   //lo toma
+    xtyp := CreateEleType('');  //Crea sin nombre por ahora
+    if HayError then exit;       //Sale para ver otros errores
+    xtyp.srcDec := srcPos;
+    xtyp.catType := tctPointer;  //Tipo puntero
+    xtyp.refType := reftyp;      //El tipo a donde apunta
+    //Fija operaciones para la aritmética del puntero
+    DefPointerArithmetic(xtyp);
+    xtyp.CreateUnaryPostOperator('^',6,'deref', @ROU_derefPointer);  //dereferencia
+    Result := xtyp;
+  end;
+var
+  typName: String;
+  typ: TxpEleType;
+  ele: TxpElement;
+  srcPos: TSrcPos;
+begin
+  Result := nil;
+  ProcComments;
+  //Analiza el tipo declarado
+  srcPos := cIn.ReadSrcPos;  //Inicio de declaración
+  if (cIn.tokType = tnType) then begin
+    //Caso normal. Es un tipo del sistema
+    typName := cIn.tok;
+    typ := FindSysEleType(typName); //Busca elemento
+    if typ = nil then begin
+      //Esto no debería pasar, porque el lexer indica que es un tipo del sistema.
+      GenError(ER_NOT_IMPLEM_, [typName]);
+      exit(nil);
+    end;
+    //Encontró al tipo del sistema
+    cIn.Next;   //lo toma
+    decStyle := ttdDirect;  //Es directo
+    //El "catType" se puede leer del mismo tipo
+  end else if (cIn.tokL = 'array') or (cIn.tok = '[') then begin
+    //Es declaración de arreglo
+    decStyle := ttdDeclar;  //Es declaración elaborada
+    typ := ArrayDeclaration(srcpos);
+    if HayError then exit(nil);     //Sale para ver otros errores
+  end else if (cIn.tokL = 'pointer') or (cIn.tok = '^') then begin
+    //Es declaración de puntero
+    decStyle := ttdDeclar;  //Es declaración elaborada
+    typ := PointerDeclaration(srcpos);
+    if HayError then exit(nil);     //Sale para ver otros errores
+  end else if cIn.tokType = tnIdentif then begin
+    //Es un identificador de tipo
+    typName := cIn.tok;
+    decStyle := ttdDirect;  //Es directo
+    {Se pensó usar GetOperandIdent(), para identificar al tipo, pero no está preparado
+    para procesar tipos y no se espera tanta flexibilidad. Así que se hace "a mano".}
+    ele := TreeElems.FindFirst(typName);
+    if ele = nil then begin
+      //No identifica a este elemento
+      GenError('Unknown identifier: %s', [typName]);
+      exit(nil);
+    end;
+    if ele.idClass = eltType then begin
+      //Es un tipo
+      cIn.Next;   //toma identificador
+      typ := TxpEleType(ele);
+      AddCallerTo(typ);   //lleva la cuenta
+      if typ.copyOf<>nil then typ := typ.copyOf;  {Apunta al tipo copia. Esto es útil para
+                     lograr una mejor compatibilidad cuando se usan Tipos en parámetros de
+                     procedimientos.}
+    end else begin
+      GenError(ER_IDE_TYP_EXP);
+      exit(nil);
+    end;
+  end else begin
     GenError(ER_IDE_TYP_EXP);
-    exit;
+    exit(nil);
   end;
-  varType := cIn.tok;   //lee tipo
-  cIn.Next;
-  cIn.SkipWhites;
-  //Valida el tipo
-  itemTyp := FindSysEleType(varType);
-  if itemTyp = nil then begin
-    GenError(ER_UNDEF_TYPE_, [varType]);
-    exit;
-  end;
-  if (nEle<0) or (nEle>$FF) then begin
-    //Límite físico
-    GenError(ER_ARR_SIZ_BIG);
-    exit;
-  end;
-  //Ya se tiene el tipo
-  //¿Y si es bit?
-//  totSize := nEle * itemTyp.size;  //tamaño en bytes
-
+  {No se capturan delimitadores aquí porque la declaración de tipos, en un contexto más
+  general, puede ser seguida de una inicializaicón.}
+  //if not CaptureDelExpres then exit(nil);
+  //ProcComments;
+  exit(typ);
+  { TODO : Se podría modificar el comportamiento de esta rutina para que haga ya
+  la validación de la existencia de tipo (como se hace en CompileVarDeclar), de
+  modo que, solo devuelva decStyle en "ttdDeclar" cuando la definición de tipo
+  no existe (no hay otra equivalente). Algo similar a como se hace en TGenCod.fun_Addr()}
 end;
-procedure TCompiler_PIC16.CompileTypeDeclar(IsInterface: boolean; typName: string = '');
+function TCompiler_PIC16.GetTypeDeclarSimple(): TxpEleType;
+{Similar a GetTypeDeclar(), pero solo permite la referencia a tipos simples. No permite la
+declaración de nuevos tipos, como: ARRAY OF ...}
+var
+  decStyle: TTypDeclarStyle;
+begin
+  Result := GetTypeDeclar(decStyle);  //lee tipo
+  if HayError then exit;
+  if decStyle = ttdDeclar then begin
+    //No se permiten declaraciones elaboradas aquí.
+    GenError('Only simple types expected here.');
+    Result.Destroy;  //Se destruye el nuevo tipo
+    Result := nil;
+  end;
+end;
+procedure TCompiler_PIC16.CompileTypeDeclar(elemLocat: TxpEleLocation; typName: string = '');
 {Compila la sección de declaración de un tipo, y genera un elemento TxpEleType, en el
-árbol de sintaxis.
+árbol de sintaxis:  TYPE sometype = <declaration>;
 Si se especifica typName, se obvia la extracción de la parte " nombreTipo = ", y se
 toma el nombre indicado.}
 var
-  etyp, systyp, itemTyp, reftyp: TxpEleType;
+  etyp, reftyp: TxpEleType;
   srcpos: TSrcPos;
-  nEle: integer;
+  catType: TxpCatType;
+  decStyle: TTypDeclarStyle;
 begin
   ProcComments;
   if cIn.tokType <> tnIdentif then begin
@@ -1147,160 +1166,74 @@ begin
   cIn.Next;
   ProcComments;
   if not CaptureTok('=') then exit;
-  ProcComments;
-  //Analiza el tipo declarado
-  if (cIn.tokType = tnType) then begin
-    //Caso normal. Es un tipo del sistema
-    systyp := FindSysEleType(cIn.tok); //Busca elemento
-    if systyp = nil then begin
-      //Esto no debería pasar, porque el lexer indica que es un tipo del sistema.
-      GenError(ER_NOT_IMPLEM_, [typName]);
-      exit;
-    end;
-    //Encontró al tipo del sistema
-    cIn.Next;   //lo toma
-    etyp := AddType(typName, srcpos);
+  etyp := GetTypeDeclar(decStyle);
+  if HayError then exit;
+  //Analiza la declaración
+  if decStyle = ttdDirect then begin
+    //Es un tipo referenciado directamente. Algo como TYPE fool = byte;
+    reftyp := etyp;  //Referencia al tipo { TODO : ¿Y si el tipo es ya una copia? }
+    //Para este caso, nosotros creamos un tipo nuevo, en  modo copia.
+    etyp := CreateEleType(typName);
     if HayError then exit;        //Sale para ver otros errores
     {Crea la copia del tipo del sistema, que básicamente es el mismo tipo, solo que
     con otro nombre y que además, ahora, está en el árbol de sintaxis, por lo tanto
     tiene otras reglas de alcance.}
-    etyp.copyOf := systyp;  //Indica que es una copia
-    etyp.catType := systyp.catType; //tctAtomic. No debería ser necesario
-    etyp.InInterface := IsInterface; //No debería ser necesario
-  end else if cIn.tokL = 'array' then begin
-    //Es un arreglo
-    ArrayDeclaration(itemTyp, nEle);
-    if HayError then exit;        //Sale para ver otros errores
-    //Es una declaración de arreglo
-    etyp := AddType(typName, srcpos);
-    if HayError then exit;     //Sale para ver otros errores
-    etyp.catType := tctArray;  //Tipo arreglo
-    etyp.arrSize := nEle;      //Número de ítems
-    etyp.refType := itemTyp;   //Tipo de dato
-    etyp.InInterface := IsInterface; //No debería ser necesario
-    //Crea campos comunes del arreglo
-    etyp.CreateField('length', @array_length);
-    etyp.CreateField('high', @array_high);
-    etyp.CreateField('low', @array_low);
-    //Campos que dependen del tipo
-    if itemTyp.OnGetItem=nil then begin
-      GenError('Cannot declare array of type: %s', [itemTyp.name]);
-    end;
-    etyp.CreateField('item', itemTyp.OnGetItem);
-    if itemTyp.OnClearItems <> nil then begin
-      etyp.CreateField('clear'  , itemTyp.OnClearItems);
-    end;
-  end else if cIn.tok = '^' then begin
-    //Es un puntero
-    cIn.Next;
-    //Por ahora solo permitiremos identificadores de tipos
-    reftyp := FindSysEleType(cIn.tok); //Busca elemento
-    if reftyp = nil then begin
-      //No es un tipo del sistema, pero puede ser un tipo prdefinido
-      reftyp := TreeElems.FindType(cIn.tok); //Busca elemento
-      if reftyp = nil then begin
-        GenError('Expected a type identifier.', [typName]);
-        exit;
-      end;
-    end;
-    //Encontró un tipo
-    cIn.Next;   //lo toma
-    etyp := AddType(typName, srcpos);  //Crae el elemento tipo
-    if HayError then exit;       //Sale para ver otros errores
-    etyp.catType := tctPointer;  //Tipo puntero
-    etyp.refType := reftyp;      //El tipo a donde apunta
-    etyp.InInterface := IsInterface; //No debería ser necesario
-    //Fija operaciones para la aritmética del puntero
-    DefPointerArithmetic(etyp);
-    etyp.CreateUnaryPostOperator('^',6,'deref', @ROU_derefPointer);  //dereferencia
-
+    etyp.copyOf := reftyp;        //Indica que es una copia
+    etyp.catType := reftyp.catType; //No debería ser necesario si se maneja bien los tipos copia.
+    etyp.srcDec := srcpos;
+    etyp.location := elemLocat;   //Ubicación del tipo (Interface/Implementation/...)
   end else begin
-    GenError(ER_IDE_TYP_EXP);
+    //Es una declaración elaborada de tipo. Algo como TYPE fool = array[] of ...
+    //Se supone que ya el tipo fue creado. Solo queda verificarlo y agregarlo.
+    etyp.name := typName;  //El tipo se creó sin nombre.
+    etyp.srcDec := srcpos;
+    etyp.location := elemLocat;   //Ubicación del tipo (Interface/Implementation/...)
+  end;
+  //Validación de duplicidad e inclusión en el árbol de sintaxis.
+  if etyp.ExistsIn(TreeElems.curNode.elements) then begin
+    GenErrorPos(ER_DUPLIC_IDEN, [etyp.name], etyp.srcDec);
+    etyp.Destroy;   //Hay una variable creada
     exit;
   end;
-
+  TreeElems.AddElement(etyp);
   if not CaptureDelExpres then exit;
   ProcComments;
-  //puede salir con error
 end;
-function TCompiler_PIC16.GetTypeVarDeclar: TxpEleType;
-{Extrae la sección de tipo de la declaración de una variable, y devuelve la referencia
-al elemento TxpEleType correspondiente.
-Si encuentra algún problema, genera error, y devuelve NIL.
-Todas las variables y constantes tienen un tipo asociado.
-
-* En los casos de tipos simples como: bit, byte o word, se devuelve la referencia, al
-tipo del sistema, almacenado en "listTypSys":
-VAR
-  a, b: byte;
-  c: bit;
-
-* En los casos de tipos definidos en la declaración, se crea una nueva definición de tipo
-y se agrega al árbol de sintaxis:
-VAR
-  a, b: array[0..5] of char;  //Se crea nuevo tipo: "array[0..5] of char"
-
-* Para los casos de tipos con nombre, simplemente se devuelve la referencia al tipo que
-debe estar creado en el árbol de sintaxis:
-VAR
-  a, b: MiTipo;
-}
-var
-  systyp: TxpEleType;
-  typName: String;
-  typ: TxpEleType;
-  ele: TxpElement;
-begin
-  Result := nil;
-  ProcComments;
-  typName := cIn.tok;   //Nombre de tipo
-  //Primero verifica si es un tipo del sistema
-  systyp := FindSysEleType(typName);  //tipos básicos
-  if systyp<>nil then begin
-    //Caso normal. Es un tipo del sistema
-    cIn.Next;   //lo toma
-    ProcComments;
-    exit(systyp);  //devuelve la referencia
-  end else if cIn.tokType = tnIdentif then begin
-    //Puede ser identificador de tipo
-    {Se pensó usar GetOperandIdent(), para identificar al tipo, pero no está preparado
-    para procesar tipos y no se espera tanta flexibilidad. Así que se hace "a mano".}
-    ele := TreeElems.FindFirst(cIn.tok);
-    if ele = nil then begin
-      //No identifica a este elemento
-      GenError('Unknown identifier: %s', [cIn.tok]);
-      exit(nil);
-    end;
-    if ele.idClass = eltType then begin
-      typ := TxpEleType(ele);
-      AddCallerTo(typ);   //lleva la cuenta
-      cIn.Next;   //lo toma
-      ProcComments;
-      exit(typ);
-    end else begin
-      GenError(ER_IDE_TYP_EXP);
-      exit(nil);
-    end;
-//  end else if cIn.tokL = 'array' then begin
-//    //Es un arreglo
-//    ArrayDeclaration(itemTyp, nEle);
-//    {%H-}exit;  //puede salir con error
-  end else begin
-    GenError(ER_IDE_TYP_EXP);
-    exit(nil);
-  end;
-end;
-procedure TCompiler_PIC16.CompileVarDeclar(IsInterface: boolean = false);
+procedure TCompiler_PIC16.CompileVarDeclar;
 {Compila la declaración de variables en el nodo actual.
 "IsInterface", indica el valor que se pondrá al as variables, en la bandera "IsInterface" }
+  function GenTypeName(const xtyp: TxpEleType; const baseName: string): string;
+  {Genera un nombre para un tipo de acuerdo a su definición. Se supone que no es un tipo
+  "atomic".
+  Se generan nombres representativos, para poder luego verificar la existencia de tipos
+  compatibles. Así por ejemplo si se crea un ARRAY OF char y luego se crea otro ARRAY OF
+  char, se preferirá usar el tipo ya creado que además es compatible.}
+  begin
+    //Genera nombre con caracter inválido para que no se pueda confundir con los que declara el usuario.
+    case xtyp.catType of
+    tctAtomic : //caso inútil
+       exit(xtyp.name);
+    tctArray  :  //Arreglo de algo
+      exit('arr-' + xtyp.refType.name);
+    tctPointer:  //Puntero a algo
+      exit('ptr-' + xtyp.refType.name);
+    tctObject :  {Objeto. No se da un nombre fijo porque los objetos son muy variables. Podría
+                  intentarse con obj-<tipos de campos>, pero podría ser muy largo y poco útil
+                  para buscar compatibilidades de tipo}
+      exit('obj-' + baseName); //Caso particular
+    else  //Solo pasaría cuando hay ampliaciones
+      exit('???-' + baseName);
+    end;
+  end;
 var
   varNames: array of string;  //nombre de variables
-  IsBit: Boolean;
   srcPosArray: TSrcPosArray;
   i: Integer;
   xvar: TxpEleVar;
   adicVarDec: TAdicVarDec;
-  typEleDec: TxpEleType;
+  xtyp: TxpEleType;
+  decStyle: TTypDeclarStyle;
+  sametype: TxpElement;
 begin
   SetLength(varNames, 0);
   //Procesa variables a,b,c : int;
@@ -1314,24 +1247,39 @@ begin
     //Debe seguir, el tipo de la variable
     cIn.Next;  //lo toma
     ProcComments;
-    //Lee el tipo de la variable
-    typEleDec := GetTypeVarDeclar;
-    //Lee información aicional de la declaración (ABSOLUTE)
-    adicVarDec := GetAdicVarDeclar(IsBit);
-    if HayError then exit;
-    if adicVarDec.isAbsol then begin  //valida tamaño
-      //Es una declaración ABSOLUTE
-      if typEleDec.IsBitSize and (not Isbit) then begin
-        //Se esperaba un bit, en el ABSOLUTE.
-        GenError(ER_INV_MEMADDR);
+    //Lee el tipo de la variable.
+    xtyp := GetTypeDeclar(decStyle);
+    if HayError then exit;;
+    xtyp.location := curLocation;
+    if decStyle = ttdDirect then begin
+      //Tipo directo. No se ha creado ningún tipo nuevo.
+    end else if decStyle = ttdDeclar then begin
+      //Se ha creado un tipo nuevo. Verifica y agrega.
+      xtyp.name := GenTypeName(xtyp, varNames[0]);
+      sametype := TreeElems.FindFirst(xtyp.name);
+      if (sametype<>nil) and (sametype.idClass = eltType) then begin  //La 2da condición no debería ser necesaria.
+        {El tipo ya existe (con esa misma estructura y en ese alcance), así que mejor
+        pasamos a reutilizar ese tipo. Esta reutilización de tipos evita la creación de
+        múltiples tipos con la misma definición.}
+        xtyp.Destroy;
+        xtyp := TxpEleType(sametype);
+        //"sametype" ya está en el árbol de sintaxis.
+      end else begin
+        //Es un tipo nuevo.
+        xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
+        TreeElems.AddElement(xtyp); { TODO : Comviene agregarlo en este contexto. ¿No sería mejor en la raiz para que sea accesible desde otros espacios? }
       end;
-      if not typEleDec.IsBitSize and IsBit then begin
-        {En realidad se podría aceptar posicionar un byte en una variable bit,
-        posicionándolo en su byte contenedor.}
-        GenError(ER_INV_MEMADDR);
-      end;
+    end else begin
+      //No hay otra opción
+      GenError(ER_NOT_IMPLEM_, ['']);
     end;
+    //Aquí ya se tiene el tipo creado y en el árbol de sintaxis
+    //Lee información aicional de la declaración (ABSOLUTE)
+    ProcComments;
+    GetAdicVarDeclar(xtyp, adicVarDec);
     if HayError then exit;
+    //Verifica si hay asignación de valor inicial.
+    ProcComments;
     {Elimina la llamada agregada a la variable, porque se van a agregar llamadas más
     específicas desde la(s) varaible(s) declaradas.}
     if adicVarDec.absVar<>nil then begin
@@ -1339,10 +1287,10 @@ begin
     end;
     //Reserva espacio para las variables
     for i := 0 to high(varNames) do begin
-      xvar := AddVariable(varNames[i], typEleDec, srcPosArray[i]);
+      xvar := AddVariable(varNames[i], xtyp, srcPosArray[i]);
       if HayError then break;        //Sale para ver otros errores
       xvar.adicPar := adicVarDec;    //Actualiza propiedades adicionales
-      xvar.InInterface := IsInterface;  //Actualiza bandera
+      xvar.location := curLocation;  //Actualiza bandera
       {Técnicamente, no sería necesario, asignar RAM a la variable aquí (y así se
       optimizaría), porque este método, solo se ejecuta en la primera pasada, y no
       es vital tener las referencias a memoria, en esta pasada.
@@ -1364,15 +1312,80 @@ begin
   ProcComments;
   //puede salir con error
 end;
-procedure TCompiler_PIC16.CompileProcHeader(out fun: TxpEleFun; ValidateDup: boolean = true);
+procedure TCompiler_PIC16.ReadProcHeader(out procName: String; out retType: TxpEleType;
+  out srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt: Boolean);
 {Hace el procesamiento del encabezado de la declaración de una función/procedimiento.
 Devuelve la referencia al objeto TxpEleFun creado, en "fun".
 Conviene separar el procesamiento del enzabezado, para poder usar esta rutina, también,
 en el procesamiento de unidades.}
-var
-  srcPos: TSrcPos;
-  procName: String;
-  typ   : TxpEleType;
+  procedure ReadFunctionParams(out funPars: TxpParFuncArray);
+  //Lee la declaración de parámetros de una función.
+  const
+    BLOCK_SIZE = 10;  //Tamaño de bloque.
+  var
+    typ: TxpEleType;
+    IsRegister: TxpRegType;
+    itemList: TStringDynArray;
+    srcPosArray: TSrcPosArray;
+    i, curSize, n: Integer;
+  begin
+    cIn.SkipWhites;
+    if EOBlock or EOExpres or (cIn.tok = ':') then begin
+      //No tiene parámetros
+      setlength(funPars, 0);
+    end else begin
+      //Debe haber parámetros. Prepara espacio para leer.
+      curSize := BLOCK_SIZE;    //Tamaño inicial de bloque
+      setlength(funPars, curSize);  //Tamaño inicial
+      n := 0;
+      //Inicia lectura
+      if not CaptureTok('(') then exit;
+      cin.SkipWhites;
+      repeat
+        IsRegister := regNone;
+        if cIn.tokL = 'register' then begin
+          IsRegister := regA;  //Asumimos que es A
+          cin.Next;
+          cin.SkipWhites;
+        end;
+        getListOfIdent(itemList, srcPosArray);
+        if HayError then begin  //precisa el error
+          GenError(ER_IDEN_EXPECT);
+          exit;
+        end;
+        if not CaptureTok(':') then exit;
+        typ := GetTypeDeclarSimple;  //lee tipo
+        if HayError then exit;
+        //Ya tiene los datos de los parámetros
+        for i:= 0 to high(itemList) do begin
+          funPars[n].name  := itemList[i];
+          funPars[n].srcPos:= srcPosArray[i];
+          funPars[n].typ   := typ;
+          funPars[n].reg   := IsRegister;
+          //Prepara siguiente lectura
+          inc(n);
+          if n >= curSize then begin
+            curSize += BLOCK_SIZE;   //Incrementa tamaño en bloque
+            setlength(funPars, curSize);  //hace espacio en bloque
+          end;
+        end;
+        //Busca delimitador
+        if cIn.tok = ';' then begin
+          cIn.Next;   //toma separador
+          cIn.SkipWhites;
+        end else begin
+          //no sigue separador de parámetros,
+          //debe terminar la lista de parámetros
+          //¿Verificar EOBlock or EOExpres ?
+          break;
+        end;
+      until false;
+      //busca paréntesis final
+      if not CaptureTok(')') then exit;
+      //Asigna tamaño final
+      setlength(funPars, n);
+    end;
+  end;
 begin
   //Toma información de ubicación, al inicio del procedimiento
   cIn.SkipWhites;
@@ -1382,103 +1395,245 @@ begin
     GenError(ER_IDEN_EXPECT);
     exit;
   end;
-  //hay un identificador
+  //Lee nombre de función
   procName := cIn.tok;
   cIn.Next;  //lo toma
-  {Ya tiene los datos mínimos para crear la función. }
-  fun := CreateFunction(procName, typNull, @callParam, @callFunct);
-  fun.srcDec := srcPos;   //Toma ubicación en el código
-  TreeElems.AddElementAndOpen(fun);  //Se abre un nuevo espacio de nombres
-
-  CaptureDecParams(fun);
+  //Captura los parámetros en "pars"
+  ReadFunctionParams(pars);
   if HayError then exit;
-  //Recién aquí puede verificar duplicidad, porque ya se leyeron los parámetros
-  if ValidateDup then begin   //Se pide validar la posible duplicidad de la función
-    if not ValidateFunction then exit;
-  end;
+
   //Verifica si es función
   cIn.SkipWhites;
   if cIn.tok = ':' then begin
     cIn.Next;
     cIn.SkipWhites;
     //Es función
-    typ := getParamType;  //lee tipo
+    retType := GetTypeDeclarSimple;  //lee tipo
     if HayError then exit;
-
-//    parType := cIn.tok;   //lee tipo de parámetro
-//    cIn.Next;
-//    //Valida el tipo
-//    typ := FindSysEleType(parType);
-//    if typ = nil then begin
-//      GenError(ER_UNDEF_TYPE_, [parType]);
-//      exit;
-//    end;
-    //Fija el tipo de la función
-    fun.typ := typ;
+  end else begin
+    retType := typNull;
   end;
   if not CaptureTok(';') then exit;
   //Verifica si es INTERRUPT
   cIn.SkipWhites;
   if cIn.tokL = 'interrupt' then begin
     cIn.Next;
-    fun.IsInterrupt := true;
+    IsInterrupt := true;
     if not CaptureTok(';') then exit;
+  end else begin
+    IsInterrupt := false;
   end;
   ProcComments;  //Quita espacios. Puede salir con error
 end;
-procedure TCompiler_PIC16.CompileProcDeclar(IsImplementation: boolean);
+procedure TCompiler_PIC16.ReadInlineHeader(out procName: String; out retType: TxpEleType;
+  out srcPos: TSrcPos; out pars: TxpParInlinArray);
+{Hace el procesamiento del encabezado de la declaración de una función INLINE.
+Devuelve la referencia al objeto TxpEleInline creado, en "fun".
+Conviene separar el procesamiento del enzabezado, para poder usar esta rutina, también,
+en el procesamiento de unidades.}
+  procedure ReadInlineParams(out funPars: TxpParInlinArray);
+  //Lee la declaración de parámetros de una función Inline.
+  const
+    BLOCK_SIZE = 10;  //Tamaño de bloque.
+  var
+    typ: TxpEleType;
+    itemList: TStringDynArray;
+    srcPosArray: TSrcPosArray;
+    i, curSize, n: Integer;
+    sto: TStoOperand;
+  begin
+    cIn.SkipWhites;
+    SetLength(itemList, 0);
+    if EOBlock or EOExpres or (cIn.tok = ':') then begin
+      //no tiene parámetros
+      //No tiene parámetros
+      setlength(funPars, 0);
+    end else begin
+      //Debe haber parámetros. Prepara espacio para leer.
+      curSize := BLOCK_SIZE;    //Tamaño inicial de bloque
+      setlength(funPars, curSize);  //Tamaño inicial
+      n := 0;
+      //Inicia lectura
+      if not CaptureTok('(') then exit;
+      cin.SkipWhites;
+      repeat
+        if cIn.tokL = 'var' then begin
+          cin.Next;
+          cin.SkipWhites;
+          sto := stVariab;
+        end else if cIn.tokL = 'const' then begin
+          cin.Next;
+          cin.SkipWhites;
+          sto := stConst;
+        end else if cIn.tokL = 'expr' then begin
+          cin.Next;
+          cin.SkipWhites;
+          sto := stExpres;
+        end else begin
+          GenError('Syntax error.');
+          exit;
+        end;
+        //Lee lista de parámetros de tipo: a,b,c : byte;
+        getListOfIdent(itemList, srcPosArray);
+        if HayError then begin  //precisa el error
+          GenError(ER_IDEN_EXPECT);
+          exit;
+        end;
+        if not CaptureTok(':') then exit;
+        typ := GetTypeDeclarSimple;  //lee tipo
+        if HayError then exit;
+        //Ya tiene los nombres y el tipo
+        //Crea el parámetro como una variable local
+        for i:= 0 to high(itemList) do begin
+          funPars[n].name  := itemList[i];
+          funPars[n].srcPos:= srcPosArray[i];
+          funPars[n].typ   := typ;
+          funPars[n].sto   := sto;
+          //Prepara siguiente lectura
+          inc(n);
+          if n >= curSize then begin
+            curSize += BLOCK_SIZE;   //Incrementa tamaño en bloque
+            setlength(funPars, curSize);  //hace espacio en bloque
+          end;
+        end;
+        //Busca delimitador
+        if cIn.tok = ';' then begin
+          cIn.Next;   //toma separador
+          cIn.SkipWhites;
+        end else begin
+          //No sigue separador de parámetros,
+          //debe terminar la lista de parámetros
+          //¿Verificar EOBlock or EOExpres ?
+          break;
+        end;
+      until false;
+      //busca paréntesis final
+      if not CaptureTok(')') then exit;
+      //Asigna tamaño final
+      setlength(funPars, n);
+    end;
+  end;
+begin
+  //Toma información de ubicación, al inicio del procedimiento
+  cIn.SkipWhites;
+  srcPos := cIn.ReadSrcPos;
+  //Ahora debe haber un identificador
+  if cIn.tokType <> tnIdentif then begin
+    GenError(ER_IDEN_EXPECT);
+    exit;
+  end;
+  //Lee nombre de función
+  procName := cIn.tok;
+  cIn.Next;  //lo toma
+  //Captura los parámetros en "pars"
+  ReadInlineParams(pars);
+  if HayError then exit;
+
+  //Verifica si es función
+  cIn.SkipWhites;
+  if cIn.tok = ':' then begin
+    cIn.Next;
+    cIn.SkipWhites;
+    //Es función
+    retType := GetTypeDeclarSimple;  //lee tipo
+    if HayError then exit;
+  end else begin
+    retType := typNull;
+  end;
+  if not CaptureTok(';') then exit;
+  ProcComments;  //Quita espacios. Puede salir con error
+end;
+procedure TCompiler_PIC16.CompileProcDeclar;
 {Compila la declaración de procedimientos. Tanto procedimientos como funciones
  se manejan internamente como funciones.
  IsImplementation, se usa para cuando se está compilando en la sección IMPLEMENTATION.}
 var
-  fun, funcX: TxpEleFun;
+  fun: TxpEleFun;
   bod: TxpEleBody;
-  Parent: TxpElement;
-  i: Integer;
-  Found: Boolean;
+  ele : TxpElement;
+  Found, IsInterrupt: Boolean;
+  ParentElems: TxpElements;
+  procName, uname: String;
+  retType: TxpEleType;
+  srcPos: TSrcPos;
+  pars: TxpParFuncArray;
 begin
   {Este método, solo se ejecutará en la primera pasada, en donde todos los procedimientos
-  se codifican al inicio de la memoria FLASH, y las variables y registros se ubican al
-  inicio de la memeoria RAM, ya que lo que importa es simplemente recabar información
+  se codifican al inicio de la memoria, y las variables y registros se ubican al
+  inicio de la memoria RAM, ya que lo que importa es simplemente recabar información
   del procedimiento, y no tanto codificarlo. }
   ResetRAM;   //Limpia RAM y FLASH, y fija CurrBank
-  if IsImplementation then begin
+  case curLocation of
+  locInterface: begin
+    //Los procedimientos en INTERFACE, no se procesan aquí. Se procesan en CompileUnit().
+  end;
+  locImplement:  begin
     //Se compila para implementación.
     {Este proceso es más complejo. La idea es compilar el enzabezado de cualquier función,
     y luego comparar para ver si corresponde a una implementación o no. Si es
-    implemenatción, se elimina el nodo creado y se trabaja con el de la declaración.}
-    CompileProcHeader(fun, false);  //No verifica la duplicidad por ahora
+    implementación, se elimina el nodo creado y se trabaja con el de la declaración.}
+    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt);
     if HayError then exit;
     //Verifica si es implementación de una función en la INTERFACE o no.
-    Parent := TreeElems.curNode.Parent;  //Para comparar
+    ParentElems := TreeElems.curNode.elements;  //Para comparar
     {Se supone que esta exploración solo se hará en la primera pasada, así que no hay
     problema, en hacer una exploración común.}
-    //debugln('Buscando declaración de %s en nodo %s desde 0 hasta %d', [fun.name, Parent.name, Parent.elements.Count-2]);
+    //debugln('Buscando declaración de %s en nodo %s desde 0 hasta %d', [fun.name, ParentElems.name, ParentElems.elements.Count-2]);
     Found := false;
-    for i:=0 to Parent.elements.Count-2 do begin  //No se considera a el mismo
-      if not (Parent.elements[i].idClass = eltFunc) then continue;
-      funcX := TxpEleFun(Parent.elements[i]);
-      if (UpCase(funcX.name) = Upcase(fun.name)) and
-         (fun.SameParams(funcX)) then begin
-         Found := true;
-         break;
+    uname := upcase(procName);
+    for ele in ParentElems do begin
+      if ele.location = locInterface then begin
+        //Es elemento de INTERFACE
+        if ele.uname = uname then begin
+          //Hay coincidencia de nombre
+          if ele.idClass = eltFunc then begin
+            //Para las funciones, se debe comparar los parámetros
+            fun := TxpEleFun(ele);
+            if fun.SameParamsType(pars) then begin
+              Found := true;
+              break;
+            end;
+          end else begin
+            //Si tiene el mismo nombre que cualquier otro elemento, es conflicto
+            GenError('Identifier "%s" already defined', [uname]);
+            exit;
+          end;
+        end;
+      end else begin
+        {Debe ser elemento de IMPLEMENTATION, no hay otra opción porque se supone que
+        estamos en la sección de IMPLEMENTATION, así que el Parent, debe ser una unidad.}
+        GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);  //Está duplicada en IMPLEMENTATION
+        exit;
       end;
     end;
     if Found then begin
       //Es una implementación. No vale la pena tener otro nodo.
-      TreeElems.CloseElement;  //Cierra Nodo de la función
-      Parent.elements.Remove(fun);   //elimina función
-      fun := {%H-}funcX; //apunta a la nueva función
       TreeElems.OpenElement(fun);  //Abre el nodo anterior
       fun.Implemented := true;   //marca como implementada
     end else begin
-      //Debe ser una función privada
+      //Debe ser una función privada. No declarada en Interface.
+      //La creamos con seguridad porque ya verificamos que no hay conflicto en IMPLEMENTATION.
+      fun := AddFunction(procName, retType, srcPos, pars, IsInterrupt, @callParam, @callFunct);
+      //Un caso especial de proced. declarado solo en IMPLEMENTATION.
+      fun.location := locImplement;
     end;
-  end else begin
-    //Es una compilación normal
-    CompileProcHeader(fun);  //Procesa el encabezado
-    if HayError then exit;
   end;
+  locMain: begin
+    //Es una compilación en el programa principal. ¿Y si es FORWARD?
+    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt);
+    if HayError then exit;
+    if TreeElems.FunctionExistInCur(procName, pars) then begin
+      GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+      exit;
+    end;
+    fun := AddFunction(procName, retType, srcPos, pars, IsInterrupt, @callParam, @callFunct);
+    //Aquí estamos en el entorno de la función.
+    fun.location := locMain;
+  end;
+  else
+    GenError(ER_NOT_IMPLEM_, ['locMain in TCompiler_PIC16.CompileProcDeclar()']);
+  end;
+  //Aquí ya se tiene "fun" abierta, validada y apuntando a la declaración.
   //Empiezan las declaraciones VAR, CONST, PROCEDURE, TYPE
   while StartOfSection do begin
     if cIn.tokL = 'var' then begin
@@ -1519,6 +1674,136 @@ begin
   if not CaptureTok(';') then exit;
   ProcComments;  //Quita espacios. Puede salir con error
 end;
+procedure TCompiler_PIC16.CompileInlineDeclar(elemLocat: TxpEleLocation);
+{Compila la declaración de procedimientos INLINE. Tanto procedimientos como funciones
+ INLINE se manejan internamente como funciones.
+ IsImplementation, se usa para cuando se está compilando en la sección IMPLEMENTATION.}
+var
+  fun: TxpEleInlin;
+  bod: TxpEleBody;
+  ParentElems: TxpElements;
+  ele : TxpElement;
+  Found: Boolean;
+  procName, uname: String;
+  retType: TxpEleType;
+  srcPos: TSrcPos;
+  pars: TxpParInlinArray;
+begin
+  {Este método, solo se ejecutará en la primera pasada, en donde todos los procedimientos
+  se codifican al inicio de la memoria, y las variables y registros se ubican al
+  inicio de la memoria RAM, ya que lo que importa es simplemente recabar información
+  del procedimiento, y no tanto codificarlo. }
+  ResetRAM;   //Limpia RAM y FLASH, y fija CurrBank
+  case elemLocat of
+  locInterface: begin
+    //Los procedimientos en INTERFACE, no se procesan aquí. Se procesan en CompileUnit().
+  end;
+  locImplement:  begin
+    //Se compila para implementación.
+    {Este proceso es más complejo. La idea es compilar el encabezado de cualquier función,
+    y luego comparar para ver si corresponde a una implementación o no. Si es
+    implementación, se elimina el nodo creado y se trabaja con el de la declaración.}
+    ReadInlineHeader(procName, retType, srcPos, pars);
+    if HayError then exit;
+    //Verifica si es implementación de una función en la INTERFACE o no.
+    ParentElems := TreeElems.curNode.elements;  //Para comparar
+    {Se supone que esta exploración solo se hará en la primera pasada, así que no hay
+    problema, en hacer una exploración común.}
+    //debugln('Buscando declaración de %s en nodo %s desde 0 hasta %d', [fun.name, ParentElems.name, ParentElems.elements.Count-2]);
+    Found := false;
+    uname := upcase(procName);
+    for ele in ParentElems do begin
+      if ele.location = locInterface then begin
+        //Es elemento de INTERFACE
+        if ele.uname = uname then begin
+          //Hay coincidencia de nombre
+          if ele.idClass = eltFunc then begin
+            //Para las funciones, se debe comparar los parámetros
+            fun := TxpEleInlin(ele);
+            if fun.SameParamsType(pars) then begin
+              Found := true;
+              break;
+            end;
+          end else begin
+            //Si tiene el mismo nombre que cualquier otro elemento, es conflicto
+            GenError('Identifier "%s" already defined', [uname]);
+            exit;
+          end;
+        end;
+      end else begin
+        {Debe ser elemento de IMPLEMENTATION, no hay otra opción porque se supone que
+        estamos en la sección de IMPLEMENTATION, así que el Parent, debe ser una unidad.}
+        GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);  //Está duplicada en IMPLEMENTATION
+        exit;
+      end;
+    end;
+    if Found then begin
+      //Es una implementación. No vale la pena tener otro nodo.
+      TreeElems.OpenElement(fun);  //Abre el nodo anterior
+      fun.Implemented := true;   //marca como implementada
+    end else begin
+      //Debe ser una función privada. No declarada en Interface.
+      //La creamos con seguridad porque ya verificamos que no hay conflicto en IMPLEMENTATION.
+      fun := AddInline(procName, retType, srcPos, pars, @callParam, @callFunct);
+      //Un caso especial de proced. declarado solo en IMPLEMENTATION.
+      fun.location := locImplement;
+    end;
+  end;
+  locMain: begin
+    //Es una compilación en el programa principal. ¿Y si es FORWARD?
+    ReadInlineHeader(procName, retType, srcPos, pars);  //Procesa el encabezado
+    if HayError then exit;
+    if TreeElems.InlineExistInCur(procName, pars) then begin
+      GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+      exit;
+    end;
+    fun := AddInline(procName, retType, srcPos, pars, @callParam, @callFunct);
+    //Aquí estamos en el entorno de la función.
+    fun.location := locMain;
+  end
+  else
+    GenError(ER_NOT_IMPLEM_, ['locMain in TCompiler_PIC16.CompileProcDeclar()']);
+  end;
+  //Aquí ya se tiene "fun" abierta, validada y apuntando a la declaración.
+  //Empiezan las declaraciones VAR, CONST, PROCEDURE, TYPE
+  while StartOfSection do begin
+    if cIn.tokL = 'var' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'begin') do begin
+        CompileVarDeclar;
+        if HayError then exit;;
+      end;
+    end else if cIn.tokL = 'const' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'begin') do begin
+        CompileGlobalConstDeclar;
+        if HayError then exit;;
+      end;
+//    end else if cIn.tokL = 'procedure' then begin
+//      cIn.Next;    //lo toma
+//      CompileProcDeclar;
+    end else begin
+      GenError('Expected VAR, CONST or BEGIN.');
+      exit;
+    end;
+  end;
+  if cIn.tokL <> 'begin' then begin
+    GenError('Expected "begin", "var", "type" or "const".');
+    exit;
+  end;
+  //Ahora empieza el cuerpo de la función o las declaraciones
+  fun.posCtx := cIn.PosAct;  //Guarda posición para la segunda compilación
+  bod := CreateBody;   //crea elemento del cuerpo de la función
+  bod.srcDec := cIn.ReadSrcPos;
+  TreeElems.AddElementAndOpen(bod);  //Abre nodo Body
+  CompileInlineBody(fun);
+  TreeElems.CloseElement;  //Cierra Nodo Body
+  TreeElems.CloseElement; //cierra espacio de nombres de la función
+  bod.srcEnd := cIn.ReadSrcPos;  //Fin de cuerpo
+//  fun.adrReturn := pic.iRam-1;  //Guarda dirección del i_RETURN
+  if not CaptureTok(';') then exit;
+  ProcComments;  //Quita espacios. Puede salir con error
+end;
 procedure TCompiler_PIC16.CompileInstruction;
 {Compila una única instrucción o un bloque BEGIN ... END. Puede generar Error.
  Una instrucción se define como:
@@ -1538,7 +1823,7 @@ begin
   curCodCon := TreeElems.CurCodeContainer;
   ProcComments;
   if cIn.tokL='begin' then begin
-    //es bloque
+    //Es bloque
     cIn.Next;  //toma "begin"
     CompileCurBlock;   //llamada recursiva
     if HayError then exit;
@@ -1546,7 +1831,7 @@ begin
     ProcComments;
     //puede salir con error
   end else begin
-    //es una instrucción
+    //Es una instrucción
     if cIn.tokType = tnStruct then begin
       if cIn.tokl = 'if' then begin
         curCodCon.OpenBlock(sbiIF);
@@ -1650,6 +1935,11 @@ procedure TCompiler_PIC16.CompileUnit(uni: TxpElement);
 var
   fun: TxpEleFun;
   elem: TxpElement;
+  procName: String;
+  retType: TxpEleType;
+  srcPos: TSrcPos;
+  pars: TxpParFuncArray;
+  IsInterrupt: Boolean;
 begin
 //debugln('   Ini Unit: %s-%s',[TreeElems.curNode.name, ExtractFIleName(cIn.curCon.arc)]);
   ClearError;
@@ -1663,7 +1953,7 @@ begin
       GenError('Name of unit expected.');
       exit;
     end;
-    if UpCase(cIn.tok)<>UpCase(uni.name) then begin
+    if UpCase(cIn.tok)<>uni.uname then begin
       GenError('Name of unit doesn''t match file name.');
       exit;
     end;
@@ -1680,6 +1970,7 @@ begin
   end;
   cIn.Next;   //toma
   ProcComments;
+  curLocation := locInterface;
   if cIn.Eof then begin
     GenError('Expected "uses", "var", "type", "const" or "implementation".');
     exit;
@@ -1699,13 +1990,13 @@ begin
     if cIn.tokL = 'var' then begin
       cIn.Next;    //lo toma
       while not StartOfSection and (cIn.tokL <>'implementation') do begin
-        CompileVarDeclar(true);  //marca como "IsInterface"
+        CompileVarDeclar;  //marca como "IsInterface"
         if HayError then exit;;
       end;
     end else if cIn.tokL = 'type' then begin
       cIn.Next;    //lo toma
       while not StartOfSection and (cIn.tokL <>'implementation') do begin
-        CompileTypeDeclar(true);
+        CompileTypeDeclar(locInterface);
         if HayError then exit;
       end;
     end else if cIn.tokL = 'const' then begin
@@ -1716,9 +2007,15 @@ begin
       end;
     end else if cIn.tokL = 'procedure' then begin
       cIn.Next;    //lo toma
-      CompileProcHeader(fun);   //Se ingresa al árbol de sintaxis
+      ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt);
       if HayError then exit;
-      fun.InInterface := true;  //marca ubicación
+      if TreeElems.FunctionExistInCur(procName, pars) then begin
+        GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+        exit;
+      end;
+      fun := AddFunction(procName, retType, srcPos, pars, IsInterrupt, @callParam, @callFunct);
+      //Aquí estamos en el entorno de la función.
+      fun.location := locInterface;  //marca ubicación
       TreeElems.CloseElement;   //CompileProcHeader, deja abierto el elemento
     end else begin
       GenError(ER_NOT_IMPLEM_, [cIn.tok]);
@@ -1734,6 +2031,7 @@ begin
   /////////////////  IMPLEMENTATION /////////////////////
   ProcComments;
   //Explora las declaraciones e implementaciones
+  curLocation := locImplement;
   //Empiezan las declaraciones
   while StartOfSection do begin
     if cIn.tokL = 'var' then begin
@@ -1750,7 +2048,7 @@ begin
       end;
     end else if cIn.tokL = 'procedure' then begin
       cIn.Next;    //lo toma
-      CompileProcDeclar(true);  //Compila en IMPLEMENTATION
+      CompileProcDeclar;  //Compila en IMPLEMENTATION
       if HayError then exit;
     end else begin
       GenError(ER_NOT_IMPLEM_, [cIn.tok]);
@@ -1760,7 +2058,7 @@ begin
   //Verifica si todas las funciones de INTERFACE, se implementaron
   for elem in TreeElems.curNode.elements do if elem.idClass = eltFunc then begin
     fun := TxpEleFun(elem);
-    if fun.InInterface and not fun.Implemented then begin
+    if (fun.location = locInterface) and not fun.Implemented then begin
       GenErrorPos('Function %s not implemented.', [fun.name], fun.srcDec);
       exit;
     end;
@@ -1810,7 +2108,7 @@ begin
       uName := cIn.tok;
       uni := CreateUnit(uName);
       //Verifica si existe ya el nombre de la unidad
-      if uni.DuplicateIn(TreeElems.curNode.elements) then begin
+      if uni.ExistsIn(TreeElems.curNode.elements) then begin
         GenError('Identifier duplicated: %s.', [uName]);
         uni.Destroy;
         exit;
@@ -1893,6 +2191,7 @@ begin
   end;
   ProcComments;
   Cod_StartProgram;  //Se pone antes de codificar procedimientos y funciones
+  curLocation := locMain;
   if HayError then exit;
   //Empiezan las declaraciones
   while StartOfSection do begin
@@ -1905,7 +2204,7 @@ begin
     end else if cIn.tokL = 'type' then begin
       cIn.Next;    //lo toma
       while not StartOfSection and (cIn.tokL <>'begin') do begin
-        CompileTypeDeclar(false);
+        CompileTypeDeclar(locMain);
         if HayError then exit;
       end;
     end else if cIn.tokL = 'const' then begin
@@ -1916,7 +2215,11 @@ begin
       end;
     end else if cIn.tokL = 'procedure' then begin
       cIn.Next;    //lo toma
-      CompileProcDeclar(false);
+      CompileProcDeclar;
+      if HayError then exit;
+    end else if cIn.tokL = 'inline' then begin
+      cIn.Next;    //lo toma
+      CompileInlineDeclar(locMain);
       if HayError then exit;
     end else begin
       GenError(ER_NOT_IMPLEM_, [cIn.tok]);
@@ -1991,7 +2294,6 @@ Esto es lo más cercano a un enlazador, que hay en PicPas.}
   var
     posAct : TPosCont;
     adicVarDec: TAdicVarDec;
-    IsBit  : boolean;
   begin
 //debugln('  Asignando espacio a %s', [xvar.name]);
     if xvar.adicPar.isAbsol then begin
@@ -2000,14 +2302,14 @@ Esto es lo más cercano a un enlazador, que hay en PicPas.}
       puede haber referencia a variables que han cambiado de ubicación, por
       optimización.
       Se podría hacer una verificación, para saber si la referencia es a direcciones
-      absolutas, en lugar de a variables (o a varaibles temporales), y así evitar
+      absolutas, en lugar de a variables (o a variables temporales), y así evitar
       tener que compilar de nuevo, la declaración.}
       posAct := cIn.PosAct;   //guarda posición actual
       cIn.PosAct := xVar.adicPar.srcDec;  //Posiciona en la declaración adicional
       TreeElems.curNode := xvar.Parent;   {Posiciona el árbol, tal cual estaría en la
                                            primera pasada, para una correcta resolución
                                            de nombres}
-      adicVarDec := GetAdicVarDeclar(IsBit);
+      GetAdicVarDeclar(xvar.typ, adicVarDec);
       //No debería dar error, porque ya pasó la primera pasada
       xvar.adicPar := adicVarDec;
       cIn.PosAct := posAct;
@@ -2354,7 +2656,7 @@ begin
   end else begin
     minUsed := pic.CPUMAXRAM;
     for i := 0 to pic.CPUMAXRAM-1 do begin
-      if pic.ram[i].used then begin
+      if pic.ram[i].used <> ruUnused then begin
         if i<minUsed then minUsed := i;  //Calcula mínimo
         lins.Add('poke ' +  IntToStr(i) + ',' + IntToStr(pic.ram[i].value));
       end;
@@ -2414,7 +2716,7 @@ begin
   end;
   //Cuenta apariciones
   for i:=0 to high(pic.ram) do begin
-    if pic.ram[i].used then begin
+    if pic.ram[i].used <> ruUnused then begin
        pic.PC.W := i;
        curInst := pic.CurInstruction;
        Inc(OpCodeCoun[curInst]);  //Acumula
@@ -2550,4 +2852,4 @@ initialization
 finalization
 
 end.
-//2161
+//2828

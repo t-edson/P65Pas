@@ -10,10 +10,10 @@ type
   diversos criterios, como el estado, el uso o el mapeo. Por eso tienen diversas
   banderas}
   TRamBlock = record
-    add1, add2: word;      //Direcciones de memoria
+    add1, add2: word;       //Direcciones de memoria
     blkType: TCPUCellState; //Tipo de blqoue
-    mapped : boolean;        //Indica si el bloque está mapeado
-    used   : boolean;        //Indica si el bloque está usado
+    mapped : boolean;       //Indica si el bloque está mapeado
+    used   : TCPURamUsed;   //Indica si el bloque está usado
   end;
 
   { TfraRamExplorer }
@@ -99,7 +99,7 @@ encontrados (de acuerdo a si están usados o no), en el arreglo "blockUse".
 var
   n: Integer;
   i, pos1, pos2: Word;
-  used: boolean;
+  used: TCPURamUsed;
 begin
   setlength(blockUse, 1);  //abre un bloque
   n := high(blockUse);  //índice actual
@@ -256,8 +256,12 @@ begin
   cv.Pen.Color := $80FF80;
   cv.Brush.Style := bsSolid;
   for i:=0 to high(blockUse) do begin
-    if blockUse[i].used then begin
+    if blockUse[i].used = ruCode then begin
       cv.Brush.Color := $80FF80;
+      DrawBlock(marcoRam, ancMargenDir,
+                blockUse[i].add1, blockUse[i].add2, pic.CPUMAXRAM);  //dibuja;
+    end else if blockUse[i].used = ruVar then begin
+      cv.Brush.Color := $FF8080;
       DrawBlock(marcoRam, ancMargenDir,
                 blockUse[i].add1, blockUse[i].add2, pic.CPUMAXRAM);  //dibuja;
     end;
@@ -271,7 +275,7 @@ begin
   for i:=0 to high(blockSta) do begin
     //Crea etiqueta
     case blockSta[i].blkType of
-    cs_impleGPR: begin
+    cs_implemen: begin
 //      cv.Brush.Color := clWhite;
       cv.Brush.Color := clNone;
       lbl := 'RAM';

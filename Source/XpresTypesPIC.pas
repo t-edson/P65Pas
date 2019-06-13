@@ -88,6 +88,62 @@ type  //Enumerated types
   end;
   TTypFields = specialize TFPGObjectList<TTypField>;
 
+  //Types categories
+  TxpCatType = (
+    tctAtomic,  //Tipo básico como (byte, word, char)
+    tctArray,   //Arreglo de algún otro tipo.
+    tctPointer, //Puntero de otro tipo.
+    tctObject   //Registro de varios campos (OBJECT <tipos> END o podría ser {...} )
+  );
+  {Types categories define the way a type is structured.
+
+  ==== ATOMIC ====
+  We say a type is atomic, when it cannot be expressed as a construction of other type.
+  For example: CHAR or BYTE types. WORD type should be atomic too. Although a WORD can be
+  expressed as an OBJECT. Here in P65Pas we define WORD as atomic.
+  Declaraction for atomic types are:
+  TYPE
+    mytype = byte;
+    mytype2 = char;
+    mytype3 = mytype;  //Because "mytype" is tomic too.
+
+  ==== ARRAY ====
+  Array of some other type (atomic or not).
+  Declaration for array types are:
+  TYPE
+    artype = ARRAY[10] OF byte;
+    otherarray = artype;  //Because artype is array
+    alsoarray = ARRAY OF noAtomicType;
+
+  As an alternative notation we can use is:
+  TYPE
+    artype = [10]byte;
+
+  ==== POINTER ====
+  Pointer to some other type (atomic or not).
+  Declaration for pointer types are:
+  TYPE
+    ptrtype = POINTER TO byte;
+    otherptr = ptrtype;  //Because ptrtype is pointer
+    alsoptr = POINTER TO noAtomicType;
+
+  As an alternative notation we can use is:
+  TYPE
+    artype = ^byte;
+
+  }
+
+  //Type declaration style.
+  TTypDeclarStyle = (
+    ttdDirect,   {Like:
+                      TYPE mytype = byte;
+                      TYPE mytype2 = mytype;  //"mytype" could be ARRAY/POINTER/OBJECT
+                }
+    ttdDeclar   {Like:
+                      TYPE mytype = ARRAY[30] OF char;
+                      TYPE refchar = POINTER TO char; }
+  );
+
 type
   {Estos tipos están relacionados con el hardware, y tal vez deberían estar declarados
   en otra unidad. Pero se ponen aquí porque son pocos.
@@ -132,15 +188,6 @@ type
     procedure Assign(srcReg: TPicRegisterBit);
   end;
   TPicRegisterBit_list = specialize TFPGObjectList<TPicRegisterBit>; //lista de registros
-
-  //Categorías de tipos
-  TxpCatType = (
-    tctAtomic,  //Tipo básico
-    tctArray,   //Arreglo de otro tipo
-    tctPointer, //Puntero de otro tipo (Puntero corto, hasta la dirección $FF)
-    tctRecord   //Registro de varios campos
-  );
-
 
 implementation
 

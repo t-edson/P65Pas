@@ -13,6 +13,10 @@ interface
   procedure SCINIT;
   //Initialize CIA's, SID volume; setup memory configuration; set and start interrupt timer.
   procedure IOINIT;
+  //Clear Screen
+  procedure CLRSCR(col: byte);
+  //Clear Screen
+  procedure CLRSCR;
   //Read byte from default input (for keyboard, read a line from the screen). (If not keyboard, must call OPEN and CHKIN beforehands.)
   procedure CHRIN: char;
   //Write byte to default output. (If not screen, must call OPEN and CHKOUT beforehands.)
@@ -36,7 +40,20 @@ implementation
     JSR $FF84  
     end 
   end; 
-  
+  procedure CLRSCR(col: byte);
+  begin
+    asm
+    LDA col
+    STA $0286
+    JSR $E544
+    end
+  end;
+  procedure CLRSCR;
+  begin
+    asm
+    JSR $E544
+    end
+  end;
   procedure CHRIN: char;
   begin
     asm

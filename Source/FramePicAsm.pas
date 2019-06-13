@@ -95,7 +95,9 @@ begin
       cv.Font.Style := [fsBold];   // negrita
     end else begin
       //Fila sin selección
-      if ramCell^.used then begin
+      if ramCell^.used = ruCode then begin
+        cv.Brush.Color := clWhite;  //fondo blanco
+      end else if ramCell^.used = ruVar then begin
         cv.Brush.Color := clWhite;  //fondo blanco
       end else begin  //Dirección no usada
         cv.Brush.Color := $E0E0E0;
@@ -323,7 +325,7 @@ procedure TfraPicAsm.ResizeRow(i: integer);
 {Redimensiona la fila "i" de la grilla para que pueda contener las etiquetas que
 incluye.}
 begin
-  if not pic.ram[i].used then begin
+  if pic.ram[i].used = ruUnused then begin
     StringGrid1.RowHeights[i] := defHeight;
     exit;
   end;
@@ -370,7 +372,7 @@ begin
       StringGrid1.RowHeights[f] := defHeight;
     end;
     //Coloca texto y direcciones
-    if not pic.ram[addr].used then begin
+    if pic.ram[addr].used = ruUnused then begin
       //Celda no usada
       StringGrid1.RowHeights[addr] := defHeight;
       StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
@@ -378,7 +380,7 @@ begin
 //StringGrid1.Cells[1, f] := IntToStr(pic.ram[addr].value);
       StringGrid1.Cells[2, f] := '';
       inc(addr);
-    end else if pic.ram[addr].name<>'' then begin
+    end else if pic.ram[addr].used = ruVar then begin
       //Es espacio para variable
       StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
       StringGrid1.Cells[1, f] := '<< Variable >>';

@@ -83,8 +83,8 @@ type
     {Estas rutinas estarían mejor ubicadas en TCompilerBase, pero como dependen del
     objeto "pic", se colocan mejor aquí.}
     procedure AssignRAMinByte(absAdd: integer; var addr: word; regName: string;
-      shared: boolean = false);
-    procedure CreateVarInRAM(nVar: TxpEleVar; shared: boolean = false);
+      iniVal: byte; shared: boolean = false);
+    procedure CreateVarInRAM(xVar: TxpEleVar; shared: boolean = false);
   protected  //Métodos para fijar el resultado
     //Métodos básicos
     procedure SetResultNull;
@@ -303,7 +303,7 @@ begin
 end;
 //Rutinas de gestión de memoria de bajo nivel
 procedure TGenCodBas.AssignRAM(out addr: word; regName: string; shared: boolean);
-//Asocia a una dirección física de la memoria del PIC para ser usada como varible.
+//Asocia a una dirección física de la memoria para ser usada como variable.
 //Si encuentra error, devuelve el mensaje de error en "MsjError"
 begin
   {Esta dirección física, la mantendrá este registro hasta el final de la compilación
@@ -508,13 +508,14 @@ begin
 end;
 ////Rutinas de gestión de memoria para variables
 procedure TGenCodBas.AssignRAMinByte(absAdd: integer;
-  var addr: word; regName: string; shared: boolean = false);
+  var addr: word; regName: string; iniVal: byte; shared: boolean = false);
 {Asigna RAM a un registro o lo coloca en la dirección indicada.}
 begin
   //Obtiene los valores de: offs, bnk, y bit, para el alamacenamiento.
   if absAdd=-1 then begin
     //Caso normal, sin dirección absoluta.
     AssignRAM(addr, regName, shared);
+    pic.ram[addr].value := iniVal;
     //Puede salir con error
   end else begin
     //Se debe crear en una posición absoluta
@@ -528,7 +529,7 @@ begin
     end;
   end;
 end;
-procedure TGenCodBas.CreateVarInRAM(nVar: TxpEleVar; shared: boolean = false);
+procedure TGenCodBas.CreateVarInRAM(xVar: TxpEleVar; shared: boolean = false);
 {Rutina para asignar espacio físico a una variable. La variable, es creada en memoria
 en la posición actual que indica iRam
 con los parámetros que posea en ese momento. Si está definida como ABSOLUTE, se le
@@ -536,42 +537,46 @@ creará en la posicón indicada. }
 var
   varName: String;
   absAdd: integer;
-  absBit, nbytes: integer;
+  nbytes: integer;
   typ: TxpEleType;
   //offs, bnk: byte;
   addr: word;
+  valByte0, valByte1: Byte;
+  car: char;
 begin
   //Valores solicitados. Ya deben estar iniciado este campo.
-  varName := nVar.name;
-  typ := nVar.typ;
-  if nVar.adicPar.isAbsol then begin
-    absAdd := nVar.adicPar.absAddr;
-    if typ.IsBitSize then begin
-      absBit := nVar.adicPar.absBit;
-    end else begin
-      absBit := -1;
-    end;
+  varName := xVar.name;
+  typ := xVar.typ;
+  if xVar.adicPar.isAbsol then begin
+    absAdd := xVar.adicPar.absAddr;
   end else begin
     absAdd  := -1;  //no aplica
-    absBit  := -1;  //no aplica
   end;
   //Asigna espacio, de acuerdo al tipo
+  if xVar.adicPar.hasInit then begin
+    //Valores útiles
+    valByte0 := xVar.adicPar.iniVal.ValInt and $FF;
+    valByte1 := (xVar.adicPar.iniVal.ValInt and $FF00) >> 8;
+  end else begin
+    valByte0 := 0;
+    valByte1 := 0;
+  end;
   if typ = typByte then begin
-    AssignRAMinByte(absAdd, nVar.addr0, varName, shared);
+    AssignRAMinByte(absAdd, xVar.addr0, varName, valByte0, shared);
   end else if typ = typChar then begin
-    AssignRAMinByte(absAdd, nVar.addr0, varName, shared);
+    AssignRAMinByte(absAdd, xVar.addr0, varName, valByte0, shared);
   end else if typ = typBool then begin
-    AssignRAMinByte(absAdd, nVar.addr0, varName, shared);
+    AssignRAMinByte(absAdd, xVar.addr0, varName, valByte0, shared);
   end else if typ = typWord then begin
     //Registra variable en la tabla
     if absAdd = -1 then begin  //Variable normal
       //Los 2 bytes, no necesariamente serán consecutivos (se toma los que estén libres)}
-      AssignRAMinByte(-1, nVar.addr0, varName+'@0', shared);
-      AssignRAMinByte(-1, nVar.addr1, varName+'@1', shared);
+      AssignRAMinByte(-1, xVar.addr0, varName+'@0', valByte0, shared);
+      AssignRAMinByte(-1, xVar.addr1, varName+'@1', valByte1, shared);
     end else begin             //Variable absoluta
       //Las variables absolutas se almacenarán siempre consecutivas
-      AssignRAMinByte(absAdd  , nVar.addr0, varName+'@0');
-      AssignRAMinByte(absAdd+1, nVar.addr1, varName+'@1');
+      AssignRAMinByte(absAdd  , xVar.addr0, varName+'@0', valByte0);
+      AssignRAMinByte(absAdd+1, xVar.addr1, varName+'@1', valByte1);
     end;
   end else if typ.catType = tctArray then begin
     //Es un arreglo de algún tipo
@@ -580,20 +585,31 @@ begin
       GenError(MSG_NOT_IMPLEM, [varName]);
       exit;
     end;
-    //Asignamos espacio en RAM
+    //Asignamos espacio en RAM { TODO : Esta rutina podría ponerse en un proced. como AssignRAMinByte()  }
     nbytes := typ.arrSize * typ.refType.size;
     if not pic.GetFreeBytes(nbytes, addr) then begin
       GenError(MSG_NO_ENOU_RAM);
       exit;
     end;
-    pic.SetNameRAM(addr, nVar.name);   //Nombre solo al primer byte
+    inc(pic.iRam, nbytes);  //Pasa al siguiente byte.
+    pic.SetNameRAM(addr, xVar.name);   //Nombre solo al primer byte
     //Fija dirección física. Se usa solamente "addr0", como referencia, porque
     //no se tienen suficientes registros para modelar todo el arreglo.
-    nVar.addr0 := addr;
+    xVar.addr0 := addr;
+    //Iniciliza bytes si corresponde
+    if xVar.adicPar.hasInit then begin
+      if typ.refType = typChar then begin
+        //Arreglo de char
+        for car in xVar.adicPar.iniVal.ValStr do begin
+          pic.ram[addr].value := ord(car);
+          inc(addr);
+        end;
+      end;
+    end;
   end else if typ.catType = tctPointer then begin
     //Es un puntero a algún tipo.
     //Los punteros cortos, se manejan como bytes
-    AssignRAMinByte(absAdd, nVar.addr0, varName, shared);
+    AssignRAMinByte(absAdd, xVar.addr0, varName, 0, shared);
   end else begin
     GenError(MSG_NOT_IMPLEM, [varName]);
   end;
@@ -2102,6 +2118,12 @@ begin
 
   typWord.CreateField('Low', @word_Low);
   typWord.CreateField('High', @word_High);
+
+  //////////////// String type /////////////
+  {Se crea el tipo String, solo para permitir inicializar arreglos de
+  caracteres. Por ahora no se implementan otras funcionalidades.}
+  typString := CreateSysType('string', t_string, 0);  //tamaño variable
+  { TODO : String deberái definirse mejor como un tipo común, no del sistema }
 
   //Crea variables de trabajo
   varStkByte := TxpEleVar.Create;

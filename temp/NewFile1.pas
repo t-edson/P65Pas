@@ -1,16 +1,10 @@
 program NewProgram;
-//Declarations here
-procedure DelayMs(n: word);
+uses Commodore64;
+var
+  a: byte;
+  a: byte;
 begin
-  asm CLC end 
-end; 
-var 
-  c: char;
-begin
-  DelayMs(2000);
-  if c='A' then
-    inc(c);
-  else 
-    c := #0;  
-  end;  
+  
+  //Code here
+  
 end.

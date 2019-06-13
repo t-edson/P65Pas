@@ -130,11 +130,7 @@ begin
     txtEleType.Caption := xvar.typ.name;
 
     ImageList1.GetBitmap(2, Image1.Picture.Bitmap);
-    if xvar.typ.IsBitSize then begin
-      dirSolic := IntToStr(xvar.adicPar.absAddr) + ':' + IntToStr(xvar.adicPar.absBit);
-    end else begin
-      dirSolic := IntToStr(xvar.adicPar.absAddr);
-    end;
+    dirSolic := IntToStr(xvar.adicPar.absAddr);
     adicInformation :=
            'Direcc. Solicitada: ' + dirSolic + LineEnding +
            'Direcc. Asignada: ' + xvar.AddrString;

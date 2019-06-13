@@ -1,14 +1,14 @@
-{$ORG $1000}
-var
-  borde: byte absolute 53280;
+uses Commodore64;
+var 
+  str: []char = 'HELLO';
 begin
-  ASM
-  lda #$00
-  sta $d020
-  sta $d021  
-  END
-  while true do 
-    inc(borde);
-    delay_ms(100);
-  end; 
+  asm 
+    LDX #12    ; Select row 
+    LDY #12    ; Select column 
+    JSR $E50C   ; Set cursor 
+    LDA #<str  ; Load lo-byte of string adress 
+    LDY #>str  ; Load hi-byte of string adress 
+    JSR $AB1E     ; Print string
+    RTS	 
+  end
 end.

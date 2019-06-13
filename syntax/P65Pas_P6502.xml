@@ -100,7 +100,7 @@
 	<OpenOn AfterPattern="Directive" Iconindex='3'>
       "{$COMMODORE64}"
       "{$FREQUENCY \_10Mhz}"
-	  "{$ORG \_$C000}"
+	  "{$ORG \_$0801}"
 	  "{$IFDEF \_}"
 	  "{$IFDEF \_}\n\n\u{$ELSE}\n\n\u{$ENDIF}"
 	  "{$IFNDEF \_}"
