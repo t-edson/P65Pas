@@ -1,12 +1,85 @@
+P65PAS 0.4
+==========
+Se crea el elemento TxpEleInline, para dar soporte a las funciones INLINE.
+Se agrega la rutina CLRSCR() a la unidad Commodore64;
+Se corrige un errror en la rutina TCompiler_PIC16.CompileFOR() cuando se asignaba una variable
+como valor inicial de la variable índice.
+Se crea el método TCompiler_PIC16.AddConstant() y se usa.
+Se crea el método: TCompiler_PIC16.AddFunction() y se usa en TCompiler_PIC16.CompileProcHeader().
+Se cambia de nombre a TxpElement.DuplicateIn() por TxpElement.ExistsIn() y se le quita el
+VIRTUAL.
+Se cambia de nombre a TxpEleFun.DuplicateIn() por TxpEleFun.Duplicated() y se le quita los
+parámetros.
+Se elimina TCompilerBase.ValidateFunction() y se incluye su código directamente.
+Se cambia el manejo del campo "name" de TxpElement, agregando el campo "uname" para acelerar
+las búsquedas y se usa en todos los puntos donde se aplicaba un UpCAse().
+Se elimina TxpTreeElements.ValidateCurElement().
+Se renombra el archivo tra_Parser.pas a tra_Compiler.pas. 
+Se crea el archivo tra_Parser.pas y se cambia el sistema de traducción de la unidad Parser.pas
+al sistema que usan las demás unidades.
+Se agregan traducciones a mensajes en Parser.pas
+Se optimiza getListOfIdent().
+Se modifica sustancialmente CompileProcHeader() para que separe la parte de la lectura de la
+información de la función de la parte de la creación de la función.
+Se crea el enumerado TxpEleLocation, para precisar mejor la ubicación de los elementos y pasa
+a reemplazar a la bandera boolena InInterface en varios procedimientos.
+Se modifica TCompilerBase.CaptureParams() para que use un arreglo TxpParFuncArray, como 
+parámetro y así se simplifica TCompilerBase.GetOperandIdent().
+Se mueven de TCompiler_PIC16.getListOfIdent(), getParamType(), y CreateFunctionParams() a la 
+unidad Parser.pas
+Se cambia de nombre a CompileProcHeader() por ReadProcHeader() y se restringe su función.
+Se modifica TCompiler_PIC16.GetAdicVarDeclar() para que soporte valores iniciales para las
+variables.
+Se modifican TGenCodBas.AssignRAMinByte() y TGenCodBas.CreateVarInRAM() para que asigne
+valores iniciales a la RAM reservada.
+Se deja de usar la función TCompilerBase.getParamType() y se pasa a usar 
+TCompiler_PIC16.GetTypeVarDeclar() con leves modificaciones.
+Se amplía y mejora TCompiler_PIC16.GetTypeVarDeclar() para soportar declaración de arreglos
+básica.
+Se crea el tipo typString, sin funcionalidad, solo para inicialización de arreglos y se 
+modifica TCompilerBase.GetOperand() para soportar literales de cadena.
+Se potencia TCompiler_PIC16.GetTypeVarDeclar() para permitir la especifiación dede tipos
+compuestos en la declaración de variables.
+Se unifican y se amplían las rutinas de lectura de tipos en los métodos 
+TCompiler_PIC16.GetTypeDeclar() y TCompiler_PIC16.GetTypeDeclarSimple().
+Se implementa la asignación de memoria para arreglos simples.
+Se aumneta la sintaxis del ensmablador 6502 integrado, para que soporte los operadores #< y
+#>.
+
+
+Las funciones INLINE se declaran de la sgte. forma:
+
+inline func1(var x: byte; const y: word; expr z: char);
+begin
+
+end;
+
+La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
+considerando el tipo de almacenamiento del operando.
+Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
+codificar operaciones sobre tipos objeto:
+
+octeto = object
+    value: byte;
+  public 
+    inline assign(var x: byte) operator ":="  precedence 5;
+    
+    end;
+    inline assign(x: byte) operator ":=";
+    
+    end;
+  end;
+
 P65PAS 0.3
 ==========
 Se redefinen los almacenamientos en el enumerado TStoOperand, en la unidad XpresTypesPIC, 
-para hacerlos más consistentes con el documento "Modos de Almacenamiento de Operandos en Xpres" del framework Xpres.
+para hacerlos más consistentes con el documento "Modos de Almacenamiento de Operandos en 
+Xpres" del framework Xpres.
 Se cambia el nombre del valor enumerado "stVarRefVar" por "stVarRef"
 Se cambia el nombre del valor enumerado "stVarRefExp" por "stExpRef"
 Se agrega comentario al código BASIC generado en modo COmmodore64.
 Se corrige TGenCodBas.byte_LoadToRT() para el caso de variables.
-Se corrige el uso de instrucciones con direccionamiento acumulador en lso bloques ASM.
+Se corrige el uso de instrucciones con direccionamiento acumulador en los bloques ASM.
 Se implementan algunos casos de TGenCod.fun_Word()
 Se corrige la codificación de la instrucción ADC. 
 Se agregan envoltorios a funciones del Kernal y BASIC en las unidad Commodore64.
@@ -35,11 +108,21 @@ básicos, como:
 type MiByte = object(byte)
 		procedure Add()
 	      end;
-Implementar esta funcionalidad en etapas tempranas daría la ventaja de que el lenguaje nacería ya con soporte básico a objetos.
-OTra de las tareas pendientes es hacer que la creación de funciones de sistema sea igual 
-que las funciones definidas por el usuario (incluyendo el uso de variabels locales).
-Pero este acercamiento, debe también darse del lado de las funciones definidas por el usuario. De modo que se permita especificar parámetros REGISTER, difeenciados. Se recomienda implementar las palabras resrevadas REGISTERA, REGISTERX, REGISTERY, REGISTERSP,...
+Implementar esta funcionalidad en etapas tempranas daría la ventaja de que el lenguaje nacería 
+ya con soporte básico a objetos.
+Otra de las tareas pendientes es hacer que la creación de funciones de sistema sea igual 
+que las funciones definidas por el usuario (incluyendo el uso de variables locales).
+Pero este acercamiento, debe también darse del lado de las funciones definidas por el usuario. De 
+modo que se permita especificar parámetros REGISTER, diferenciados. Se recomienda implementar las 
+palabras resrevadas REGISTERA, REGISTERX, REGISTERY, REGISTERSP,...
 
+Revisar las instrucciones "if not AcumStatInZ" porque están después de SetROBResult* y no tiene
+sentido, porque siempre cambia AcumStatInZ.
+
+Otra de las cuestiones "filosóficas" a resolver, es si el modo "logic = logInverted" tiene
+realmente sentido cuando se aplica a variables, ya que en una interpretación, las variables
+nunca deberían tener una lógica distinta a la estableciada para todo el sistema. Al parecer
+la lógica invertida solo debería aplicarse a expresiones, pero es un tema de análisis.
 
 P65PAS 0.2
 ==========

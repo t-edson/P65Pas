@@ -1,8 +1,4 @@
-## Donate to the project
-
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=7LKYWG9LXNQ9C&lc=ES&item_name=Tito%20Hinostroza&item_number=2153&no_note=0&cn=Dar%20instrucciones%20especiales%20al%20vendedor%3a&no_shipping=2&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
-
-P65Pas 0.3
+P65Pas 0.4
 ==========
 
 Multi-platform Pascal cross-compiler for 6502 CPU.
@@ -102,7 +98,7 @@ Some features of the IDE are:
 
 ![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/06/P65Pas-0.7_en.png "P65Pas with dark skin")
 
-![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/11/P65Pas-Linux.jpg "P65Pas for Ubuntu")
+![P65Pas](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2019/06/Sin-título2.png "P65Pas for Ubuntu")
 
 ![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2018/05/P65PasMac.jpg "P65Pas for Mac")
 
@@ -205,6 +201,7 @@ Variables are defined with the VAR keyword:
 var
   var1 : byte;
   large_name_variable: boolean;
+  c: char = 'A';
 ```
 
 Variables can be defined too, at an absolute memory address:
@@ -212,7 +209,7 @@ Variables can be defined too, at an absolute memory address:
 ```
 var
   PORTB: BYTE absolute $06;
-  pin1: boolean; absolute $07;
+  pin1: boolean absolute $07;
 ```
 
 Specific byte of a word, can be access using fields:
