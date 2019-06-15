@@ -12,8 +12,6 @@ ER_INVAL_FLOAT := trans('Unvalid float number.'       , 'Número decimal no vál
                         'Ungültige Gleitkommazahl.'   ,'Невірне число з плаваючою комою.','Недопустимое число с плавающей запятой.', 'Nombre à virgule flottante invalide.');
 ER_ERR_IN_NUMB := trans('Error in number.'            , 'Error en número'               ,'',
                         'Fehler bei Nummer.'          ,'Помилка в числі.','Ошибка в числе.', 'Nombre invalide.');
-ER_NOTYPDEFNUM := trans('No type defined to accommodate this number.', 'No hay tipo definido para albergar a este número.','',
-                        'Kein Typ definiert.'         ,'Для типу цього числа не визначено жодного типу','Не определён тип для размещения этого числа', 'Aucun type défini pour ce nombre.');
 ER_UNDEF_TYPE_ := trans('Undefined type "%s"'         , 'Tipo "%s" no definido.'        ,'',
                         'Undefinierter Typ "%s"'      , 'Невизначений тип "%s"','Неопределённый тип "%s"', 'Type indéfini "%s"');
 ER_INV_MEMADDR := trans('Invalid memory address.'     , 'Dirección de memoria inválida.','',
@@ -66,6 +64,8 @@ ER_ASIG_EXPECT := trans('":=" expected.'             , 'Se esperaba ":="', '',
                         '":=" erwartet.'             , '":=" очікується.', '":=" ожидается.', '":=" attendu.');
 ER_FIL_NOFOUND := trans('File not found: %s'         , 'Archivo no encontrado: %s', '',
                         'Datei nicht gefunden: "%s"' , 'Файл не знайдено: %s','Файл не найден: %s', 'Fichier non trouvé: %s');
+ER_NOTYPDEF_NU := trans('No type defined to allocate this number.', 'No hay tipo para almacenar este número.', '',
+                        '','Не визначено тип, щоб виділити цей номер.','Нет определенного типа, чтобы выделить это число.', 'Aucun type défini pour allouer ce nombre');
 WA_UNUSED_CON_ := trans('Unused constant: %s', 'Constante sin usar: %s', '',
                         'Unbenutzte Konstante: %s','Невикористана константа: %s','Неиспользованная константа: %s', 'Constante non utilisée : %s');
 WA_UNUSED_VAR_ := trans('Unused variable: %s', 'Variable sin usar: %s', '',
@@ -81,5 +81,4 @@ ER_ARR_SIZ_BIG := trans('Array size to big.' , 'Tamaño de arreglo muy grande', 
                         ''                   ,'Розмір масиву завеликий.','Размер массива слишком велик.', 'Tableau trop grand.');
 ER_INV_ARR_SIZ := trans('Invalid array size.', 'Tamaño de arreglo inválido', '',
                         ''                   , 'Помилка в розмірі масиву.','Ошибка размера массива.', 'Taille de tableau invalide.');
-
 

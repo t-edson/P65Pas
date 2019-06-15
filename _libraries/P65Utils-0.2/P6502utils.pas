@@ -668,7 +668,9 @@ begin
   i_BEQ:;  //branch on equal (zero set)
   i_BIT:;  //bit test
   i_BMI:;  //branch on minus (negative set)
-  i_BNE:;  //branch on not equal (zero clear)
+  i_BNE: begin
+
+    end;  //branch on not equal (zero clear)
   i_BPL:;  //branch on plus (negative clear)
   i_BRK:;  //break / interrupt
   i_BVC:;  //branch on overflow clear
