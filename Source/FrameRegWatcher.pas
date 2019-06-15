@@ -300,9 +300,7 @@ var
 begin
   for v in cxp.TreeElems.AllVars do begin   //Se supone que "AllVars" ya se actualizó.
       if v.nCalled = 0 then continue;
-      if v.typ.IsBitSize then begin
-        AddWatch(v.name);
-      end else if v.typ.IsByteSize then begin
+      if v.typ.IsByteSize then begin
         AddWatch(v.name);
       end else if v.typ.IsWordSize then begin
         AddWatch(v.name+'@1');

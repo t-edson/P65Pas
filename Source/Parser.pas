@@ -74,13 +74,11 @@ public  //Campos generales
 public  //Campos acceso cuando sea variable.
   function VarName: string; inline; //nombre de la variable, cuando sea de categ. coVariab
   function offs : TVarOffs; //dirección de la variable
-  function Boffs: TVarOffs; inline; //dirección del byte del bit
   function Loffs: TVarOffs; inline; //dirección del byte bajo
   function Hoffs: TVarOffs; inline; //dirección del byte alto
   function Eoffs: TVarOffs; inline; //dirección del byte alto
   function Uoffs: TVarOffs; inline; //dirección del byte alto
   function addr : TVarOffs; //dirección absoluta de la variable
-  function bit : byte; inline;  //posición del bit
 public  //Campos de acceso a los valores constantes
   property Value   : TConsValue read FVal;
   property valInt  : Int64 read Fval.ValInt write SetvalInt;
@@ -275,8 +273,6 @@ protected //Accesos a propiedades de p1^ y p2^.
   function value2: dword;
   function value2L: word;
   function value2H: word;
-  function bit1: TPicRegisterBit;
-  function bit2: TPicRegisterBit;
   function byte1: TPicRegister;
   function byte1L: TPicRegister;
   function byte1H: TPicRegister;
@@ -338,15 +334,11 @@ public    //Acceso a campos del objeto PIC
 protected //Container lists of registers
   listRegAux : TPicRegister_list;  //lista de registros de trabajo y auxiliares
   listRegStk : TPicRegister_list;  //lista de registros de pila
-  listRegAuxBit: TPicRegisterBit_list;  //lista de registros de trabajo y auxiliares
-  listRegStkBit: TPicRegisterBit_list;
   stackTop   : integer;   //índice al límite superior de la pila
-  stackTopBit: integer;   //índice al límite superior de la pila
 public
   picCore    : TCPUCore;       //Objeto PIC Core
   devicesPath: string; //Ruta de las unidades de dispositivos
   property ProplistRegAux: TPicRegister_list read listRegAux;
-  property ProplistRegAuxBit: TPicRegisterBit_list read listRegAuxBit;
 protected
   procedure RefreshAllElementLists;
   procedure RemoveUnusedFunc;
@@ -1613,14 +1605,6 @@ function TCompilerBase.byte2U: TPicRegister;
 begin
   Result := p2^.rVar.adrByte3;
 end;
-function TCompilerBase.bit1: TPicRegisterBit; inline;
-begin
-  Result := p1^.rVar.adrBit;
-end;
-function TCompilerBase.bit2: TPicRegisterBit; inline;
-begin
-  Result := p2^.rVar.adrBit;
-end;
 //Manejo de errores y advertencias
 procedure TCompilerBase.ClearError;
 {Limpia la bandera de errores. Tomar en cuenta que solo se debe usar para iniciar el
@@ -2111,10 +2095,6 @@ begin
     Result := FVar.offs;
   end;
 end;
-function TOperand.Boffs: TVarOffs;
-begin
-  Result := rVar.adrBit.offs;
-end;
 function TOperand.Loffs: TVarOffs;
 {Dirección de memoria baja, cuando es de tipo Word.}
 begin
@@ -2135,11 +2115,6 @@ end;
 function TOperand.addr: TVarOffs;
 begin
   Result := FVar.addr;
-end;
-function TOperand.bit: byte;
-begin
-  //Si se pide el bit, se asume que es de tipo "Bit".
-  Result := rVar.adrBit.bit;
 end;
 procedure TOperand.Invert;
 begin

@@ -35,8 +35,8 @@ type
   protected
     //Registros de trabajo
     A      : TPicRegister;     //Registro Interno.
-    Z      : TPicRegisterBit;  //Registro Interno.
-    C      : TPicRegisterBit;  //Registro Interno.
+//    Z      : TPicRegisterBit;  //Registro Interno.
+//    C      : TPicRegisterBit;  //Registro Interno.
     H      : TPicRegister;     //Registros de trabajo. Se crean siempre.
     E      : TPicRegister;     //Registros de trabajo. Se crean siempre.
     U      : TPicRegister;     //Registros de trabajo. Se crean siempre.
@@ -57,7 +57,6 @@ type
   protected  //Rutinas de gestión de memoria de bajo nivel
     procedure AssignRAM(out addr: word; regName: string; shared: boolean);  //Asigna a una dirección física
     function CreateRegisterByte(RegType: TPicRegType): TPicRegister;
-    function CreateRegisterBit(RegType: TPicRegType): TPicRegisterBit;
   protected  //Variables temporales
     {Estas variables temporales, se crean como forma de acceder a campos de una variable
      como varbyte.bit o varword.low. Se almacenan en "varFields" y se eliminan al final}
@@ -75,7 +74,6 @@ type
     function GetStkRegisterByte: TPicRegister;
     function GetVarByteFromStk: TxpEleVar;
     function GetVarWordFromStk: TxpEleVar;
-    function FreeStkRegisterBit: boolean;
     function FreeStkRegisterByte: boolean;
     function FreeStkRegisterWord: boolean;
     function FreeStkRegisterDWord: boolean;
@@ -333,24 +331,6 @@ begin
   end;
   Result := reg;   //devuelve referencia
 end;
-function TGenCodBas.CreateRegisterBit(RegType: TPicRegType): TPicRegisterBit;
-{Crea una nueva entrada para registro en listRegAux[], pero no le asigna memoria.
- Si encuentra error, devuelve NIL. Este debería ser el único punto de entrada
-para agregar un nuevo registro a listRegAux.}
-var
-  reg: TPicRegisterBit;
-begin
-  //Agrega un nuevo objeto TPicRegister a la lista;
-  reg := TPicRegisterBit.Create;  //Crea objeto
-  reg.typ := RegType;    //asigna tipo
-  listRegAuxBit.Add(reg);   //agrega a lista
-  if listRegAuxBit.Count > MAX_REGS_AUX_BIT then begin
-    //Se asume que se desbordó la memoria evaluando a alguna expresión
-    GenError(MSG_VER_CMP_EXP);
-    exit(nil);
-  end;
-  Result := reg;   //devuelve referencia
-end;
 function TGenCodBas.CreateTmpVar(nam: string; eleTyp: TxpEleType): TxpEleVar;
 {Crea una variable temporal agregándola al contenedor varFields, que es
 limpiado al iniciar la compilación. Notar que la variable temporal creada, no tiene
@@ -463,17 +443,6 @@ begin
   //Ahora que tenemos ya la variable configurada, devolvemos la referencia
   Result := varStkWord;
 end;
-function TGenCodBas.FreeStkRegisterBit: boolean;
-{Libera el último bit, que se pidió a la RAM. Si hubo error, devuelve FALSE.
- Liberarlos significa que estarán disponibles, para la siguiente vez que se pidan}
-begin
-   if stackTopBit=0 then begin  //Ya está abajo
-     GenError(MSG_STACK_OVERF);
-     exit(false);
-   end;
-   dec(stackTopBit);   //Baja puntero
-   exit(true);
-end;
 function TGenCodBas.FreeStkRegisterByte: boolean;
 {Libera el último byte, que se pidió a la RAM. Devuelve en "reg", la dirección del último
  byte pedido. Si hubo error, devuelve FALSE.
@@ -554,7 +523,7 @@ begin
   end;
   //Asigna espacio, de acuerdo al tipo
   if xVar.adicPar.hasInit then begin
-    //Valores útiles
+    //Valores útiles cuando es byte o word
     valByte0 := xVar.adicPar.iniVal.ValInt and $FF;
     valByte1 := (xVar.adicPar.iniVal.ValInt and $FF00) >> 8;
   end else begin
@@ -582,27 +551,31 @@ begin
     //Es un arreglo de algún tipo
     if absAdd<>-1 then begin
       //Se pide mapearlo de forma absoluta
-      GenError(MSG_NOT_IMPLEM, [varName]);
-      exit;
-    end;
-    //Asignamos espacio en RAM { TODO : Esta rutina podría ponerse en un proced. como AssignRAMinByte()  }
-    nbytes := typ.arrSize * typ.refType.size;
-    if not pic.GetFreeBytes(nbytes, addr) then begin
-      GenError(MSG_NO_ENOU_RAM);
-      exit;
-    end;
-    inc(pic.iRam, nbytes);  //Pasa al siguiente byte.
-    pic.SetNameRAM(addr, xVar.name);   //Nombre solo al primer byte
-    //Fija dirección física. Se usa solamente "addr0", como referencia, porque
-    //no se tienen suficientes registros para modelar todo el arreglo.
-    xVar.addr0 := addr;
-    //Iniciliza bytes si corresponde
-    if xVar.adicPar.hasInit then begin
-      if typ.refType = typChar then begin
-        //Arreglo de char
-        for car in xVar.adicPar.iniVal.ValStr do begin
-          pic.ram[addr].value := ord(car);
-          inc(addr);
+      //Solo se posiciona la variable en la posición indicada
+      xVar.addr0 := absAdd;
+      if xVar.adicPar.hasInit then begin
+        GenError('Cannot initialize an absolute array', [varName]);
+      end;
+    end else begin;
+      //Asignamos espacio en RAM { TODO : Esta rutina podría ponerse en un proced. como AssignRAMinByte()  }
+      nbytes := typ.arrSize * typ.refType.size;
+      if not pic.GetFreeBytes(nbytes, addr) then begin
+        GenError(MSG_NO_ENOU_RAM);
+        exit;
+      end;
+      inc(pic.iRam, nbytes);  //Pasa al siguiente byte.
+      pic.SetNameRAM(addr, xVar.name);   //Nombre solo al primer byte
+      //Fija dirección física. Se usa solamente "addr0", como referencia, porque
+      //no se tienen suficientes registros para modelar todo el arreglo.
+      xVar.addr0 := addr;
+      //Iniciliza bytes si corresponde
+      if xVar.adicPar.hasInit then begin
+        if typ.refType = typChar then begin
+          //Arreglo de char
+          for car in xVar.adicPar.iniVal.ValStr do begin
+            pic.ram[addr].value := ord(car);
+            inc(addr);
+          end;
         end;
       end;
     end;
@@ -2047,9 +2020,6 @@ begin
   listRegAux.Clear;
   listRegStk.Clear;   //limpia la pila
   stackTop := 0;
-  listRegAuxBit.Clear;
-  listRegStkBit.Clear;   //limpia la pila
-  stackTopBit := 0;
   {Crea registros de trabajo adicionales H,E,U, para que estén definidos, pero aún no
   tienen asignados una posición en memoria.}
   H := CreateRegisterByte(prtWorkReg);
@@ -2135,24 +2105,14 @@ begin
   //Inicializa contenedores
   listRegAux   := TPicRegister_list.Create(true);
   listRegStk   := TPicRegister_list.Create(true);
-  listRegAuxBit:= TPicRegisterBit_list.Create(true);
-  listRegStkBit:= TPicRegisterBit_list.Create(true);
   stackTop     := 0;  //Apunta a la siguiente posición libre
-  stackTopBit  := 0;  //Apunta a la siguiente posición libre
   {Crea registro de trabajo A. El registro A, es el registro interno del PIC, y no
   necesita un mapeo en RAM. Solo se le crea aquí, para poder usar su propiedad "used"}
   A := TPicRegister.Create;
   A.assigned := false;   //se le marca así, para que no se intente usar
-  {Crea registro de trabajo Z. El registro Z, es el registro interno del PIC, y está
-  siempre asignado en RAM. }
-  Z := TPicRegisterBit.Create;
-  Z.bit := _Z;
-  Z.assigned := true;   //ya está asignado desde el principio
-  {Crea registro de trabajo C. El registro C, es el registro interno del PIC, y está
-  siempre asignado en RAM. }
-  C := TPicRegisterBit.Create;
-  C.bit := _C;
-  C.assigned := true;   //ya está asignado desde el principio
+
+
+
   //Crea registro interno INDF
   INDF := TPicRegister.Create;
   INDF.addr := $00;
@@ -2167,11 +2127,7 @@ destructor TGenCodBas.Destroy;
 begin
   INDF.Destroy;
   FSR.Destroy;
-  C.Destroy;
-  Z.Destroy;
   A.Destroy;
-  listRegAuxBit.Destroy;
-  listRegStkBit.Destroy;
   listRegStk.Destroy;
   listRegAux.Destroy;
   varFields.Destroy;

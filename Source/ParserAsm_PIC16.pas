@@ -469,6 +469,7 @@ var
   ele: TxpElement;
   xfun: TxpEleFun;
   xvar: TxpEleVar;
+  xcon: TxpEleCon;
 begin
   Result := false;
   skipWhites;
@@ -480,16 +481,15 @@ begin
     if (lexAsm.GetToken= '') or (lexAsm.GetToken = ';') then begin
       //Termina la instrucción sin o con es comentario
       ad := pic.iRam;
-      Result := true;
-      exit;
+      exit(true);
     end else if lexAsm.GetToken = '+' then begin
       //Es dirección sumada
       lexAsm.Next;
       skipWhites;
       CaptureByte(offset);  //captura desplazamiento
       if HayError then exit(false);
-      Result := true;
       ad := pic.iRam + offset;
+      Result := true;
       exit;
     end else if lexAsm.GetToken = '-' then begin
       //Es dirección restada
@@ -497,13 +497,13 @@ begin
       skipWhites;
       CaptureByte(offset);  //captura desplazamiento
       if HayError then exit(false);
-      Result := true;
       if FirstPass then begin
-        //Para evitar errores, proque en Primera pasada se trabaja todo en $0000
+        //Para evitar errores, porque en Primera pasada se trabaja todo en $0000
         ad := 00;
       end else begin
         ad := (pic.iRam - offset) and $FFFF;
       end;
+      Result := true;
       exit;
     end else begin
       //Sigue otra cosa
@@ -513,8 +513,7 @@ begin
     //Es una dirección numérica
     ad := StrToInt(lexAsm.GetToken);
     lexAsm.Next;
-    Result := true;
-    exit;
+    exit(true);
   end else if (tokType = lexAsm.tnIdentif) and IsLabel(lexAsm.GetToken, dir) then begin
     //Es un identificador de etiqueta
     if pic.IsRelJump(idInst) then begin
@@ -525,82 +524,97 @@ begin
       ad := dir;
     end;
     lexAsm.Next;
-    Result := true;
-    exit;
+    exit(true);
   end else if tokType = lexAsm.tnIdentif  then begin
     ele := TreeElems.FindFirst(lexAsm.GetToken);  //identifica elemento
-    if (ele <> nil) and (ele.idClass = eltFunc) then begin
-      //Es un identificador de función del árbol de sintaxis
-      xfun := TxpEleFun(ele);
-      AddCallerTo(xfun);  //lleva la cuenta
-      ad := xfun.adrr;   //lee su dirección
-      lexAsm.Next;
-      Result := true;
-      exit;
-    end;
-    if (ele <> nil) and (ele.idClass = eltVar) then begin
-      //Es identificador de variable
-      xvar := TxpEleVar(ele);
-      AddCallerTo(xvar);  //lleva la cuenta
-      if xvar.typ.IsByteSize then begin
-        ad := xvar.addr;
+    if ele<>nil then begin
+      //Se identifica un elemento del lenguaje
+      if ele.idClass = eltFunc then begin
+        //Es un identificador de función del árbol de sintaxis
+        xfun := TxpEleFun(ele);
+        AddCallerTo(xfun);  //lleva la cuenta
+        ad := xfun.adrr;   //lee su dirección
         lexAsm.Next;
-        Result := true;
-        exit;
-      end else if xvar.typ.IsWordSize then begin
-        lexAsm.Next;
-        if HaveByteInformation(bytePos) then begin
-          //Hay precisión de byte
-          if bytePos = 0 then begin  //Byte bajo
-            ad := xvar.adrByte0.addr;
-          end else if bytePos = 1 then begin        //Byte alto
-            ad := xvar.adrByte1.addr;
+        exit(true);
+      end else if ele.idClass = eltVar then begin
+        //Es identificador de variable
+        xvar := TxpEleVar(ele);
+        AddCallerTo(xvar);  //lleva la cuenta
+        if xvar.typ.IsWordSize then begin
+          lexAsm.Next;
+          if HaveByteInformation(bytePos) then begin
+            //Hay precisión de byte
+            if bytePos = 0 then begin  //Byte bajo
+              ad := xvar.adrByte0.addr;
+            end else if bytePos = 1 then begin        //Byte alto
+              ad := xvar.adrByte1.addr;
+            end else begin
+               GenErrorAsm(ER_NOGETADD_VAR);
+               exit(false);
+            end;
           end else begin
-             GenErrorAsm(ER_NOGETADD_VAR);
-             exit(false);
+             ad := xvar.addr;
           end;
-        end else begin
-           ad := xvar.addr;
+        end else if xvar.typ.IsDWordSize then begin
+          lexAsm.Next;
+          if HaveByteInformation(bytePos) then begin
+            //Hay precisión de byte
+            if bytePos = 0 then begin  //Byte bajo
+              ad := xvar.adrByte0.addr;
+            end else if bytePos = 1 then begin        //Byte alto
+              ad := xvar.adrByte1.addr;
+            end else if bytePos = 2 then begin        //Byte alto
+              ad := xvar.adrByte2.addr;
+            end else if bytePos = 3 then begin        //Byte alto
+              ad := xvar.adrByte3.addr;
+            end else begin
+               GenErrorAsm(ER_NOGETADD_VAR);
+               exit(false);
+            end;
+          end else begin
+             ad := xvar.addr;
+          end;
+        end else begin  //Es BYTE u otro tipo de variable
+          ad := xvar.addr;  //Lee su dirección
+          lexAsm.Next;
         end;
         exit(true);
-      end else if xvar.typ.IsDWordSize then begin
-        lexAsm.Next;
-        if HaveByteInformation(bytePos) then begin
-          //Hay precisión de byte
-          if bytePos = 0 then begin  //Byte bajo
-            ad := xvar.adrByte0.addr;
-          end else if bytePos = 1 then begin        //Byte alto
-            ad := xvar.adrByte1.addr;
-          end else if bytePos = 2 then begin        //Byte alto
-            ad := xvar.adrByte2.addr;
-          end else if bytePos = 3 then begin        //Byte alto
-            ad := xvar.adrByte3.addr;
-          end else begin
-             GenErrorAsm(ER_NOGETADD_VAR);
-             exit(false);
-          end;
+      end else if ele.idClass = eltCons then begin
+        //Es identificador de constante
+        xcon := TxpEleCon(ele);
+        AddCallerTo(xcon);  //lleva la cuenta
+        if xcon.typ = typByte then begin
+          ad := xcon.val.ValInt;  //Lee su dirección
+          lexAsm.Next;
+        end else if xcon.typ = typWord then begin
+          ad := xcon.val.ValInt;  //Lee su dirección
+          lexAsm.Next;
         end else begin
-           ad := xvar.addr;
+          //Otro tipo de constante
+          GenErrorAsm(ER_NOGETVAL_CON);
+          exit(false);
         end;
         exit(true);
       end else begin
-        GenErrorAsm(ER_NOGETADD_VAR);
+        //No se puede leer dirección
+        GenErrorAsm(ER_EXP_CON_VAL);
         exit(false);
       end;
-    end;
-    //Es un identificador, no definido. Puede definirse luego.
-    if pic.IsRelJump(idInst) then begin
-      //Deben ser instrucciones de salto relativo BNE, BEQ, ...
-      ad := $FF;
     end else begin
-      //Debe ser JMP o JSR. Se debe dejar 2 bytes de espacio
-      ad := $FFFF;
+      //Es un identificador, no definido. Puede definirse luego.
+      if pic.IsRelJump(idInst) then begin
+        //Deben ser instrucciones de salto relativo BNE, BEQ, ...
+        ad := $FF;
+      end else begin
+        //Debe ser JMP o JSR. Se debe dejar 2 bytes de espacio
+        ad := $FFFF;
+      end;
+      //Los saltos indefinidos, se guardan en la lista "uJumps"
+      AddUJump(lexAsm.GetToken, pic.iRam, idInst);
+      lexAsm.Next;
+      Result := true;
+      exit(true);
     end;
-    //Los saltos indefinidos, se guardan en la lista "uJumps"
-    AddUJump(lexAsm.GetToken, pic.iRam, idInst);
-    lexAsm.Next;
-    Result := true;
-    exit;
   end else begin
     GenErrorAsm(ER_EXPECT_ADDR);
     Result := false;
@@ -764,23 +778,22 @@ begin
       exit;
     end;
   end else if tokType in [lexAsm.tnNumber, lexAsm.tnIdentif] then begin
-    //Puede ser abosluto o página cero.
+    //Puede ser absoluto o página cero, o sus versiones indexadas con X o Y.
     //n := StrToInt(lexAsm.GetToken);
     if not CaptureAddress(idInst, ad) then begin
       GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
       exit;
     end;
     if (ad>255) then begin
-      lexAsm.Next;
       skipWhites;
       //Verifica si sigue ,X o ,Y
       if lexAsm.GetToken = ',' then begin
         lexAsm.Next;
         skipWhites;
-        if lexAsm.GetToken = 'X' then begin
+        if Upcase(lexAsm.GetToken) = 'X' then begin
           lexAsm.Next;
           pic.codAsm(idInst, aAbsolutX, ad);
-        end else if lexAsm.GetToken = 'Y' then begin
+        end else if Upcase(lexAsm.GetToken) = 'Y' then begin
           lexAsm.Next;
           pic.codAsm(idInst, aAbsolutY, ad);
         end else begin
@@ -791,16 +804,15 @@ begin
           pic.codAsm(idInst, aAbsolute, ad);
       end;
     end else begin  //<255
-      lexAsm.Next;
       skipWhites;
       //Verifica si sigue ,X o ,Y
       if lexAsm.GetToken = ',' then begin
         lexAsm.Next;
         skipWhites;
-        if lexAsm.GetToken = 'X' then begin
+        if Upcase(lexAsm.GetToken) = 'X' then begin
           lexAsm.Next;
           pic.codAsm(idInst, aZeroPagX, ad);
-        end else if lexAsm.GetToken = 'Y' then begin
+        end else if Upcase(lexAsm.GetToken) = 'Y' then begin
           lexAsm.Next;
           pic.codAsm(idInst, aZeroPagY, ad);
         end else begin

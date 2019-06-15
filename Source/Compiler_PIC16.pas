@@ -26,13 +26,13 @@ type
     function CompileNoConditionBody(GenCode: boolean): boolean;
     procedure CompileFOR;
     procedure CompileLastEnd;
-    function GetTypeDeclarSimple(): TxpEleType;
     procedure ReadProcHeader(out procName: String; out retType: TxpEleType; out
       srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt: Boolean);
     procedure ReadInlineHeader(out procName: String; out retType: TxpEleType; out
       srcPos: TSrcPos; out pars: TxpParInlinArray);
     function GetExpressionBool: boolean;
     function GetTypeDeclar(out decStyle: TTypDeclarStyle): TxpEleType;
+    function GetTypeDeclarSimple(): TxpEleType;
     function IsUnit: boolean;
     procedure array_length(const OpPtr: pointer);
     procedure ProcCommentsNoExec;
@@ -87,7 +87,7 @@ procedure SetLanguage;
 implementation
 var
   ER_DUPLIC_IDEN, ER_NOT_IMPLEM_, ER_IDEN_EXPECT, ER_INVAL_FLOAT: string;
-  ER_ERR_IN_NUMB, ER_NOTYPDEFNUM, ER_UNDEF_TYPE_: string;
+  ER_ERR_IN_NUMB, ER_UNDEF_TYPE_: string;
   ER_INV_MAD_DEV, ER_EXP_VAR_IDE, ER_INV_MEMADDR, ER_BIT_VAR_REF: String;
   ER_UNKNOWN_ID_, ER_DUPLIC_FUNC_, ER_EQU_EXPECTD : string;
   ER_IDE_CON_EXP, ER_NUM_ADD_EXP, ER_IDE_TYP_EXP, ER_SEM_COM_EXP: String;
@@ -772,6 +772,7 @@ begin
     end;
   end;
   //Puede seguir una sección de inicialización: var: char = 'A';
+  ProcComments;
   if cIn.tok = '=' then begin
     aditVar.hasInit := true;
     cIn.Next;   //lo toma
@@ -1152,7 +1153,6 @@ toma el nombre indicado.}
 var
   etyp, reftyp: TxpEleType;
   srcpos: TSrcPos;
-  catType: TxpCatType;
   decStyle: TTypDeclarStyle;
 begin
   ProcComments;
@@ -2598,10 +2598,7 @@ begin
   for v in TreeElems.AllVars do begin   //Se supone que "AllVars" ya se actualizó.
       if ExcUnused and (v.nCalled = 0) then continue;
       if v.nCalled = 0 then subUsed := '; <Unused>' else subUsed := '';
-      if v.typ.IsBitSize then begin
-        lins.Add('#define ' + v.name + ' ' + AdrStr(v.addr) + ',' +
-                                             IntToStr(v.adrBit.bit)+ subUsed);
-      end else if v.typ.IsByteSize then begin
+      if v.typ.IsByteSize then begin
         lins.Add(v.name + ' EQU ' +  AdrStr(v.addr)+ subUsed);
       end else if v.typ.IsWordSize then begin
         lins.Add(v.name+'@0' + ' EQU ' +  AdrStr(v.addrL)+ subUsed);
@@ -2616,7 +2613,7 @@ begin
       end;
   end;
   //Reporte de registros de trabajo, auxiliares y de pila
-  if (listRegAux.Count>0) or (listRegAuxBit.Count>0) then begin
+  if (listRegAux.Count>0) then begin
     lins.Add(';------ Work and Aux. Registers ------');
     for reg in listRegAux do begin
       if not reg.assigned then continue;  //puede haber registros de trabajo no asignados
@@ -2625,7 +2622,7 @@ begin
       lins.Add(nam + ' EQU ' +  adStr);
     end;
   end;
-  if (listRegStk.Count>0) or (listRegStkBit.Count>0) then begin
+  if (listRegStk.Count>0) then begin
     lins.Add(';------ Stack Registers ------');
     for reg in listRegStk do begin
       nam := pic.NameRAM(reg.addr); //debería tener nombre

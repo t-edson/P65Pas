@@ -210,7 +210,6 @@ procedure TGenCod.expr_start;
 begin
   //Inicia banderas de estado para empezar a calcular una expresión
   A.used := false;        //Su ciclo de vida es de instrucción
-  Z.used := false;        //Su ciclo de vida es de instrucción
   if H<>nil then
     H.used := false;      //Su ciclo de vida es de instrucción
   RTstate := nil;         //Inicia con los RT libres.
@@ -1767,7 +1766,7 @@ begin
 end;
 procedure TGenCod.ROB_word_equal_word(Opt: TxpOperation; SetRes: boolean);
 var
-  sale, sale0: integer;
+  sale0: integer;
 begin
   if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
     GenError('Too complex pointer expression.'); exit;

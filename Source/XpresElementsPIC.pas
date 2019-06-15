@@ -192,9 +192,7 @@ type  //TxpElement y clases previas
     Parent  : TxpElement;  //Referencia al elemento padre
     idClass : TxpIDClass;  //Para no usar RTTI
     elements: TxpElements; //Referencia a nombres anidados, cuando sea función
-    {Bandera para indicar si la función, ha sido declarada en la sección INTERFACE. Este
-    campo es úitl para cuando se procesan unidades.}
-    location: TxpEleLocation;
+    location: TxpEleLocation;  //Ubicación del elemento
     property name: string read Fname write Setname;
     property uname: string read Funame;
     function Path: string;
@@ -302,7 +300,6 @@ type //Clases de elementos
     fields: TTypFields;
     procedure CreateField(metName: string; proc: TTypFieldProc);
   public  //Identificación
-    function IsBitSize: boolean;
     function IsByteSize: boolean;
     function IsWordSize: boolean;
     function IsDWordSize: boolean;
@@ -354,8 +351,7 @@ type //Clases de elementos
     {Indica si la variables es temporal, es decir que se ha creado solo para acceder a
     una parte de otra variable, que si tiene almacenamiento físico.}
     IsTmp      : boolean;
-  private //Campos para devolver direcciones como TPicRegister y TPicRegisterBit
-    adrBitTmp  : TPicRegisterBit; //Dirección física, cuando es de tipo Bit/Boolean
+  private //Campos para devolver direcciones como TPicRegister
     adrByteTmp : TPicRegister;    //Dirección física, cuando es de tipo Byte/Char/Word/DWord
   public  //Campos para guardar las direcciones físicas asignadas en RAM.
     {Direcciones base. La dirección de inicio de la variable debe ser siempre addr0.
@@ -370,8 +366,7 @@ type //Clases de elementos
     addr1: word;
     addr2: word;
     addr3: word;
-    //Devuelve las direcciones como TPicRegister y TPicRegisterBit
-    function adrBit  : TPicRegisterBit; //Dirección física, cuando es de tipo Bit/Boolean
+    //Devuelve las direcciones como TPicRegister
     function adrByte0: TPicRegister;    //Dirección física, cuando es de tipo Byte/Char/Word/DWord
     function adrByte1: TPicRegister;    //Dirección física, cuando es de tipo Word/DWord
     function adrByte2: TPicRegister;    //Dirección física, cuando es de tipo DWord
@@ -385,7 +380,6 @@ type //Clases de elementos
     function addrE: word;   //Devuelve la dirección absoluta de la variable (HIGH)
     function addrU: word;   //Devuelve la dirección absoluta de la variable (HIGH)
     function AddrString: string; //Devuelve la dirección física como cadena
-    function BitMask: byte;    //Máscara de bit, de acuerdo al valor del campo "bit".
     procedure ResetAddress;    //Limpia las direcciones físicas
     //procedure SetRAMusedAsShared;
     constructor Create; override;
@@ -994,12 +988,6 @@ begin
   ftyp := AValue;
 end;
 
-function TxpEleVar.adrBit: TPicRegisterBit;
-begin
-  adrBitTmp.addr := addr0;
-  adrBitTmp.bit  := bit0;;
-  Result := adrBitTmp;
-end;
 function TxpEleVar.adrByte0: TPicRegister;
 begin
   adrByteTmp.addr := addr0;
@@ -1090,9 +1078,7 @@ end;
 function TxpEleVar.AddrString: string;
 {Devuelve una cadena, que representa a la dirección física.}
 begin
-  if typ.IsBitSize then begin
-    Result := 'bnk'+ IntToStr(adrBit.bank) + ':$' + IntToHex(adrBit.offs, 3) + '.' + IntToStr(adrBit.bit);
-  end else if typ.IsByteSize then begin
+  if typ.IsByteSize then begin
     Result := '$' + IntToHex(adrByte0.addr, 3);
   end else if typ.IsWordSize then begin
     Result := '$' + IntToHex(adrByte0.addr, 3);
@@ -1100,21 +1086,6 @@ begin
     Result := '$' + IntToHex(adrByte0.addr, 3);
   end else begin
     Result := '';   //Error
-  end;
-end;
-function TxpEleVar.BitMask: byte;
-{Devuelve la máscara, de acuerdo a su valor de "bit".}
-begin
-  Result := 0;
-  case adrBit.bit of
-  0: Result := %00000001;
-  1: Result := %00000010;
-  2: Result := %00000100;
-  3: Result := %00001000;
-  4: Result := %00010000;
-  5: Result := %00100000;
-  6: Result := %01000000;
-  7: Result := %10000000;
   end;
 end;
 procedure TxpEleVar.ResetAddress;
@@ -1127,12 +1098,10 @@ constructor TxpEleVar.Create;
 begin
   inherited;
   idClass:=eltVar;
-  adrBitTmp  := TPicRegisterBit.Create;  //
   adrByteTmp := TPicRegister.Create;
 end;
 destructor TxpEleVar.Destroy;
 begin
-  adrBitTmp.Destroy;
   adrByteTmp.Destroy;
   inherited Destroy;
 end;
@@ -1316,12 +1285,6 @@ begin
   fun.proc := proc;
 //no verifica duplicidad
   fields.Add(fun);
-end;
-function TxpEleType.IsBitSize: boolean;
-{Indica si el tipo, tiene 1 bit de tamaño}
-begin
-//  if copyOf<>nil then exit(copyOf.IsBitSize);  //verifica
-  Result := size = -1;
 end;
 function TxpEleType.IsByteSize: boolean;
 {Indica si el tipo, tiene 1 byte de tamaño}
@@ -1864,6 +1827,10 @@ begin
     end;
     //Verifica ahora este elemento
     elem := curFindNode.elements[curFindIdx];
+    if inUnit and not (elem.location = locInterface) then begin
+      //No debería ser accesible
+      continue;
+    end;
     //Genera evento para indicar que está buscando.
     if OnFindElement<>nil then OnFindElement(elem);
     //Compara

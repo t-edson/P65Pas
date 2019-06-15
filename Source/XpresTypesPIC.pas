@@ -169,51 +169,12 @@ type
   end;
   TPicRegister_list = specialize TFPGObjectList<TPicRegister>; //lista de registros
 
-  { TPicRegisterBit }
-  {Objeto que sirve para modelar a un bit del PIC (una dirección de memoria, usada
-   para un fin particular)}
-  TPicRegisterBit = class
-  private
-    function Getbank: byte;
-    function Getoffs: byte;
-  public
-    addr   : word;      //Dirección absoluta: $000 a $1FF
-    bit    : byte;      //bit del registro
-    assigned: boolean;  //indica si tiene una dirección física asignada
-    used   : boolean;   //Indica si está usado.
-    typ    : TPicRegType; //Tipo de registro
-  public
-    property offs: byte read Getoffs;   //Desplazamiento en memoria
-    property bank: byte read Getbank;   //Banco del registro
-    procedure Assign(srcReg: TPicRegisterBit);
-  end;
-  TPicRegisterBit_list = specialize TFPGObjectList<TPicRegisterBit>; //lista de registros
-
 implementation
 
 { TPicRegister }
 procedure TPicRegister.Assign(srcReg: TPicRegister);
 begin
   addr    := srcReg.addr;
-  assigned:= srcReg.assigned;
-  used    := srcReg.used;
-  typ     := srcReg.typ;
-end;
-{ TPicRegisterBit }
-function TPicRegisterBit.Getbank: byte;
-begin
-  Result := addr >> 7;
-end;
-function TPicRegisterBit.Getoffs: byte;
-begin
-  Result := addr and $7F;  //devuelve dirección
-  //Tal vez sería mejor:
-  //Result := hi(addr << 1);  //devuelve dirección
-end;
-procedure TPicRegisterBit.Assign(srcReg: TPicRegisterBit);
-begin
-  addr    := srcReg.addr;
-  bit     := srcReg.bit;
   assigned:= srcReg.assigned;
   used    := srcReg.used;
   typ     := srcReg.typ;
