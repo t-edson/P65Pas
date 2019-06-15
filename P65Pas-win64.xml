@@ -11,7 +11,7 @@
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="233"/>
+  <SynTreeWidth Val="153"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="1"/>
   <MessPanBack Val="2368548"/>
@@ -53,7 +53,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.4\temp\aaa.pas
   <IncDecVar Val="False"/>
   <VarDecType Val="0"/>
   <IncAddress Val="True"/>
-  <IncComment Val="True"/>
+  <IncComment Val="False"/>
   <IncComment2 Val="False"/>
   <ExcUnused Val="True"/>
   <IncVarName Val="True"/>
