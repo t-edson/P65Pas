@@ -235,13 +235,15 @@ or
 VAR myarray: [10]byte;
 ```
 
-Both definitions are the same and declares an array of 10 items.
+Both definitions are the same and declare an array of 10 items.
 
 Arrays are indexed from 0 to n-1, where "n" is the size of the array.
 
 When defining arrays of chars, it's possible to omit the size if it's initialized with a string.
 
+```
 VAR myarray: ARRAY[] OF char = 'Hola';
+```
 
 Arrays support several methods:
 
