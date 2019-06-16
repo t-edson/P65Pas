@@ -788,7 +788,7 @@ begin
     //Por ahora solo se permite inicializar arreglos.
     if varType.catType = tctArray then begin
       //Es un arreglo
-      if varType.refType<>typChar then begin
+      if varType.itmType<>typChar then begin
         GenError('Only array of CHAR can be initialized.');
         exit;
       end;
@@ -800,12 +800,12 @@ begin
       end;
       if res.Typ = typString then begin
         aditVar.iniVal := res.Value;  //Asigna valor constante.
-        if varType.arrSize= -1 then begin
+        if varType.nItems= -1 then begin
           //Tamaño dinámico
-          varType.arrSize := length(res.Value.ValStr);   //actualiza tamaño de arreglo
+          varType.nItems := length(res.Value.ValStr);   //actualiza tamaño de arreglo
         end else begin
           //Tamaño fijo
-          if varType.arrSize < length(res.Value.ValStr) then begin
+          if varType.nItems < length(res.Value.ValStr) then begin
             GenError('Too long string to init array.');
             //exit
           end;
@@ -822,7 +822,7 @@ begin
   end else begin
     //No hay asignación inicial.
     aditVar.hasInit := false;
-    if (varType.catType = tctArray) and (varType.arrSize = -1) then begin
+    if (varType.catType = tctArray) and (varType.nItems = -1) then begin
       //Es un arreglo dinámico. Debió inicializarse.
       GenError(ER_EQU_EXPECTD);
       exit;
@@ -842,7 +842,7 @@ begin
     xvar := Op^.rVar;  //Se supone que debe ser de tipo ARRAY
     //Se devuelve una constante, byte
     res.SetAsConst(typByte);
-    res.valInt := xvar.typ.arrSize;
+    res.valInt := xvar.typ.nItems;
   end;
   else
     GenError('Syntax error.');
@@ -861,7 +861,7 @@ begin
     xvar := Op^.rVar;  //Se supone que debe ser de tipo ARRAY
     //Se devuelve una constante, byte
     res.SetAsConst(typByte);
-    res.valInt {%H-}:= xvar.typ.arrSize-1;
+    res.valInt {%H-}:= xvar.typ.nItems-1;
   end;
   else
     GenError('Syntax error.');
@@ -993,7 +993,7 @@ Si encuentra algún problema, genera error, y devuelve NIL.
       GenError('Too complex type declaration');
       exit;
     end;
-    if itemTyp.arrSize = -1 then begin  //Sin tamaño
+    if itemTyp.nItems = -1 then begin  //Sin tamaño
       //ARRAY[] OF ARRAY[] OF ... No se soporta por ahora.
       GenError('Dynamic array not allowed here.');
       exit(nil);
@@ -1004,17 +1004,13 @@ Si encuentra algún problema, genera error, y devuelve NIL.
     if HayError then exit(nil);     //Sale para ver otros errores
     xtyp.srcDec   := srcPos;
     xtyp.catType  := tctArray;  //Tipo arreglo
-    xtyp.arrSize  := nElem;      //Número de ítems
-    xtyp.refType  := itemTyp;   //Tipo de dato
+    xtyp.nItems   := nElem;      //Número de ítems
+    xtyp.itmType  := itemTyp;   //Tipo de dato
     //Crea campos comunes del arreglo
     xtyp.CreateField('length', @array_length);
-    xtyp.CreateField('high', @array_high);
-    xtyp.CreateField('low', @array_low);
-    //Campos que dependen del tipo
-    if itemTyp.OnGetItem=nil then begin
-      GenError('Cannot declare array of type: %s', [itemTyp.name]);
-    end;
-    xtyp.CreateField('item', itemTyp.OnGetItem);
+    xtyp.CreateField('high'  , @array_high);
+    xtyp.CreateField('low'   , @array_low);
+    xtyp.CreateField('item'  , @ArrayGetItem);
     if itemTyp.OnClearItems <> nil then begin
       xtyp.CreateField('clear'  , itemTyp.OnClearItems);
     end;
@@ -1053,7 +1049,7 @@ Si encuentra algún problema, genera error, y devuelve NIL.
     if HayError then exit;       //Sale para ver otros errores
     xtyp.srcDec := srcPos;
     xtyp.catType := tctPointer;  //Tipo puntero
-    xtyp.refType := reftyp;      //El tipo a donde apunta
+    xtyp.itmType := reftyp;      //El tipo a donde apunta
     //Fija operaciones para la aritmética del puntero
     DefPointerArithmetic(xtyp);
     xtyp.CreateUnaryPostOperator('^',6,'deref', @ROU_derefPointer);  //dereferencia
@@ -1214,9 +1210,9 @@ procedure TCompiler_PIC16.CompileVarDeclar;
     tctAtomic : //caso inútil
        exit(xtyp.name);
     tctArray  :  //Arreglo de algo
-      exit('arr-' + xtyp.refType.name);
+      exit('arr-' + xtyp.itmType.name);
     tctPointer:  //Puntero a algo
-      exit('ptr-' + xtyp.refType.name);
+      exit('ptr-' + xtyp.itmType.name);
     tctObject :  {Objeto. No se da un nombre fijo porque los objetos son muy variables. Podría
                   intentarse con obj-<tipos de campos>, pero podría ser muy largo y poco útil
                   para buscar compatibilidades de tipo}

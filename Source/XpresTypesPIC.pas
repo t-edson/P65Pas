@@ -3,9 +3,8 @@ XpresTypes
 ==========
 Por Tito Hinostroza.
 
-Definiciones básicas para el manejo de elementos que representan a tipos.
-Aquí están definidas los objetos claves para el manejo de expresiones:
-Los tipos, los operadores y las operaciones
+Basic definitions for the manage of elements representing types.
+Here are defined objets for the manage of expressions: Types, operands, operations.
 }
 unit XpresTypesPIC;
 {$mode objfpc}{$H+}

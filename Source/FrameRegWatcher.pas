@@ -315,7 +315,7 @@ begin
         //Agrega primer byte
         AddWatch(v.name);
         //agrega bytes siguientes
-        maxBytes := v.typ.arrSize * v.typ.refType.size-1;
+        maxBytes := v.typ.nItems * v.typ.itmType.size-1;
         //if maxBytes > 10 then
         for i:=1 to maxBytes do begin
            AddWatch(v.adrByte0.addr + i);

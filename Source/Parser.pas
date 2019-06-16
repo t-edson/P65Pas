@@ -2196,13 +2196,13 @@ begin
   end else if Sto = stVarRef then begin
     //Variable referenciada por variables.
     //Se implementa de acuerdo a la Doc. Técnica - Sección "Operandos sVarRef"
-    Result := FVar.typ.refType;   //¿No debería ser solo FVar.typ?
+    Result := FVar.typ.itmType;   //¿No debería ser solo FVar.typ?
   end else if Sto = stExpRef then begin
     //Variable referenciada por expresión.
     //Se implementa de acuerdo a la Doc. Técnica - Sección "Operandos sExpRef"
     if FVar = nil then begin
       //Debe ser puntero.
-      Result := FTyp.refType;
+      Result := FTyp.itmType;
     end else begin
       //Debe ser arreglo
       Result := FVar.typ;

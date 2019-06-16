@@ -248,6 +248,10 @@ type //Clases de elementos
   Es una clase relativamente extensa, debido a la flxibilidad que ofrecen lso tipos en
   Pascal.}
   TxpEleType= class(TxpElement)
+  private
+    fSize: SmallInt;
+    function getSize: smallint;
+    procedure setSize(AValue: smallint);
   public   //Eventos
     {Estos eventos son llamados automáticamente por el Analizador de expresiones.
     Por seguridad, debe implementarse siempre para cada tipo creado. La implementación
@@ -255,9 +259,6 @@ type //Clases de elementos
     OperationLoad: TProcExecOperat; {Evento. Es llamado cuando se pide evaluar una
                                  expresión de un solo operando de este tipo. Es un caso
                                  especial que debe ser tratado por la implementación}
-    OnGetItem    : TTypFieldProc;  {Es llamado cuando se pide acceder a un ítem de un
-                                   arreglo (lectura o escritura). Debe devolver una
-                                   expresión con el resultado dal ítem leído.}
     OnClearItems : TTypFieldProc;  {Usado para la rutina que limpia los ítems de
                                    un arreglo.}
     {Estos eventos NO se generan automáticamente en TCompilerBase, sino que es la
@@ -274,15 +275,17 @@ type //Clases de elementos
   public
     copyOf  : TxpEleType;  //Indica que es una copia de otro tipo
     grp     : TTypeGroup;  //Grupo del tipo (numérico, cadena, etc)
-    size    : smallint;    //Tamaño en bytes del tipo (para bits se usa números negativos)
     catType : TxpCatType;  //Categoría del tipo
-    arrSize : integer;     //Tamaño, cuando es tctArray (-1 si es dinámico.)
-    refType : TxpEleType;  {Referencia a otro tipo. Valido cuando es puntero o arreglo.
-                                TPtr = ^integer;       //refType = integer
-                                TArr = array[255] of byte;  //refType = byte
+    nItems  : integer;      //Number of items, when is tctArray (-1 if it's dynamic.)
+    itmType : TxpEleType;  {Reference to the item type when it's array.
+                                TArr = array[255] of byte;  //itemType = byte
+                           }
+    ptrType : TxpEleType;  {Reference to the type pointed, when it's pointer.
+                                TPtr = ^integer;       //ptrType = integer
                            }
     refTypes: TxpEleTypes; {Lista de tipos cuando se trata de un Registro:
                                 TRec = RECORD ... END;  }
+    property size: smallint read getSize write setSize;   //Tamaño en bytes del tipo
   public  //Campos de operadores
     Operators: TxpOperators;      //Operadores soportados
     operAsign: TxpOperator;       //Se guarda una referencia al operador de aignación
@@ -1147,7 +1150,19 @@ begin
   Operations.Free;
   inherited Destroy;
 end;
-
+function TxpEleType.getSize: smallint;
+begin
+  if catType = tctArray then begin
+    //Array size is calculated
+    if nItems = -1 then exit(0) else exit(itmType.size * nItems);
+  end else begin
+    exit(fSize)
+  end;
+end;
+procedure TxpEleType.setSize(AValue: smallint);
+begin
+  fSize := AValue;
+end;
 { TxpEleType }
 function TxpEleType.CreateBinaryOperator(txt: string; prec: byte; OpName: string
   ): TxpOperator;
@@ -1827,7 +1842,7 @@ begin
     end;
     //Verifica ahora este elemento
     elem := curFindNode.elements[curFindIdx];
-    if inUnit and not (elem.location = locInterface) then begin
+    if inUnit and (elem.location = locImplement) then begin
       //No debería ser accesible
       continue;
     end;

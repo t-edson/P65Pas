@@ -287,6 +287,69 @@ begin
   end;
 end;
 ////////////Byte operations
+procedure TGenCod.ROB_byte_asig_byte(Opt: TxpOperation; SetRes: boolean);
+var
+  aux: TPicRegister;
+  rVar: TxpEleVar;
+begin
+  //Simplifcamos el caso en que p2, sea de tipo p2^
+  if not ChangePointerToExpres(p2^) then exit;
+  //Realiza la asignación
+  if p1^.Sto = stVariab then begin
+    SetResultNull;  //Formalmente,  una asignación no devuelve valores en Pascal
+    //Asignación a una variable
+    case p2^.Sto of
+    stConst : begin
+      _LDA(value2);
+      _STA(byte1);
+    end;
+    stVariab: begin
+      _LDA(byte2);
+      _STA(byte1);
+    end;
+    stExpres: begin  //ya está en A
+      _STA(byte1);
+    end;
+    else
+      GenError(MSG_UNSUPPORTED); exit;
+    end;
+  end else if p1^.Sto = stVarRef then begin
+    //Asignación a una variable referenciada pro variable
+    SetResultNull;  //Fomalmente, una asignación no devuelve valores en Pascal
+    case p2^.Sto of
+    stConst : begin
+      //Caso especial de asignación a puntero desreferenciado: variable^
+      _LDA(value2);
+//      _STA();
+
+    end;
+    //stVariab: begin
+    //  //Caso especial de asignación a puntero derefrrenciado: variable^
+    //  kMOVF(byte1, toW);
+    //  kMOVWF(FSR);  //direcciona
+    //  //Asignación normal
+    //  kMOVF(byte2, toW);
+    //  kMOVWF(INDF);
+    //end;
+    //stExpres: begin  //ya está en A
+    //  //Caso especial de asignación a puntero derefrrenciado: variable^
+    //  aux := GetAuxRegisterByte;
+    //  kMOVWF(aux);   //Salva A (p2)
+    //  //Apunta con p1
+    //  kMOVF(byte1, toW);
+    //  kMOVWF(FSR);  //direcciona
+    //  //Asignación normal
+    //  kMOVF(aux, toW);
+    //  kMOVWF(INDF);
+    //  aux.used := false;
+    //end;
+    //else
+    //  GenError(MSG_UNSUPPORTED); exit;
+    end;
+  end else begin
+    GenError('Cannot assign to this Operand.'); exit;
+  end;
+end;
 procedure TGenCod.ROB_byte_and_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
@@ -589,69 +652,6 @@ procedure TGenCod.ROB_byte_difer_byte(Opt: TxpOperation; SetRes: boolean);
 begin
   ROB_byte_equal_byte(Opt, SetRes);  //usa el mismo código
   res.Invert;  //Invierte la lógica
-end;
-procedure TGenCod.ROB_byte_asig_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  aux: TPicRegister;
-  rVar: TxpEleVar;
-begin
-  //Simplifcamos el caso en que p2, sea de tipo p2^
-  if not ChangePointerToExpres(p2^) then exit;
-  //Realiza la asignación
-  if p1^.Sto = stVariab then begin
-    SetResultNull;  //Formalmente,  una asignación no devuelve valores en Pascal
-    //Asignación a una variable
-    case p2^.Sto of
-    stConst : begin
-      _LDA(value2);
-      _STA(byte1);
-    end;
-    stVariab: begin
-      _LDA(byte2);
-      _STA(byte1);
-    end;
-    stExpres: begin  //ya está en A
-      _STA(byte1);
-    end;
-    else
-      GenError(MSG_UNSUPPORTED); exit;
-    end;
-  end else if p1^.Sto = stVarRef then begin
-    //Asignación a una variable referenciada pro variable
-    SetResultNull;  //Fomalmente, una asignación no devuelve valores en Pascal
-    case p2^.Sto of
-    stConst : begin
-      //Caso especial de asignación a puntero desreferenciado: variable^
-      _LDA(value2);
-//      _STA();
-
-    end;
-    //stVariab: begin
-    //  //Caso especial de asignación a puntero derefrrenciado: variable^
-    //  kMOVF(byte1, toW);
-    //  kMOVWF(FSR);  //direcciona
-    //  //Asignación normal
-    //  kMOVF(byte2, toW);
-    //  kMOVWF(INDF);
-    //end;
-    //stExpres: begin  //ya está en A
-    //  //Caso especial de asignación a puntero derefrrenciado: variable^
-    //  aux := GetAuxRegisterByte;
-    //  kMOVWF(aux);   //Salva A (p2)
-    //  //Apunta con p1
-    //  kMOVF(byte1, toW);
-    //  kMOVWF(FSR);  //direcciona
-    //  //Asignación normal
-    //  kMOVF(aux, toW);
-    //  kMOVWF(INDF);
-    //  aux.used := false;
-    //end;
-    //else
-    //  GenError(MSG_UNSUPPORTED); exit;
-    end;
-  end else begin
-    GenError('Cannot assign to this Operand.'); exit;
-  end;
 end;
 procedure TGenCod.ROB_byte_aadd_byte(Opt: TxpOperation; SetRes: boolean);
 {Operación de asignación suma: +=}
@@ -2545,7 +2545,7 @@ begin
       if HayError then exit;       //Sale para ver otros errores
       xtyp.srcDec := cIn.ReadSrcPos;
       xtyp.catType := tctPointer;  //Tipo puntero
-      xtyp.refType := xvar.typ;      //El tipo a donde apunta
+      xtyp.itmType := xvar.typ;      //El tipo a donde apunta
       //Agrega al árbol de sintaxis
       xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
       TreeElems.AddElement(xtyp); { TODO : Comviene agregarlo en este contexto. ¿No sería mejor en la raiz para que sea accesible desde otros espacios? }

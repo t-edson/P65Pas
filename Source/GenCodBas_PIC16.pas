@@ -30,7 +30,6 @@ type
       value: TOperand): boolean;
     procedure ProcByteUsed(offs: word; regPtr: TCPURamCellPtr);
     procedure word_ClearItems(const OpPtr: pointer);
-    procedure word_GetItem(const OpPtr: pointer);
     procedure word_SetItem(const OpPtr: pointer);
   protected
     //Registros de trabajo
@@ -116,7 +115,7 @@ type
     //Adicionales
     procedure ChangeResultCharToByte;
     function ChangePointerToExpres(var ope: TOperand): boolean;
-  protected  //Instrucciones que no manejan el cambio de banco
+  protected  //Instrucciones
     function _PC: word;
     function _CLOCK: integer;
     procedure _LABEL(igot: integer);
@@ -184,11 +183,11 @@ type
     property E_register: TPicRegister read E;
     property U_register: TPicRegister read U;
   protected  //Funciones de tipos
+    procedure ArrayGetItem(const OpPtr: pointer);
     //////////////// Tipo Byte /////////////
     procedure byte_LoadToRT(const OpPtr: pointer);
     procedure byte_DefineRegisters;
     procedure byte_SaveToStk;
-    procedure byte_GetItem(const OpPtr: pointer);
     procedure byte_SetItem(const OpPtr: pointer);
     procedure byte_ClearItems(const OpPtr: pointer);
     //////////////// Tipo Word /////////////
@@ -558,7 +557,7 @@ begin
       end;
     end else begin;
       //Asignamos espacio en RAM { TODO : Esta rutina podría ponerse en un proced. como AssignRAMinByte()  }
-      nbytes := typ.arrSize * typ.refType.size;
+      nbytes := typ.nItems * typ.itmType.size;
       if not pic.GetFreeBytes(nbytes, addr) then begin
         GenError(MSG_NO_ENOU_RAM);
         exit;
@@ -570,7 +569,7 @@ begin
       xVar.addr0 := addr;
       //Iniciliza bytes si corresponde
       if xVar.adicPar.hasInit then begin
-        if typ.refType = typChar then begin
+        if typ.itmType = typChar then begin
           //Arreglo de char
           for car in xVar.adicPar.iniVal.ValStr do begin
             pic.ram[addr].value := ord(car);
@@ -1305,7 +1304,6 @@ procedure TGenCodBas.IF_END(const info: TIfInfo);
 begin
   _LABEL(info.igoto);  //termina de codificar el salto
 end;
-
 function TGenCodBas.PICName: string;
 begin
   Result := pic.Model;
@@ -1328,11 +1326,108 @@ begin
   end;
   par := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
   if HayError then exit(false);
-  if par.Typ <> typByte then begin
-    GenError('Expected byte as index.');
-  end;
   if HayError then exit(false);
   exit(true);
+end;
+procedure TGenCodBas.ArrayGetItem(const OpPtr: pointer);
+{Función que devuelve el valor indexado del arreglo. Devuelve el resultado como un
+operando en "res".}
+var
+  Op: ^TOperand;
+  arrVar, tmpVar: TxpEleVar;
+  idx: TOperand;
+  WithBrack: Boolean;
+  itemType: TxpEleType;
+begin
+  if not GetIdxParArray(WithBrack, idx) then exit;
+  //Procesa
+  Op := OpPtr;
+  if Op^.Sto = stVariab then begin
+    //Applied to a variable array. The normal.
+    arrVar := Op^.rVar;        //Reference to variable
+    itemType := arrVar.typ.itmType; //Reference to the item type
+    //Generate code according to the index storage.
+    case idx.Sto of
+    stConst: begin  //ïndice constante
+        tmpVar := CreateTmpVar('', itemType);  //VAriable del mismo tipo
+        tmpVar.addr0 := arrVar.addr0 + idx.valInt * itemType.size;
+        tmpVar.addr1 := tmpVar.addr0 + 1;  //Para seguridad de la ROB
+        SetResultVariab(tmpVar, 0);
+      end;
+    stVariab: begin  //Indexado por variable
+        SetResultExpres(itemType, true);  //Devuelve el mismo tipo
+        if idx.Typ.IsByteSize then begin
+          //Index is byte-size variable
+          if itemType.IsByteSize then begin
+            //And item is byte size, so it's easy to index in 6502
+            _LDX(idx.rVar.adrByte0);
+            if arrVar.addr<256 then begin
+              pic.codAsm(i_LDA, aZeroPagX, arrVar.addr);
+            end else begin
+              pic.codAsm(i_LDA, aAbsolutX, arrVar.addr);
+            end;
+          end else if itemType.IsWordSize then begin
+            //Item is word size. We need to multiply index by 2 and load indexed.
+            //WARNING this is "Auto-modifiying" code.
+            _LDA(idx.rVar.adrByte0);  //Load index
+            pic.codAsm(i_STA, aAbsolute, _PC + 15); //Store forward
+            _LDA(0);  //Load virtual MSB index
+            pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
+            pic.codAsm(i_ASL, aAbsolute, _PC + 7);  //Shift operand of LDA
+            PIC.codAsm(i_ROL, aAbsolute, _PC + 5);  //Shift operand of LDA
+            pic.codAsm(i_LDA, aAbsolute, 0); //Store forward (DANGER)
+            //Could be optimized getting a Zero page index
+          end else begin
+            //Here we need to multiply the index by the item size.
+            GenError('Too complex item.');
+          end;
+        end else if idx.Typ.IsWordSize then begin
+          //Index is word-size variable
+          if itemType.IsByteSize then begin
+            //Item is byte size. We need to index with a word.
+            //WARNING this is "Auto-modifiying" code.
+            _LDA(idx.rVar.adrByte0);  //Load index
+            pic.codAsm(i_STA, aAbsolute, _PC + 10); //Store forward
+            _LDA(idx.rVar.adrByte1);  //Load MSB index
+            pic.codAsm(i_STA, aAbsolute, _PC + 5); //Store forward
+            pic.codAsm(i_LDA, aAbsolute, 0); //Store forward (DANGER)
+            //Could be optimized getting a Zero page index
+          end else if itemType.IsWordSize then begin
+            //Item is word size. We need to multiply index by 2 and load indexed.
+            //WARNING this is "Auto-modifiying" code.
+            _LDA(idx.rVar.adrByte0);  //Load index
+            pic.codAsm(i_STA, aAbsolute, _PC + 16); //Store forward
+            _LDA(idx.rVar.adrByte1);  //Load virtual MSB index
+            pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
+            pic.codAsm(i_ASL, aAbsolute, _PC + 7);  //Shift operand of LDA
+            PIC.codAsm(i_ROL, aAbsolute, _pc + 5);  //Shift operand of LDA
+            pic.codAsm(i_LDA, aAbsolute, 0); //Store forward (DANGER)
+          end else begin
+            //Here we need to multiply the index by the item size.
+            GenError('Too complex item.');
+          end;
+        end else begin
+          GenError('Not supported this index.');
+        end;
+    end;
+//    stExpres: begin
+//        SetResultExpres(arrVar.typ.refType, false);  //Es array de bytes, o Char, devuelve Byte o Char
+//        LoadToRT(idx);   //Lo deja en A
+//        _ADDLW(arrVar.addr0);   //agrega OFFSET
+//        _MOVWF(04);     //direcciona con FSR
+//        _MOVF(0, toW);  //lee indexado en A
+//      end;
+    else
+      GenError('Not supported this index.');
+    end;
+  end else begin
+    GenError('Syntax error.');
+  end;
+  if WithBrack then begin
+    if not CaptureTok(']') then exit;
+  end else begin
+    if not CaptureTok(')') then exit;
+  end;
 end;
 function TGenCodBas.GetValueToAssign(WithBrack: boolean; arrVar: TxpEleVar; out value: TOperand): boolean;
 {Lee el segundo parámetro de SetItem y devuelve en "value". Valida que sea sel tipo
@@ -1353,7 +1448,7 @@ begin
     if not CaptureTok(',') then exit(false);
   end;
   value := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
-  typItem := arrVar.typ.refType;
+  typItem := arrVar.typ.itmType;
   if value.Typ <> typItem then begin  //Solo debería ser byte o char
     if (value.Typ = typByte) and (typItem = typWord) then begin
       //Son tipos compatibles
@@ -1410,51 +1505,6 @@ end;
 procedure TGenCodBas.byte_SaveToStk;
 begin
   _PHA;
-end;
-procedure TGenCodBas.byte_GetItem(const OpPtr: pointer);
-//Función que devuelve el valor indexado
-var
-  Op: ^TOperand;
-  arrVar, tmpVar: TxpEleVar;
-  idx: TOperand;
-  WithBrack: Boolean;
-begin
-//  if not GetIdxParArray(WithBrack, idx) then exit;
-//  //Procesa
-//  Op := OpPtr;
-//  if Op^.Sto = stVariab then begin
-//    //Se aplica a una variable array. Lo Normal.
-//    arrVar := Op^.rVar;  //referencia a la variable.
-//    //Genera el código de acuerdo al índice
-//    case idx.Sto of
-//    stConst: begin  //ïndice constante
-//        tmpVar := CreateTmpVar('', typByte);
-//        tmpVar.addr0 := arrVar.addr0 + idx.valInt;  //¿Y si es de otro banco?
-//        SetResultVariab(tmpVar);
-//      end;
-//    stVariab: begin
-//        SetResultExpres(arrVar.typ.refType, true);  //Es array de bytes, o Char, devuelve Byte o Char
-//        LoadToRT(idx);   //Lo deja en A
-//        _ADDLW(arrVar.addr0);   //agrega OFFSET
-//        _MOVWF(04);     //direcciona con FSR
-//        _MOVF(0, toW);  //lee indexado en A
-//    end;
-//    stExpres: begin
-//        SetResultExpres(arrVar.typ.refType, false);  //Es array de bytes, o Char, devuelve Byte o Char
-//        LoadToRT(idx);   //Lo deja en A
-//        _ADDLW(arrVar.addr0);   //agrega OFFSET
-//        _MOVWF(04);     //direcciona con FSR
-//        _MOVF(0, toW);  //lee indexado en A
-//      end;
-//    end;
-//  end else begin
-//    GenError('Syntax error.');
-//  end;
-//  if WithBrack then begin
-//    if not CaptureTok(']') then exit;
-//  end else begin
-//    if not CaptureTok(')') then exit;
-//  end;
 end;
 procedure TGenCodBas.byte_SetItem(const OpPtr: pointer);
 //Función que fija un valor indexado
@@ -1704,68 +1754,6 @@ begin
   //guarda H
   _LDA(H);
   _PHA;
-end;
-procedure TGenCodBas.word_GetItem(const OpPtr: pointer);
-//Función que devuelve el valor indexado, de un arreglo del tipo Word.
-var
-  Op: ^TOperand;
-  arrVar, tmpVar: TxpEleVar;
-  idx: TOperand;
-  WithBrack: Boolean;
-begin
-  //Busca la forma .item() o []
-  if not GetIdxParArray(WithBrack, idx) then exit;
-  //Procesa
-  Op := OpPtr;   //El operador actual
-  if (Op^.Sto = stVariab) and (Op^.Offset = 0) then begin  //Se aplica a una variable común.
-    arrVar := Op^.rVar;  //referencia a la variable.
-    typWord.DefineRegister;
-    //Genera el código de acuerdo al índice
-    case idx.Sto of
-    stConst: begin  //ïndice constante
-      tmpVar := CreateTmpVar('', typWord);  //Genera una variable
-      tmpVar.addr0 := arrVar.addr0+idx.valInt*2;  //¿Y si es de otro banco?
-      tmpVar.addr1 := arrVar.addr0+idx.valInt*2+1;  //¿Y si es de otro banco?
-      SetResultVariab(tmpVar, 0);
-//        SetResultExpres(arrVar.typ.refType, true);  //Es array de word, devuelve word
-//        //Como el índice es constante, se puede acceder directamente
-//        add0 := arrVar.adrByte0.offs+idx.valInt*2;
-//        _MOVF(add0+1, toW);
-//        _MOVWF(H.offs);    //byte alto
-//        _MOVF(add0, toW);  //byte bajo
-      end;
-    stVariab: begin
-      SetResultExpres(arrVar.typ.refType, true);  //Es array de word, devuelve word
-      //_BCF(_STATUS, _C);
-      //_RLF(idx.offs, toW);           //Multiplica Idx por 2
-      //_ADDLW(arrVar.addr0+1);   //Agrega OFFSET + 1
-      //_MOVWF(FSR.offs);     //direcciona con FSR
-      //_MOVF(0, toW);  //lee indexado en A
-      //_MOVWF(H.offs);    //byte alto
-      //_DECF(FSR.offs, toF);
-      //_MOVF(0, toW);  //lee indexado en A
-    end;
-    stExpres: begin
-      SetResultExpres(arrVar.typ.refType, false);  //Es array de word, devuelve word
-      //_MOVWF(FSR.offs);     //idx a  FSR (usa como varaib. auxiliar)
-      //_BCF(_STATUS, _C);
-      //_RLF(FSR.offs, toW);         //Multiplica Idx por 2
-      //_ADDLW(arrVar.addr0+1);   //Agrega OFFSET + 1
-      //_MOVWF(FSR.offs);     //direcciona con FSR
-      //_MOVF(0, toW);  //lee indexado en A
-      //_MOVWF(H.offs);    //byte alto
-      //_DECF(FSR.offs, toF);
-      //_MOVF(0, toW);  //lee indexado en A
-    end;
-    end;
-  end else begin
-    GenError('Syntax error.');
-  end;
-  if WithBrack then begin
-    if not CaptureTok(']') then exit;
-  end else begin
-    if not CaptureTok(')') then exit;
-  end;
 end;
 procedure TGenCodBas.word_SetItem(const OpPtr: pointer);
 //Función que fija un valor indexado
@@ -2053,7 +2041,6 @@ begin
   typBool.OnDefRegister:= @byte_DefineRegisters;
   typBool.OnSaveToStk  := @byte_SaveToStk;
   //typBool.OnReadFromStk :=
-  typBool.OnGetItem    := @byte_GetItem;
 //  typBool.OnSetItem    := @byte_SetItem;
   typBool.OnClearItems := @byte_ClearItems;
   //////////////// Byte type /////////////
@@ -2062,7 +2049,6 @@ begin
   typByte.OnDefRegister:= @byte_DefineRegisters;
   typByte.OnSaveToStk  := @byte_SaveToStk;
   //typByte.OnReadFromStk :=
-  typByte.OnGetItem    := @byte_GetItem;
 //  typByte.OnSetItem    := @byte_SetItem;
   typByte.OnClearItems := @byte_ClearItems;
 
@@ -2072,7 +2058,6 @@ begin
   typChar.OnLoadToRT   := @byte_LoadToRT;  //Es lo mismo
   typChar.OnDefRegister:= @byte_DefineRegisters;  //Es lo mismo
   typChar.OnSaveToStk  := @byte_SaveToStk; //Es lo mismo
-  typChar.OnGetItem    := @byte_GetItem;   //Es lo mismo
 //  typChar.OnSetItem    := @byte_SetItem;
   typChar.OnClearItems := @byte_ClearItems;
 
@@ -2082,7 +2067,6 @@ begin
   typWord.OnLoadToRT   := @word_LoadToRT;
   typWord.OnDefRegister:= @word_DefineRegisters;
   typWord.OnSaveToStk  := @word_SaveToStk;
-  typWord.OnGetItem    := @word_GetItem;   //Es lo mismo
 //  typWord.OnSetItem    := @word_SetItem;
 //  typWord.OnClearItems := @word_ClearItems;
 
