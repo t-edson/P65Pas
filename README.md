@@ -179,7 +179,9 @@ Operator            Precedence
  =, <>, <, <=, >, >=   3
  := +=                 2
  ```
-
+ 
+Not all the operators are implemented in all the types.
+ 
 ### Types
 
 ```
@@ -192,6 +194,8 @@ Type           Size
  dword         4 bytes
  ```
 Numerical types are all unsigned.
+
+The types "word" and "dword" are not complete implemented in the current version of the compiler.
 
 ### Variables
 
@@ -218,6 +222,36 @@ Specific byte of a word, can be access using fields:
   word_var.Low := $ff;
   word_var.High := $ff;
 ```
+
+### Arrays
+
+Arrays can be defined using the following syntax:
+
+```
+VAR myarray: ARRAY[10] OF byte;
+```
+or 
+```
+VAR myarray: [10]byte;
+```
+
+Both definitions are the same and declares an array of 10 items.
+
+Arrays are indexed from 0 to n-1, where "n" is the size of the array.
+
+When defining arrays of chars, it's possible to omit the size if it's initialized with a string.
+
+VAR myarray: ARRAY[] OF char = 'Hola';
+
+Arrays support several methods:
+
+array.length ->  Returns the size of te arrays.
+
+array.low -> low index of the array. Always returns 0.
+
+array.high -> high index of the array. Always returns n-1.
+
+No dynamic arrays are supported.
 
 ### Control structures
 
@@ -686,7 +720,7 @@ It's used before of starting to define the RAM for a device, using the directive
 
 •	Only basic types are implemented: byte, char, boolean, word an dword(limited support).
 
-•	Cannot declare arrays or records.
+•	Cannot records.
 
 •	No recursion implemented, Because of the limited hardware resources.
 
