@@ -46,6 +46,7 @@ Se implementa la asignación de memoria para arreglos simples.
 Se aumneta la sintaxis del ensmablador 6502 integrado, para que soporte los operadores #< y
 #>.
 Se quitan los campos de acceso a bit, que quedan como rezago de PicPas.
+Se implementa el acceso a items de arreglos para estructuras simples.
 
 Las funciones INLINE se declaran de la sgte. forma:
 
