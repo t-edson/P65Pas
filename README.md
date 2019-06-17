@@ -377,10 +377,10 @@ Register parameters are fast, because they use CPU register instead of RAM for p
 
 Register parameters are defined using the following reserved words:
 
-REGISTER -> Use internal work register defined by the compiler. Can be used for types of one or two bytes.
-REGISTERA -> Use always the register A of the CPU. Can be used only for 1-byte size parameters.
-REGISTERX -> Use always the register X of the CPU. Can be used only for 1-byte size parameters.
-REGISTERY -> Use always the register Y of the CPU. Can be used only for 1-byte size parameters.
+* REGISTER -> Use internal work register defined by the compiler. Can be used for types of one or two bytes.
+* REGISTERA -> Use always the register A of the CPU. Can be used only for 1-byte size parameters.
+* REGISTERX -> Use always the register X of the CPU. Can be used only for 1-byte size parameters.
+* REGISTERY -> Use always the register Y of the CPU. Can be used only for 1-byte size parameters.
 
 As register parameters use internal CPU register, they values could be lost after some instruction is executed, so is a good practice to save immediatly they value in other normal variable. So the first operation in a procedure, using a register parameter must be read this parameter.
 
