@@ -1,3 +1,41 @@
+P65PAS 0.5
+==========
+Se modifica TCompilerBase.GetExpressionE() para darle otro enfoque y permitir procesar las
+asignaciones como instrucciones especiales, además de prohibir ciertas expresiones como 
+instrucciones.
+Se convierte GetOperand() a procedimiento y se devuelve el operando por referencia.
+Se elimina TCompilerBase.GetOperandPrec().
+Se cambia la estructura de TAdicVarDec para que incluya la información adicional de
+variables registro y se quita del código el uso de banderas adicionales.
+Se crea TxpAdicDeclar y se amplía los tipos de vaaibles registro para que consideren
+los casos REGISTERA, REGISTERX, y REGISTERY.
+Se cambia la sintaxis para la declaración de los parámetros REGISTER. AHora se ponen en 
+el mismo lugar de ABSOLUTE.
+
+
+Las funciones INLINE se declaran de la sgte. forma:
+
+inline func1(var x: byte; const y: word; expr z: char);
+begin
+
+end;
+
+La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
+considerando el tipo de almacenamiento del operando.
+Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
+codificar operaciones sobre tipos objeto:
+
+octeto = object
+    value: byte;
+  public 
+    inline assign(var x: byte) operator ":="  precedence 5;
+    
+    end;
+    inline assign(x: byte) operator ":=";
+    
+    end;
+  end;
+
 P65PAS 0.4
 ==========
 Se crea el elemento TxpEleInline, para dar soporte a las funciones INLINE.
@@ -48,28 +86,6 @@ Se aumneta la sintaxis del ensmablador 6502 integrado, para que soporte los oper
 Se quitan los campos de acceso a bit, que quedan como rezago de PicPas.
 Se implementa el acceso a items de arreglos para estructuras simples.
 
-Las funciones INLINE se declaran de la sgte. forma:
-
-inline func1(var x: byte; const y: word; expr z: char);
-begin
-
-end;
-
-La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
-considerando el tipo de almacenamiento del operando.
-Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
-codificar operaciones sobre tipos objeto:
-
-octeto = object
-    value: byte;
-  public 
-    inline assign(var x: byte) operator ":="  precedence 5;
-    
-    end;
-    inline assign(x: byte) operator ":=";
-    
-    end;
-  end;
 
 P65PAS 0.3
 ==========

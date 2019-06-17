@@ -1,11 +1,11 @@
-P65Pas 0.4
+P65Pas 0.5
 ==========
 
-Multi-platform Pascal cross-compiler for 6502 CPU.
+Cross-platform Pascal cross-compiler for 6502 CPU.
 
 ![P65Pas IDE](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2019/03/Sin-título.png "P65Pas IDE")
 
-P65Pas is a Pascal compiler and IDE, written in Free Pascal, which generates binary and ASM code for the 6502 CPU.
+P65Pas is a Pascal compiler and IDE, which generates binary and ASM code for the 6502 CPU.
 
 No additional libraries or software required to compile. P65Pas generates the *.prg file directly. Additionally a BASIC Commodore program (POKE's) can be generated to charge the machine code. 
 
@@ -184,6 +184,10 @@ Not all the operators are implemented in all the types.
  
 ### Types
 
+Types define how variables are stored in memory.
+
+Types can be system type or user defined type. System types are:
+
 ```
 Type           Size
 ============== ==========
@@ -195,32 +199,49 @@ Type           Size
  ```
 Numerical types are all unsigned.
 
+Specific byte of a word, can be access using fields:
+
+```
+  word_var.Low := $ff;
+  word_var.High := $ff;
+```
+
 The types "word" and "dword" are not complete implemented in the current version of the compiler.
+
+The user can define his own custom types:
+
+```
+TYPE 
+  mybyte = byte;   //Alias for byte
+  string10 = array[10] of char;  //Array type
+```
 
 ### Variables
 
 Variables are defined with the VAR keyword:
 
 ```
-var
+VAR
   var1 : byte;
   large_name_variable: boolean;
-  c: char = 'A';
+  c    : char = 'A';   //Include initialization
+  str  : array[] of char = 'Hi';   //Complex type
+```
+
+All variables must have a type. Type can be system type or a user defined type.
+
+```
+TYPE mytype = char;
+VAR  myvar: mytype;   
 ```
 
 Variables can be defined too, at an absolute memory address:
 
 ```
 var
-  PORTB: BYTE absolute $06;
-  pin1: boolean absolute $07;
-```
-
-Specific byte of a word, can be access using fields:
-
-```
-  word_var.Low := $ff;
-  word_var.High := $ff;
+  PORTB : BYTE absolute $06;
+  flag  : boolean absolute $07;
+  letter: char @$07;   //"@" if the alias for ABSOLUTE
 ```
 
 ### Arrays
@@ -242,8 +263,10 @@ Arrays are indexed from 0 to n-1, where "n" is the size of the array.
 When defining arrays of chars, it's possible to omit the size if it's initialized with a string.
 
 ```
-VAR myarray: ARRAY[] OF char = 'Hola';
+VAR 
+  myarray: ARRAY[] OF char = 'Hola';  
 ```
+The size of this array will be set to the size of the string. In this case is 4 chars.
 
 Arrays support several methods:
 
@@ -338,18 +361,30 @@ end;
 
 The return value is indicated with the exit() instruction.
 
+### Register parameters
+
 When using in procedures parameters, a REGISTER parameter can be included:
 
 ```
-procedure QuickParameterProc(register regvar: byte);
+procedure QuickParameterProc(regvar: byte REGISTER);
 begin
   //Be carefull if put some code here
   PORTB := regvar;
 end;
 ```
 
-REGISTER parameters are fast, because they use the W register, so only one REGISTER parameter can be used. 
-As REGISTER parameter is stored in W register, any operation using the W register, could lose its value, so the first operation in a procedure, using a REGISTER parameter must be read this parameter.
+Register parameters are fast, because they use CPU register instead of RAM for passing values.
+
+Register parameters are defined using the following reserved words:
+
+REGISTER -> Use internal work register defined by the compiler. Can be used for types of one or two bytes.
+REGISTERA -> Use always the register A of the CPU. Can be used only for 1-byte size parameters.
+REGISTERX -> Use always the register X of the CPU. Can be used only for 1-byte size parameters.
+REGISTERY -> Use always the register Y of the CPU. Can be used only for 1-byte size parameters.
+
+As register parameters use internal CPU register, they values could be lost after some instruction is executed, so is a good practice to save immediatly they value in other normal variable. So the first operation in a procedure, using a register parameter must be read this parameter.
+
+
 
 ### ASM blocks
 
@@ -408,7 +443,33 @@ begin
 end.
 ```
 
-Constant can be accessed too, using the same way. 
+Constant can be accessed too, using the same way.
+
+In general, parameters of instructions can be:
+
+- Assembler literal .
+- Assembler labels.
+- Pascal variables.
+- Pascal constants.
+- Pascal function/procedures.
+
+The next example shows how to access to a Pascal constant:
+
+```
+const
+  SMALL = $FF;
+  BIG   = $FF;
+begin
+  //Low level clear
+  asm 
+    LDA #SMALL
+	LDX #<BIG   ;low byte
+	LDY #>BIG   ;high byte
+  end
+end.
+```
+
+When an instruction use an parameter bigger than a byte, the operators "<" and ">" an be used.
 
 It's possible to use the directive ORG inside a ASM block, too:
 
@@ -722,7 +783,7 @@ It's used before of starting to define the RAM for a device, using the directive
 
 •	Only basic types are implemented: byte, char, boolean, word an dword(limited support).
 
-•	Cannot records.
+•	Cannot declare records.
 
 •	No recursion implemented, Because of the limited hardware resources.
 
