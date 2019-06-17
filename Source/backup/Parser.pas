@@ -1352,7 +1352,7 @@ begin
    Operation := opr.FindOperation(Op2.Typ);
    if Operation = nil then begin
       tmp := '(' + Op1.Typ.name + ') '+ opr.txt;
-      tmp := tmp + ' ('+Op2.Typ.name+')';
+      tmp := tmp +  ' ('+Op2.Typ.name+')';
       GenError(ER_ILLEG_OPERA_,
                [tmp]);
       exit;
@@ -1417,13 +1417,16 @@ begin
    {$ENDIF}
 end;
 function TCompilerBase.OperationStr(Opt: TxpOperation): string;
-{Return a string with types/storag and operation, having in "p1", "p2" y "Opt".}
+{Devuelve una cadena indicando los tipos/alacenamiento y la operación, que se tiene
+en "p1", "p2" y "Opt".}
 var
+  type1, type2: TxpEleType;
   Operat: TxpOperator;
 begin
+  type1 := Opt.parent.parent;
+  type2 := Opt.ToType;
   Operat:= Opt.parent;
-  Result := p1^.StoOpStr+'(' + p1^.Typ.name + ') ' + Operat.txt + ' ' +
-            p2^.StoOpStr+'(' + p2^.Typ.name + ')';
+  Result := p1^.StoOpStr+' '+type1.name + ' ' + Operat.txt + ' ' + p2^.StoOpStr+' '+type2.name;
 end;
 function TCompilerBase.stoOperation: TStoOperandsROB;
 begin
@@ -1543,7 +1546,7 @@ begin
       //Could be call to a procedure/function/method. Cannot be something like: "x + 1" or "1 + x"
       //It's OK. Nothing to do.
     end;
-    stVariab, stVarRef, stVarConRef, stExpRef, stExpresA, stExpresX, stExpresY : begin
+    stVariab, stVarRef, stVarConRef, stExpRef : begin
       //Should be an assignment
       cIn.SkipWhites;
       opr1 := GetOperator(Op1);
@@ -2352,18 +2355,11 @@ function TOperand.StoOpStr: string;
 {Devuelve lmacenamiento como cadena.}
 begin
   case Sto of
-  stConst    : exit('Constant');
-  stVariab   : exit('Variable');
-  stExpres   : exit('Expression');
-  stVarRef   : exit('Referenced by Var');
-  stVarConRef: exit('Referenced by Var');
-  stExpRef   : exit('Referenced by Expresion ');
-  //Aditional expressions types
-  stExpresA  : exit('Register A');
-  stExpresX  : exit('Register X');
-  stExpresY  : exit('Register Y');
+  stConst : exit('Constant');
+  stVariab, stVarRef, stExpRef: exit('Variable');
+  stExpres: exit('Expression');
   else
-    exit('?');
+    exit('');
   end;
 end;
 function TOperand.StoOpChr: char;
@@ -2371,12 +2367,9 @@ function TOperand.StoOpChr: char;
 begin
   Result := ' ';
   case Sto of
-  stConst    : exit('k');
-  stVariab   : exit('v');
-  stExpres   : exit('X');
-  stVarRef   : exit('r');
-  stVarConRef: exit('s');
-  stExpRef   : exit('t');
+  stConst : exit('k');
+  stVariab: exit('v');
+  stExpres: exit('X');
   else
     exit('?');
   end;

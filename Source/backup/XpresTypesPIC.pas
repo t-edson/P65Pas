@@ -36,37 +36,35 @@ type  //Enumerated types
 
   //Operand storage
   TStoOperand = (
-    //Basic storage
-    stConst   = %0000, {Operand is constant and its value is stored directly in the Operand
-                       without use CPU resources. Includes evaluated constant expressions.}
-    stExpres  = %0001, {Operand value is stored in RT. Generally is the result of a
-                       expression, or the result of a function call.}
-    stVariab  = %0010, {Operand is addressed by a constants address.}
-    //Aditional storage (For pointers and arrays)
-    stVarRef  = %0011, {Operand is addressed by the value of a variable. Doesn't use RT.}
-    stVarConRef=%0100, {Operand is addressed by the value of a variable plus a constant
+    stConst  = %000, {Operand is constant and its value is stored directly in the Operand
+                      without use CPU resources. Includes evaluated constant expressions.}
+    stExpres = %001, {Operand value is stored in RT. Generally is the result of a
+                      expression, or the result of a function call.}
+    stVariab = %010, {Operand is addressed by a constants address.}
+    stVarRef = %011, {Operand is addressed by the value of a variable. Doesn't use RT.}
+    stVarConRef=%100,{Operand is addressed by the value of a variable plus a constant
                       offset. Doesn't use RT.}
-    stExpRef  = %0101,  {Operand is addressed by the value stored in RT}
+    stExpRef = %101,  {Operand is addressed by the value stored in RT}
     //Aditional expressions types
-    stExpresA = %1000, {Operand value is stored in register A.}
-    stExpresX = %1001, {Operand value is stored in register X.}
-    stExpresY = %1010  {Operand value is stored in register Y.}
+    stExpresA = %110, {Operand value is stored in register A.}
+    stExpresX = %111, {Operand value is stored in register X.}
+    stExpresY = %110 {Operand value is stored in register Y.}
   );
   {Almacenamiento combinado para una ROB. Se construye para poder representar dos valores
   de TStoOperand en una solo valor byte (juntando sus bits), para facilitar el uso de un
   CASE ... OF}
   TStoOperandsROB =(
-    stConst_Const    = %00000000,
-    stConst_Expres   = %00000001,
-    stConst_Variab   = %00000010,
+    stConst_Const    = %000000,
+    stConst_Expres   = %000001,
+    stConst_Variab   = %000010,
 
-    stExpres_Const   = %00010000,
-    stExpres_Expres  = %00010001,
-    stExpres_Variab  = %00010010,
+    stExpres_Const   = %001000,
+    stExpres_Expres  = %001001,
+    stExpres_Variab  = %001010,
 
-    stVariab_Const   = %00100000,
-    stVariab_Expres  = %00100001,
-    stVariab_Variab  = %00100010
+    stVariab_Const   = %010000,
+    stVariab_Expres  = %010001,
+    stVariab_Variab  = %010010
   );
 
 

@@ -295,10 +295,12 @@ var
   aux: TPicRegister;
   rVar: TxpEleVar;
 begin
-  SetResultNull;  //In Pascal an assigment doesn't return type.
-  //Implements assigment
+  //Simplifcamos el caso en que p2, sea de tipo p2^
+  if not ChangePointerToExpres(p2^) then exit;
+  //Realiza la asignación
   if p1^.Sto = stVariab then begin
-    //Assignment to a variable
+    SetResultNull;  //Formalmente,  una asignación no devuelve valores en Pascal
+    //Asignación a una variable
     case p2^.Sto of
     stConst : begin
       _LDA(value2);
@@ -308,82 +310,15 @@ begin
       _LDA(byte2);
       _STA(byte1);
     end;
-    stExpres, stExpresA: begin  //Already in A
+    stExpres: begin  //ya está en A
       _STA(byte1);
     end;
-    stExpresX: begin
-      _STX(byte1);
-    end;
-    stExpresY: begin
-      _STY(byte1);
-    end;
     else
-      GenError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-    end;
-  end else if p1^.Sto = stExpresA then begin
-    //Assignment to register A
-    case p2^.Sto of
-    stConst : begin
-      _LDA(value2);
-    end;
-    stVariab: begin
-      _LDA(byte2);
-    end;
-    stExpres, stExpresA: begin  //Already in A
-    end;
-    stExpresX: begin
-      _TXA;
-    end;
-    stExpresY: begin
-      _TYA;
-    end;
-    else
-      GenError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-    end;
-  end else if p1^.Sto = stExpresX then begin
-    //Assignment to register X
-    case p2^.Sto of
-    stConst : begin
-      _LDX(value2);
-    end;
-    stVariab: begin
-      _LDX(byte2);
-    end;
-    stExpres, stExpresA: begin  //Already in A
-      _TAX;
-    end;
-    stExpresX: begin  //Already in X
-    end;
-    stExpresY: begin
-      _TYA;  //Modify A
-      _TAX;
-    end;
-    else
-      GenError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-    end;
-  end else if p1^.Sto = stExpresY then begin
-    //Assignment to register Y
-    case p2^.Sto of
-    stConst : begin
-      _LDY(value2);
-    end;
-    stVariab: begin
-      _LDY(byte2);
-    end;
-    stExpres, stExpresA: begin  //Already in A
-      _TAY;
-    end;
-    stExpresX: begin
-      _TXA;  //Modify A
-      _TAY;
-    end;
-    stExpresY: begin //Already in X
-    end;
-    else
-      GenError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+      GenError(MSG_UNSUPPORTED); exit;
     end;
   end else if p1^.Sto = stVarRef then begin
     //Asignación a una variable referenciada pro variable
+    SetResultNull;  //Fomalmente, una asignación no devuelve valores en Pascal
     case p2^.Sto of
     stConst : begin
       //Caso especial de asignación a puntero desreferenciado: variable^

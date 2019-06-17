@@ -31,6 +31,10 @@ ER_INV_COD_CHAR := trans('Invalid code for char.'     , 'Código inválido para 
                          '', '', '', '');
 ER_IDE_TYP_EXP := trans('Identifier of type expected.', 'Se esperaba identificador de tipo.','',
                         'Typenbezeichner erwartet.'   , 'Очікується ідентифікатор типу.','Ожидается идентификатор типа.', 'Identifiant de type attendu.');
-ER_ONLY_ONE_REG:= trans('Only one REGISTER parameter is allowed.', 'Solo se permite un parámetro REGISTER.', '',
-                        'Nur ein REGISTER Parameter erlaubt.'    ,'Дозволено тільки один параметр REGISTER.','Только один параметр REGISTER разрешён.', 'Un seul paramètre REGISTRE est autorisé.');
+ER_RA_HAV_USED := trans('Register A has been used.'   , 'Ya se ha usado el rgistro A.','',
+                        ''  , '','', '');
+ER_RX_HAV_USED := trans('Register X has been used.'   , 'Ya se ha usado el rgistro X.','',
+                        ''  , '','', '');
+ER_RY_HAV_USED := trans('Register Y has been used.'   , 'Ya se ha usado el rgistro Y.','',
+                        ''  , '','', '');
 

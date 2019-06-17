@@ -20,7 +20,7 @@ interface
   //Read byte from default input (for keyboard, read a line from the screen). (If not keyboard, must call OPEN and CHKIN beforehands.)
   procedure CHRIN: char;
   //Write byte to default output. (If not screen, must call OPEN and CHKOUT beforehands.)
-  procedure CHROUT(register c: char);
+  procedure CHROUT(c: char register);
   
   //////////// BASIC FUNCTIONS //////////
   //Output a word Number in ASCII Decimal Digits
@@ -61,7 +61,7 @@ implementation
     end
   end; 
   
-  procedure CHROUT(register c: char);
+  procedure CHROUT(c: char register);
   begin
     asm 
     JSR $FFD2  ;argument already in A register

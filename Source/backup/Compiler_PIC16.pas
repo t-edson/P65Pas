@@ -840,13 +840,9 @@ begin
         exit;
       end;
     end else begin
-      //No es arreglo.
-      if aditVar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
-        GenError('Cannot initialize register variables.');
-        exit;
-      end else begin
-        aditVar.iniVal := res.Value;  //Asigna valor constante.
-      end;
+      aditVar.iniVal := res.Value;  //Asigna valor constante.
+      //GenError('Only arrays can be initialized.');
+      //exit;
     end;
   end else begin
     //No hay asignación inicial.
@@ -2345,10 +2341,6 @@ Esto es lo más cercano a un enlazador, que hay en PicPas.}
       //No debería dar error, porque ya pasó la primera pasada
       xvar.adicPar := adicVarDec;
       cIn.PosAct := posAct;
-      //Asigna RAM
-      CreateVarInRAM(xVar, shared);  //Crea la variable
-      xvar.typ.DefineRegister;  //Asegura que se dispondrá de los RT necesarios
-      //Puede salir con error
     end;
     decRegis, decRegisA, decRegisX, decRegisY: begin
       //Variable registro. No se asigna espacio.

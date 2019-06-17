@@ -146,12 +146,9 @@ type  //TxpElement y clases previas
   { TxpAdicDeclar }
   {Define aditional declaration settings for variable. Depends on target CPU architecture.}
   TxpAdicDeclar = (
-    decNone,   //Normal declaration. Will be mapped in free RAM.
-    decAbsol,  //Mapped in ABSOLUTE address
-    decRegis,  //Mapped at RT
-    decRegisA, //Mapped at A register
-    decRegisX, //Mapped at X register
-    decRegisY  //Mapped at Y register
+    decNone,  //Normal declaration. Will be mapped in free RAM.
+    decAbsol, //Mapped in ABSOLUTE address
+    regA      //Mapped at A register
   );
 
 
@@ -343,8 +340,10 @@ type //Clases de elementos
     procedure Settyp(AValue: TxpEleType);
   public   //Manejo de parámetros adicionales
     adicPar: TAdicVarDec;  //Parámetros adicionales en la declaración de la variable.
-    //Reference to Type element
+    //Referencia al elemento de tipo
     property typ: TxpEleType read Gettyp write Settyp;
+    //Indica si la variable tiene parámetros adicionales en la declaración
+    property havAdicPar: boolean read GetHavAdicPar;
   public
     //Bandera para indicar si la variable, se está usando como parámetro
     IsParameter: boolean;

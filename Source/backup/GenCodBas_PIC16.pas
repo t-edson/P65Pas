@@ -171,7 +171,6 @@ type
     procedure _SBC(const f: TPicRegister);  //SBC Absolute/Zeropage
     procedure _STA(const f: TPicRegister);
     procedure _STX(const f: TPicRegister);  //STX Absolute/Zeropage
-    procedure _STY(const f: TPicRegister);  //STY Absolute/Zeropage
     procedure _TAX;
     procedure _TAY;
     procedure _TYA;
@@ -341,8 +340,7 @@ begin
   tmpVar:= TxpEleVar.Create;
   tmpVar.name := nam;
   tmpVar.typ := eleTyp;
-  tmpVar.adicPar.hasAdic := decNone;
-  tmpVar.adicPar.hasInit := false;
+  tmpVar.havAdicPar := false;
   tmpVar.IsTmp := true;   //Para que se pueda luego identificar.
   varFields.Add(tmpVar);  //Agrega
   Result := tmpVar;
@@ -517,12 +515,10 @@ begin
   //Valores solicitados. Ya deben estar iniciado este campo.
   varName := xVar.name;
   typ := xVar.typ;
-  if xVar.adicPar.hasAdic = decAbsol then begin
-    //Absolute address
+  if xVar.adicPar.isAbsol then begin
     absAdd := xVar.adicPar.absAddr;
-  end else if xVar.adicPar.hasAdic = decNone then begin
-    //Common address
-    absAdd  := -1;
+  end else begin
+    absAdd  := -1;  //no aplica
   end;
   //Asigna espacio, de acuerdo al tipo
   if xVar.adicPar.hasInit then begin
@@ -1209,14 +1205,6 @@ begin
     pic.codAsm(i_STX, aZeroPage, f.addr);
   end else begin
     pic.codAsm(i_STX, aAbsolute, f.addr);
-  end;
-end;
-procedure TGenCodBas._STY(const f: TPicRegister);
-begin
-  if f.addr<256 then begin
-    pic.codAsm(i_STY, aZeroPage, f.addr);
-  end else begin
-    pic.codAsm(i_STY, aAbsolute, f.addr);
   end;
 end;
 procedure TGenCodBas._TAX;

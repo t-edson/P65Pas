@@ -739,7 +739,7 @@ begin
         xfun := TxpEleFun(ele);
         AddCallerTo(xfun);  //lleva la cuenta
         lexAsm.Next;
-        n := xfun.adrr;  //Lee dirección
+        n := xfun.addr;  //Lee dirección
         if tok = '#<' then n := n and $FF else n := (n and $ff00) >> 8;
         pic.codAsm(idInst, aImmediat, n);
         if pic.MsjError<>'' then begin
