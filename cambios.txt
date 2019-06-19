@@ -7,11 +7,17 @@ Se convierte GetOperand() a procedimiento y se devuelve el operando por referenc
 Se elimina TCompilerBase.GetOperandPrec().
 Se cambia la estructura de TAdicVarDec para que incluya la información adicional de
 variables registro y se quita del código el uso de banderas adicionales.
-Se crea TxpAdicDeclar y se amplía los tipos de vaaibles registro para que consideren
+Se crea TxpAdicDeclar y se amplía los tipos de variables registro para que consideren
 los casos REGISTERA, REGISTERX, y REGISTERY.
+Se incrementan los modos de almacenamiento para dar soporte a los parámetros REGISTER.
 Se cambia la sintaxis para la declaración de los parámetros REGISTER. AHora se ponen en 
 el mismo lugar de ABSOLUTE.
-
+Se reordenan las rutinas que daban soporte a punteros y arreglos para que se ubiquen en la
+unidad GenCod_PIC16, mediante el uso de refrencias a función, de modo que se separa mejor
+la generación de código del "Parser".
+Se uniformiza el nombre y la creación de tipos para que haya consistencia.
+Se implementa la creación dinámica de tipos para arreglos y punteros.
+Se implementa parcialmente la aritmética de punteros como operaciones con word.
 
 Las funciones INLINE se declaran de la sgte. forma:
 
