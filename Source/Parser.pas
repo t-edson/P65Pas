@@ -39,13 +39,12 @@ private
   FSto   : TStoOperand; //Operand storage.
   FTyp   : TxpEleType;  //Tipo del operando, cuando no es stVariab
   FVar   : TxpEleVar;   //Referencia a variable, cuando es stVariab o stVarRef.
-//  Foffset: integer;     //Referencia a variable, cuando es stVarRef.
-  FVal   : TConsValue;  //Valores constantes, cuando el operando es constante
+  FValue : TConsValue;  //Valores constantes, cuando el operando es constante
   function GetTyp: TxpEleType;
   procedure SetvalFloat(AValue: extended);
   procedure SetvalInt(AValue: Int64);
 public  //Campos generales
-  txt     : string;  //Text of operand or expression, as it apperas in source.
+  txt     : string;  //Text of operand or expression, as it appears in source.
   logic   : TLogicType; {Used when operand is Boolean type. Indicates the type of logic of
                         the operand value.}
   rVarBase: TxpEleVar;  {Referencia a variable base, cuando el operando es de tipo:
@@ -58,7 +57,7 @@ public  //Campos generales
   property Sto : TStoOperand read FSto;  //Alamcenamiento de operando
   property Typ : TxpEleType read GetTyp; //Tipo del operando
   property rVar: TxpEleVar  read FVar;   //Referencia a la variable, cuando es stVariab o stVarRef.
-//  property Offset: integer read Foffset;   //Referencia a la variable, cuando es stVarRef.
+  procedure SetAs(Op: TOperand);
   procedure SetAsConst(xtyp: TxpEleType);
   procedure SetAsVariab(xvar: TxpEleVar);
   procedure SetAsExpres(xtyp: TxpEleType);
@@ -67,7 +66,7 @@ public  //Campos generales
   procedure SetAsExpresY(xtyp: TxpEleType);
 
   procedure SetAsVarRef(VarBase: TxpEleVar);
-  procedure SetAsVarRef(VarBase: TxpEleVar; ValOff: integer);
+  procedure SetAsVarConRef(VarBase: TxpEleVar; ValOff: integer);
   procedure SetAsExpRef(VarBase: TxpEleVar; Etyp: TxpEleType);
   procedure SetAsNull;
   function StoOpStr: string;
@@ -84,12 +83,12 @@ public  //Campos acceso cuando sea variable.
   function Uoffs: TVarOffs; inline; //dirección del byte alto
   function addr : TVarOffs; //dirección absoluta de la variable
 public  //Campos de acceso a los valores constantes
-  property Value   : TConsValue read FVal;
-  property valInt  : Int64 read Fval.ValInt write SetvalInt;
-  property valFloat: extended read Fval.ValFloat write SetvalFloat;
-  property valBool : boolean read Fval.ValBool write Fval.ValBool;
-  property valStr  : string read Fval.ValStr write Fval.ValStr;
-  //funciones de ayuda para adaptar los tipos numéricos
+  property Value   : TConsValue read FValue;
+  property valInt  : Int64 read FValue.ValInt write SetvalInt;
+  property valFloat: extended read FValue.ValFloat write SetvalFloat;
+  property valBool : boolean read FValue.ValBool write FValue.ValBool;
+  property valStr  : string read FValue.ValStr write FValue.ValStr;
+  //Funciones de ayuda para adaptar los tipos numéricos
   function aWord: word; inline;  //devuelve el valor en Word
   function LByte: byte; inline;  //devuelve byte bajo de valor entero
   function HByte: byte; inline;  //devuelve byte alto de valor entero
@@ -98,9 +97,17 @@ public  //Campos de acceso a los valores constantes
   //campos para validar el rango de los valores
   function CanBeByte: boolean;   //indica si cae en el rango de un BYTE
   function CanBeWord: boolean;   //indica si cae en el rango de un WORD
-  //métodos para mover valores desde/hacia una constante externa
+  //Métodos para mover valores desde/hacia una constante externa
   procedure CopyConsValTo(var c: TxpEleCon);
   procedure GetConsValFrom(const c: TxpEleCon);
+private //Manage items
+  curSize: integer;
+public  //Manage items
+  nItems: integer;
+  procedure InitItems;
+  procedure AddConsItem(const c: TConsValue);
+  procedure CloseItems;
+  procedure StringToArrayOfChar(str: string);
 end;
 TOperandPtr = ^TOperand;
 { TCompilerBase }
@@ -123,21 +130,12 @@ protected  //Flags for boolean type.
 protected
   procedure getListOfIdent(out itemList: TStringDynArray; out
     srcPosArray: TSrcPosArray);
-  procedure IdentifyField(xOperand: TOperand);
+  procedure IdentifyField(xOperand: TOperand; ToSet: boolean);
   procedure LogExpLevel(txt: string);
   function IsTheSameVar(var1, var2: TxpEleVar): boolean; inline;
   function AddCallerTo(elem: TxpElement): TxpEleCaller;
   function AddCallerTo(elem: TxpElement; callerElem: TxpElement): TxpEleCaller;
   function AddCallerTo(elem: TxpElement; const curPos: TSrcPos): TxpEleCaller;
-protected  //Eventos del compilador
-  {This is the way the Parser can communicate with the Code Generator, considering this
-  unit is independent of Code Generation.}
-  OnExprStart: procedure of object;  {Se genera al iniciar la
-                                      evaluación de una expresión.}
-  OnExprEnd  : procedure(posExpres: TPosExpres) of object;  {Se genera al terminar de
-                                                               evaluar una expresión.}
-  OnReqStopCodeGen: procedure of object;   //Required stop the Code Generation
-  OnReqStartCodeGen: procedure of object;  //Required start the Code Generation
 protected  //Creación de elementos
   procedure ClearTypes;
   function CreateSysType(nom0: string; cat0: TTypeGroup; siz0: smallint
@@ -145,7 +143,8 @@ protected  //Creación de elementos
   function FindSysEleType(TypName: string): TxpEleType;
   function CreateCons(consName: string; eletyp: TxpEleType): TxpEleCon;
   function CreateVar(varName: string; eleTyp: TxpEleType): TxpEleVar;
-  function CreateEleType(typName: string): TxpEleType;
+  function CreateEleType(const typName: string; const srcPos: TSrcPos;
+                         catType: TxpCatType): TxpEleType;
   function CreateFunction(funName: string; typ: TxpEleType; procParam,
     procCall: TProcExecFunction): TxpEleFun;
   function CreateSysFunction(funName: string; procParam,
@@ -154,7 +153,6 @@ protected  //Creación de elementos
     ): TxpEleVar;
   function AddConstant(conName: string; eleTyp: TxpEleType; srcPos: TSrcPos
     ): TxpEleCon;
-  function AddType(typName: string; srcPos: TSrcPos): TxpEleType;
   procedure CreateFunctionParams(var funPars: TxpParFuncArray);
   function AddFunction(funName: string; eleTyp: TxpEleType;
     const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean;
@@ -180,19 +178,13 @@ protected
   //Manejo de Inline
   function CreateInline(funName: string; typ: TxpEleType; procParam,
     procCall: TProcExecFunction): TxpEleInlin;
-//  function CreateSysFunction(funName: string; procParam,
-//    procCall: TProcExecFunction): TxpEleFun;
-//  procedure CaptureParamsFinal(fun: TxpEleFun);
-//  function CaptureTok(tok: string): boolean;
-//  function CaptureStr(str: string): boolean;
-//  procedure CaptureParams(func0: TxpEleFun);
   //Manejo del cuerpo del programa
   function CreateBody: TxpEleBody;
   //Manejo de Unidades
   function CreateUnit(uniName: string): TxpEleUnit;
   //Manejo de expresiones
-  procedure GetOperandIdent(out Op: TOperand; KeepStorage: boolean);
-  procedure GetOperand(out Op: Toperand; KeepStorage: boolean = false) virtual;
+  procedure GetOperandIdent(out Op: TOperand; ToSet: boolean);
+  procedure GetOperand(out Op: Toperand; ToSet: boolean = false) virtual;
   function GetOperator(const Op: Toperand): TxpOperator;
   function GetExpression(const prec: Integer): TOperand;
   procedure GetExpressionE(posExpres: TPosExpres);
@@ -201,11 +193,25 @@ public  //Contenedores
   TreeDirec  : TXpTreeElements; //Árbol de sinatxis para directivas
   listFunSys : TxpEleFuns;   //lista de funciones del sistema
   listTypSys : TxpEleTypes;  //lista de tipos del sistema
-protected
-  OnLoadToA: procedure(Op: TOperand) of object;
-  OnLoadToX: procedure(Op: TOperand) of object;
-  OnLoadToY: procedure(Op: TOperand) of object;
-  function stoOperation: TStoOperandsROB; inline;
+protected  //Compiler events
+  {This is one way the Parser can communicate with the Code Generator, considering this
+  unit is independent of Code Generation.}
+  OnExprStart: procedure of object;  {Se genera al iniciar la
+                                      evaluación de una expresión.}
+  OnExprEnd  : procedure(posExpres: TPosExpres) of object;  {Se genera al terminar de
+                                                               evaluar una expresión.}
+  OnReqStopCodeGen: procedure of object;   //Required stop the Code Generation
+  OnReqStartCodeGen: procedure of object;  //Required start the Code Generation
+protected //Calls to Code Generator
+  {These are routines that must be implemented in Code-generator.}
+  //Implement code-generator routines to implemet Arrays.
+  CodDefineArray : procedure(etyp: TxpEleType) of object;
+  //Implement code-generator routines to implemet Pointers.
+  CodDefinePointer : procedure(etyp: TxpEleType) of object;
+  //Load to register
+  CodLoadToA: procedure(Op: TOperand) of object;
+  CodLoadToX: procedure(Op: TOperand) of object;
+  CodLoadToY: procedure(Op: TOperand) of object;
   procedure LoadToRT(Op: TOperand);
   //LLamadas a las rutinas de operación
   procedure Oper(var Op1: TOperand; opr: TxpOperator; var Op2: TOperand);
@@ -249,13 +255,12 @@ public   //Tipos adicionales de tokens
   tnOthers   : integer;
 public   //Tipos de datos a implementar
   {No es obligatorio implementar todos los tipos de datos, para todos los compiladoreslo }
-//  typBit  : TxpEleType;
   typBool : TxpEleType;
   typByte : TxpEleType;
   typChar : TxpEleType;
   typWord : TxpEleType;
   typString: TxpEleType;
-public
+public   //Public attributes of compiler
   ID       : integer;     //Identificador para el compilador.
   Compiling: boolean;     //Bandera para el compilado
   FirstPass: boolean;     //Indica que está en la primera pasada.
@@ -265,12 +270,10 @@ public
   //Variables públicas del compilador
   ejecProg : boolean;     //Indica que se está ejecutando un programa o compilando
   DetEjec  : boolean;     //Para detener la ejecución (en intérpretes)
-
+  procedure Compile(NombArc: string; Link: boolean); virtual; abstract;
+protected //Accesos a propiedades de p1^ y p2^.
   p1, p2   : ^TOperand;   //Pasa los operandos de la operación actual
   res      : TOperand;    //resultado de la evaluación de la última expresión.
-  procedure Compile(NombArc: string; Link: boolean); virtual; abstract;
-  function OperationStr(Opt: TxpOperation): string;
-protected //Accesos a propiedades de p1^ y p2^.
   function value1: dword;
   function value1L: word;
   function value1H: word;
@@ -289,7 +292,10 @@ protected //Accesos a propiedades de p1^ y p2^.
   function byte2H: TPicRegister;
   function byte2E: TPicRegister;
   function byte2U: TPicRegister;
-public   //Manejo de errores y advertencias
+  function stoOperation: TStoOperandsROB; inline;
+  procedure ExchangeP1_P2;
+  function OperationStr(Opt: TxpOperation): string;
+public   //Errors and warnings
   curLocation: TxpEleLocation;   //Ubicación actual de exploración
   HayError: boolean;
   OnWarning: procedure(warTxt: string; fileName: string; row, col: integer) of object;
@@ -310,21 +316,18 @@ public   //Manejo de errores y advertencias
   procedure GenError(msg: string);
   procedure GenError(msg: String; const Args: array of const);
   procedure GenErrorPos(msg: String; const Args: array of const; srcPos: TSrcPos);
-public    //Compiling Options
+public   //Compiling Options
   incDetComm  : boolean; //Incluir Comentarios detallados.
   GeneralORG  : integer; //Dirección general de origen de código
   mode        : (modPascal, modPicPas);
-  SetProIniBnk: boolean; //Incluir instrucciones de cambio de banco al inicio de procedimientos
-  OptBnkAftPro: boolean; //Incluir instrucciones de cambio de banco al final de procedimientos
   OptBnkAftIF : boolean; //Optimizar instrucciones de cambio de banco al final de IF
   OptReuProVar: boolean; //Optimiza reutilizando variables locales de procedimientos
   OptRetProc  : boolean; //Optimiza el último exit de los procedimeintos.
-protected
+protected   //Files
   mainFile    : string;    //Archivo inicial que se compila
   hexFile     : string;    //Nombre de archivo de salida
   function ExpandRelPathTo(BaseFile, FileName: string): string;
-  procedure ExchangeP1_P2;
-public    //Información y acceso a memoria
+public    //Information and memory access.
   function hexFilePath: string;
   function mainFilePath: string;
   function CompilerName: string; virtual; abstract;  //Name of the compiler
@@ -334,7 +337,7 @@ public    //Información y acceso a memoria
   procedure DumpCode(lins: TSTrings; asmMode, IncVarDec, ExcUnused: boolean;
                      incAdrr, incCom, incVarNam: boolean); virtual; abstract;
   procedure GenerateListReport(lins: TStrings); virtual; abstract;
-public    //Acceso a campos del objeto PIC
+public    //Access to fileds of objet PIC
   function PICName: string; virtual; abstract;
   function RAMmax: integer; virtual; abstract;
 protected //Container lists of registers
@@ -463,13 +466,15 @@ begin
   xVar.adicPar.hasInit := false;
   Result := xVar;
 end;
-function TCompilerBase.CreateEleType(typName: string): TxpEleType;
+function TCompilerBase.CreateEleType(const typName: string; const srcPos: TSrcPos;
+                                           catType: TxpCatType): TxpEleType;
 var
   xTyp: TxpEleType;
 begin
   xTyp := TxpEleType.Create;
-  xTyp.name := typName;
-//  xTyp.typ := typ;
+  xTyp.name    := typName;
+  xTyp.srcDec  := srcPos;
+  xTyp.catType := catType;
   Result := xTyp;
 end;
 function TCompilerBase.CreateFunction(funName: string; typ: TxpEleType;
@@ -543,25 +548,25 @@ begin
   TreeElems.AddElement(xcons);
   Result := xcons;
 end;
-function TCompilerBase.AddType(typName: string; srcPos: TSrcPos): TxpEleType;
-{Crea un elemento tipo y lo agrega en el nodo actual del árbol de sintaxis.
-Si no hay errores, devuelve la referencia al tipo. En caso contrario,
-devuelve NIL.}
-var
-  xtyp: TxpEleType;
-begin
-  //Inicia parámetros adicionales de declaración
-  xtyp := CreateEleType(typName);
-  xtyp.srcDec := srcPos;  //Actualiza posición
-  //Verifica si hay conflicto. Solo es necesario buscar en el nodo actual.
-  if xtyp.ExistsIn(TreeElems.curNode.elements) then begin
-    GenErrorPos(ER_DUPLIC_IDEN, [xtyp.name], xtyp.srcDec);
-    xtyp.Destroy;   //Hay una variable creada
-    exit(nil);
-  end;
-  TreeElems.AddElement(xtyp);
-  Result := xtyp;
-end;
+//function TCompilerBase.AddType(typName: string; srcPos: TSrcPos): TxpEleType;
+//{Crea un elemento tipo y lo agrega en el nodo actual del árbol de sintaxis.
+//Si no hay errores, devuelve la referencia al tipo. En caso contrario,
+//devuelve NIL.}
+//var
+//  xtyp: TxpEleType;
+//begin
+//  //Inicia parámetros adicionales de declaración
+//  xtyp := CreateEleType(typName);
+//  xtyp.srcDec := srcPos;  //Actualiza posición
+//  //Verifica si hay conflicto. Solo es necesario buscar en el nodo actual.
+//  if xtyp.ExistsIn(TreeElems.curNode.elements) then begin
+//    GenErrorPos(ER_DUPLIC_IDEN, [xtyp.name], xtyp.srcDec);
+//    xtyp.Destroy;   //Hay una variable creada
+//    exit(nil);
+//  end;
+//  TreeElems.AddElement(xtyp);
+//  Result := xtyp;
+//end;
 procedure TCompilerBase.CreateFunctionParams(var funPars: TxpParFuncArray);
 {Crea los parámetros de una función como variables globales, a partir de un arreglo
 TxpParFunc. }
@@ -819,13 +824,13 @@ begin
       LoadToRT(Op2);
     end else if par.adicVar.hasAdic = decRegisA then begin
       {Register parameter is not assigned.}
-      OnLoadToA(Op2);
+      CodLoadToA(Op2);
     end else if par.adicVar.hasAdic = decRegisX then begin
       {Register parameter is not assigned.}
-      OnLoadToX(Op2);
+      CodLoadToX(Op2);
     end else if par.adicVar.hasAdic = decRegisY then begin
       {Register parameter is not assigned.}
-      OnLoadToY(Op2);
+      CodLoadToY(Op2);
     end else if par.adicVar.hasAdic in [decNone, decAbsol] then begin
       //Cretae operand-variable to generate assignment code.
       Op1.SetAsVariab(par.pvar); //Apunta a la variable
@@ -899,10 +904,31 @@ begin
   setlength(itemList   , n+1);
   setlength(srcPosArray, n+1);
 end;
-procedure TCompilerBase.IdentifyField(xOperand: TOperand);
+procedure TCompilerBase.IdentifyField(xOperand: TOperand; ToSet: boolean);
 {Identifica el campo de una variable. Si encuentra algún problema genera error.
 Notar que el parámetro es por valor, es decir, se crea una copia, por seguridad.
 Puede generar código de evaluación. Devuelve el resultado en "res". }
+  function CallProc(const field: TTypField): boolean; inline;
+  {Call the Getter or Setter, of the field acordding to "ToSet". If gives error
+  return FALSE}
+  begin
+    if ToSet then begin
+      //Mode Setter
+      if field.procSet= nil then begin
+        GenError('Cannot assign to this operand.');
+        exit(false);
+      end;
+      field.procSet(@xOperand)
+    end else begin
+      //Mode Setter
+      if field.procGet= nil then begin
+        GenError('Cannot read this operand.');
+        exit(false);
+      end;
+      field.procGet(@xOperand);  //Devuelve resultado en "res"
+    end;
+    exit(true);
+  end;
 var
   field: TTypField;
   identif: String;
@@ -911,11 +937,12 @@ begin
     //Caso especial de llamada a Item().
     for field in xOperand.Typ.fields do begin
       if LowerCase(field.Name) = 'item' then begin
-        field.proc(@xOperand);  //Devuelve resultado en "res"
+        //Find de method
+        if not CallProc(field) then exit;
         if cIn.tok = '.' then begin
           //Aún hay más campos, seguimos procesando
           //Como "IdentifyField", crea una copia del parámetro, no hay cruce con el resultado
-          IdentifyField(res);
+          IdentifyField(res, ToSet);
         end;
         exit;
       end;
@@ -935,13 +962,12 @@ begin
   //Prueba con campos del tipo
   for field in xOperand.Typ.fields do begin
     if LowerCase(field.Name) = identif then begin
-      //Encontró el campo
-      field.proc(@xOperand);  //Return result in "res"
-      //cIn.Next;    //Coge identificador
+      //Find de method
+      if not CallProc(field) then exit;
       if cIn.tok = '.' then begin
         //Aún hay más campos, seguimos procesando
         //Como "IdentifyField", crea una copia del parámetro, no hay cruce con el resultado
-        IdentifyField(res);
+        IdentifyField(res, ToSet);
       end;
       exit;
     end;
@@ -950,7 +976,7 @@ begin
   GenError(ER_UNKNOWN_IDE_, [identif]);
 end;
 //Manejo de expresiones
-procedure TCompilerBase.GetOperandIdent(out Op: TOperand; KeepStorage: boolean);
+procedure TCompilerBase.GetOperandIdent(out Op: TOperand; ToSet: boolean);
 {Read an operand spcified by one identifier. Return in "Op". This routine was part of
 GetOperand(), but it was splitted because:
 * This is a big code and could grow more.
@@ -1003,7 +1029,7 @@ begin
       {$IFDEF LogExpres} Op.txt:= xvar.name; {$ENDIF}   //Take the text
       //Verify if has reference to fields with "."
       if (cIn.tok = '.') or (cIn.tok = '[') then begin
-        IdentifyField(Op);
+        IdentifyField(Op, ToSet);
         Op := res;  //notar que se usa "res".
         if HayError then exit;
         {Como este operando es de tipo <variable>.<algo>... , actualizamos el campo
@@ -1024,7 +1050,7 @@ begin
     {$IFDEF LogExpres} Op.txt:= xcon.name; {$ENDIF}   //toma el texto
     //Verifica si tiene referencia a campos con "."
     if (cIn.tok = '.') or (cIn.tok = '[') then begin
-      IdentifyField(Op);
+      IdentifyField(Op, ToSet );
       Op := res;  //notar que se usa "res".
       if HayError then exit;;
     end;
@@ -1143,21 +1169,26 @@ begin
     exit;
   end;
 end;
-procedure TCompilerBase.GetOperand(out Op: Toperand; KeepStorage: boolean);
+procedure TCompilerBase.GetOperand(out Op: Toperand; ToSet: boolean);
 {This is part of the Expression analyzer function. Read and, optionally, can generate
 code to read an operand. The operand is returned in the parameter "Op", by reference, to
 avoid using a local copy (like "Result").
 In some cases can modify the global variable "res".
-When "KeepStorage" is TRUE it forces to mantain the operand with its original storage.
+When "ToSet" is TRUE it forces to mantain the operand with its original storage.
 Otherwise, the storages like stVarRef o stExpRef, are simplified to stExpres. This is
 useful when compiling assignments.}
 var
   xfun  : TxpEleFun;
-  tmp, oprTxt: String;
+  tmp, oprTxt, typName: String;
   Op1    : TOperand;
   posAct: TPosCont;
   opr   : TxpOperator;
   cod   : Longint;
+  ReadType: Boolean;
+  itType: TxpEleType;
+  nitems: Integer;
+  xtyp : TxpEleType;
+  srcpos: TSrcPos;
 begin
   //cIn.SkipWhites;
   ProcComments;
@@ -1224,7 +1255,7 @@ begin
     end;
     GenError(ER_NOT_IMPLEM_);
   end else if cIn.tokType = tnIdentif then begin  //puede ser variable, constante, función
-    GetOperandIdent(Op, KeepStorage);
+    GetOperandIdent(Op, ToSet);
     //Puede salir con error.
   end else if cIn.tokType = tnBoolean then begin  //true o false
     {$IFDEF LogExpres} Op.txt:= cIn.tok; {$ENDIF}   //toma el texto
@@ -1240,7 +1271,7 @@ begin
     If cIn.tok = ')' Then begin
        cIn.Next;  //lo toma
         if (cIn.tok = '.') or (cIn.tok = '[') then begin
-         IdentifyField(Op);
+         IdentifyField(Op, ToSet);
          Op := res;  //notar que se usa "res".
          if HayError then exit;;
        end;
@@ -1248,16 +1279,67 @@ begin
        GenError(ER_IN_EXPRESSI);
        Exit;       //error
     end;
-{  end else if (cIn.tokType = tkString) then begin  //constante cadena
-    Op.Sto:=stConst;     //constante es Mono Operando
-    TipDefecString(Op, cIn.tok); //encuentra tipo de número, tamaño y valor
-    if pErr.HayError then exit;  //verifica
-    if Op.typ = nil then begin
-       GenError('No hay tipo definido para albergar a esta constante cadena');
-       exit;
-     end;
-    cIn.Next;    //Pasa al siguiente
-}
+  end else if cIn.tok = '[' then begin  //Constant array
+   //Here we only know the operand is an array
+    srcpos := cIn.ReadSrcPos;
+    cIn.Next;
+    ProcComments;
+    //Start reading the items
+    ReadType := true;  //Set flag to read the item type
+    nitems := 0;
+    Op.InitItems;  //Prepare filling constant items
+    while not cIn.Eof and (cIn.tok <> ']') do begin
+      //Must be an item
+      Op1 := GetExpression(0);  //read item
+      if Op1.Sto <> stConst then begin
+        GenError('Expected constant item');
+        exit;
+      end;
+      if ReadType then begin
+         //First item
+         itType := Op1.Typ;  //Now We have the type of the item
+         ReadType := false;  //Already read
+      end;
+      //Asure all items have the same type
+      if Op1.Typ <> itType then begin
+        GenError('Expected item of type: %s', [itType.name]);
+        exit;
+      end;
+      //Add the item to the operand
+      Op.AddConsItem(Op1.Value);
+    end;
+    if cIn.tok = ']' then begin
+      //Raise the end of array. Now we can create new type.
+      //Op.CloseItems;  //No need if we use: Op.nItems.
+      //Now we can know the type of the item and of the array
+      typName := GenArrayTypeName(itType.name, Op.nItems);
+      if TreeElems.DeclaredType(typName, xtyp) then begin
+        //Type exists. We have the reference in "xtyp".
+      end else begin
+        //The type doesn't exist. We need to create.
+        xtyp := CreateEleType(typName, srcPos, tctArray);  //Crea sin nombre por ahora
+        if HayError then exit; //Exit with error.
+        xtyp.nItems  := Op.nItems;   //Number of items
+        xtyp.itmType := itType;  //Item type
+        CodDefineArray(xtyp);    //Crea campos comunes del arreglo
+        //Add to the syntax tree
+        xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
+        if TreeElems.curNode.idClass = eltBody then begin
+          //When the array is declared in some code-section.
+          TreeElems.AddElementParent(xtyp, true);  //Add at the beginning
+        end else begin
+          //In declaration section.
+          TreeElems.AddElement(xtyp);
+        end;
+      end;
+      //Finally we set the operand type.
+      Op.SetAsConst(xtyp);
+    end else if cIn.Eof then begin
+      GenError('Unexpected end of file');
+      exit;
+    end else begin  //Only happen when break loop
+      exit;
+    end;
   end else if cIn.tokType = tnOperator then begin
     {Si sigue un operador puede ser un operador Unario.
     El problema que tenemos, es que no sabemos de antemano el tipo, para saber si el
@@ -1266,7 +1348,7 @@ begin
     posAct := cIn.PosAct;   //Esto puede ser pesado en términos de CPU
     oprTxt := cIn.tok;   //guarda el operador
     cIn.Next; //pasa al siguiente
-    GetOperand(Op1, KeepStorage);   //Takes the operand.
+    GetOperand(Op1, ToSet);   //Takes the operand.
     if HayError then exit;
     //Ahora ya tenemos el tipo. Hay que ver si corresponde el operador
     opr := Op1.Typ.FindUnaryPreOperator(oprTxt);
@@ -1491,7 +1573,7 @@ begin
       cIn.SkipWhites;
       //Verificación
       if (cIn.tok = '.') or (cIn.tok = '[') then begin
-        IdentifyField(Op1);
+        IdentifyField(Op1, False);
         if HayError then exit;;
         Op1 := res;  //notar que se usa "res".
         cIn.SkipWhites;
@@ -1527,30 +1609,73 @@ valorres.}
 var
   Op1, Op2: TOperand;
   opr1: TxpOperator;
+  p: TPosCont;
 begin
   Inc(ExprLevel);  //cuenta el anidamiento
   {$IFDEF LogExpres} LogExpLevel('>Inic.expr'); {$ENDIF}
   if OnExprStart<>nil then OnExprStart;  //llama a evento
   try
-    GetOperand(Op1, true);  //Keep storage to do assignment
+  //  GetOperand(Op1, true);  //Keep storage to do assignment
+  //  if HayError then exit;
+  //  case Op1.Sto of
+  //  stConst: begin
+  //    //Instruction alone is not valid
+  //    GenError('Constants are not allowed here.');
+  //  end;
+  //  stExpres : begin
+  //    //Could be call to a procedure/function/method. Cannot be something like: "x + 1" or "1 + x"
+  //    //It's OK. Nothing to do.
+  //  end;
+  //  stVariab, stVarRef, stVarConRef, stExpRef, stExpresA, stExpresX, stExpresY : begin
+  //    //Should be an assignment
+  //    cIn.SkipWhites;
+  //    opr1 := GetOperator(Op1);
+  //    if opr1 = nil then begin  //Not following an operator
+  //      GenError('Expected ":="');
+  //      exit;  //termina ejecucion
+  //    end;
+  //    //We have an operator, verify if apply.
+  //    if opr1 = nullOper then begin
+  //      GenError(ER_UND_OPER_TY_, [opr1.txt, Op1.Typ.name]);
+  //      exit;
+  //    end;
+  //    //OK. We have an operator now.
+  //    if opr1.txt <> ':=' then begin
+  //      GenError('Expected ":="');
+  //      exit;
+  //    end;
+  //    //Finally we have an assignment
+  //    Op2 := GetExpression(0);
+  //    if HayError then exit;
+  //    //Call de operation
+  //    Oper(Op1, opr1, Op2);    //Compile operation
+  //  end;
+  //  else //Should not happen
+  //    GenError('System error.');
+  //  end;
+    {First we stop code generation, because we don't know if the instruction is a getter:
+      proc()
+    or a setter:
+      a := b;
+    }
+
+    OnReqStopCodeGen();
+    p := cIn.PosAct;         //Save start of expression
+    GetOperand(Op1, false);  //We assume is getter
     if HayError then exit;
-    case Op1.Sto of
-    stConst: begin
-      //Instruction alone is not valid
-      GenError('Constants are not allowed here.');
-    end;
-    stExpres : begin
-      //Could be call to a procedure/function/method. Cannot be something like: "x + 1" or "1 + x"
-      //It's OK. Nothing to do.
-    end;
-    stVariab, stVarRef, stVarConRef, stExpRef, stExpresA, stExpresX, stExpresY : begin
-      //Should be an assignment
-      cIn.SkipWhites;
-      opr1 := GetOperator(Op1);
-      if opr1 = nil then begin  //Not following an operator
-        GenError('Expected ":="');
-        exit;  //termina ejecucion
+    ProcComments;
+    opr1 := GetOperator(Op1); //We expect operand or end of instruction
+    if opr1 = nil then begin
+      //Not following an operator. We assume instruction ends;
+      OnReqStartCodeGen();  //Restart the code generation.
+      cIn.PosAct := p;   //Set to the start of expression
+      GetOperand(Op1, false);  //Compile as getter.
+      if HayError then exit;   //New errors can appear (memory)
+      if Op1.Sto  = stConst then begin
+        //Instruction alone is not valid
+        GenError('Constants are not allowed here.');
       end;
+    end else begin
       //We have an operator, verify if apply.
       if opr1 = nullOper then begin
         GenError(ER_UND_OPER_TY_, [opr1.txt, Op1.Typ.name]);
@@ -1561,14 +1686,18 @@ begin
         GenError('Expected ":="');
         exit;
       end;
-      //Finally we have an assignment
-      Op2 := GetExpression(0);
+      //Finally we have detected an assignment.
+      OnReqStartCodeGen();  //Restart the code generation.
+      cIn.PosAct := p;   //Set to the start of expression
+      GetOperand(Op1, true);  //Compile as setter.
+      if HayError then exit;   //New errors can appear (memory)
+      ProcComments;
+      opr1 := GetOperator(Op1); //No need to do more validations
+      Op2 := GetExpression(0); //VAlue to assign
       if HayError then exit;
       //Call de operation
       Oper(Op1, opr1, Op2);    //Compile operation
-    end;
-    else //Should not happen
-      GenError('System error.');
+      //Can generate error
     end;
   finally
     if OnExprEnd<>nil then OnExprEnd(posExpres);    //llama al evento de salida
@@ -2218,11 +2347,11 @@ procedure TOperand.CopyConsValTo(var c: TxpEleCon);
 begin
   //hace una copia selectiva por velocidad, de acuerdo al grupo
   case Typ.grp of
-  t_boolean : c.val.ValBool:=Fval.ValBool;
+  t_boolean : c.val.ValBool:=FValue.ValBool;
   t_integer,
-  t_uinteger: c.val.ValInt  := Fval.ValInt;
-  t_float   : c.val.ValFloat:= Fval.ValFloat;
-  t_string  : c.val.ValStr  := Fval.ValStr;
+  t_uinteger: c.val.ValInt  := FValue.ValInt;
+  t_float   : c.val.ValFloat:= FValue.ValFloat;
+  t_string  : c.val.ValStr  := FValue.ValStr;
   else
     MsgErr('Internal PicPas error');
     {En teoría, cualquier valor constante que pueda contener TOperand, debería poder
@@ -2235,16 +2364,48 @@ procedure TOperand.GetConsValFrom(const c: TxpEleCon);
  correctamente su campo "catTyp". }
 begin
   case Typ.grp of
-  t_boolean : Fval.ValBool := c.val.ValBool;
+  t_boolean : FValue.ValBool := c.val.ValBool;
   t_integer,
-  t_uinteger: Fval.ValInt := c.val.ValInt;
-  t_float   : Fval.ValFloat := c.val.ValFloat;
-  t_string  : Fval.ValStr := c.val.ValStr;
+  t_uinteger: FValue.ValInt := c.val.ValInt;
+  t_float   : FValue.ValFloat := c.val.ValFloat;
+  t_string  : FValue.ValStr := c.val.ValStr;
   else
     MsgErr('Internal PicPas error');
     //faltó implementar.
   end;
 end;
+//Manage items
+procedure TOperand.InitItems;
+begin
+  nItems := 0;
+  curSize := 10;   //Block size
+  setlength(FValue.items, curSize);  //initial size
+end;
+procedure TOperand.AddConsItem(const c: TConsValue);
+begin
+  FValue.items[nItems] := c;
+  if nItems >= curSize then begin
+    curSize += 10;   //Increase size by block
+    setlength(FValue.items, curSize);  //make space
+  end;
+  inc(nItems);
+end;
+procedure TOperand.CloseItems;
+begin
+  setlength(FValue.items, nItems);
+end;
+procedure TOperand.StringToArrayOfChar(str: string);
+{Init the constant value as array of char from a string.}
+var
+  i: Integer;
+begin
+  nItems := length(str);
+  setlength(FValue.items, nItems);
+  for i:=0 to nItems-1 do begin
+    FValue.items[i].ValInt := ord(str[i+1]);
+  end;
+end;
+
 function TOperand.GetTyp: TxpEleType;
 {Devuelve el tipo de la variable referenciada. }
 begin
@@ -2272,12 +2433,26 @@ end;
 procedure TOperand.SetvalFloat(AValue: extended);
 begin
 //  if FvalFloat=AValue then Exit;
-  Fval.ValFloat:=AValue;
+  FValue.ValFloat:=AValue;
 end;
 procedure TOperand.SetvalInt(AValue: Int64);
 begin
 //  if FvalInt=AValue then Exit;
-  Fval.ValInt:=AValue;
+  FValue.ValInt:=AValue;
+end;
+procedure TOperand.SetAs(Op: TOperand);
+//Set Operand the same as other operand.
+begin
+  FSto := Op.Sto;
+  FTyp := Op.Typ;
+  FVar := Op.rVar;
+  if Op.Sto = stConst then begin
+    //Only copy if really matter, because could be slow
+    FValue := Op.Value;
+  end;
+  logic := Op.logic;
+  rVarBase := Op.rVarBase;
+  nOpern := Op.nOpern;
 end;
 procedure TOperand.SetAsConst(xtyp: TxpEleType);
 {Fija el almacenamiento del Operando como Constante, del tipo indicado}
@@ -2325,12 +2500,12 @@ begin
   FVar := VarBase;
   rVarBase := nil;  //Inicia a este valor
 end;
-procedure TOperand.SetAsVarRef(VarBase: TxpEleVar; ValOff: integer);
-{Versión de SetAsVarRef(), con desplazamiento constante.}
+procedure TOperand.SetAsVarConRef(VarBase: TxpEleVar; ValOff: integer);
+{Fija el operando como de tipo stVarConRef.}
 begin
-  FSto := stVarRef;
+  FSto := stVarConRef;
   FVar := VarBase;
-  Fval.ValInt := ValOff;
+  FValue.ValInt := ValOff;
   rVarBase := nil;  //Inicia a este valor
 end;
 procedure TOperand.SetAsExpRef(VarBase: TxpEleVar; Etyp: TxpEleType);
@@ -2393,4 +2568,4 @@ begin
   Result := Typ.FindBinaryOperator(oper);
 end;
 
-end. //2160
+end. //2555

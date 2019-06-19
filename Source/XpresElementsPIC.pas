@@ -174,7 +174,7 @@ type  //TxpElement y clases previas
     Fname    : string;   //Nombre del elemnto
     Funame   : string;   //Nombre en mayúscula para acelerar las bísquedas.
     procedure Setname(AValue: string);
-    function AddElement(elem: TxpElement): TxpElement;
+    function AddElement(elem: TxpElement; AtBegin: boolean): TxpElement;
   public  //Gestion de llamadas al elemento
     //Lista de funciones que llaman a esta función.
     lstCallers: TxpListCallers;
@@ -270,8 +270,6 @@ type //Clases de elementos
     OperationLoad: TProcExecOperat; {Evento. Es llamado cuando se pide evaluar una
                                  expresión de un solo operando de este tipo. Es un caso
                                  especial que debe ser tratado por la implementación}
-    OnClearItems : TTypFieldProc;  {Usado para la rutina que limpia los ítems de
-                                   un arreglo.}
     {Estos eventos NO se generan automáticamente en TCompilerBase, sino que es la
     implementación del tipo, la que deberá llamarlos. Son como una ayuda para facilitar
     la implementación. OnPush y OnPop, son útiles para cuando la implementación va a
@@ -287,7 +285,7 @@ type //Clases de elementos
     copyOf  : TxpEleType;  //Indica que es una copia de otro tipo
     grp     : TTypeGroup;  //Grupo del tipo (numérico, cadena, etc)
     catType : TxpCatType;  //Categoría del tipo
-    nItems  : integer;      //Number of items, when is tctArray (-1 if it's dynamic.)
+    nItems  : integer;     //Number of items, when is tctArray (-1 if it's dynamic.)
     itmType : TxpEleType;  {Reference to the item type when it's array.
                                 TArr = array[255] of byte;  //itemType = byte
                            }
@@ -312,7 +310,7 @@ type //Clases de elementos
     procedure SaveToStk;
   public  //Manejo de campos
     fields: TTypFields;
-    procedure CreateField(metName: string; proc: TTypFieldProc);
+    procedure CreateField(metName: string; procGet, procSet: TTypFieldProc);
   public  //Identificación
     function IsByteSize: boolean;
     function IsWordSize: boolean;
@@ -338,7 +336,6 @@ type //Clases de elementos
   TxpEleVar = class(TxpElement)
   private
     ftyp: TxpEleType;
-    function GetHavAdicPar: boolean;
     function Gettyp: TxpEleType;
     procedure Settyp(AValue: TxpEleType);
   public   //Manejo de parámetros adicionales
@@ -545,8 +542,9 @@ type //Clases de elementos
     function LastNode: TxpElement;
     function BodyNode: TxpEleBody;
   public  //Funciones para llenado del arbol
-    procedure AddElement(elem: TxpElement);
+    procedure AddElement(elem: TxpElement; AtBegin: boolean = false);
     procedure AddElementAndOpen(elem: TxpElement);
+    procedure AddElementParent(elem: TxpElement; AtBegin: boolean);
     procedure OpenElement(elem: TxpElement);
     procedure CloseElement;
   public  //Métodos para identificación de nombres
@@ -555,6 +553,7 @@ type //Clases de elementos
     function FindNextFunc: TxpEleFun;
     function FindVar(varName: string): TxpEleVar;
     function FindType(typName: string): TxpEleType;
+    function DeclaredType(typName: string; out typFound: TxpEleType): boolean;
     function GetElementBodyAt(posXY: TPoint): TxpEleBody;
     function GetElementAt(posXY: TPoint): TxpElement;
     function GetElementCalledAt(const srcPos: TSrcPos): TxpElement;
@@ -574,7 +573,29 @@ var
   // Operador nulo. Usado como valor cero.
   nullOper : TxpOperator;
 
+  function GenArrayTypeName(itTypeName: string; nItems: integer): string; inline;
+  function GenPointerTypeName(refTypeName: string): string; inline;
+
 implementation
+
+{Functions to Generates standard names for dinamyc types creation. Have standard
+names is important to let the compiler:
+ * Reuse types definitions.
+ * Implement compatibility for types.
+}
+function GenArrayTypeName(itTypeName: string; nItems: integer): string; inline;
+begin
+  if nItems=-1 then begin  //dynamic
+    exit(PREFIX_ARR + '-' + itTypeName);
+  end else begin          //static
+    exit(PREFIX_ARR + IntToSTr(nItems) + '-' + itTypeName);
+  end;
+end;
+function GenPointerTypeName(refTypeName: string): string; inline;
+begin
+  exit(PREFIX_PTR + '-' +refTypeName);
+end;
+
 
 { TxpEleCaller }
 function TxpEleCaller.CallerUnit: TxpElement;
@@ -630,12 +651,16 @@ begin
 end;
 
 { TxpElement }
-function TxpElement.AddElement(elem: TxpElement): TxpElement;
+function TxpElement.AddElement(elem: TxpElement; AtBegin: boolean): TxpElement;
 {Agrega un elemento hijo al elemento actual. Devuelve referencia. }
 begin
-  elem.Parent := self;  //actualzia referencia
-  elements.Add(elem);   //agrega a la lista de nombres
-  Result := elem;       //no tiene mucho sentido
+  elem.Parent := self;  //Update reference
+  if AtBegin then begin
+    elements.Insert(0, elem);   //Add to list of elements
+  end else begin
+    elements.Add(elem);   //Add to list of elements
+  end;
+  Result := elem;       //No so useful
 end;
 procedure TxpElement.Setname(AValue: string);
 begin
@@ -973,10 +998,6 @@ begin
   idClass:=eltCons;
 end;
 { TxpEleVar }
-function TxpEleVar.GetHavAdicPar: boolean;
-begin
-  Result := (adicPar.hasAdic <> decNone) or (adicPar.hasInit);
-end;
 function TxpEleVar.Gettyp: TxpEleType;
 begin
   if ftyp.copyOf<>nil then Result := ftyp.copyOf else Result := ftyp;
@@ -1279,7 +1300,8 @@ begin
   if OnSaveToStk<>nil then OnSaveToStk;
 end;
 
-procedure TxpEleType.CreateField(metName: string; proc: TTypFieldProc);
+procedure TxpEleType.CreateField(metName: string; procGet,
+  procSet: TTypFieldProc);
 {Crea una función del sistema. A diferencia de las funciones definidas por el usuario,
 una función del sistema se crea, sin crear espacios de nombre. La idea es poder
 crearlas rápidamente.}
@@ -1288,7 +1310,8 @@ var
 begin
   fun := TTypField.Create;  //Se crea como una función normal
   fun.Name := metName;
-  fun.proc := proc;
+  fun.procGet := procGet;
+  fun.procSet := procSet;
 //no verifica duplicidad
   fields.Add(fun);
 end;
@@ -1748,14 +1771,15 @@ begin
   Result := main.BodyNode;
 end;
 //funciones para llenado del arbol
-procedure TXpTreeElements.AddElement(elem: TxpElement);
-{Agrega un elemento al nodo actual. Si ya existe el nombre del nodo, devuelve false.
-Este es el punto único de entrada para realizar cambios en el árbol.}
+procedure TXpTreeElements.AddElement(elem: TxpElement; AtBegin: boolean = false);
+{Add a new element to the current node. Commonly elements are add at the end of the list
+unless "AtBegin" is TRUE.
+This is the unique entry point to add elements to the Syntax Tree.}
 begin
-  //Agrega el nodo
-  curNode.AddElement(elem);
+  //Add the node
+  curNode.AddElement(elem, AtBegin);
   if OnAddElement<>nil then OnAddElement(elem);
-  //Actualiza listas
+  //Update Lists
   case elem.idClass of
   eltCons: AllCons.Add(TxpEleCon(elem));
   eltVar : AllVars.Add(TxpEleVar(elem));
@@ -1775,6 +1799,16 @@ begin
   //Genera otro espacio de nombres
   elem.elements := TxpElements.Create(true);  //su propia lista
   curNode := elem;  //empieza a trabajar en esta lista
+end;
+procedure TXpTreeElements.AddElementParent(elem: TxpElement; AtBegin: boolean);
+{Add element to the parent of the current element.}
+var
+  tmp: TxpElement;
+begin
+  tmp := curNode;  //Save currente node
+  curNode := curNode.Parent;  //Set to parent
+  AddElement(elem, AtBegin);  //Add type at the beginning
+  curNode := tmp;  //Restore position
 end;
 procedure TXpTreeElements.OpenElement(elem: TxpElement);
 {Accede al espacio de nombres del elemento indicado.}
@@ -1907,7 +1941,7 @@ begin
   exit(nil);
 end;
 function TXpTreeElements.FindType(typName: string): TxpEleType;
-{Busca un tipo con el nombre indicado en el espacio de nombres actual}
+{Find a type, by name, in the current element opened.}
 var
   ele : TxpElement;
   uName: String;
@@ -1920,6 +1954,22 @@ begin
     end;
   end;
   exit(nil);
+end;
+function TXpTreeElements.DeclaredType(typName: string; out typFound: TxpEleType
+  ): boolean;
+{Find a type declaration, accesible from the current position in the syntax tree.
+If found, returns TRUE and the type reference in "typFound".}
+var
+  sametype: TxpElement;
+begin
+  sametype := FindFirst(typName);
+  if (sametype<>nil) and (sametype.idClass = eltType) then begin
+    {El tipo ya existe, así que mejor.}
+    typFound := TxpEleType(sametype);
+    exit(true);
+  end else begin
+    exit(false);
+  end;
 end;
 function TXpTreeElements.GetElementBodyAt(posXY: TPoint): TxpEleBody;
 {Busca en el árbol de sintaxis, dentro del nodo principal, y sus nodos hijos, en qué

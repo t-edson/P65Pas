@@ -32,6 +32,7 @@ type  //Enumerated types
     ValFloat: extended; //Para alojar a los valores t_float
     ValBool : boolean;  //Para alojar a los valores t_boolean
     ValStr  : string;   //Para alojar a los valores t_string
+    items   : array of TConsValue;  //Lista de items cuando sea array
   end;
 
   //Operand storage
@@ -86,10 +87,18 @@ type  //Enumerated types
 
   TTypField = class
     Name : string;  //Nombre del campo
-    proc : TTypFieldProc;  //rutina de procesamiento
+    procGet : TTypFieldProc;  //routine to process when reading
+    procSet : TTypFieldProc;  //routine to process when writing
   end;
   TTypFields = specialize TFPGObjectList<TTypField>;
 
+const  //Prefixes used to name the anonym type declarations
+  //Short string are used to don't afect the speed of searchings
+  PREFIX_ARR = 'arr';
+  PREFIX_PTR = 'ptr';
+  PREFIX_OBJ = 'obj';
+
+type
   //Types categories
   TxpCatType = (
     tctAtomic,  //Tipo básico como (byte, word, char)

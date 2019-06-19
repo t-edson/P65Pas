@@ -25,23 +25,17 @@ type
     posFlash: Integer;
     procedure GenCodPicReqStartCodeGen;
     procedure GenCodPicReqStopCodeGen;
-    function GetIdxParArray(out WithBrack: boolean; out par: TOperand): boolean;
-    function GetValueToAssign(WithBrack: boolean; arrVar: TxpEleVar; out
-      value: TOperand): boolean;
     procedure ProcByteUsed(offs: word; regPtr: TCPURamCellPtr);
     procedure word_ClearItems(const OpPtr: pointer);
-    procedure word_SetItem(const OpPtr: pointer);
   protected
-    //Registros de trabajo
+    //Work register (RT)
     A      : TPicRegister;     //Registro Interno.
 //    Z      : TPicRegisterBit;  //Registro Interno.
 //    C      : TPicRegisterBit;  //Registro Interno.
     H      : TPicRegister;     //Registros de trabajo. Se crean siempre.
     E      : TPicRegister;     //Registros de trabajo. Se crean siempre.
     U      : TPicRegister;     //Registros de trabajo. Se crean siempre.
-    //Registros auxiliares
     INDF   : TPicRegister;     //Registro Interno.
-    FSR    : TPicRegister;     //Registro Interno.
     procedure PutLabel(lbl: string); inline;
     procedure PutTopComm(cmt: string; replace: boolean = true); inline;
     procedure PutComm(cmt: string); inline;
@@ -89,6 +83,7 @@ type
     procedure SetResultVariab(rVar: TxpEleVar; logic: TLogicType = logNormal);
     procedure SetResultExpres(typ: TxpEleType; ChkRTState: boolean = true);
     procedure SetResultVarRef(rVarBase: TxpEleVar);
+    procedure SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer);
     procedure SetResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType; ChkRTState: boolean = true);
     //Fija el resultado de ROB como constante.
     procedure SetROBResultConst_bool(valBool: Boolean);
@@ -169,7 +164,8 @@ type
     procedure _SED;
     procedure _SBC(const k: word);   //SBC Immediate
     procedure _SBC(const f: TPicRegister);  //SBC Absolute/Zeropage
-    procedure _STA(const f: TPicRegister);
+    procedure _STA(const f: TPicRegister);  //STX Absolute/Zeropage
+    procedure _STA(addr: integer);          //STX Absolute/Zeropage
     procedure _STX(const f: TPicRegister);  //STX Absolute/Zeropage
     procedure _STY(const f: TPicRegister);  //STY Absolute/Zeropage
     procedure _TAX;
@@ -184,13 +180,10 @@ type
     property E_register: TPicRegister read E;
     property U_register: TPicRegister read U;
   protected  //Funciones de tipos
-    procedure ArrayGetItem(const OpPtr: pointer);
     //////////////// Tipo Byte /////////////
     procedure byte_LoadToRT(const OpPtr: pointer);
     procedure byte_DefineRegisters;
     procedure byte_SaveToStk;
-    procedure byte_SetItem(const OpPtr: pointer);
-    procedure byte_ClearItems(const OpPtr: pointer);
     //////////////// Tipo Word /////////////
     procedure word_LoadToRT(const OpPtr: pointer);
     procedure word_DefineRegisters;
@@ -225,6 +218,12 @@ begin
   linRep := linRep + regPtr^.name +
             ' DB ' + '$' + IntToHex(offs, 3) + LineEnding;
 end;
+
+procedure TGenCodBas.word_ClearItems(const OpPtr: pointer);
+begin
+
+end;
+
 procedure TGenCodBas.PutLabel(lbl: string);
 {Agrega uan etiqueta antes de la instrucción. Se recomienda incluir solo el nombre de
 la etiqueta, sin ":", ni comentarios, porque este campo se usará para desensamblar.}
@@ -583,9 +582,16 @@ begin
       end;
     end;
   end else if typ.catType = tctPointer then begin
-    //Es un puntero a algún tipo.
-    //Los punteros cortos, se manejan como bytes
-    AssignRAMinByte(absAdd, xVar.addr0, varName, 0, shared);
+    //Los punteros se manejan como words
+    if absAdd = -1 then begin  //Variable normal
+      //Los 2 bytes, no necesariamente serán consecutivos (se toma los que estén libres)}
+      AssignRAMinByte(-1, xVar.addr0, varName, valByte0, shared);
+      AssignRAMinByte(-1, xVar.addr1, '', valByte1, shared);
+    end else begin             //Variable absoluta
+      //Las variables absolutas se almacenarán siempre consecutivas
+      AssignRAMinByte(absAdd  , xVar.addr0, varName, valByte0);
+      AssignRAMinByte(absAdd+1, xVar.addr1, '', valByte1);
+    end;
   end else begin
     GenError(MSG_NOT_IMPLEM, [varName]);
   end;
@@ -651,6 +657,15 @@ end;
 procedure TGenCodBas.SetResultVarRef(rVarBase: TxpEleVar);
 begin
   res.SetAsVarRef(rVarBase);
+  BooleanFromC:=0;   //para limpiar el estado
+  BooleanFromZ:=0;
+  AcumStatInZ := true;
+  //No se usa "Inverted" en este almacenamiento
+  res.logic := logNormal;
+end;
+procedure TGenCodBas.SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer);
+begin
+  res.SetAsVarConRef(rVarBase, consAddr);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
   AcumStatInZ := true;
@@ -1203,6 +1218,14 @@ begin
     pic.codAsm(i_STA, aAbsolute, f.addr);
   end;
 end;
+procedure TGenCodBas._STA(addr: integer);
+begin
+  if addr<256 then begin
+    pic.codAsm(i_STA, aZeroPage, addr);
+  end else begin
+    pic.codAsm(i_STA, aAbsolute, addr);
+  end;
+end;
 procedure TGenCodBas._STX(const f: TPicRegister);  //STA Absolute/Zeropage
 begin
   if f.addr<256 then begin
@@ -1317,164 +1340,6 @@ function TGenCodBas.PICName: string;
 begin
   Result := pic.Model;
 end;
-function TGenCodBas.GetIdxParArray(out WithBrack: boolean; out par: TOperand): boolean;
-{Extrae el primer parámetro (que corresponde al índice) de las funciones getitem() o
-setitem(). También reconoce las formas con corchetes [], y en ese caso pone "WithBrackets"
-en TRUE. Si encuentra error, devuelve false.}
-begin
-  if cIn.tok = '[' then begin
-    //Es la sintaxis a[i];
-    WithBrack := true;
-    cIn.Next;  //Toma "["
-  end else begin
-    //Es la sintaxis a.item(i);
-    WithBrack := false;
-    cIn.Next;  //Toma identificador de campo
-    //Captura parámetro
-    if not CaptureTok('(') then exit(false);
-  end;
-  par := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
-  if HayError then exit(false);
-  if HayError then exit(false);
-  exit(true);
-end;
-procedure TGenCodBas.ArrayGetItem(const OpPtr: pointer);
-{Función que devuelve el valor indexado del arreglo. Devuelve el resultado como un
-operando en "res".}
-var
-  Op: ^TOperand;
-  arrVar, tmpVar: TxpEleVar;
-  idx: TOperand;
-  WithBrack: Boolean;
-  itemType: TxpEleType;
-begin
-  if not GetIdxParArray(WithBrack, idx) then exit;
-  //Procesa
-  Op := OpPtr;
-  if Op^.Sto = stVariab then begin
-    //Applied to a variable array. The normal.
-    arrVar := Op^.rVar;        //Reference to variable
-    itemType := arrVar.typ.itmType; //Reference to the item type
-    //Generate code according to the index storage.
-    case idx.Sto of
-    stConst: begin  //ïndice constante
-        tmpVar := CreateTmpVar('', itemType);  //VAriable del mismo tipo
-        tmpVar.addr0 := arrVar.addr0 + idx.valInt * itemType.size;
-        tmpVar.addr1 := tmpVar.addr0 + 1;  //Para seguridad de la ROB
-        SetResultVariab(tmpVar);
-      end;
-    stVariab: begin  //Indexado por variable
-        SetResultExpres(itemType, true);  //Devuelve el mismo tipo
-        if idx.Typ.IsByteSize then begin
-          //Index is byte-size variable
-          if itemType.IsByteSize then begin
-            //And item is byte size, so it's easy to index in 6502
-            _LDX(idx.rVar.adrByte0);
-            if arrVar.addr<256 then begin
-              pic.codAsm(i_LDA, aZeroPagX, arrVar.addr);
-            end else begin
-              pic.codAsm(i_LDA, aAbsolutX, arrVar.addr);
-            end;
-          end else if itemType.IsWordSize then begin
-            //Item is word size. We need to multiply index by 2 and load indexed.
-            //WARNING this is "Auto-modifiying" code.
-            _LDA(idx.rVar.adrByte0);  //Load index
-            pic.codAsm(i_STA, aAbsolute, _PC + 15); //Store forward
-            _LDA(0);  //Load virtual MSB index
-            pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
-            pic.codAsm(i_ASL, aAbsolute, _PC + 7);  //Shift operand of LDA
-            PIC.codAsm(i_ROL, aAbsolute, _PC + 5);  //Shift operand of LDA
-            pic.codAsm(i_LDA, aAbsolute, 0); //Store forward (DANGER)
-            //Could be optimized getting a Zero page index
-          end else begin
-            //Here we need to multiply the index by the item size.
-            GenError('Too complex item.');
-          end;
-        end else if idx.Typ.IsWordSize then begin
-          //Index is word-size variable
-          if itemType.IsByteSize then begin
-            //Item is byte size. We need to index with a word.
-            if idx.rVar.addr<256 then begin
-              //Index in zero page
-              _LDY(0);
-              pic.codAsm(i_LDA, aIndirecY, idx.rVar.addr);
-            end else begin
-              //Index is out of zero page
-              //WARNING this is "Auto-modifiying" code.
-              _LDA(idx.rVar.adrByte0);  //Load index
-              pic.codAsm(i_STA, aAbsolute, _PC + 10); //Store forward
-              _LDA(idx.rVar.adrByte1);  //Load MSB index
-              pic.codAsm(i_STA, aAbsolute, _PC + 5); //Store forward
-              pic.codAsm(i_LDA, aAbsolute, 0);
-            end;
-          end else if itemType.IsWordSize then begin
-            //Item is word size. We need to multiply index by 2 and load indexed.
-            //WARNING this is "Auto-modifiying" code.
-            _LDA(idx.rVar.adrByte0);  //Load index
-            pic.codAsm(i_STA, aAbsolute, _PC + 16); //Store forward
-            _LDA(idx.rVar.adrByte1);  //Load virtual MSB index
-            pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
-            pic.codAsm(i_ASL, aAbsolute, _PC + 7);  //Shift operand of LDA
-            PIC.codAsm(i_ROL, aAbsolute, _pc + 5);  //Shift operand of LDA
-            pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
-          end else begin
-            //Here we need to multiply the index by the item size.
-            GenError('Too complex item.');
-          end;
-        end else begin
-          GenError('Not supported this index.');
-        end;
-    end;
-//    stExpres: begin
-//        SetResultExpres(arrVar.typ.refType, false);  //Es array de bytes, o Char, devuelve Byte o Char
-//        LoadToRT(idx);   //Lo deja en A
-//        _ADDLW(arrVar.addr0);   //agrega OFFSET
-//        _MOVWF(04);     //direcciona con FSR
-//        _MOVF(0, toW);  //lee indexado en A
-//      end;
-    else
-      GenError('Not supported this index.');
-    end;
-  end else begin
-    GenError('Syntax error.');
-  end;
-  if WithBrack then begin
-    if not CaptureTok(']') then exit;
-  end else begin
-    if not CaptureTok(')') then exit;
-  end;
-end;
-function TGenCodBas.GetValueToAssign(WithBrack: boolean; arrVar: TxpEleVar; out value: TOperand): boolean;
-{Lee el segundo parámetro de SetItem y devuelve en "value". Valida que sea sel tipo
-correcto. Si hay error, devuelve FALSE.}
-var
-  typItem: TxpEleType;
-begin
-  if WithBrack then begin
-    if not CaptureTok(']') then exit(false);
-    cIn.SkipWhites;
-    {Legalmente, aquí podría seguir otro operador, o función como ".bit0", y no solo
-    ":=". Esto es una implementación algo limitada. Lo que debería hacerse, si no se
-    encuentra ":=", sería devolver una referencia a variable, tal vez a un nuevo tipo
-    de variable, con dirección "indexada", pero obligaría a crear un atributo más a
-    las varaibles. El caso de un índice constante es más sencillo de procesar.}
-    if not CaptureTok(':=') then exit(false);
-  end else begin
-    if not CaptureTok(',') then exit(false);
-  end;
-  value := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
-  typItem := arrVar.typ.itmType;
-  if value.Typ <> typItem then begin  //Solo debería ser byte o char
-    if (value.Typ = typByte) and (typItem = typWord) then begin
-      //Son tipos compatibles
-      value.SetAsConst(typWord);   //Cmabiamos el tipo
-    end else begin
-      GenError('%s expression expected.', [typItem.name]);
-      exit(false);
-    end;
-  end;
-  exit(true);
-end;
 //////////////// Tipo Byte /////////////
 procedure TGenCodBas.byte_LoadToRT(const OpPtr: pointer);
 {Carga operando a registros de trabajo.}
@@ -1520,187 +1385,6 @@ end;
 procedure TGenCodBas.byte_SaveToStk;
 begin
   _PHA;
-end;
-procedure TGenCodBas.byte_SetItem(const OpPtr: pointer);
-//Función que fija un valor indexado
-var
-  WithBrack: Boolean;
-  Op: ^TOperand;
-  arrVar, rVar: TxpEleVar;
-  idx, value: TOperand;
-  idxTar: word;
-begin
-//  if not GetIdxParArray(WithBrack, idx) then exit;
-//  //Procesa
-//  Op := OpPtr;
-//  if Op^.Sto = stVariab then begin  //Se aplica a una variable
-//    arrVar := Op^.rVar;  //referencia a la variable.
-//    res.SetAsNull;  //No devuelve nada
-//    //Genera el código de acuerdo al índice
-//    case idx.Sto of
-//    stConst: begin  //ïndice constante
-//        //Como el índice es constante, se puede acceder directamente
-//        idxTar := arrVar.adrByte0.offs+idx.valInt; //índice destino
-//        if not GetValueToAssign(WithBrack, arrVar, value) then exit;
-//        if (value.Sto = stConst) and (value.valInt=0) then begin
-//          //Caso especial, se pone a cero
-//          _LDA(0);
-//          _STA(idxTar);
-//        end else begin
-//          //Sabemos que hay una expresión byte
-//          LoadToRT(value); //Carga resultado en A
-//          _MOVWF(idxTar);  //Mueve a arreglo
-//        end;
-//      end;
-//    stVariab: begin
-//        //El índice es una variable
-//        //Tenemos la referencia la variable en idx.rvar
-//        if not GetValueToAssign(WithBrack, arrVar, value) then exit;
-//        //Sabemos que hay una expresión byte
-//        if (value.Sto = stConst) and (value.valInt=0) then begin
-//          //Caso especial, se pide asignar una constante cero
-//          _MOVF(idx.offs, toW);  //índice
-//          _ADDLW(arrVar.addr0);  //Dirección de inicio
-//          _MOVWF($04);  //Direcciona
-//          _LDA(0);
-//          _STA(00);
-//        end else if value.Sto = stConst then begin
-//          //Es una constante cualquiera
-//          _MOVF(idx.offs, toW);  //índice
-//          _ADDLW(arrVar.addr0);  //Dirección de inicio
-//          _MOVWF($04);  //Direcciona
-//          _LDA(value.valInt);
-//          _MOVWF($00);   //Escribe valor
-//        end else if value.Sto = stVariab then begin
-//          //Es una variable
-//          _MOVF(idx.offs, toW);  //índice
-//          _ADDLW(arrVar.addr0);  //Dirección de inicio
-//          _MOVWF($04);  //Direcciona
-//          _MOVF(value.offs, toW);
-//          _MOVWF($00);   //Escribe valor
-//        end else begin
-//          //Es una expresión. El resultado está en A
-//          //hay que mover value a arrVar[idx.rvar]
-//          typWord.DefineRegister;   //Para usar H
-//          _MOVWF(H.offs);  //A->H   salva H
-//          _MOVF(idx.offs, toW);  //índice
-//          _ADDLW(arrVar.addr0);  //Dirección de inicio
-//          _MOVWF($04);  //Direcciona
-//          _MOVF(H.offs, toW);
-//          _MOVWF($00);   //Escribe valor
-//        end;
-//      end;
-//    stExpres: begin
-//      //El índice es una expresión y está en A.
-//      if not GetValueToAssign(WithBrack, arrVar, value) then exit;
-//      //Sabemos que hay una expresión byte
-//      if (value.Sto = stConst) and (value.valInt=0) then begin
-//        //Caso especial, se pide asignar una constante cero
-//        _ADDLW(arrVar.addr0);  //Dirección de inicio
-//        _MOVWF($04);  //Direcciona
-//        _LDA(0);
-//        _STA(0);
-//      end else if value.Sto = stConst then begin
-//        //Es una constante cualquiera
-//        _ADDLW(arrVar.addr0);  //Dirección de inicio
-//        _MOVWF($04);  //Direcciona
-//        _LDA(value.valInt);
-//        _MOVWF($00);   //Escribe valor
-//      end else if value.Sto = stVariab then begin
-//        //Es una variable
-//        _ADDLW(arrVar.addr0);  //Dirección de inicio
-//        _MOVWF(FSR.offs);  //Direcciona
-//        _MOVF(value.offs, toW);
-//        _MOVWF($00);   //Escribe valor
-//      end else begin
-//        //Es una expresión. El valor a asignar está en A, y el índice en la pila
-//        typWord.DefineRegister;   //Para usar H
-//        _MOVWF(H.offs);  //A->H   salva valor a H
-//        rVar := GetVarByteFromStk;  //toma referencia de la pila
-//        _MOVF(rVar.adrByte0.offs, toW);  //índice
-//        _ADDLW(arrVar.addr0);  //Dirección de inicio
-//        _MOVWF($04);  //Direcciona
-//        _MOVF(H.offs, toW);
-//        _MOVWF($00);   //Escribe valor
-//        FreeStkRegisterByte;   //Para liberar
-//      end;
-//      end;
-//    end;
-//  end else begin
-//    GenError('Syntax error.');
-//  end;
-//  if WithBrack then begin
-//    //En este modo, no se requiere ")"
-//  end else begin
-//    if not CaptureTok(')') then exit;
-//  end;
-end;
-procedure TGenCodBas.byte_ClearItems(const OpPtr: pointer);
-{Limpia el contenido de todo el arreglo}
-var
-  Op: ^TOperand;
-  xvar: TxpEleVar;
-  j1: Word;
-begin
-//  cIn.Next;  //Toma identificador de campo
-//  //Limpia el arreglo
-//  Op := OpPtr;
-//  case Op^.Sto of
-//  stVariab: begin
-//    xvar := Op^.rVar;  //Se supone que debe ser de tipo ARRAY
-//    res.SetAsConst(typByte);  //Realmente no es importante devolver un valor
-//    res.valInt {%H-}:= xvar.typ.arrSize;  //Devuelve tamaño
-//    if xvar.typ.arrSize = 0 then exit;  //No hay nada que limpiar
-//    if xvar.typ.arrSize = 1 then begin  //Es de un solo byte
-//      _LDA(0);
-//      _STA(xvar.addr0);
-//    end else if xvar.typ.arrSize = 2 then begin  //Es de 2 bytes
-//      _LDA(0);
-//      _STA(xvar.addr0);
-//      _STA(xvar.addr0+1);
-//    end else if xvar.typ.arrSize = 3 then begin  //Es de 3 bytes
-//      _LDA(0);
-//      _STA(xvar.addr0);
-//      _STA(xvar.addr0+1);
-//      _STA(xvar.addr0+2);
-//    end else if xvar.typ.arrSize = 4 then begin  //Es de 4 bytes
-//      _LDA(0);
-//      _STA(xvar.addr0);
-//      _STA(xvar.addr0+1);
-//      _STA(xvar.addr0+2);
-//      _STA(xvar.addr0+3);
-//    end else if xvar.typ.arrSize = 5 then begin  //Es de 5 bytes
-//      _LDA(0);
-//      _STA(xvar.addr0);
-//      _STA(xvar.addr0+1);
-//      _STA(xvar.addr0+2);
-//      _STA(xvar.addr0+3);
-//      _STA(xvar.addr0+4);
-//    end else if xvar.typ.arrSize = 6 then begin  //Es de 6 bytes
-//      _LDA(0);
-//      _STA(xvar.addr0);
-//      _STA(xvar.addr0+1);
-//      _STA(xvar.addr0+2);
-//      _STA(xvar.addr0+3);
-//      _STA(xvar.addr0+4);
-//      _STA(xvar.addr0+5);
-//    end else begin
-//      //Implementa lazo, usando A como índice
-//      _LDA(xvar.adrByte0.offs);  //dirección inicial
-//      _MOVWF($04);   //FSR
-//      _LDA(256-xvar.typ.arrSize);
-//j1:= _PC;
-//      _LDA(0);
-//      _STA(0);
-//      _INCF($04, toF);    //Siguiente
-//      _ADDLW(1);   //A = A + 1
-//      _BTFSS(_STATUS, _Z);
-//      _JMP(j1);
-//    end;
-//  end;
-//  else
-//    GenError('Syntax error.');
-//  end;
 end;
 //////////////// Tipo Word /////////////
 procedure TGenCodBas.word_LoadToRT(const OpPtr: pointer);
@@ -1769,189 +1453,6 @@ begin
   //guarda H
   _LDA(H);
   _PHA;
-end;
-procedure TGenCodBas.word_SetItem(const OpPtr: pointer);
-//Función que fija un valor indexado
-var
-  WithBrack: Boolean;
-var
-  Op: ^TOperand;
-  arrVar, rVar: TxpEleVar;
-  idx, value: TOperand;
-  idxTar: Int64;
-  aux: TPicRegister;
-begin
-//  if not GetIdxParArray(WithBrack, idx) then exit;
-//  //Procesa
-//  Op := OpPtr;
-//  if Op^.Sto = stVariab then begin  //Se aplica a una variable
-//    arrVar := Op^.rVar;  //referencia a la variable.
-//    res.SetAsNull;  //No devuelve nada
-//    //Genera el código de acuerdo al índice
-//    case idx.Sto of
-//    stConst: begin  //Indice constante
-//        //Como el índice es constante, se puede acceder directamente
-//        idxTar := arrVar.adrByte0.offs+idx.valInt*2; //índice destino
-//        if not GetValueToAssign(WithBrack, arrVar, value) then exit;
-//        if value.Sto = stConst then begin
-//          //Es una constante
-//          //Byte bajo
-//          if value.LByte=0 then begin //Caso especial
-//            _CLRF(idxTar);
-//          end else begin
-//            _LDAi(value.LByte);
-//            _MOVWF(idxTar);
-//          end;
-//          //Byte alto
-//          if value.HByte=0 then begin //Caso especial
-//            _CLRF(idxTar+1);
-//          end else begin
-//            _LDAi(value.HByte);
-//            _MOVWF(idxTar+1);
-//          end;
-//        end else begin
-//          //El valor a asignar es variable o expresión
-//          typWord.DefineRegister;   //Para usar H
-//          //Sabemos que hay una expresión word
-//          LoadToRT(value); //Carga resultado en H,A
-//          _MOVWF(idxTar);  //Byte bajo
-//          _MOVF(H.offs, toW);
-//          _MOVWF(idxTar+1);  //Byte alto
-//        end;
-//      end;
-//    stVariab: begin
-//        //El índice es una variable
-//        //Tenemos la referencia la variable en idx.rvar
-//        if not GetValueToAssign(WithBrack, arrVar, value) then exit;
-//        //Sabemos que hay una expresión word
-//        if value.Sto = stConst then begin
-//          //El valor a escribir, es una constante cualquiera
-//          _BCF(_STATUS, _C);
-//          _RLF(idx.offs, toW);  //índice * 2
-//          _ADDLW(arrVar.addr0);  //Dirección de inicio
-//          _MOVWF(FSR.offs);  //Direcciona
-//          ////// Byte Bajo
-//          if value.LByte = 0 then begin
-//            _CLRF($00);
-//          end else begin
-//            _LDAi(value.LByte);
-//            _MOVWF($00);   //Escribe
-//          end;
-//          ////// Byte Alto
-//          _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
-//          if value.HByte = 0 then begin
-//            _CLRF($00);
-//          end else begin
-//            _LDAi(value.HByte);
-//            _MOVWF($00);   //Escribe
-//          end;
-//        end else if value.Sto = stVariab then begin
-//          //El valor a escribir, es una variable
-//          //Calcula dirfección de byte bajo
-//          _BCF(_STATUS, _C);
-//          _RLF(idx.offs, toW);  //índice * 2
-//          _ADDLW(arrVar.addr0);  //Dirección de inicio
-//          _MOVWF(FSR.offs);  //Direcciona
-//          ////// Byte Bajo
-//          _MOVF(value.Loffs, toW);
-//          _MOVWF($00);   //Escribe
-//          ////// Byte Alto
-//          _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
-//          _MOVF(value.Hoffs, toW);
-//          _MOVWF($00);   //Escribe
-//        end else begin
-//          //El valor a escribir, es una expresión y está en H,A
-//          //hay que mover value a arrVar[idx.rvar]
-//          aux := GetAuxRegisterByte;
-//          typWord.DefineRegister;   //Para usar H
-//          _MOVWF(aux.offs);  //A->   salva A (Valor.H)
-//          //Calcula dirección de byte bajo
-//          _BCF(_STATUS, _C);
-//          _RLF(idx.offs, toW);  //índice * 2
-//          _ADDLW(arrVar.addr0);  //Dirección de inicio
-//          _MOVWF(FSR.offs);  //Direcciona
-//          ////// Byte Bajo
-//          _MOVF(aux.offs, toW);
-//          _MOVWF($00);   //Escribe
-//          ////// Byte Alto
-//          _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
-//          _MOVF(H.offs, toW);
-//          _MOVWF($00);   //Escribe
-//          aux.used := false;
-//        end;
-//      end;
-//    stExpres: begin
-//      //El índice es una expresión y está en A.
-//      if not GetValueToAssign(WithBrack, arrVar, value) then exit;
-//      if value.Sto = stConst then begin
-//        //El valor a asignar, es una constante
-//        _MOVWF(FSR.offs);   //Salva A.
-//        _BCF(_STATUS, _C);
-//        _RLF(FSR.offs, toW);  //idx * 2
-//        _ADDLW(arrVar.addr0);  //Dirección de inicio
-//        _MOVWF(FSR.offs);  //Direcciona a byte bajo
-//        //Byte bajo
-//        if value.LByte = 0 then begin
-//          _CLRF($00);   //Pone a cero
-//        end else begin
-//          _LDAi(value.LByte);
-//          _MOVWF($00);
-//        end;
-//        //Byte alto
-//        _INCF(FSR.offs, toF);
-//        if value.HByte = 0 then begin
-//          _CLRF($00);   //Pone a cero
-//        end else begin
-//          _LDAi(value.HByte);
-//          _MOVWF($00);
-//        end;
-//      end else if value.Sto = stVariab then begin
-//        _MOVWF(FSR.offs);   //Salva A.
-//        _BCF(_STATUS, _C);
-//        _RLF(FSR.offs, toW);  //idx * 2
-//        _ADDLW(arrVar.addr0);  //Dirección de inicio
-//        _MOVWF(FSR.offs);  //Direcciona a byte bajo
-//        //Byte bajo
-//        _MOVF(value.Loffs, toW);
-//        _MOVWF($00);
-//        //Byte alto
-//        _INCF(FSR.offs, toF);
-//        _MOVF(value.Hoffs, toW);
-//        _MOVWF($00);
-//      end else begin
-//        //El valor a asignar está en H,A, y el índice (byte) en la pila
-//        typWord.DefineRegister;   //Para usar H
-//        aux := GetAuxRegisterByte;
-//        _MOVWF(aux.offs);  //A->aux   salva A
-//        rVar := GetVarByteFromStk;  //toma referencia de la pila
-//        //Calcula dirección de byte bajo
-//        _BCF(_STATUS, _C);
-//        _RLF(rVar.adrByte0.offs, toW);  //índice * 2
-//        _ADDLW(arrVar.addr0);  //Dirección de inicio
-//        _MOVWF(FSR.offs);  //Direcciona
-//        ////// Byte Bajo
-//        _MOVF(aux.offs, toW);
-//        _MOVWF($00);   //Escribe
-//        ////// Byte Alto
-//        _INCF(FSR.offs, toF);  //Direcciona a byte ALTO
-//        _MOVF(H.offs, toW);
-//        _MOVWF($00);   //Escribe
-//        aux.used := false;
-//      end;
-//    end;
-//    end;
-//  end else begin
-//    GenError('Syntax error.');
-//  end;
-//  if WithBrack then begin
-//    //En este modo, no se requiere ")"
-//  end else begin
-//    if not CaptureTok(')') then exit;
-//  end;
-end;
-procedure TGenCodBas.word_ClearItems(const OpPtr: pointer);
-begin
-
 end;
 procedure TGenCodBas.word_Low(const OpPtr: pointer);
 {Acceso al byte de menor peso de un word.}
@@ -2056,16 +1557,12 @@ begin
   typBool.OnDefRegister:= @byte_DefineRegisters;
   typBool.OnSaveToStk  := @byte_SaveToStk;
   //typBool.OnReadFromStk :=
-//  typBool.OnSetItem    := @byte_SetItem;
-  typBool.OnClearItems := @byte_ClearItems;
   //////////////// Byte type /////////////
   typByte := CreateSysType('byte',t_uinteger,1);   //de 1 byte
   typByte.OnLoadToRT   := @byte_LoadToRT;
   typByte.OnDefRegister:= @byte_DefineRegisters;
   typByte.OnSaveToStk  := @byte_SaveToStk;
   //typByte.OnReadFromStk :=
-//  typByte.OnSetItem    := @byte_SetItem;
-  typByte.OnClearItems := @byte_ClearItems;
 
   //////////////// Char type /////////////
   //Tipo caracter
@@ -2073,8 +1570,6 @@ begin
   typChar.OnLoadToRT   := @byte_LoadToRT;  //Es lo mismo
   typChar.OnDefRegister:= @byte_DefineRegisters;  //Es lo mismo
   typChar.OnSaveToStk  := @byte_SaveToStk; //Es lo mismo
-//  typChar.OnSetItem    := @byte_SetItem;
-  typChar.OnClearItems := @byte_ClearItems;
 
   //////////////// Word type /////////////
   //Tipo numérico de dos bytes
@@ -2082,11 +1577,10 @@ begin
   typWord.OnLoadToRT   := @word_LoadToRT;
   typWord.OnDefRegister:= @word_DefineRegisters;
   typWord.OnSaveToStk  := @word_SaveToStk;
-//  typWord.OnSetItem    := @word_SetItem;
 //  typWord.OnClearItems := @word_ClearItems;
 
-  typWord.CreateField('Low', @word_Low);
-  typWord.CreateField('High', @word_High);
+  typWord.CreateField('Low', @word_Low, @word_Low);
+  typWord.CreateField('High', @word_High, @word_High);
 
   //////////////// String type /////////////
   {Se crea el tipo String, solo para permitir inicializar arreglos de
@@ -2116,16 +1610,10 @@ begin
   INDF := TPicRegister.Create;
   INDF.addr := $00;
   INDF.assigned := true;   //ya está asignado desde el principio
-  {Crea registro auxiliar FSR. El registro FSR, es un registro interno del PIC, y está
-  siempre asignado en RAM. }
-  FSR := TPicRegister.Create;
-  FSR.addr := $04;
-  FSR.assigned := true;   //ya está asignado desde el principio
 end;
 destructor TGenCodBas.Destroy;
 begin
   INDF.Destroy;
-  FSR.Destroy;
   A.Destroy;
   listRegStk.Destroy;
   listRegAux.Destroy;

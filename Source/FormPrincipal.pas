@@ -831,8 +831,6 @@ procedure TfrmPrincipal.CompileFile(filName: string);
 begin
   fraMessages.InitCompilation(Compiler, true);  //Limpia mensajes
   Compiler.incDetComm   := Config.IncComment2;   //Visualización de mensajes
-  Compiler.SetProIniBnk := not Config.OptBnkBefPro;
-  Compiler.OptBnkAftPro := Config.OptBnkAftPro;
   Compiler.OptBnkAftIF  := Config.OptBnkAftIF;
   Compiler.OptReuProVar := Config.ReuProcVar;
   Compiler.OptRetProc   := Config.OptRetProc;
