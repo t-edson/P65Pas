@@ -3552,8 +3552,8 @@ begin
   opr:=etyp.CreateBinaryOperator('-',4,'add');  //resta
   opr.CreateOperation(typWord, @ROB_pointer_sub_word);
 
-  etyp.CreateUnaryPostOperator('^',6,'deref', @ROU_derefPointer);  //dereferencia
-  etyp.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address); //dirección
+  etyp.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address); //defined in all types
+  etyp.CreateUnaryPostOperator('^',6, 'deref', @ROU_derefPointer);  //dereferencia
 end;
 procedure TGenCod.DefineArray(etyp: TxpEleType);
 begin
@@ -3562,7 +3562,7 @@ begin
   etyp.CreateField('low'   , @arrayLow, nil);
   etyp.CreateField('item'  , @GenCodArrayGetItem, @GenCodArraySetItem);
   etyp.CreateField('clear' , @GenCodArrayClear, nil);
-  etyp.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address); //dirección
+  etyp.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address); //defined in all types
 end;
 procedure TGenCod.CreateSystemElements;
 {Inicia los elementos del sistema. Se ejecuta cada vez que se compila.}

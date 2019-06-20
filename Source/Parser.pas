@@ -1184,7 +1184,7 @@ var
   posAct: TPosCont;
   opr   : TxpOperator;
   cod   : Longint;
-  ReadType: Boolean;
+  ReadType, endWithComma: Boolean;
   itType: TxpEleType;
   nitems: Integer;
   xtyp : TxpEleType;
@@ -1291,6 +1291,7 @@ begin
     while not cIn.Eof and (cIn.tok <> ']') do begin
       //Must be an item
       Op1 := GetExpression(0);  //read item
+      if HayError then exit;
       if Op1.Sto <> stConst then begin
         GenError('Expected constant item');
         exit;
@@ -1307,11 +1308,23 @@ begin
       end;
       //Add the item to the operand
       Op.AddConsItem(Op1.Value);
+      //Verify delimiter
+      endWithComma := false;
+      if cIn.tok = ',' then begin
+        cIn.Next;
+        ProcComments;
+        endWithComma := true;
+      end;
+    end;
+    if endWithComma then begin
+      GenError('Expected item.');
+      exit;
     end;
     if cIn.tok = ']' then begin
       //Raise the end of array. Now we can create new type.
-      //Op.CloseItems;  //No need if we use: Op.nItems.
+      Op.CloseItems;  //Resize
       //Now we can know the type of the item and of the array
+      cIn.Next;  //Take ']'.
       typName := GenArrayTypeName(itType.name, Op.nItems);
       if TreeElems.DeclaredType(typName, xtyp) then begin
         //Type exists. We have the reference in "xtyp".
@@ -2375,20 +2388,21 @@ begin
   end;
 end;
 //Manage items
+const CONS_ITEM_BLOCK = 3;
 procedure TOperand.InitItems;
 begin
   nItems := 0;
-  curSize := 10;   //Block size
+  curSize := CONS_ITEM_BLOCK;   //Block size
   setlength(FValue.items, curSize);  //initial size
 end;
 procedure TOperand.AddConsItem(const c: TConsValue);
 begin
   FValue.items[nItems] := c;
+  inc(nItems);
   if nItems >= curSize then begin
-    curSize += 10;   //Increase size by block
+    curSize += CONS_ITEM_BLOCK;   //Increase size by block
     setlength(FValue.items, curSize);  //make space
   end;
-  inc(nItems);
 end;
 procedure TOperand.CloseItems;
 begin

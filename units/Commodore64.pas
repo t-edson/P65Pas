@@ -7,6 +7,8 @@ Based on information of: http://sta.c64.org/cbm64krnfunc.html
 {$COMMODORE64}
 unit Commodore64;
 interface
+type 
+  ptr = word;
   //////////// KERNAL FUNCTIONS //////////
   
   //Initialize VIC; restore default input/output to keyboard/screen; clear screen; set PAL/NTSC switch and interrupt timer.

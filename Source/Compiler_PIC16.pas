@@ -26,7 +26,8 @@ type
     procedure ReadInlineHeader(out procName: String; out retType: TxpEleType; out
       srcPos: TSrcPos; out pars: TxpParInlinArray);
     function GetExpressionBool: boolean;
-    function GetTypeDeclar(out decStyle: TTypDeclarStyle): TxpEleType;
+    function GetTypeDeclar(out decStyle: TTypDeclarStyle; out TypeCreated: boolean
+      ): TxpEleType;
     function GetTypeDeclarSimple(): TxpEleType;
     function IsUnit: boolean;
     procedure ProcCommentsNoExec;
@@ -675,8 +676,15 @@ begin
   //puede salir con error
 end;
 procedure TCompiler_PIC16.GetAdicVarDeclar(xType: TxpEleType; out aditVar: TAdicVarDec) ;
-{Verifica si lo que sigue es la sintaxis ABSOLUTE ... . Si esa así, procesa el texto,
-pone "IsAbs" en TRUE y actualiza los valores "absAddr" y "absBit". }
+{Verify aditional settings for var declarations, after the type definition. These settings
+can be:
+ ABSOLUTE <literal address or variable/constant identifier>
+ REGISTER/REGISTERA/REGISTERX/REGISTERY
+
+All aditional settings are returned in "aditVar".
+IMPORTANT: "xType" can change when is an unspecified size array ( like []byte ) and an
+initialization is provided. No new type elements are created or destroyed.
+ . }
   function ReadAddres(tok: string): word;
   {Lee una dirección de RAM a partir de una cadena numérica.
   Puede generar error.}
@@ -703,7 +711,7 @@ pone "IsAbs" en TRUE y actualiza los valores "absAddr" y "absBit". }
 var
   xvar: TxpEleVar;
   n: integer;
-  Op: TOperand;
+  Op, OpInit: TOperand;
 begin
   aditVar.srcDec   := cIn.PosAct;  //Posición de inicio de posibles parámetros adic.
   aditVar.hasAdic  := decNone;       //Bandera
@@ -800,9 +808,9 @@ begin
     cIn.Next;   //lo toma
     ProcComments;
     //Aquí debe seguir el valor inicial
-    res := GetExpression(0);
+    OpInit := GetExpression(0);
     if HayError then exit;
-    if res.Sto <> stConst then begin
+    if OpInit.Sto <> stConst then begin
       GenError(ER_CON_EXP_EXP);
       exit;
     end;
@@ -821,39 +829,69 @@ begin
     GenError(ER_EQU_EXPECTD);
     exit;
   end;
-
-  {Ya se validó la pertinencia de la incialización y ya se tiene el operando de
+  {Ya se validó la pertinencia de la inicialización y ya se tiene el operando de
   inicialización. Ahora toca validar la compatibilidad de los tipos.}
   //Por ahora solo se permite inicializar arreglos.
   if aditVar.hasInit then begin
-    aditVar.iniVal := res.Value;  //Asigna valor constante.
-    if (xType.catType = tctArray) and (xType.itmType = typChar) then begin
-        //Arreglo de caracteres, caso especial.
-        if res.Typ = typChar then begin
+    if (xType.catType = tctArray) then begin
+      //Arrays have some particular behaviour
+      if (xType.itmType = typChar) then begin
+        //Special case for Char arrays. They can be initializaed with string.
+        if OpInit.Typ = typChar then begin
           //Caso especial. Se puede considerar un string
-          res.SetAsConst(typString);
-          res.valStr := chr(res.valInt);
+          OpInit.SetAsConst(xType);  //Set as constant array of char
+          OpInit.StringToArrayOfChar( chr(OpInit.valInt) );  //Set ítems from string
+        end else if OpInit.Typ = typString then begin
+          OpInit.SetAsConst(xType);  //Set as constant array of char
+          OpInit.StringToArrayOfChar( OpInit.valStr );  //Set ítems from string
         end;
-        if res.Typ = typString then begin
-          aditVar.iniVal := res.Value;  //Asigna valor constante.
-          if xType.nItems= -1 then begin
-            //Tamaño dinámico
-            xType.nItems := length(res.Value.ValStr);   //actualiza tamaño de arreglo
-          end else begin
-            //Tamaño fijo
-            if xType.nItems < length(res.Value.ValStr) then begin
-              GenError('Too long string to init array.');
-              //exit
-            end;
-          end;
-        end else begin
-          GenError('String literal expected.');
-          exit;
-        end;
+      end;
+      //Validation for category
+      if OpInit.Typ.catType <> tctArray then begin
+        GenError('Expected an array.');
+        exit;
+      end;
+      //Here we assure xType and OpInit are both arrays.
+      //If dynamic, the size depends o initial value
+      if xType.nItems= -1 then begin
+        //Dynamic size
+        xType.nItems := OpInit.nItems;   //Update array size
+        //Type name needs to be updated too.
+        xType.name := GenArrayTypeName(xType.itmType.name, OpInit.nItems);
+        //NOTE that type name (and structrure) has changed.
+      end;
+      //Validation for item types.
+      if xType.itmType <> OpInit.Typ.itmType then begin
+        GenError('Item type doesn''t match for initialize array.');
+        exit;
+      end;
+      //Validation for size.
+      if xType.nItems < OpInit.nItems then begin
+        GenError('Too many items to initialize array.');
+        //exit
+      end;
+      //Validate type compatibility
+      {We could be tempted to compare xType and OpInit.Typ here but this cannot be done,
+      because OpInit.Typ will be (most of the times) always different from xType,
+      because xType exists but it hasn't been added to the Syntax Tree, so OpInit.Typ
+      had never the chance to find it, when creating.
+      However, until here we have validated that xType and OpInit.Typ and both arrays,
+      have the same item type and compatible sizes, so they are compatible to
+      initialization.
+      }
+    end else begin
+      //Other types are simple to validate
+      if OpInit.Typ <> xType then begin
+        GenError('Cannot initialize. Expected type "%s". Got "%s".', [xType.name, OpInit.Typ.name]);
+        exit;
+      end;
     end;
+    //Assign constant value
+    aditVar.iniVal := OpInit.Value;
   end;
 end;
-function TCompiler_PIC16.GetTypeDeclar(out decStyle: TTypDeclarStyle): TxpEleType;
+function TCompiler_PIC16.GetTypeDeclar(out decStyle: TTypDeclarStyle;
+                                       out TypeCreated: boolean): TxpEleType;
 {Extrae la sección de declaración de tipo (De una variable, parámetro o de una definición
 de tipo). Se debe llamar justo cuando empieza esta declaración de tipo. Se puede usar en
 los siguientes casos;
@@ -885,7 +923,10 @@ ttdDeclar -> Crea un tipo nuevo con la definición del nuevo tipo especificado, 
 Entre "decStyle" y el "catType" del tipo devuelto (Ver comentario de TxpCatType),
 debería quedar completamente especificada la declaración del tipo.
 
-Si encuentra algún problema, genera error, y devuelve NIL.
+"TypeCreated" indicates when a new Type instance was created (and will be destroyed or
+added to the syntax Tree).
+
+If some problems happens, Error is generated and the NIL value is returned.
 }
   function ReadSizeInBrackets: integer;
   {Lee el tamaño de un arreglo especificado entre corchetes: []. Si no se
@@ -935,6 +976,8 @@ Si encuentra algún problema, genera error, y devuelve NIL.
     decStyle: TTypDeclarStyle;
     itemTyp, xtyp: TxpEleType;
     nElem: Integer;
+    typName: String;
+    otherTypeCreated: boolean;
   begin
     if cIn.tok = '[' then begin
       //Declaración corta
@@ -955,10 +998,11 @@ Si encuentra algún problema, genera error, y devuelve NIL.
       if not CaptureStr('of') then exit(nil);
     end;
     //Lee el tipo que sigue. Llamada RECURSIVA.
-    itemTyp := GetTypeDeclar(decStyle);
+    itemTyp := GetTypeDeclar(decStyle, otherTypeCreated);
     if HayError then exit(nil);
-    if decStyle = ttdDeclar then begin
-      //ARRAY[] of (Otra declaración). No se soporta por ahora.
+    if otherTypeCreated then begin
+      //No support for nested declaration
+      itemTyp.Destroy;
       GenError('Too complex type declaration');
       exit;
     end;
@@ -969,8 +1013,11 @@ Si encuentra algún problema, genera error, y devuelve NIL.
     end;
     //Se supone que ahora solo tenemos un tipo simple en "itemTyp".
     //Ya se tiene la información para crear un nuevo tipo array.
-    xtyp := CreateEleType('', srcPos, tctArray);  //Crea sin nombre por ahora
-    if HayError then exit(nil); //Sale para ver otros errores
+    typName := GenArrayTypeName(itemTyp.name, nElem);
+    {typName could change later if not size specified for this array but it's initialized.
+    Something like: []byte = (1,2,3);  }
+    xtyp := CreateEleType(typName, srcPos, tctArray);
+    TypeCreated  := true;     //Activate flag
     xtyp.nItems  := nElem;   //Número de ítems
     xtyp.itmType := itemTyp; //Tipo de dato
     CodDefineArray(xtyp);    //Crea campos comunes del arreglo
@@ -983,6 +1030,7 @@ Si encuentra algún problema, genera error, y devuelve NIL.
   sea en su forma larga: "POINTER TO BYTE" o en su forma corta: ^BYTE }
   var
     reftyp, xtyp: TxpEleType;
+    typName: String;
   begin
     if cIn.tok = '^' then begin
       //Declaración corta
@@ -1005,8 +1053,9 @@ Si encuentra algún problema, genera error, y devuelve NIL.
     end;
     //Encontró un tipo
     cIn.Next;   //lo toma
-    xtyp := CreateEleType('', srcPos, tctPointer);  //Crea sin nombre por ahora
-    if HayError then exit;   //Sale para ver otros errores
+    typName := GenPointerTypeName(refTyp.name);
+    xtyp := CreateEleType(typName, srcPos, tctPointer);  //
+    TypeCreated  := true;     //Activate flag
     xtyp.ptrType := reftyp;  //El tipo a donde apunta
     CodDefinePointer(xtyp);  //Fija operaciones para la aritmética del puntero
     Result := xtyp;
@@ -1018,78 +1067,90 @@ var
   srcPos: TSrcPos;
 begin
   Result := nil;
+  TypeCreated := false;
   ProcComments;
   //Analiza el tipo declarado
-  srcPos := cIn.ReadSrcPos;  //Inicio de declaración
-  if (cIn.tokType = tnType) then begin
-    //Caso normal. Es un tipo del sistema
-    typName := cIn.tok;
-    typ := FindSysEleType(typName); //Busca elemento
-    if typ = nil then begin
-      //Esto no debería pasar, porque el lexer indica que es un tipo del sistema.
-      GenError(ER_NOT_IMPLEM_, [typName]);
-      exit(nil);
-    end;
-    //Encontró al tipo del sistema
-    cIn.Next;   //lo toma
-    decStyle := ttdDirect;  //Es directo
-    //El "catType" se puede leer del mismo tipo
-  end else if (cIn.tokL = 'array') or (cIn.tok = '[') then begin
-    //Es declaración de arreglo
-    decStyle := ttdDeclar;  //Es declaración elaborada
-    typ := ArrayDeclaration(srcpos);
-    if HayError then exit(nil);     //Sale para ver otros errores
-  end else if {(cIn.tokL = 'pointer') or }(cIn.tok = '^') then begin
-    //Es declaración de puntero
-    decStyle := ttdDeclar;  //Es declaración elaborada
-    typ := PointerDeclaration(srcpos);
-    if HayError then exit(nil);     //Sale para ver otros errores
-  end else if cIn.tokType = tnIdentif then begin
-    //Es un identificador de tipo
-    typName := cIn.tok;
-    decStyle := ttdDirect;  //Es directo
-    {Se pensó usar GetOperandIdent(), para identificar al tipo, pero no está preparado
-    para procesar tipos y no se espera tanta flexibilidad. Así que se hace "a mano".}
-    ele := TreeElems.FindFirst(typName);
-    if ele = nil then begin
-      //No identifica a este elemento
-      GenError('Unknown identifier: %s', [typName]);
-      exit(nil);
-    end;
-    if ele.idClass = eltType then begin
-      //Es un tipo
-      cIn.Next;   //toma identificador
-      typ := TxpEleType(ele);
-      AddCallerTo(typ);   //lleva la cuenta
-      if typ.copyOf<>nil then typ := typ.copyOf;  {Apunta al tipo copia. Esto es útil para
-                     lograr una mejor compatibilidad cuando se usan Tipos en parámetros de
-                     procedimientos.}
+  try
+    srcPos := cIn.ReadSrcPos;  //Inicio de declaración
+    if (cIn.tokType = tnType) then begin
+      //Caso normal. Es un tipo del sistema
+      typName := cIn.tok;
+      typ := FindSysEleType(typName); //Busca elemento
+      if typ = nil then begin
+        //Esto no debería pasar, porque el lexer indica que es un tipo del sistema.
+        GenError(ER_NOT_IMPLEM_, [typName]);
+        exit(nil);
+      end;
+      //Encontró al tipo del sistema
+      cIn.Next;   //lo toma
+      decStyle := ttdDirect;  //Es directo
+      //El "catType" se puede leer del mismo tipo
+    end else if (cIn.tokL = 'array') or (cIn.tok = '[') then begin
+      //Es declaración de arreglo
+      decStyle := ttdDeclar;  //Es declaración elaborada
+      typ := ArrayDeclaration(srcpos);
+      if HayError then exit(nil);     //Sale para ver otros errores
+    end else if {(cIn.tokL = 'pointer') or }(cIn.tok = '^') then begin
+      //Es declaración de puntero
+      decStyle := ttdDeclar;  //Es declaración elaborada
+      typ := PointerDeclaration(srcpos);
+      if HayError then exit(nil);     //Sale para ver otros errores
+    end else if cIn.tokType = tnIdentif then begin
+      //Es un identificador de tipo
+      typName := cIn.tok;
+      decStyle := ttdDirect;  //Es directo
+      {Se pensó usar GetOperandIdent(), para identificar al tipo, pero no está preparado
+      para procesar tipos y no se espera tanta flexibilidad. Así que se hace "a mano".}
+      ele := TreeElems.FindFirst(typName);
+      if ele = nil then begin
+        //No identifica a este elemento
+        GenError('Unknown identifier: %s', [typName]);
+        exit(nil);
+      end;
+      if ele.idClass = eltType then begin
+        //Es un tipo
+        cIn.Next;   //toma identificador
+        typ := TxpEleType(ele);
+        AddCallerTo(typ);   //lleva la cuenta
+        if typ.copyOf<>nil then typ := typ.copyOf;  {Apunta al tipo copia. Esto es útil para
+                       lograr una mejor compatibilidad cuando se usan Tipos en parámetros de
+                       procedimientos.}
+      end else begin
+        GenError(ER_IDE_TYP_EXP);
+        exit(nil);
+      end;
     end else begin
+      decStyle := ttdDirect;  //Es directo
       GenError(ER_IDE_TYP_EXP);
       exit(nil);
     end;
-  end else begin
-    GenError(ER_IDE_TYP_EXP);
-    exit(nil);
+    {No se capturan delimitadores aquí porque la declaración de tipos, en un contexto más
+    general, puede ser seguida de una inicialización.}
+    //if not CaptureDelExpres then exit(nil);
+    //ProcComments;
+    exit(typ);
+  finally
+    if Result = nil then begin
+      //Some error was happen
+      if TypeCreated then begin
+        typ.Destroy;  //Release object
+      end;
+    end;
   end;
-  {No se capturan delimitadores aquí porque la declaración de tipos, en un contexto más
-  general, puede ser seguida de una inicialización.}
-  //if not CaptureDelExpres then exit(nil);
-  //ProcComments;
-  exit(typ);
 end;
 function TCompiler_PIC16.GetTypeDeclarSimple(): TxpEleType;
 {Similar a GetTypeDeclar(), pero solo permite la referencia a tipos simples. No permite la
 declaración de nuevos tipos, como: ARRAY OF ...}
 var
   decStyle: TTypDeclarStyle;
+  TypeCreated: boolean;
 begin
-  Result := GetTypeDeclar(decStyle);  //lee tipo
+  Result := GetTypeDeclar(decStyle, TypeCreated);  //lee tipo
   if HayError then exit;
-  if decStyle = ttdDeclar then begin
+  if TypeCreated then begin
     //No se permiten declaraciones elaboradas aquí.
     GenError('Only simple types expected here.');
-    Result.Destroy;  //Se destruye el nuevo tipo
+    Result.Destroy;  //Destroy the new type created
     Result := nil;
   end;
 end;
@@ -1102,6 +1163,7 @@ var
   etyp, reftyp: TxpEleType;
   srcpos: TSrcPos;
   decStyle: TTypDeclarStyle;
+  typeCreated: boolean;
 begin
   ProcComments;
   if cIn.tokType <> tnIdentif then begin
@@ -1114,15 +1176,14 @@ begin
   cIn.Next;
   ProcComments;
   if not CaptureTok('=') then exit;
-  etyp := GetTypeDeclar(decStyle);
+  etyp := GetTypeDeclar(decStyle, typeCreated);
   if HayError then exit;
   //Analiza la declaración
   if decStyle = ttdDirect then begin
     //Es un tipo referenciado directamente. Algo como TYPE fool = byte;
-    reftyp := etyp;  //Referencia al tipo { TODO : ¿Y si el tipo es ya una copia? }
     //Para este caso, nosotros creamos un tipo nuevo, en  modo copia.
+    reftyp := etyp;  //Referencia al tipo { TODO : ¿Y si el tipo es ya una copia? }
     etyp := CreateEleType(typName, srcPos, reftyp.catType);
-    if HayError then exit;        //Sale para ver otros errores
     {Crea la copia del tipo del sistema, que básicamente es el mismo tipo, solo que
     con otro nombre y que además, ahora, está en el árbol de sintaxis, por lo tanto
     tiene otras reglas de alcance.}
@@ -1130,18 +1191,42 @@ begin
     etyp.location := elemLocat;   //Ubicación del tipo (Interface/Implementation/...)
   end else begin
     //Es una declaración elaborada de tipo. Algo como TYPE fool = array[] of ...
-    //Se supone que ya el tipo fue creado. Solo queda verificarlo y agregarlo.
-    etyp.name := typName;  //El tipo se creó sin nombre.
-    etyp.srcDec := srcpos;
-    etyp.location := elemLocat;   //Ubicación del tipo (Interface/Implementation/...)
+    if typeCreated then begin
+      //El tipo ya fue creado. Solo queda verificarlo y agregarlo.
+      etyp.name := typName;       //Actualiza el nombre con el nombre de esta definición.
+      etyp.srcDec := srcpos;
+      etyp.location := elemLocat; //Ubicación del tipo (Interface/Implementation/...)
+    end else begin
+      {El tipo es elaborado, pero no se ha creado. Puede ser que corresponda a una
+      declaración similar. ¿Creamos un tipo nuevo o una copia?}
+      //Creamos una copia porque es más fácil
+      reftyp := etyp;  //Referencia al tipo { TODO : ¿Y si el tipo es ya una copia? }
+      etyp := CreateEleType(typName, srcPos, reftyp.catType);
+      {Crea la copia del tipo del sistema, que básicamente es el mismo tipo, solo que
+      con otro nombre y que además, ahora, está en el árbol de sintaxis, por lo tanto
+      tiene otras reglas de alcance.}
+      etyp.copyOf := reftyp;        //Indica que es una copia
+      etyp.location := elemLocat;   //Ubicación del tipo (Interface/Implementation/...)
+    end;
+    //Por la forma de trabajo actual,
   end;
+  //Las declaraciones de tipo, crean siempre nuevos tipos.
   //Validación de duplicidad e inclusión en el árbol de sintaxis.
   if etyp.ExistsIn(TreeElems.curNode.elements) then begin
     GenErrorPos(ER_DUPLIC_IDEN, [etyp.name], etyp.srcDec);
     etyp.Destroy;   //Hay una variable creada
     exit;
   end;
-  TreeElems.AddElement(etyp);
+  {Valida que solo se manejen tipos de tamaño estático, porque la inicialización de
+  variables (que usen este tipo) puede modificar el nombre y tamaño de arreglos de
+  tamaño no especificado, y eso cambia la esencia de declarar un tipo con un nombre.
+  }
+  if (etyp.catType = tctArray) and (etyp.nItems = -1) then begin
+    GenError('Array types must have a specified size.');
+    etyp.Destroy;   //Hay una variable creada
+    exit;
+  end; ;
+  TreeElems.AddElement(etyp);  //No problem in adding, because we are in the right position of Syntax Tree.
   if not CaptureDelExpres then exit;
   ProcComments;
 end;
@@ -1179,6 +1264,7 @@ var
   adicVarDec: TAdicVarDec;
   xtyp, sametype: TxpEleType;
   decStyle: TTypDeclarStyle;
+  typeCreated: boolean;
 begin
   SetLength(varNames, 0);
   //Procesa variables a,b,c : int;
@@ -1193,12 +1279,15 @@ begin
     cIn.Next;  //lo toma
     ProcComments;
     //Lee el tipo de la variable.
-    xtyp := GetTypeDeclar(decStyle);
+    xtyp := GetTypeDeclar(decStyle, typeCreated );
     if HayError then exit;
-    //Lee información adicional de la declaración (ABSOLUTE)
+    //Lee información adicional de la declaración (ABSOLUTE, REGISTER, initial value)
     ProcComments;
     GetAdicVarDeclar(xtyp, adicVarDec);
-    if HayError then exit;
+    if HayError then begin
+      if typeCreated then xtyp.Destroy;
+      exit;
+    end;
     //Verifica si hay asignación de valor inicial.
     ProcComments;
     {Elimina la llamada agregada a la variable, porque se van a agregar llamadas más
@@ -1206,14 +1295,15 @@ begin
     if adicVarDec.absVar<>nil then begin
       adicVarDec.absVar.RemoveLastCaller;
     end;
-    {Aquí, finalmente, se puede terminar de definir el tipo porque, por ejemplo, se
-    puede obtener el tamaño de arreglos inicializados:  foo: []CHAR = 'HELLO';}
-
-    if decStyle = ttdDirect then begin
+    {Aquí, finalmente, se tiene el tipo completo en su estructura porque, si había un
+    arreglo no diemnsionado, como:  foo []CHAR = 'HELLO'; ya se verificó la
+    inicialización.}
+    if (decStyle = ttdDirect) or not typeCreated then begin
       //Tipo directo. No se ha creado ningún tipo nuevo.
+      //El tipo ya existe en el arbol de sintaxis
     end else if decStyle = ttdDeclar then begin
       //Se ha creado un tipo nuevo. Verifica y agrega.
-      xtyp.name := GenTypeName(xtyp, varNames[0]);
+      //xtyp.name := GenTypeName(xtyp, varNames[0]);  //Update name
       xtyp.location := curLocation;
       if TreeElems.DeclaredType(xtyp.name, sametype) then begin
         {El tipo ya existe (con esa misma estructura y en ese alcance), así que mejor
@@ -1307,6 +1397,7 @@ en el procesamiento de unidades.}
         ProcComments;
         GetAdicVarDeclar(typ, adicVarDec);
         if adicVarDec.hasInit then begin
+          //As we don't permit initialization, we won't have changes on "typ".
           GenError('Cannot initialize parameters.');
           exit;
         end;

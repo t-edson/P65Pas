@@ -512,6 +512,9 @@ var
   addr: word;
   valByte0, valByte1: Byte;
   car: char;
+  value: TConsValue;
+  i: integer;
+  items: array of TConsValue;
 begin
   //Valores solicitados. Ya deben estar iniciado este campo.
   varName := xVar.name;
@@ -572,13 +575,25 @@ begin
       xVar.addr0 := addr;
       //Iniciliza bytes si corresponde
       if xVar.adicPar.hasInit then begin
-        if typ.itmType = typChar then begin
-          //Arreglo de char
-          for car in xVar.adicPar.iniVal.ValStr do begin
-            pic.ram[addr].value := ord(car);
-            inc(addr);
+          items := xVar.adicPar.iniVal.items;
+          for i:=0 to high(items) do begin
+            value := items[i];  //Initial value
+            if (typ.itmType = typChar) or
+               (typ.itmType = typByte) then begin //One-byte arrays
+              pic.ram[addr].value := value.ValInt;
+              inc(addr);
+            end else if typ.itmType = typBool then begin
+              pic.ram[addr].value := ord(value.ValBool);
+              inc(addr);
+            end else if typ.itmType = typWord then begin
+              pic.ram[addr].value := value.ValInt and $FF;
+              inc(addr);
+              pic.ram[addr].value := (value.ValInt and $FF00) >> 8;
+              inc(addr);
+            end else begin
+              //Arrays of other types, not implemented
+            end;
           end;
-        end;
       end;
     end;
   end else if typ.catType = tctPointer then begin
