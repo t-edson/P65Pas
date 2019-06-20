@@ -268,6 +268,17 @@ VAR
 ```
 The size of this array will be set to the size of the string. In this case is 4 chars.
 
+En geenral, arrays can be initialized when declaring a varaible;
+
+```
+TYPE 
+  TAStr = [3]char;
+  TAByte = [5]byte;
+VAR
+  str : TASrt = ('a','b','c');
+  numb: TAByte = (1, 2); //Only the first can be  set.
+```
+
 Arrays support several methods:
 
 array.length ->  Returns the size of te arrays.
@@ -275,6 +286,8 @@ array.length ->  Returns the size of te arrays.
 array.low -> low index of the array. Always returns 0.
 
 array.high -> high index of the array. Always returns n-1.
+
+array.clear -> Clear the elements of array to its default value (Chars->#0, Byte, Word -> 0, Boolean -> false).
 
 No dynamic arrays are supported.
 

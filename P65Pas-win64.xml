@@ -3,8 +3,7 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\tmp\P65Pas-0.5\temp\newfile-0.pas
-D:\tmp\P65Pas-0.5\units\Commodore64.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.5\temp\newfile-0.pas
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -44,9 +43,9 @@ D:\tmp\P65Pas-0.5\units\Commodore64.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\tmp\P65Pas-0.5\units\Commodore64.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.5\temp\newfile-0.pas
+D:\tmp\P65Pas-0.5\units\Commodore64.pas
 D:\tmp\P65Pas-0.5\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.5\temp\newfile-0.pas
 D:\Proyectos_Software\Lazarus\P65Pas-0.4\temp\newfile-0.pas
 D:\tmp\P65Pas-0.4\temp\newfile-0.pas
 "/>
