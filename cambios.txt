@@ -18,6 +18,15 @@ la generación de código del "Parser".
 Se uniformiza el nombre y la creación de tipos para que haya consistencia.
 Se implementa la creación dinámica de tipos para arreglos y punteros.
 Se implementa parcialmente la aritmética de punteros como operaciones con word.
+Se implementa la inciailización de arrays con constantes, al momento de la declaración.
+Se mueven los métodos GetTypeDeclar() y GetTypeDeclarSimple(), (y otros más ) de la unidad
+COmpiler_PIC16 a la unidad Parser(), para ir moviendo el generador de código, a niveles más
+altos de la estructura de clases (así se pueden crear más generadores de código reusando 
+las clases más bajas, como se espera hacer en Picpas). la idea sería mover todos los métodos
+de Compiler_PIC16 a Parser. 
+Se crea la unidad CompOperands y se mueven las rutinas básicas del compilador.
+Se cambia de nombre a la unidad Parser por CompBase.
+
 
 Las funciones INLINE se declaran de la sgte. forma:
 
