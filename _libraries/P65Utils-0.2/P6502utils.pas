@@ -1224,7 +1224,7 @@ begin
   end;
 end;
 function TP6502.ValidRAMaddr(addr: word): boolean;
-{Indica si la dirección indicada es válida dentro del hardware del PIC}
+{Indica si la dirección indicada es válida dentro del hardware del CPU}
 begin
   if addr > CPUMAXRAM then exit(false);   //excede límite
   exit(true);
