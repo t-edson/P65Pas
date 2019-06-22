@@ -37,4 +37,24 @@ ER_RX_HAV_USED := trans('Register X has been used.'   , 'Ya se ha usado el rgist
                         ''  , '','', '');
 ER_RY_HAV_USED := trans('Register Y has been used.'   , 'Ya se ha usado el rgistro Y.','',
                         ''  , '','', '');
+ER_CON_EXP_EXP := trans('Constant expression expected.', 'Se esperaba una expresión constante','',
+                        'Konstanter Ausdruck erwartet.', '', '', 'Expression constante attendue.');
+ER_INV_ARR_SIZ := trans('Invalid array size.', 'Tamaño de arreglo inválido', '',
+                        ''                   , 'Помилка в розмірі масиву.','Ошибка размера массива.', 'Taille de tableau invalide.');
+ER_ARR_SIZ_BIG := trans('Array size to big.' , 'Tamaño de arreglo muy grande', '',
+                        ''                   ,'Розмір масиву завеликий.','Размер массива слишком велик.', 'Tableau trop grand.');
+ER_INV_MEMADDR := trans('Invalid memory address.'     , 'Dirección de memoria inválida.','',
+                        'Ungültige Speicheradresse.'  , 'Недійсна адреса памʼяті.','Недопустимый адрес памяти.', 'Adresse mémoire invalide.');
+ER_EXP_VAR_IDE := trans('Identifier of variable expected.', 'Se esperaba identificador de variable.','',
+                        'Variablenbezeichner erwartet.'   , 'Очікується фдентифікатор змінної.','Ожидается идентификатор переменной.', 'Identifiant de variable attendu.');
+ER_NUM_ADD_EXP := trans('Numeric address expected.'   , 'Se esperaba dirección numérica.','',
+                        'Numerische Adresse erwartet.', 'Очікується числова адреса.'    ,'Ожидается числовой адрес.', 'Adresse numérique attendue.');
+ER_EQU_EXPECTD := trans('"=" expected.'               , 'Se esperaba "="'               ,'',
+                        '"=" erwartet.'               , '"=" очікується.'               ,'"=" ожидается.' , '"=" attendue.');
+ER_IDE_CON_EXP := trans('Identifier of constant expected.', 'Se esperaba identificador de constante','',
+                        'Konstantenbezeichner erwartet.'  , 'Очікується ідентифікатор константи.','Ожидается идентификатор константы.', 'Identifiant de constante attendu');
+ER_EQU_COM_EXP := trans('"=" or "," expected.'        , 'Se esperaba "=" o ","'         ,'',
+                        '"=" oder "," erwartet.'      , '"=" або "," очікується.','"=" или "," ожидается.', '"=" ou "," attendus.');
+ER_SEM_COM_EXP := trans('":" or "," expected.'        , 'Se esperaba ":" o ",".'        ,'',
+                        '":"oder"," erwartet.'        , '":" або "," очікується.','":" или "," ожидается.', '":" ou "," attendus.');
 

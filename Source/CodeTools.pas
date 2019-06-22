@@ -5,7 +5,7 @@ interface
 uses
   Classes, SysUtils, LCLType, LCLProc, SynEdit, SynEditHighlighter, LazUTF8,
   MisUtils, SynFacilCompletion, SynFacilHighlighter, SynFacilBasic, XpresBas,
-  XpresElementsPIC, FrameEditView, Parser, Globales;
+  XpresElementsPIC, FrameEditView, CompBase, Globales;
 type
   { TCodeTool }
   TCodeTool = class

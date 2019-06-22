@@ -8,7 +8,7 @@ Based on information of: http://sta.c64.org/cbm64krnfunc.html
 unit Commodore64;
 interface
 type 
-  ptr = word;
+  pointer = word;
   //////////// KERNAL FUNCTIONS //////////
   
   //Initialize VIC; restore default input/output to keyboard/screen; clear screen; set PAL/NTSC switch and interrupt timer.
@@ -27,6 +27,7 @@ type
   //////////// BASIC FUNCTIONS //////////
   //Output a word Number in ASCII Decimal Digits
   procedure LINPRT(n:word);
+  procedure STROUT(str: pointer);
   
 implementation
   procedure SCINIT;
@@ -81,4 +82,13 @@ implementation
     JSR $BDCD 	 
     end 
   end; 
+  procedure STROUT(str: pointer);
+  begin
+    asm 
+	  LDA str.low
+    LDY str.high
+    JSR $AB1E 
+    end 
+  end; 
+
 end.

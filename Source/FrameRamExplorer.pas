@@ -3,7 +3,7 @@ unit FrameRamExplorer;
 interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, StdCtrls, LCLProc,
-  LCLIntf, LCLType, ExtCtrls, Buttons, CPUCore, Parser;
+  LCLIntf, LCLType, ExtCtrls, Buttons, CPUCore, CompBase;
 type
   //Define a un bloque de RAM, que servirá para dibujo
   {Los bloques de RAM se usan para separar la memoria en bloques de acuerdo a

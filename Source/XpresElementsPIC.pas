@@ -96,10 +96,9 @@ type  //TxpElement y clases previas
 
   TxpEleBody = class;
 
-  //Datos sobre la llamada a un elemento desde otro elemento
 
   { TxpEleCaller }
-
+  //Information about the call to one element from other element.
   TxpEleCaller = class
     curPos: TSrcPos;    //Posición desde donde es llamado
     caller: TxpElement; //función que llama a esta función
@@ -153,7 +152,6 @@ type  //TxpElement y clases previas
     decRegisX, //Mapped at X register
     decRegisY  //Mapped at Y register
   );
-
 
   {Description for aditional information in variables declaration: ABSOLUTE ,
   REGISTER,  or initialization. }
@@ -610,9 +608,9 @@ begin
   if caller = nil then exit(nil);
   //La idea es retorceder hasta encontrar una unidad o el programa principal
   container := caller;
-  repeat
-    container := container.Parent;
-  until container.idClass in [eltUnit, eltMain];
+  while not (container.idClass in [eltUnit, eltMain]) do begin
+    container := container.Parent;  //Go back in the Tree
+  end;
   Result := container;
   //No debería haber otro caso
 end;

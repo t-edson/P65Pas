@@ -1116,6 +1116,8 @@ begin
   lexAsm.AddSymbSpec('(', lexAsm.tnSymbol);
   lexAsm.AddSymbSpec(')', lexAsm.tnSymbol);
   lexAsm.Rebuild;
+  //Initialize events and functions of Compiler
+  CodProcASMlime := @ProcASMlime;
 end;
 destructor TParserAsm.Destroy;
 begin

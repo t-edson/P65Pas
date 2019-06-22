@@ -3,7 +3,7 @@ unit FormRAMExplorer;
 interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, LCLType,
-  ExtCtrls, StdCtrls, FrameRamExplorer, Parser;
+  ExtCtrls, StdCtrls, FrameRamExplorer, CompBase;
 type
 
   { TfrmRAMExplorer }

@@ -53,7 +53,7 @@ interface
 uses
   Classes, SysUtils, Graphics, LCLType, LCLProc,
   SynFacilBasic, XpresTypesPIC, XpresElementsPIC, P6502utils, GenCodBas_PIC16,
-  Parser, Globales, MisUtils, XpresBas;
+  CompBase, Globales, CompOperands, MisUtils, XpresBas;
 type
     { TGenCod }
     TGenCod = class(TGenCodBas)
@@ -73,14 +73,12 @@ type
       procedure fun_Addr(fun: TxpEleFun);
       procedure fun_Byte(fun: TxpEleFun);
       procedure DefineArray(etyp: TxpEleType);
+      procedure ValidRAMaddr(addr: integer);
       function GetIdxParArray(out WithBrack: boolean; out par: TOperand
         ): boolean;
       procedure GenCodArrayGetItem(const OpPtr: pointer);
       procedure GenCodArraySetItem(const OpPtr: pointer);
       procedure GenCodArrayClear(const OpPtr: pointer);
-      procedure GenCodLoadToA(Op: TOperand);
-      procedure GenCodLoadToX(Op: TOperand);
-      procedure GenCodLoadToY(Op: TOperand);
       procedure ROB_bool_and_bool(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_bool_difer_bool(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_bool_equal_bool(Opt: TxpOperation; SetRes: boolean);
@@ -160,10 +158,8 @@ type
   procedure SetLanguage;
 implementation
 var
-  MSG_NOT_IMPLEM: string;
-  MSG_INVAL_PARTYP: string;
-  MSG_UNSUPPORTED : string;
-  MSG_CANNOT_COMPL: string;
+  MSG_NOT_IMPLEM, MSG_INVAL_PARTYP, MSG_UNSUPPORTED : string;
+  MSG_CANNOT_COMPL, ER_INV_MEMADDR, ER_INV_MAD_DEV: string;
 
 procedure SetLanguage;
 begin
@@ -2842,66 +2838,6 @@ begin
   end;
   if not CaptureTok(')') then exit;
 end;
-procedure TGenCod.GenCodLoadToA(Op: TOperand);
-begin
-  if Op.Typ.IsByteSize then begin
-    case Op.Sto. of
-    stConst: begin
-      _LDA(Op.valInt and $ff);
-    end;
-    stVariab: begin
-      _LDA(Op.rVar.adrByte0);
-    end;
-    stExpres: begin
-      //Already in A
-    end
-    else
-      GenError('Cannot load this operand to register A.');
-    end;
-  end else begin
-    GenError('Operand must be byte-size to fit in register A.');
-  end;
-end;
-procedure TGenCod.GenCodLoadToX(Op: TOperand);
-begin
-  if Op.Typ.IsByteSize then begin
-    case Op.Sto. of
-    stConst: begin
-      _LDX(Op.valInt and $ff);
-    end;
-    stVariab: begin
-      _LDX(Op.rVar.adrByte0);
-    end;
-    stExpres: begin
-      _TAX;
-    end
-    else
-      GenError('Cannot load this operand to register X.');
-    end;
-  end else begin
-    GenError('Operand must be byte-size to fit in register Y.');
-  end;
-end;
-procedure TGenCod.GenCodLoadToY(Op: TOperand);
-begin
-  if Op.Typ.IsByteSize then begin
-    case Op.Sto. of
-    stConst: begin
-      _LDY(Op.valInt and $ff);
-    end;
-    stVariab: begin
-      _LDY(Op.rVar.adrByte0);
-    end;
-    stExpres: begin
-      _TAY;
-    end
-    else
-      GenError('Cannot load this operand to register Y.');
-    end;
-  end else begin
-    GenError('Operand must be byte-size to fit in register Y.');
-  end;
-end;
 procedure TGenCod.fun_Word(fun: TxpEleFun);
 begin
   if not CaptureTok('(') then exit;
@@ -3564,6 +3500,19 @@ begin
   etyp.CreateField('clear' , @GenCodArrayClear, nil);
   etyp.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address); //defined in all types
 end;
+procedure TGenCod.ValidRAMaddr(addr: integer);
+{Validate a physical RAM address. If error generate error.}
+begin
+  if (addr<0) or (addr>$ffff) then begin
+    //Debe set Word
+    GenError(ER_INV_MEMADDR);
+    exit;
+  end;
+  if not pic.ValidRAMaddr(addr) then begin
+    GenError(ER_INV_MAD_DEV);
+    exit;
+  end;
+end;
 procedure TGenCod.CreateSystemElements;
 {Inicia los elementos del sistema. Se ejecuta cada vez que se compila.}
 var
@@ -3592,12 +3541,10 @@ begin
   //Multiplicación word por word a word
   f_word_mul_word_16 := CreateSysFunction('word_mul_word_16', nil, nil);
   f_word_mul_word_16.adrr:=$0;
-  //Inicializa eventos y funciones del compilador
-  CodLoadToA:=@GenCodLoadToA;
-  CodLoadToX:=@GenCodLoadToX;
-  CodLoadToY:=@GenCodLoadToY;
-  CodDefinePointer:= @DefinePointer;
+  //Implement calls to Code Generator
   CodDefineArray  := @DefineArray;
+  CodDefinePointer:= @DefinePointer;
+  CodValidRAMaddr := @ValidRAMaddr;
 end;
 end.
 

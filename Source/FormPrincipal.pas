@@ -8,7 +8,7 @@ interface
 uses
   Classes, SysUtils, SynEdit, SynEditTypes, LazUTF8, Forms, Controls, Dialogs,
   Menus, ComCtrls, ActnList, StdActns, ExtCtrls, LCLIntf, LCLType, LCLProc,
-  StdCtrls, SynFacilHighlighter, SynFacilUtils, MisUtils, XpresBas, Parser,  //Para tener acceso a TCompilerBase
+  StdCtrls, SynFacilHighlighter, SynFacilUtils, MisUtils, XpresBas, CompBase,  //Para tener acceso a TCompilerBase
   Compiler_PIC16,
   FrameSyntaxTree, FormConfig, Globales,
   PicPasProject, FrameEditView, FrameMessagesWin, XpresElementsPIC, CodeTools,
@@ -274,7 +274,7 @@ begin
   fraMessages.SetLanguage;
   frmDebug.SetLanguage;
   Compiler_PIC16.SetLanguage;
-  Parser.SetLanguage;
+  CompBase.SetLanguage;
   //ParserAsm_PIC16.SetLanguage;
   //ParserDirec_PIC16.SetLanguage;
   {$I ..\language\tra_FormPrincipal.pas}

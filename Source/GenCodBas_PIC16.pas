@@ -5,7 +5,7 @@ unit GenCodBas_PIC16;
 interface
 uses
   Classes, SysUtils, XpresElementsPIC, XpresTypesPIC, CPUCore, P6502utils,
-  Parser, ParserDirec, Globales, MisUtils, LCLType, LCLProc;
+  CompBase, ParserDirec, Globales, CompOperands, MisUtils, LCLType, LCLProc;
 const
   STACK_SIZE = 8;      //tamaño de pila para subrutinas en el PIC
   MAX_REGS_AUX_BYTE = 6;   //cantidad máxima de registros a usar
@@ -23,6 +23,10 @@ type
   private
     linRep : string;   //línea para generar de reporte
     posFlash: Integer;
+    function DeviceError: string;
+    procedure GenCodLoadToA(Op: TOperand);
+    procedure GenCodLoadToX(Op: TOperand);
+    procedure GenCodLoadToY(Op: TOperand);
     procedure GenCodPicReqStartCodeGen;
     procedure GenCodPicReqStopCodeGen;
     procedure ProcByteUsed(offs: word; regPtr: TCPURamCellPtr);
@@ -197,6 +201,10 @@ type
     pic        : TP6502;       //Objeto PIC de la serie 16.
     procedure StartRegs;
     function CompilerName: string; override;
+    procedure CompileIF;
+    procedure CompileWHILE;
+    procedure CompileREPEAT;
+    procedure CompileFOR;
     constructor Create; override;
     destructor Destroy; override;
   end;
@@ -204,8 +212,10 @@ type
   procedure SetLanguage;
 implementation
 var
-  TXT_SAVE_W, TXT_SAVE_Z, TXT_SAVE_H, MSG_NO_ENOU_RAM,
-  MSG_VER_CMP_EXP, MSG_STACK_OVERF, MSG_NOT_IMPLEM: string;
+  TXT_SAVE_W, TXT_SAVE_Z, TXT_SAVE_H, MSG_NO_ENOU_RAM, MSG_VER_CMP_EXP,
+  MSG_STACK_OVERF, MSG_NOT_IMPLEM, ER_VARIAB_EXPEC, ER_ONL_BYT_WORD,
+  ER_ASIG_EXPECT
+  : string;
 
 procedure SetLanguage;
 begin
@@ -1532,6 +1542,10 @@ procedure TGenCodBas.GenCodPicReqStartCodeGen;
 begin
   pic.iRam := posFlash; //Probably not the best way.
 end;
+function TGenCodBas.DeviceError: string;
+begin
+  exit (pic.MsjError);
+end;
 //Inicialización
 procedure TGenCodBas.StartRegs;
 {Inicia los registros de trabajo en la lista.}
@@ -1547,6 +1561,66 @@ begin
   //Puede salir con error
 end;
 
+procedure TGenCodBas.GenCodLoadToA(Op: TOperand);
+begin
+  if Op.Typ.IsByteSize then begin
+    case Op.Sto. of
+    stConst: begin
+      _LDA(Op.valInt and $ff);
+    end;
+    stVariab: begin
+      _LDA(Op.rVar.adrByte0);
+    end;
+    stExpres: begin
+      //Already in A
+    end
+    else
+      GenError('Cannot load this operand to register A.');
+    end;
+  end else begin
+    GenError('Operand must be byte-size to fit in register A.');
+  end;
+end;
+procedure TGenCodBas.GenCodLoadToX(Op: TOperand);
+begin
+  if Op.Typ.IsByteSize then begin
+    case Op.Sto. of
+    stConst: begin
+      _LDX(Op.valInt and $ff);
+    end;
+    stVariab: begin
+      _LDX(Op.rVar.adrByte0);
+    end;
+    stExpres: begin
+      _TAX;
+    end
+    else
+      GenError('Cannot load this operand to register X.');
+    end;
+  end else begin
+    GenError('Operand must be byte-size to fit in register Y.');
+  end;
+end;
+procedure TGenCodBas.GenCodLoadToY(Op: TOperand);
+begin
+  if Op.Typ.IsByteSize then begin
+    case Op.Sto. of
+    stConst: begin
+      _LDY(Op.valInt and $ff);
+    end;
+    stVariab: begin
+      _LDY(Op.rVar.adrByte0);
+    end;
+    stExpres: begin
+      _TAY;
+    end
+    else
+      GenError('Cannot load this operand to register Y.');
+    end;
+  end else begin
+    GenError('Operand must be byte-size to fit in register Y.');
+  end;
+end;
 function TGenCodBas.CompilerName: string;
 begin
   Result := 'P65Pas Compiler'
@@ -1554,6 +1628,223 @@ end;
 function TGenCodBas.RAMmax: integer;
 begin
    Result := high(pic.ram);
+end;
+procedure TGenCodBas.CompileIF;
+{Compila una extructura IF}
+var
+  jEND_TRUE: integer;
+  lbl1: TIfInfo;
+begin
+  if not GetExpressionBool then exit;
+  if not CaptureStr('then') then exit; //toma "then"
+  //Aquí debe estar el cuerpo del "if"
+  case res.Sto of
+  stConst: begin  //la condición es fija
+    if res.valBool then begin
+      //Es verdadero, siempre se ejecuta
+      if not CompileNoConditionBody(true) then exit;
+      //Compila los ELSIF que pudieran haber
+      while cIn.tokL = 'elsif' do begin
+        cIn.Next;   //toma "elsif"
+        if not GetExpressionBool then exit;
+        if not CaptureStr('then') then exit;  //toma "then"
+        //Compila el cuerpo pero sin código
+        if not CompileNoConditionBody(false) then exit;
+      end;
+      //Compila el ELSE final, si existe.
+      if cIn.tokL = 'else' then begin
+        //Hay bloque ELSE, pero no se ejecutará nunca
+        cIn.Next;   //toma "else"
+        if not CompileNoConditionBody(false) then exit;
+        if not VerifyEND then exit;
+      end else begin
+        VerifyEND;
+      end;
+    end else begin
+      //Es falso, nunca se ejecuta
+      if not CompileNoConditionBody(false) then exit;
+      if cIn.tokL = 'else' then begin
+        //hay bloque ELSE, que sí se ejecutará
+        cIn.Next;   //toma "else"
+        if not CompileNoConditionBody(true) then exit;
+        VerifyEND;
+      end else if cIn.tokL = 'elsif' then begin
+        cIn.Next;
+        CompileIF;  //más fácil es la forma recursiva
+        if HayError then exit;
+        //No es necesario verificar el END final.
+      end else begin
+        VerifyEND;
+      end;
+    end;
+  end;
+  stVariab, stExpres:begin
+    IF_TRUE(@res, lbl1);
+//    Cod_JumpIfTrue;
+//    _JMP_lbl(jFALSE);  //salto pendiente
+    //Compila la parte THEN
+    if not CompileConditionalBody then exit;
+    //Verifica si sigue el ELSE
+    if cIn.tokL = 'else' then begin
+      //Es: IF ... THEN ... ELSE ... END
+      cIn.Next;   //toma "else"
+      _JMP_lbl(jEND_TRUE);  //llega por aquí si es TRUE
+      IF_END( lbl1);
+      if not CompileConditionalBody then exit;
+      _LABEL(jEND_TRUE);   //termina de codificar el salto
+      VerifyEND;   //puede salir con error
+    end else if cIn.tokL = 'elsif' then begin
+      //Es: IF ... THEN ... ELSIF ...
+      cIn.Next;
+      _JMP_lbl(jEND_TRUE);  //llega por aquí si es TRUE
+      IF_END( lbl1);
+      CompileIF;  //más fácil es la forma recursiva
+      if HayError then exit;
+      _LABEL(jEND_TRUE);   //termina de codificar el salto
+      //No es necesario verificar el END final.
+    end else begin
+      //Es: IF ... THEN ... END. (Puede ser recursivo)
+      IF_END( lbl1);
+      VerifyEND;  //puede salir con error
+    end;
+  end;
+  end;
+end;
+procedure TGenCodBas.CompileREPEAT;
+{Compila uan extructura WHILE}
+var
+  l1: Word;
+  info: TIfInfo;
+begin
+  l1 := _PC;        //guarda dirección de inicio
+  CompileCurBlock;
+  if HayError then exit;
+  cIn.SkipWhites;
+  if not CaptureStr('until') then exit; //toma "until"
+  if not GetExpressionBool then exit;
+  case res.Sto of
+  stConst: begin  //la condición es fija
+    if res.valBool then begin
+      //lazo nulo
+    end else begin
+      //lazo infinito
+      _JMP(l1);
+    end;
+  end;
+  stVariab, stExpres: begin
+    IF_FALSE(@res, info);   { TODO : Se debería optimizar. Hay un salto innecesario, útil solo para bloques largos. }
+    _JMP(l1);
+    IF_END(info)
+    //sale cuando la condición es verdadera
+  end;
+  end;
+end;
+procedure TGenCodBas.CompileWHILE;
+{Compila una extructura WHILE}
+var
+  l1: Word;
+  info: TIfInfo;
+begin
+  l1 := _PC;        //guarda dirección de inicio
+  if not GetExpressionBool then exit;  //Condición
+  if not CaptureStr('do') then exit;  //toma "do"
+  //Aquí debe estar el cuerpo del "while"
+  case res.Sto of
+  stConst: begin  //la condición es fija
+    if res.valBool then begin
+      //Lazo infinito
+      if not CompileNoConditionBody(true) then exit;
+      if not VerifyEND then exit;
+      _JMP(l1);
+    end else begin
+      //Lazo nulo. Compila sin generar código.
+      if not CompileNoConditionBody(false) then exit;
+      if not VerifyEND then exit;
+    end;
+  end;
+  stVariab, stExpres: begin
+    IF_TRUE(@res, info);
+    if not CompileConditionalBody then exit;
+    _JMP(l1);
+    IF_END(info);
+    if not VerifyEND then exit;
+  end;
+  end;
+end;
+procedure TGenCodBas.CompileFOR;
+{Compila uan extructura FOR}
+var
+  l1: Word;
+  LABEL1: Integer;
+  Op1, Op2: TOperand;
+  opr1: TxpOperator;
+  info: TIfInfo;
+begin
+  GetOperand(Op1, true);
+  if Op1.Sto <> stVariab then begin
+    GenError(ER_VARIAB_EXPEC);
+    exit;
+  end;
+  if HayError then exit;
+  if (Op1.Typ<>typByte) and (Op1.Typ<>typWord) then begin
+    GenError(ER_ONL_BYT_WORD);
+    exit;
+  end;
+  cIn.SkipWhites;
+  opr1 := GetOperator(Op1);   //debe ser ":="
+  if opr1 = nil then begin  //no sigue operador
+    GenError(ER_ASIG_EXPECT);
+    exit;  //termina ejecucion
+  end;
+  if opr1.txt <> ':=' then begin
+    GenError(ER_ASIG_EXPECT);
+    exit;
+  end;
+  Op2 := GetExpression(0);
+  if HayError then exit;
+  //Ya se tiene la asignación inicial
+  Oper(Op1, opr1, Op2);   //codifica asignación
+  if HayError then exit;
+  if not CaptureStr('to') then exit;
+  //Toma expresión Final
+  res := GetExpression(0);
+  if HayError then exit;
+  cIn.SkipWhites;
+  if not CaptureStr('do') then exit;  //toma "do"
+  //Aquí debe estar el cuerpo del "for"
+  if (res.Sto = stConst) or (res.Sto = stVariab) then begin
+    //Es un for con valor final de tipo constante
+    //Se podría optimizar, si el valor inicial es también constante
+    l1 := _PC;        //guarda dirección de inicio
+    //Codifica rutina de comparación, para salir
+    OnExprStart();  //We need this to reset register
+    opr1 := Op1.Typ.FindBinaryOperator('<=');  //Busca operador de comparación
+    if opr1 = nullOper then begin
+      GenError('Internal: No operator <= defined for %s.', [Op1.Typ.name]);
+      exit;
+    end;
+    Op2 := res;   //Copia porque la operación Oper() modificará res
+    Oper(Op1, opr1, Op2);   //verifica resultado
+    IF_TRUE(@res, info);
+    OnExprEnd(pexSTRUC);  //Close expresión
+    if not CompileConditionalBody then exit;
+    if not VerifyEND then exit;
+    //Incrementa variable cursor
+    if Op1.Typ = typByte then begin
+      _INC(Op1.rVar.adrByte0);
+    end else if Op1.Typ = typWord then begin
+      _INC(Op1.rVar.adrByte0);
+      _BNE_lbl(LABEL1);  //label
+      _INC(Op1.rVar.adrByte1);
+_LABEL(LABEL1);
+    end;
+    _JMP(l1);  //repite el lazo
+    //ya se tiene el destino del salto
+    IF_END(info);   //termina de codificar el salto
+  end else begin
+    GenError('Last value must be Constant or Variable');
+    exit;
+  end;
 end;
 constructor TGenCodBas.Create;
 begin
@@ -1604,9 +1895,9 @@ begin
   { TODO : String deberái definirse mejor como un tipo común, no del sistema }
 
   //Crea variables de trabajo
-  varStkByte := TxpEleVar.Create;
+  varStkByte   := TxpEleVar.Create;
   varStkByte.typ := typByte;
-  varStkWord := TxpEleVar.Create;
+  varStkWord   := TxpEleVar.Create;
   varStkWord.typ := typWord;
   //Crea lista de variables temporales
   varFields    := TxpEleVars.Create(true);
@@ -1625,6 +1916,16 @@ begin
   INDF := TPicRegister.Create;
   INDF.addr := $00;
   INDF.assigned := true;   //ya está asignado desde el principio
+  //Implement calls to Code Generator
+  CodCreateVarInRAM := @CreateVarInRAM;
+  CodDeviceError    := @DeviceError;
+  CodCompileIF      := @CompileIF;;
+  CodCompileWHILE   := @CompileWHILE;
+  CodCompileREPEAT  := @CompileREPEAT;
+  CodCompileFOR     := @CompileFOR;
+  CodLoadToA      := @GenCodLoadToA;
+  CodLoadToX      := @GenCodLoadToX;
+  CodLoadToY      := @GenCodLoadToY;
 end;
 destructor TGenCodBas.Destroy;
 begin

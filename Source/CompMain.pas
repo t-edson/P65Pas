@@ -1,0 +1,1373 @@
+unit CompMain;
+{$mode objfpc}{$H+}
+interface
+uses
+  Classes, SysUtils, Types, CompBase, XpresElementsPIC, Globales, CompOperands,
+  XpresTypesPIC, XpresBas;
+type
+
+  { TCompMain }
+  TCompMain = class(TCompilerBase)
+  protected //Métodos OVERRIDE
+    function StartOfSection: boolean;
+    procedure CompileLastEnd;
+  protected
+    procedure TipDefecNumber(var Op: TOperand; toknum: string); override;
+    procedure TipDefecString(var Op: TOperand; tokcad: string); override;
+    procedure TipDefecBoolean(var Op: TOperand; tokcad: string); override;
+  protected  //Elements processing
+    procedure GetAdicVarDeclar(xType: TxpEleType; out aditVar: TAdicVarDec);
+    procedure ReadProcHeader(out procName: String; out retType: TxpEleType;
+      out srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt: Boolean);
+    procedure ReadInlineHeader(out procName: String; out retType: TxpEleType;
+      out srcPos: TSrcPos; out pars: TxpParInlinArray);
+    procedure CompileVarDeclar;
+    procedure CompileGlobalConstDeclar;
+    procedure CompileTypeDeclar(elemLocat: TxpEleLocation; typName: string = ''
+      );
+    function GetTypeDeclar(out decStyle: TTypDeclarStyle; out
+      TypeCreated: boolean): TxpEleType;
+    function GetTypeDeclarSimple(): TxpEleType;
+
+    function VerifyEND: boolean;
+    function GetExpressionBool: boolean;
+    procedure Tree_AddElement(elem: TxpElement);
+    function OpenContextFrom(filePath: string): boolean;
+    function CompileStructBody(GenCode: boolean): boolean;
+    function CompileConditionalBody: boolean;
+    function CompileNoConditionBody(GenCode: boolean): boolean;
+    procedure CompileInstruction;
+    procedure CompileInstructionDummy;
+    procedure CompileCurBlock;
+    procedure CompileCurBlockDummy;
+    function IsUnit: boolean;
+  public
+    {Indica que TCompiler, va a acceder a un archivo, peor está pregunatndo para ver
+     si se tiene un Stringlist, con los datos ya caragdos del archivo, para evitar
+     tener que abrir nuevamente al archivo.}
+    OnRequireFileString: procedure(FilePath: string; var strList: TStrings) of object;
+  end;
+  procedure SetLanguage;
+
+implementation
+var
+  ER_INV_MEMADDR, ER_EXP_VAR_IDE, ER_NUM_ADD_EXP, ER_CON_EXP_EXP,
+  ER_EQU_EXPECTD, ER_IDEN_EXPECT, ER_NOT_IMPLEM_, ER_SEM_COM_EXP,
+  ER_INV_ARR_SIZ, ER_ARR_SIZ_BIG, ER_IDE_TYP_EXP, ER_IDE_CON_EXP,
+  ER_EQU_COM_EXP, ER_DUPLIC_IDEN, ER_NOTYPDEF_NU, ER_BOOL_EXPECT,
+  ER_EOF_END_EXP, ER_ELS_UNEXPEC, ER_END_EXPECTE, ER_NOT_AFT_END,
+  ER_INST_NEV_EXE, ER_UNKN_STRUCT
+  : string;
+procedure SetLanguage;
+begin
+  {$I ..\language\tra_CompMain.pas}
+end;
+function TCompMain.StartOfSection: boolean;
+begin
+  Result := (cIn.tokL ='var') or (cIn.tokL ='const') or
+            (cIn.tokL ='type') or (cIn.tokL ='procedure') or (cIn.tokL ='inline');
+end;
+procedure TCompMain.CompileLastEnd;
+{Compila la parte de final de un programa o una unidad}
+begin
+  if cIn.Eof then begin
+    GenError(ER_EOF_END_EXP);
+    exit;       //sale
+  end;
+  if cIn.tokL <> 'end' then begin  //verifica si termina el programa
+    if cIn.tokL = 'else' then begin
+      //Precisa un poco más en el error
+      GenError(ER_ELS_UNEXPEC);
+      exit;       //sale
+    end else begin
+      GenError(ER_END_EXPECTE);
+      exit;       //sale
+    end;
+  end;
+  cIn.Next;   //coge "end"
+  //Debería seguir el punto
+  if not CaptureTok('.') then exit;
+  //no debe haber más instrucciones
+  ProcComments;
+  if not cIn.Eof then begin
+    GenError(ER_NOT_AFT_END);
+    exit;       //sale
+  end;
+end;
+//Métodos OVERRIDE
+procedure TCompMain.TipDefecNumber(var Op: TOperand; toknum: string);
+{Procesa constantes numéricas, ubicándolas en el tipo de dato apropiado (byte, word, ... )
+ Si no logra ubicar el tipo de número, o no puede leer su valor, generará  un error.}
+var
+  n: int64;   //para almacenar a los enteros
+//  f: extended;  //para almacenar a reales
+begin
+  if pos('.',toknum) <> 0 then begin  //es flotante
+    GenError('Unvalid float number.');  //No hay soporte aún para flotantes
+//    try
+//      f := StrToFloat(toknum);  //carga con la mayor precisión posible
+//    except
+//      Op.typ := nil;
+//      GenError('Unvalid float number.');
+//      exit;
+//    end;
+//    //busca el tipo numérico más pequeño que pueda albergar a este número
+//    Op.size := 4;   //se asume que con 4 bytes bastará
+//    {Aquí se puede decidir el tamaño de acuerdo a la cantidad de decimales indicados}
+//
+//    Op.valFloat := f;  //debe devolver un extended
+//    menor := 1000;
+//    for i:=0 to typs.Count-1 do begin
+//      { TODO : Se debería tener una lista adicional TFloatTypes, para acelerar la
+//      búsqueda}
+//      if (typs[i].cat = t_float) and (typs[i].size>=Op.size) then begin
+//        //guarda el menor
+//        if typs[i].size < menor then  begin
+//           imen := i;   //guarda referencia
+//           menor := typs[i].size;
+//        end;
+//      end;
+//    end;
+//    if menor = 1000 then  //no hubo tipo
+//      Op.typ := nil
+//    else  //encontró
+//      Op.typ:=typs[imen];
+//
+  end else begin     //es entero
+    //Intenta convertir la cadena. Notar que se reconocen los formatos $FF y %0101
+    if not TryStrToInt64(toknum, n) then begin
+      //Si el lexer ha hecho bien su trabajo, esto solo debe pasar, cuando el
+      //número tiene mucHos dígitos.
+      GenError('Error in number.');
+      exit;
+    end;
+    Op.valInt := n;   //copia valor de constante entera
+    {Asigna un tipo, de acuerdo al rango. Notar que el tipo más pequeño, usado
+    es el byte, y no el bit.}
+    if (n>=0) and  (n<=255) then begin
+      Op.SetAsConst(typByte);
+    end else if (n>= 0) and (n<=$FFFF) then begin
+      Op.SetAsConst(typWord);
+    end else  begin //no encontró
+      GenError(ER_NOTYPDEF_NU);
+      Op.SetAsNull;
+    end;
+  end;
+end;
+procedure TCompMain.TipDefecString(var Op: TOperand; tokcad: string);
+//Devuelve el tipo de cadena encontrado en un token
+//var
+//  i: Integer;
+begin
+{  Op.catTyp := t_string;   //es cadena
+  Op.size:=length(tokcad);
+  //toma el texto
+  Op.valStr := copy(cIn.tok,2, length(cIn.tok)-2);   //quita comillas
+  //////////// Verifica si hay tipos string definidos ////////////
+  if length(Op.valStr)=1 then begin
+    Op.typ := tipChr;
+  end else
+    Op.typ :=nil;  //no hay otro tipo}
+end;
+procedure TCompMain.TipDefecBoolean(var Op: TOperand; tokcad: string);
+//Devuelve el tipo de cadena encontrado en un token
+begin
+  //convierte valor constante
+  Op.SetAsConst(typBool);
+  Op.valBool:= (tokcad[1] in ['t','T']);
+end;
+//Elements processing
+procedure TCompMain.GetAdicVarDeclar(xType: TxpEleType; out aditVar: TAdicVarDec) ;
+{Verify aditional settings for var declarations, after the type definition. These settings
+can be:
+ ABSOLUTE <literal address or variable/constant identifier>
+ REGISTER/REGISTERA/REGISTERX/REGISTERY
+
+All aditional settings are returned in "aditVar".
+IMPORTANT: "xType" can change when is an unspecified size array ( like []byte ) and an
+initialization is provided. No new type elements are created or destroyed.
+ . }
+  function ReadAddres(tok: string): word;
+  {Lee una dirección de RAM a partir de una cadena numérica.
+  Puede generar error.}
+  var
+    n: LongInt;
+  begin
+    //COnvierte cadena (soporta binario y hexadecimal)
+    if not TryStrToInt(tok, n) then begin
+      //Podría fallar si es un número muy grande
+      GenError(ER_INV_MEMADDR);
+      {%H-}exit;
+    end;
+    CodValidRAMaddr(n);  //Validate address
+    if HayError then exit(0);
+    Result := n;
+  end;
+var
+  xvar: TxpEleVar;
+  n: integer;
+  Op, OpInit: TOperand;
+begin
+  aditVar.srcDec   := cIn.PosAct;  //Posición de inicio de posibles parámetros adic.
+  aditVar.hasAdic  := decNone;       //Bandera
+  aditVar.hasInit  := false;
+  aditVar.absVar   := nil;         //Por defecto
+  if (cIn.tokL = 'absolute') or (cIn.tok = '@') then begin
+    // Hay especificación de dirección absoluta ////
+    aditVar.hasAdic := decAbsol;    //marca bandera
+    cIn.Next;
+    ProcComments;
+    if cIn.tokType = tnNumber then begin
+      if (cIn.tok[1]<>'$') and ((pos('e', cIn.tok)<>0) or (pos('E', cIn.tok)<>0)) then begin
+        //La notación exponencial, no es válida.
+        GenError(ER_INV_MEMADDR);
+        exit;
+      end;
+      n := pos('.', cIn.tok);   //no debe fallar
+      if n=0 then begin
+        //Número entero sin parte decimal
+        aditVar.absAddr := ReadAddres(cIn.tok);
+        cIn.Next;  //Pasa con o sin error, porque esta rutina es "Pasa siempre."
+      end else begin
+        //Puede ser el formato <dirección>.<bit>, en un solo token, que es válido.
+        GenError('Syntax error.');
+        exit;
+      end;
+    end else if cIn.tokType = tnIdentif then begin
+      //Puede ser variable
+      GetOperandIdent(Op, true); //
+      if HayError then exit;
+      if Op.Sto <> stVariab then begin
+        GenError(ER_EXP_VAR_IDE);
+        cIn.Next;  //Pasa con o sin error, porque esta rutina es "Pasa siempre."
+        exit;
+      end;
+      //Mapeado a variable. Notar que puede ser una variable temporal, si se usa: <var_byte>.0
+      xvar := Op.rVar;
+      if Op.rVarBase=nil then begin
+        aditVar.absVar := Op.rVar;  //Guarda referencia
+      end else begin
+        {Es un caso como "<Variab.Base>.0", conviene devolver la referencia a <Variab.Base>,
+        en lugar de a la variable "<Variable Base>.0", considerando que:
+        * GetOperandIdent() usa <Variable Base>, para registrar la llamada.
+        * Esta referencia se usará luego para ver variables no usadas en
+          TCompiler.CompileLinkProgram().}
+        aditVar.absVar := Op.rVarBase;  //Guarda referencia
+      end;
+      //Ya tiene la variable en "xvar".
+      aditVar.absAddr := xvar.addr;  //debe ser absoluta
+      if aditVar.absAddr = ADRR_ERROR then begin
+        //No se puede obtener la dirección.
+        GenError('Cannot locate variable at: %s', [xvar.name]);
+  //      GenError('Internal Error: TxpEleVar.AbsAddr.');
+        exit;
+      end;
+    end else begin   //error
+      GenError(ER_NUM_ADD_EXP);
+      cIn.Next;    //pasa siempre
+      exit;
+    end;
+  end else if cIn.tokL = 'register' then begin
+    // Es de tipo registro
+    aditVar.hasAdic := decRegis;    //marca bandera
+    cIn.Next;
+    ProcComments;
+  end else if cIn.tokL = 'registera' then begin
+    // Es de tipo registro
+    aditVar.hasAdic := decRegisA;    //marca bandera
+    cIn.Next;
+    ProcComments;
+  end else if cIn.tokL = 'registerx' then begin
+    // Es de tipo registro
+    aditVar.hasAdic := decRegisX;    //marca bandera
+    cIn.Next;
+    ProcComments;
+  end else if cIn.tokL = 'registery' then begin
+    // Es de tipo registro
+    aditVar.hasAdic := decRegisY;    //marca bandera
+    cIn.Next;
+    ProcComments;
+  end;
+  //Verifica compatibilidad de tamaños
+  if aditVar.hasAdic in [decRegisA, decRegisX, decRegisY] then begin
+    //Solo pueden ser de tamaño byte
+    if not xType.IsByteSize then begin
+      GenError('Only byte-size types can be a specific register.');
+      exit;
+    end;
+  end;
+  //Puede seguir una sección de inicialización: var: char = 'A';
+  ProcComments;
+  if cIn.tok = '=' then begin
+    aditVar.hasInit := true;
+    cIn.Next;   //lo toma
+    ProcComments;
+    //Aquí debe seguir el valor inicial
+    OpInit := GetExpression(0);
+    if HayError then exit;
+    if OpInit.Sto <> stConst then begin
+      GenError(ER_CON_EXP_EXP);
+      exit;
+    end;
+    //Ya se tiene el valor constante para inicializar variable.
+    if aditVar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
+      GenError('Cannot initialize register variables.');
+      exit;
+    end;
+  end else begin
+    //No hay asignación inicial.
+    aditVar.hasInit := false;
+  end;
+  //Valida el caso de areglos dinámicos
+  if (xType.catType = tctArray) and (xType.nItems = -1) and not aditVar.hasInit then begin
+    //Es un arreglo dinámico. Debió inicializarse.
+    GenError(ER_EQU_EXPECTD);
+    exit;
+  end;
+  {Ya se validó la pertinencia de la inicialización y ya se tiene el operando de
+  inicialización. Ahora toca validar la compatibilidad de los tipos.}
+  //Por ahora solo se permite inicializar arreglos.
+  if aditVar.hasInit then begin
+    if (xType.catType = tctArray) then begin
+      //Arrays have some particular behaviour
+      if (xType.itmType = typChar) then begin
+        //Special case for Char arrays. They can be initializaed with string.
+        if OpInit.Typ = typChar then begin
+          //Caso especial. Se puede considerar un string
+          OpInit.SetAsConst(xType);  //Set as constant array of char
+          OpInit.StringToArrayOfChar( chr(OpInit.valInt) );  //Set ítems from string
+        end else if OpInit.Typ = typString then begin
+          OpInit.SetAsConst(xType);  //Set as constant array of char
+          OpInit.StringToArrayOfChar( OpInit.valStr );  //Set ítems from string
+        end;
+      end;
+      //Validation for category
+      if OpInit.Typ.catType <> tctArray then begin
+        GenError('Expected an array.');
+        exit;
+      end;
+      //Here we assure xType and OpInit are both arrays.
+      //If dynamic, the size depends o initial value
+      if xType.nItems= -1 then begin
+        //Dynamic size
+        xType.nItems := OpInit.nItems;   //Update array size
+        //Type name needs to be updated too.
+        xType.name := GenArrayTypeName(xType.itmType.name, OpInit.nItems);
+        //NOTE that type name (and structrure) has changed.
+      end;
+      //Validation for item types.
+      if xType.itmType <> OpInit.Typ.itmType then begin
+        GenError('Item type doesn''t match for initialize array.');
+        exit;
+      end;
+      //Validation for size.
+      if xType.nItems < OpInit.nItems then begin
+        GenError('Too many items to initialize array.');
+        //exit
+      end;
+      //Validate type compatibility
+      {We could be tempted to compare xType and OpInit.Typ here but this cannot be done,
+      because OpInit.Typ will be (most of the times) always different from xType,
+      because xType exists but it hasn't been added to the Syntax Tree, so OpInit.Typ
+      had never the chance to find it, when creating.
+      However, until here we have validated that xType and OpInit.Typ and both arrays,
+      have the same item type and compatible sizes, so they are compatible to
+      initialization.
+      }
+    end else begin
+      //Other types are simple to validate
+      if OpInit.Typ <> xType then begin
+        GenError('Cannot initialize. Expected type "%s". Got "%s".', [xType.name, OpInit.Typ.name]);
+        exit;
+      end;
+    end;
+    //Assign constant value
+    aditVar.iniVal := OpInit.Value;
+  end;
+end;
+procedure TCompMain.ReadProcHeader(out procName: String; out retType: TxpEleType;
+  out srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt: Boolean);
+{Hace el procesamiento del encabezado de la declaración de una función/procedimiento.
+Devuelve la referencia al objeto TxpEleFun creado, en "fun".
+Conviene separar el procesamiento del enzabezado, para poder usar esta rutina, también,
+en el procesamiento de unidades.}
+  procedure ReadFunctionParams(out funPars: TxpParFuncArray);
+  //Lee la declaración de parámetros de una función.
+  const
+    BLOCK_SIZE = 10;  //Tamaño de bloque.
+  var
+    typ: TxpEleType;
+    itemList: TStringDynArray;
+    srcPosArray: TSrcPosArray;
+    i, curSize, n: Integer;
+    adicVarDec: TAdicVarDec;
+  begin
+    cIn.SkipWhites;
+    if EOBlock or EOExpres or (cIn.tok = ':') then begin
+      //No tiene parámetros
+      setlength(funPars, 0);
+    end else begin
+      //Debe haber parámetros. Prepara espacio para leer.
+      curSize := BLOCK_SIZE;    //Tamaño inicial de bloque
+      setlength(funPars, curSize);  //Tamaño inicial
+      n := 0;
+      //Inicia lectura
+      if not CaptureTok('(') then exit;
+      cin.SkipWhites;
+      repeat
+        //if cIn.tokL = 'register' then begin
+        //  IsRegister := regA;  //Asumimos que es A
+        //  cin.Next;
+        //  cin.SkipWhites;
+        //end;
+        getListOfIdent(itemList, srcPosArray);
+        if HayError then begin  //precisa el error
+          GenError(ER_IDEN_EXPECT);
+          exit;
+        end;
+        if not CaptureTok(':') then exit;
+        typ := GetTypeDeclarSimple;  //lee tipo
+        if HayError then exit;
+        ProcComments;
+        GetAdicVarDeclar(typ, adicVarDec);
+        if adicVarDec.hasInit then begin
+          //As we don't permit initialization, we won't have changes on "typ".
+          GenError('Cannot initialize parameters.');
+          exit;
+        end;
+        //Ya tiene los datos de los parámetros
+        for i:= 0 to high(itemList) do begin
+          funPars[n].name  := itemList[i];
+          funPars[n].srcPos:= srcPosArray[i];
+          funPars[n].typ   := typ;
+          funPars[n].adicVar := adicVarDec;
+          //Prepara siguiente lectura
+          inc(n);
+          if n >= curSize then begin
+            curSize += BLOCK_SIZE;   //Incrementa tamaño en bloque
+            setlength(funPars, curSize);  //hace espacio en bloque
+          end;
+        end;
+        //Busca delimitador
+        if cIn.tok = ';' then begin
+          cIn.Next;   //toma separador
+          cIn.SkipWhites;
+        end else begin
+          //no sigue separador de parámetros,
+          //debe terminar la lista de parámetros
+          //¿Verificar EOBlock or EOExpres ?
+          break;
+        end;
+      until false;
+      //busca paréntesis final
+      if not CaptureTok(')') then exit;
+      //Asigna tamaño final
+      setlength(funPars, n);
+    end;
+  end;
+begin
+  //Toma información de ubicación, al inicio del procedimiento
+  cIn.SkipWhites;
+  srcPos := cIn.ReadSrcPos;
+  //Ahora debe haber un identificador
+  if cIn.tokType <> tnIdentif then begin
+    GenError(ER_IDEN_EXPECT);
+    exit;
+  end;
+  //Lee nombre de función
+  procName := cIn.tok;
+  cIn.Next;  //lo toma
+  //Captura los parámetros en "pars"
+  ReadFunctionParams(pars);
+  if HayError then exit;
+
+  //Verifica si es función
+  cIn.SkipWhites;
+  if cIn.tok = ':' then begin
+    cIn.Next;
+    cIn.SkipWhites;
+    //Es función
+    retType := GetTypeDeclarSimple;  //lee tipo
+    if HayError then exit;
+  end else begin
+    retType := typNull;
+  end;
+  if not CaptureTok(';') then exit;
+  //Verifica si es INTERRUPT
+  cIn.SkipWhites;
+  if cIn.tokL = 'interrupt' then begin
+    cIn.Next;
+    IsInterrupt := true;
+    if not CaptureTok(';') then exit;
+  end else begin
+    IsInterrupt := false;
+  end;
+  ProcComments;  //Quita espacios. Puede salir con error
+end;
+procedure TCompMain.ReadInlineHeader(out procName: String; out retType: TxpEleType;
+  out srcPos: TSrcPos; out pars: TxpParInlinArray);
+{Hace el procesamiento del encabezado de la declaración de una función INLINE.
+Devuelve la referencia al objeto TxpEleInline creado, en "fun".
+Conviene separar el procesamiento del enzabezado, para poder usar esta rutina, también,
+en el procesamiento de unidades.}
+  procedure ReadInlineParams(out funPars: TxpParInlinArray);
+  //Lee la declaración de parámetros de una función Inline.
+  const
+    BLOCK_SIZE = 10;  //Tamaño de bloque.
+  var
+    typ: TxpEleType;
+    itemList: TStringDynArray;
+    srcPosArray: TSrcPosArray;
+    i, curSize, n: Integer;
+    sto: TStoOperand;
+  begin
+    cIn.SkipWhites;
+    SetLength(itemList, 0);
+    if EOBlock or EOExpres or (cIn.tok = ':') then begin
+      //no tiene parámetros
+      //No tiene parámetros
+      setlength(funPars, 0);
+    end else begin
+      //Debe haber parámetros. Prepara espacio para leer.
+      curSize := BLOCK_SIZE;    //Tamaño inicial de bloque
+      setlength(funPars, curSize);  //Tamaño inicial
+      n := 0;
+      //Inicia lectura
+      if not CaptureTok('(') then exit;
+      cin.SkipWhites;
+      repeat
+        if cIn.tokL = 'var' then begin
+          cin.Next;
+          cin.SkipWhites;
+          sto := stVariab;
+        end else if cIn.tokL = 'const' then begin
+          cin.Next;
+          cin.SkipWhites;
+          sto := stConst;
+        end else if cIn.tokL = 'expr' then begin
+          cin.Next;
+          cin.SkipWhites;
+          sto := stExpres;
+        end else begin
+          GenError('Syntax error.');
+          exit;
+        end;
+        //Lee lista de parámetros de tipo: a,b,c : byte;
+        getListOfIdent(itemList, srcPosArray);
+        if HayError then begin  //precisa el error
+          GenError(ER_IDEN_EXPECT);
+          exit;
+        end;
+        if not CaptureTok(':') then exit;
+        typ := GetTypeDeclarSimple;  //lee tipo
+        if HayError then exit;
+        //Ya tiene los nombres y el tipo
+        //Crea el parámetro como una variable local
+        for i:= 0 to high(itemList) do begin
+          funPars[n].name  := itemList[i];
+          funPars[n].srcPos:= srcPosArray[i];
+          funPars[n].typ   := typ;
+          funPars[n].sto   := sto;
+          //Prepara siguiente lectura
+          inc(n);
+          if n >= curSize then begin
+            curSize += BLOCK_SIZE;   //Incrementa tamaño en bloque
+            setlength(funPars, curSize);  //hace espacio en bloque
+          end;
+        end;
+        //Busca delimitador
+        if cIn.tok = ';' then begin
+          cIn.Next;   //toma separador
+          cIn.SkipWhites;
+        end else begin
+          //No sigue separador de parámetros,
+          //debe terminar la lista de parámetros
+          //¿Verificar EOBlock or EOExpres ?
+          break;
+        end;
+      until false;
+      //busca paréntesis final
+      if not CaptureTok(')') then exit;
+      //Asigna tamaño final
+      setlength(funPars, n);
+    end;
+  end;
+begin
+  //Toma información de ubicación, al inicio del procedimiento
+  cIn.SkipWhites;
+  srcPos := cIn.ReadSrcPos;
+  //Ahora debe haber un identificador
+  if cIn.tokType <> tnIdentif then begin
+    GenError(ER_IDEN_EXPECT);
+    exit;
+  end;
+  //Lee nombre de función
+  procName := cIn.tok;
+  cIn.Next;  //lo toma
+  //Captura los parámetros en "pars"
+  ReadInlineParams(pars);
+  if HayError then exit;
+
+  //Verifica si es función
+  cIn.SkipWhites;
+  if cIn.tok = ':' then begin
+    cIn.Next;
+    cIn.SkipWhites;
+    //Es función
+    retType := GetTypeDeclarSimple;  //lee tipo
+    if HayError then exit;
+  end else begin
+    retType := typNull;
+  end;
+  if not CaptureTok(';') then exit;
+  ProcComments;  //Quita espacios. Puede salir con error
+end;
+procedure TCompMain.CompileVarDeclar;
+{Compila la declaración de variables en el nodo actual.
+"IsInterface", indica el valor que se pondrá al as variables, en la bandera "IsInterface" }
+  function GenTypeName(const xtyp: TxpEleType; const baseName: string): string;
+  {Genera un nombre para un tipo de acuerdo a su definición. Se supone que no es un tipo
+  "atomic".
+  Se generan nombres representativos, para poder luego verificar la existencia de tipos
+  compatibles. Así por ejemplo si se crea un ARRAY OF char y luego se crea otro ARRAY OF
+  char con el mismo tamaño, se preferirá usar el tipo ya creado que además es compatible.}
+  begin
+    //Genera nombre con caracter inválido para que no se pueda confundir con los que declara el usuario.
+    case xtyp.catType of
+    tctAtomic : //caso inútil
+       exit(xtyp.name);
+    tctArray  :  //Arreglo de algo
+      exit(GenArrayTypeName(xtyp.itmType.name, xtyp.nItems));
+    tctPointer:  //Puntero a algo
+      exit(GenPointerTypeName(xtyp.ptrType.name));
+    tctObject :  {Objeto. No se da un nombre fijo porque los objetos son muy variables. Podría
+                  intentarse con obj-<tipos de campos>, pero podría ser muy largo y poco útil
+                  para buscar compatibilidades de tipo}
+      exit(PREFIX_OBJ + '-' + baseName); //Caso particular
+    else  //Solo pasaría cuando hay ampliaciones
+      exit('???-' + baseName);
+    end;
+  end;
+var
+  varNames: array of string;  //nombre de variables
+  srcPosArray: TSrcPosArray;
+  i: Integer;
+  xvar: TxpEleVar;
+  adicVarDec: TAdicVarDec;
+  xtyp, sametype: TxpEleType;
+  decStyle: TTypDeclarStyle;
+  typeCreated: boolean;
+begin
+  SetLength(varNames, 0);
+  //Procesa variables a,b,c : int;
+  getListOfIdent(varNames, srcPosArray);
+  if HayError then begin  //precisa el error
+    GenError(ER_EXP_VAR_IDE);
+    exit;
+  end;
+  //usualmente debería seguir ":"
+  if cIn.tok = ':' then begin
+    //Debe seguir, el tipo de la variable
+    cIn.Next;  //lo toma
+    ProcComments;
+    //Lee el tipo de la variable.
+    xtyp := GetTypeDeclar(decStyle, typeCreated );
+    if HayError then exit;
+    //Lee información adicional de la declaración (ABSOLUTE, REGISTER, initial value)
+    ProcComments;
+    GetAdicVarDeclar(xtyp, adicVarDec);
+    if HayError then begin
+      if typeCreated then xtyp.Destroy;
+      exit;
+    end;
+    //Verifica si hay asignación de valor inicial.
+    ProcComments;
+    {Elimina la llamada agregada a la variable, porque se van a agregar llamadas más
+    específicas desde la(s) variable(s) declaradas.}
+    if adicVarDec.absVar<>nil then begin
+      adicVarDec.absVar.RemoveLastCaller;
+    end;
+    {Aquí, finalmente, se tiene el tipo completo en su estructura porque, si había un
+    arreglo no diemnsionado, como:  foo []CHAR = 'HELLO'; ya se verificó la
+    inicialización.}
+    if (decStyle = ttdDirect) or not typeCreated then begin
+      //Tipo directo. No se ha creado ningún tipo nuevo.
+      //El tipo ya existe en el arbol de sintaxis
+    end else if decStyle = ttdDeclar then begin
+      //Se ha creado un tipo nuevo. Verifica y agrega.
+      //xtyp.name := GenTypeName(xtyp, varNames[0]);  //Update name
+      xtyp.location := curLocation;
+      if TreeElems.DeclaredType(xtyp.name, sametype) then begin
+        {El tipo ya existe (con esa misma estructura y en ese alcance), así que mejor
+        pasamos a reutilizar ese tipo. Esta reutilización de tipos evita la creación de
+        múltiples tipos con la misma definición.}
+        xtyp.Destroy;
+        xtyp := sametype;
+        //"sametype" ya está en el árbol de sintaxis.
+      end else begin
+        //Es un tipo nuevo.
+        xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
+        TreeElems.AddElement(xtyp); {¿Comviene agregarlo en este espacio o en otro más accesible desde otros espacios? }
+      end;
+    end else begin
+      //No hay otra opción
+      GenError(ER_NOT_IMPLEM_, ['']);
+    end;
+    //Aquí ya se tiene el tipo creado y en el árbol de sintaxis
+    //Reserva espacio para las variables
+    for i := 0 to high(varNames) do begin
+      xvar := AddVariable(varNames[i], xtyp, srcPosArray[i]);
+      if HayError then break;        //Sale para ver otros errores
+      xvar.adicPar := adicVarDec;    //Actualiza propiedades adicionales
+      xvar.location := curLocation;  //Actualiza bandera
+      {Técnicamente, no sería necesario, asignar RAM a la variable aquí (y así se
+      optimizaría), porque este método, solo se ejecuta en la primera pasada, y no
+      es vital tener las referencias a memoria, en esta pasada.
+      Pero se incluye la ásignación de RAM, por:
+      * Porque el acceso con directivas, a variables del sistema como "CurrBank",
+      se hace en la primera pasada, y es necesario que estas variables sean válidas.
+      * Para tener en la primera pasada, un código más similar al código final.}
+      if adicVarDec.hasAdic in [decNone, decAbsol] then  begin
+         CodCreateVarInRAM(xvar);  //Crea la variable
+      end;
+      //Agrega la llamada, específica, desde esta variable.
+      if adicVarDec.absVar<>nil then begin
+        AddCallerTo(adicVarDec.absVar, xvar);
+      end
+    end;
+  end else begin
+    GenError(ER_SEM_COM_EXP);
+    exit;
+  end;
+  if not CaptureDelExpres then exit;
+  ProcComments;
+  //puede salir con error
+end;
+function TCompMain.GetTypeDeclar(out decStyle: TTypDeclarStyle;
+                                       out TypeCreated: boolean): TxpEleType;
+{Extrae la sección de declaración de tipo (De una variable, parámetro o de una definición
+de tipo). Se debe llamar justo cuando empieza esta declaración de tipo. Se puede usar en
+los siguientes casos;
+
+VAR variable: <DECLARACIÓN DE TIPO>;
+
+PROCEDURE nombre(param: <DECLARACIÓN DE TIPO>);
+
+TYPE nombre_tipo = <DECLARACIÓN DE TIPO>;
+
+El parámetro "decStyle" devuelve el estilo de declaración (Ver comentario de
+TTypDeclarStyle).
+
+Si la declaración es de estilo:
+
+ttdDirect -> Devuelve la referencia al tipo, directamente. No crea otro tipo
+             Por ejemplo, la siguiente declaración:
+               a: Alguntipo;
+             Devuelve una referencia al tipo "Alguntipo".
+
+ttdDeclar -> Crea un tipo nuevo con la definición del nuevo tipo especificado, y devuelve
+             la referencia a ese tipo, pero no lo agrega al arbol de sintaxis, porque
+             espera validaciones posteriores.
+             Por ejemplo, la siguiente declaración.
+               a: Array[0..5] of char;
+             Creará un tipo nuevo con la definición: "array[0..5] of char".
+             El tipo nuevo devuelto tiene nombre vacío y debe ser actualizado luego.
+
+Entre "decStyle" y el "catType" del tipo devuelto (Ver comentario de TxpCatType),
+debería quedar completamente especificada la declaración del tipo.
+
+"TypeCreated" indicates when a new Type instance was created (and will be destroyed or
+added to the syntax Tree).
+
+If some problems happens, Error is generated and the NIL value is returned.
+}
+  function ReadSizeInBrackets: integer;
+  {Lee el tamaño de un arreglo especificado entre corchetes: []. Si no se
+  especifica el tamaño. Devuelve -1.}
+  begin
+    //Declaración simplificada: []<tipo>
+    cIn.Next; //Toma '['. Se asume que ya se identificó
+    ProcComments;
+    if cIn.tok = ']' then begin
+      //Declaración corta de arreglo sin indicar el tamaño: []byte ;
+      cIn.Next;
+      exit(-1);  //Indica que es dinámico.
+    end else begin
+      //Se espera tamaño de arreglo
+      //Debe seguir una expresión constante, que no genere código
+      res := GetExpression(0);
+      if HayError then exit(0);
+      if res.Sto <> stConst then begin
+        GenError(ER_CON_EXP_EXP);
+        exit(0);
+      end;
+      //Límites físicos predefinidos
+      if res.Typ <> typByte then begin
+        GenError('Only byte type allowed here.');
+        exit(0);
+      end;
+      if res.valInt<0 then begin
+        GenError(ER_INV_ARR_SIZ);
+        exit(0);
+      end;
+      if res.valInt>$FF then begin
+        //Límite físico definido
+        GenError(ER_ARR_SIZ_BIG);
+        exit;
+      end;
+      //Ya se tiene el tamaño del arreglo, se sigue con la declaración.
+      if not CaptureTok(']') then exit(0);  //toma "]"
+      exit(res.valInt);  //Guarda número de elementos.
+    end;
+  end;
+  function ArrayDeclaration(const srcpos: Tsrcpos): TxpEleType;
+  {Procesa la declaración de un tipo arreglo y devuelve el tipo, ya creado para su
+  validación. No agrega el tipo al árbol de sintaxis.
+  Se asume que ya se ha identificado el inicio de la declaración de un arreglo,
+  sea en su forma larga: "ARRAY[] OF BYTE" o en su forma corta: []BYTE }
+  var
+    decStyle: TTypDeclarStyle;
+    itemTyp, xtyp: TxpEleType;
+    nElem: Integer;
+    typName: String;
+    otherTypeCreated: boolean;
+  begin
+    if cIn.tok = '[' then begin
+      //Declaración corta
+      nElem := ReadSizeInBrackets();  //Lee tamaño
+      if HayError then exit;
+    end else begin
+      //Declaración larga: ARRAY[tamaño] OF <tipo>
+      cIn.Next; //Toma 'ARRAY'. Se asume que ya se identificó.
+      ProcComments;
+      if cIn.tok = '[' then begin  //Tamaño espefificado o puede ser []
+        nElem := ReadSizeInBrackets();  //Lee tamaño
+        if HayError then exit;
+      end else begin
+        //No se especifica tamaño. Puede ser la forma corta: ARRAY OF
+        nElem := -1;
+      end;
+      ProcComments;
+      if not CaptureStr('of') then exit(nil);
+    end;
+    //Lee el tipo que sigue. Llamada RECURSIVA.
+    itemTyp := GetTypeDeclar(decStyle, otherTypeCreated);
+    if HayError then exit(nil);
+    if otherTypeCreated then begin
+      //No support for nested declaration
+      itemTyp.Destroy;
+      GenError('Too complex type declaration');
+      exit;
+    end;
+    if itemTyp.nItems = -1 then begin  //Sin tamaño
+      //ARRAY[] OF ARRAY[] OF ... No se soporta por ahora.
+      GenError('Dynamic array not allowed here.');
+      exit(nil);
+    end;
+    //Se supone que ahora solo tenemos un tipo simple en "itemTyp".
+    //Ya se tiene la información para crear un nuevo tipo array.
+    typName := GenArrayTypeName(itemTyp.name, nElem);
+    {typName could change later if not size specified for this array but it's initialized.
+    Something like: []byte = (1,2,3);  }
+    xtyp := CreateEleType(typName, srcPos, tctArray);
+    TypeCreated  := true;     //Activate flag
+    xtyp.nItems  := nElem;   //Número de ítems
+    xtyp.itmType := itemTyp; //Tipo de dato
+    CodDefineArray(xtyp);    //Crea campos comunes del arreglo
+    Result := xtyp;
+  end;
+  function PointerDeclaration(const srcpos: TSrcPos): TxpEleType;
+  {Procesa la declaración de un tipo puntero y devuelve el tipo, ya creado para su
+  validación.
+  Se asume que ya se ha identificado el inicio de la declaración de un puntero,
+  sea en su forma larga: "POINTER TO BYTE" o en su forma corta: ^BYTE }
+  var
+    reftyp, xtyp: TxpEleType;
+    typName: String;
+  begin
+    if cIn.tok = '^' then begin
+      //Declaración corta
+      cIn.Next;  //Toma '^'
+    {end else begin
+      //Declaración larga: POINTER TO <tipo>
+      cIn.Next; //Toma 'POINTER'. Se asume que ya se identificó.
+      ProcComments;
+      if not CaptureStr('to') then exit;}
+    end;
+    //Por ahora solo permitiremos identificadores de tipos
+    reftyp := FindSysEleType(cIn.tok); //Busca elemento
+    if reftyp = nil then begin
+      //No es un tipo del sistema, pero puede ser un tipo prdefinido
+      reftyp := TreeElems.FindType(cIn.tok); //Busca elemento
+      if reftyp = nil then begin
+        GenError('Expected a type identifier.');
+        exit;
+      end;
+    end;
+    //Encontró un tipo
+    cIn.Next;   //lo toma
+    typName := GenPointerTypeName(refTyp.name);
+    xtyp := CreateEleType(typName, srcPos, tctPointer);  //
+    TypeCreated  := true;     //Activate flag
+    xtyp.ptrType := reftyp;  //El tipo a donde apunta
+    CodDefinePointer(xtyp);  //Fija operaciones para la aritmética del puntero
+    Result := xtyp;
+  end;
+var
+  typName: String;
+  typ: TxpEleType;
+  ele: TxpElement;
+  srcPos: TSrcPos;
+begin
+  Result := nil;
+  TypeCreated := false;
+  ProcComments;
+  //Analiza el tipo declarado
+  try
+    srcPos := cIn.ReadSrcPos;  //Inicio de declaración
+    if (cIn.tokType = tnType) then begin
+      //Caso normal. Es un tipo del sistema
+      typName := cIn.tok;
+      typ := FindSysEleType(typName); //Busca elemento
+      if typ = nil then begin
+        //Esto no debería pasar, porque el lexer indica que es un tipo del sistema.
+        GenError(ER_NOT_IMPLEM_, [typName]);
+        exit(nil);
+      end;
+      //Encontró al tipo del sistema
+      cIn.Next;   //lo toma
+      decStyle := ttdDirect;  //Es directo
+      //El "catType" se puede leer del mismo tipo
+    end else if (cIn.tokL = 'array') or (cIn.tok = '[') then begin
+      //Es declaración de arreglo
+      decStyle := ttdDeclar;  //Es declaración elaborada
+      typ := ArrayDeclaration(srcpos);
+      if HayError then exit(nil);     //Sale para ver otros errores
+    end else if {(cIn.tokL = 'pointer') or }(cIn.tok = '^') then begin
+      //Es declaración de puntero
+      decStyle := ttdDeclar;  //Es declaración elaborada
+      typ := PointerDeclaration(srcpos);
+      if HayError then exit(nil);     //Sale para ver otros errores
+    end else if cIn.tokType = tnIdentif then begin
+      //Es un identificador de tipo
+      typName := cIn.tok;
+      decStyle := ttdDirect;  //Es directo
+      {Se pensó usar GetOperandIdent(), para identificar al tipo, pero no está preparado
+      para procesar tipos y no se espera tanta flexibilidad. Así que se hace "a mano".}
+      ele := TreeElems.FindFirst(typName);
+      if ele = nil then begin
+        //No identifica a este elemento
+        GenError('Unknown identifier: %s', [typName]);
+        exit(nil);
+      end;
+      if ele.idClass = eltType then begin
+        //Es un tipo
+        cIn.Next;   //toma identificador
+        typ := TxpEleType(ele);
+        AddCallerTo(typ);   //lleva la cuenta
+        if typ.copyOf<>nil then typ := typ.copyOf;  {Apunta al tipo copia. Esto es útil para
+                       lograr una mejor compatibilidad cuando se usan Tipos en parámetros de
+                       procedimientos.}
+      end else begin
+        GenError(ER_IDE_TYP_EXP);
+        exit(nil);
+      end;
+    end else begin
+      decStyle := ttdDirect;  //Es directo
+      GenError(ER_IDE_TYP_EXP);
+      exit(nil);
+    end;
+    {No se capturan delimitadores aquí porque la declaración de tipos, en un contexto más
+    general, puede ser seguida de una inicialización.}
+    //if not CaptureDelExpres then exit(nil);
+    //ProcComments;
+    exit(typ);
+  finally
+    if Result = nil then begin
+      //Some error was happen
+      if TypeCreated then begin
+        typ.Destroy;  //Release object
+      end;
+    end;
+  end;
+end;
+function TCompMain.GetTypeDeclarSimple(): TxpEleType;
+{Similar a GetTypeDeclar(), pero solo permite la referencia a tipos simples. No permite la
+declaración de nuevos tipos, como: ARRAY OF ...}
+var
+  decStyle: TTypDeclarStyle;
+  TypeCreated: boolean;
+begin
+  Result := GetTypeDeclar(decStyle, TypeCreated);  //lee tipo
+  if HayError then exit;
+  if TypeCreated then begin
+    //No se permiten declaraciones elaboradas aquí.
+    GenError('Only simple types expected here.');
+    Result.Destroy;  //Destroy the new type created
+    Result := nil;
+  end;
+end;
+procedure TCompMain.CompileGlobalConstDeclar;
+var
+  consNames: array of string;  //nombre de variables
+  cons: TxpEleCon;
+  srcPosArray: TSrcPosArray;
+  i: integer;
+begin
+  SetLength(consNames, 0);
+  //Procesa lista de constantes a,b,cons ;
+  getListOfIdent(consNames, srcPosArray);
+  if HayError then begin  //precisa el error
+    GenError(ER_IDE_CON_EXP);
+    exit;
+  end;
+  //puede seguir "=" o identificador de tipo
+  if cIn.tok = '=' then begin
+    cIn.Next;  //pasa al siguiente
+    //Debe seguir una expresiócons constante, que no genere consódigo
+    res := GetExpression(0);
+    if HayError then exit;
+    if res.Sto <> stConst then begin
+      GenError(ER_CON_EXP_EXP);
+    end;
+    //Hasta aquí todo bien, crea la(s) constante(s).
+    for i:= 0 to high(consNames) do begin
+      //Crea constante
+      cons := AddConstant(consNames[i], res.Typ, srcPosArray[i]);
+      if HayError then exit;
+      res.CopyConsValTo(cons); //asigna valor
+    end;
+//  end else if cIn.tok = ':' then begin
+  end else begin
+    GenError(ER_EQU_COM_EXP);
+    exit;
+  end;
+  if not CaptureDelExpres then exit;
+  ProcComments;
+  //puede salir con error
+end;
+procedure TCompMain.CompileTypeDeclar(elemLocat: TxpEleLocation; typName: string = '');
+{Compila la sección de declaración de un tipo, y genera un elemento TxpEleType, en el
+árbol de sintaxis:  TYPE sometype = <declaration>;
+Si se especifica typName, se obvia la extracción de la parte " nombreTipo = ", y se
+toma el nombre indicado.}
+var
+  etyp, reftyp: TxpEleType;
+  srcpos: TSrcPos;
+  decStyle: TTypDeclarStyle;
+  typeCreated: boolean;
+begin
+  ProcComments;
+  if cIn.tokType <> tnIdentif then begin
+    GenError(ER_IDEN_EXPECT);
+    exit;
+  end;
+  //hay un identificador
+  srcpos := cIn.ReadSrcPos;
+  typName := cIn.tok;
+  cIn.Next;
+  ProcComments;
+  if not CaptureTok('=') then exit;
+  etyp := GetTypeDeclar(decStyle, typeCreated);
+  if HayError then exit;
+  //Analiza la declaración
+  if decStyle = ttdDirect then begin
+    //Es un tipo referenciado directamente. Algo como TYPE fool = byte;
+    //Para este caso, nosotros creamos un tipo nuevo, en  modo copia.
+    reftyp := etyp;  //Referencia al tipo { TODO : ¿Y si el tipo es ya una copia? }
+    etyp := CreateEleType(typName, srcPos, reftyp.catType);
+    {Crea la copia del tipo del sistema, que básicamente es el mismo tipo, solo que
+    con otro nombre y que además, ahora, está en el árbol de sintaxis, por lo tanto
+    tiene otras reglas de alcance.}
+    etyp.copyOf := reftyp;        //Indica que es una copia
+    etyp.location := elemLocat;   //Ubicación del tipo (Interface/Implementation/...)
+  end else begin
+    //Es una declaración elaborada de tipo. Algo como TYPE fool = array[] of ...
+    if typeCreated then begin
+      //El tipo ya fue creado. Solo queda verificarlo y agregarlo.
+      etyp.name := typName;       //Actualiza el nombre con el nombre de esta definición.
+      etyp.srcDec := srcpos;
+      etyp.location := elemLocat; //Ubicación del tipo (Interface/Implementation/...)
+    end else begin
+      {El tipo es elaborado, pero no se ha creado. Puede ser que corresponda a una
+      declaración similar. ¿Creamos un tipo nuevo o una copia?}
+      //Creamos una copia porque es más fácil
+      reftyp := etyp;  //Referencia al tipo { TODO : ¿Y si el tipo es ya una copia? }
+      etyp := CreateEleType(typName, srcPos, reftyp.catType);
+      {Crea la copia del tipo del sistema, que básicamente es el mismo tipo, solo que
+      con otro nombre y que además, ahora, está en el árbol de sintaxis, por lo tanto
+      tiene otras reglas de alcance.}
+      etyp.copyOf := reftyp;        //Indica que es una copia
+      etyp.location := elemLocat;   //Ubicación del tipo (Interface/Implementation/...)
+    end;
+    //Por la forma de trabajo actual,
+  end;
+  //Las declaraciones de tipo, crean siempre nuevos tipos.
+  //Validación de duplicidad e inclusión en el árbol de sintaxis.
+  if etyp.ExistsIn(TreeElems.curNode.elements) then begin
+    GenErrorPos(ER_DUPLIC_IDEN, [etyp.name], etyp.srcDec);
+    etyp.Destroy;   //Hay una variable creada
+    exit;
+  end;
+  {Valida que solo se manejen tipos de tamaño estático, porque la inicialización de
+  variables (que usen este tipo) puede modificar el nombre y tamaño de arreglos de
+  tamaño no especificado, y eso cambia la esencia de declarar un tipo con un nombre.
+  }
+  if (etyp.catType = tctArray) and (etyp.nItems = -1) then begin
+    GenError('Array types must have a specified size.');
+    etyp.Destroy;   //Hay una variable creada
+    exit;
+  end; ;
+  TreeElems.AddElement(etyp);  //No problem in adding, because we are in the right position of Syntax Tree.
+  if not CaptureDelExpres then exit;
+  ProcComments;
+end;
+
+function TCompMain.VerifyEND: boolean;
+{Compila la parte final de la estructura, que en el modo PicPas, debe ser el
+ delimitador END. Si encuentra error, devuelve FALSE.}
+begin
+  Result := true;   //por defecto
+  if mode = modPicPas then begin
+    //En modo PicPas, debe haber un delimitador de bloque
+    if not CaptureStr('end') then exit(false);
+  end;
+end;
+function TCompMain.GetExpressionBool: boolean;
+{Lee una expresión booleana. Si hay algún error devuelve FALSE.}
+begin
+  res := GetExpression(0);
+  if HayError then exit(false);
+  if res.Typ <> typBool then begin
+    GenError(ER_BOOL_EXPECT);
+    exit(false);
+  end;
+  ProcComments;
+  exit(true);  //No hay error
+end;
+procedure TCompMain.Tree_AddElement(elem: TxpElement);
+begin
+  if FirstPass then begin
+    //Caso normal. Solo aquí dede modificarse el árbol de sintaxis.
+  end else begin
+    //Solo se permiet agregar elementos en la primera pasada
+    GenError('Internal Error: Syntax Tree modified on linking.');
+  end;
+end;
+function TCompMain.OpenContextFrom(filePath: string): boolean;
+{Abre un contexto con el archivo indicado. Si lo logra abrir, devuelve TRUE.}
+var
+  strList: TStrings;
+begin
+  //Primero ve si puede obteenr acceso directo al contenido del archivo
+  if OnRequireFileString<>nil then begin
+    //Hace la consulta a través del evento
+    strList := nil;
+    OnRequireFileString(filePath, strList);
+    if strList=nil then begin
+      //No hay acceso directo al contenido. Carga de disco
+      //debugln('>disco:'+filePath);
+      cIn.MsjError := '';
+      cIn.NewContextFromFile(filePath);
+      Result := cIn.MsjError='';  //El único error es cuando no se encuentra el archivo.
+    end else begin
+      //Nos están dando el acceso al contenido. Usamos "strList"
+      cIn.NewContextFromFile(filePath, strList);
+      Result := true;
+    end;
+  end else begin
+    //No se ha establecido el evento. Carga de disco
+    //debugln('>disco:'+filePath);
+    cIn.MsjError := '';
+    cIn.NewContextFromFile(filePath);
+    Result := cIn.MsjError='';  //El único error es cuando no se encuentra el archivo.
+  end;
+end;
+function TCompMain.CompileStructBody(GenCode: boolean): boolean;
+{Compila el cuerpo de un THEN, ELSE, WHILE, ... considerando el modo del compilador.
+Si se genera error, devuelve FALSE. }
+begin
+  if GenCode then begin
+    //Este es el modo normal. Genera código.
+    if mode = modPascal then begin
+      //En modo Pascal se espera una instrucción
+      CompileInstruction;
+    end else begin
+      //En modo normal
+      CompileCurBlock;
+    end;
+    if HayError then exit(false);
+  end else begin
+    //Este modo no generará instrucciones
+    cIn.SkipWhites;
+    GenWarn(ER_INST_NEV_EXE);
+    if mode = modPascal then begin
+      //En modo Pascal se espera una instrucción
+      CompileInstructionDummy //solo para mantener la sintaxis
+    end else begin
+      //En modo normal
+      CompileCurBlockDummy;  //solo para mantener la sintaxis
+    end;
+    if HayError then exit(false);
+  end;
+  //Salió sin errores
+  exit(true);
+end;
+function TCompMain.CompileConditionalBody: boolean;
+{Versión de CompileStructBody(), para bloques condicionales.
+Se usa para bloque que se ejecutarán de forma condicional, es decir, que no se
+garantiza que se ejecute siempre. "FinalBank" indica el banco en el que debería
+terminar el bloque.}
+begin
+  Result := CompileStructBody(true);  //siempre genera código
+end;
+function TCompMain.CompileNoConditionBody(GenCode: boolean): boolean;
+{Versión de CompileStructBody(), para bloques no condicionales.
+Se usa para bloques no condicionales, es decir que se ejecutará siempre (Si GenCode
+es TRUE) o nunca (Si GenCode es FALSE);
+}
+begin
+  //"BankChanged" sigue su curso normal
+  Result := CompileStructBody(GenCode);
+end;
+procedure TCompMain.CompileInstruction;
+{Compila una única instrucción o un bloque BEGIN ... END. Puede generar Error.
+ Una instrucción se define como:
+ 1. Un bloque BEGIN ... END
+ 2. Una estrutura
+ 3. Una expresión
+ La instrucción, no incluye al delimitador.
+ }
+var
+  curCodCon: TxpEleCodeCont;
+begin
+  if TreeElems.curNode.idClass <> eltBody then begin
+    //No debería pasar, porque las instrucciones solo pueden estar en eltBody
+    GenError('Syntax error.');
+    exit;
+  end;
+  curCodCon := TreeElems.CurCodeContainer;
+  ProcComments;
+  if cIn.tokL='begin' then begin
+    //Es bloque
+    cIn.Next;  //toma "begin"
+    CompileCurBlock;   //llamada recursiva
+    if HayError then exit;
+    if not CaptureStr('end') then exit;
+    ProcComments;
+    //puede salir con error
+  end else begin
+    //Es una instrucción
+    if cIn.tokType = tnStruct then begin
+      if cIn.tokl = 'if' then begin
+        curCodCon.OpenBlock(sbiIF);
+        cIn.Next;         //pasa "if"
+        CodCompileIF;
+        curCodCon.CloseBlock;
+      end else if cIn.tokl = 'while' then begin
+        curCodCon.OpenBlock(sbiWHILE);
+        cIn.Next;         //pasa "while"
+        CodCompileWHILE;
+        curCodCon.CloseBlock;
+      end else if cIn.tokl = 'repeat' then begin
+        curCodCon.OpenBlock(sbiREPEAT);
+        cIn.Next;         //pasa "until"
+        CodCompileREPEAT;
+        curCodCon.CloseBlock;
+      end else if cIn.tokl = 'for' then begin
+        curCodCon.OpenBlock(sbiFOR);
+        cIn.Next;         //pasa "until"
+        CodCompileFOR;
+        curCodCon.CloseBlock;
+      end else begin
+        GenError(ER_UNKN_STRUCT);
+        exit;
+      end;
+    end else begin
+      //Debe ser es una expresión de asignación o llamada a procedimiento.
+      GetExpressionE(pexASIG);
+    end;
+    if HayError then exit;
+    if CodDeviceError()<>'' then begin
+      //El CPU también puede dar error
+      GenError(CodDeviceError());
+    end;
+  end;
+end;
+procedure TCompMain.CompileInstructionDummy;
+{Compila una instrucción pero sin generar código. }
+var
+  p, InvertedFromZ0: Integer;
+  InvertedFromC0: Integer;
+  AcumStatInZ0: Boolean;
+begin
+  OnReqStopCodeGen;
+  InvertedFromC0 := BooleanFromC; //Guarda estado
+  InvertedFromZ0 := BooleanFromZ; //Guarda estado
+  AcumStatInZ0  := AcumStatInZ;
+
+  CompileInstruction;  //Compila solo para mantener la sintaxis
+
+  BooleanFromC := InvertedFromC0; //Restaura
+  BooleanFromZ := InvertedFromZ0; //Restaura
+  AcumStatInZ  := AcumStatInZ0;
+  OnReqStartCodeGen;
+  //puede salir con error
+  { TODO : Debe limpiar la memoria flash que ocupó, para dejar la casa limpia. }
+end;
+procedure TCompMain.CompileCurBlock;
+{Compila el bloque de código actual hasta encontrar un delimitador de bloque, o fin
+de archivo. }
+begin
+  ProcComments;
+  while not cIn.Eof and (cIn.tokType<>tnBlkDelim) do begin
+    //se espera una expresión o estructura
+    CompileInstruction;
+    if HayError then exit;   //aborta
+    //se espera delimitador
+    if cIn.Eof then break;  //sale por fin de archivo
+    //busca delimitador
+    ProcComments;
+    //Puede terminar con un delimitador de bloque
+    if cIn.tokType=tnBlkDelim then break;
+    //Pero lo común es que haya un delimitador de expresión
+    if not CaptureTok(';') then exit;
+    ProcComments;  //Puede haber Directivas o ASM también
+  end;
+end ;
+procedure TCompMain.CompileCurBlockDummy;
+{Compila un bloque pero sin geenrar código.}
+var
+  p: Integer;
+  InvertedFromC0, InvertedFromZ0: Integer;
+  AcumStatInZ0: Boolean;
+begin
+  OnReqStopCodeGen;
+  InvertedFromC0 := BooleanFromC; //Guarda estado
+  InvertedFromZ0 := BooleanFromZ; //Guarda estado
+  AcumStatInZ0  := AcumStatInZ;
+
+  CompileCurBlock;  //Compila solo para mantener la sintaxis
+
+  BooleanFromC := InvertedFromC0; //Restaura
+  BooleanFromZ := InvertedFromZ0; //Restaura
+  AcumStatInZ  := AcumStatInZ0;
+  OnReqStartCodeGen;
+  //puede salir con error
+  { TODO : Debe limpiar la memoria flash que ocupó, para dejar la casa limpia. }
+end;
+function TCompMain.IsUnit: boolean;
+{Indica si el archivo del contexto actual, es una unidad. Debe llamarse}
+begin
+  ProcCommentsNoExec;  //Solo es validación, así que no debe ejecutar nada
+  //Busca UNIT
+  if cIn.tokL = 'unit' then begin
+    cIn.curCon.SetStartPos;   //retorna al inicio
+    exit(true);
+  end;
+  cIn.curCon.SetStartPos;   //retorna al inicio
+  exit(false);
+end;
+
+end.
+

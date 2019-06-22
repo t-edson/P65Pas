@@ -3,7 +3,7 @@ unit FormDebugger;
 interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
-  ComCtrls, ExtCtrls, StdCtrls, Grids, ActnList, Menus, LCLType, Parser,
+  ComCtrls, ExtCtrls, StdCtrls, Grids, ActnList, Menus, LCLType, CompBase,
   FrameRamExplorer, FramePicRegisters, FrameRegWatcher,
   P6502utils, CPUCore, MisUtils, FramePicAsm;
 type

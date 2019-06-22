@@ -10,3 +10,8 @@ MSG_UNSUPPORTED := Trans('Unsupported','No soportado', '',
 MSG_CANNOT_COMPL:= Trans('Cannot Compile: "%s"','No se puede compilar: %s', '',
                         ''          , '', '',
                         'Non compilable: "%s"');
+ER_INV_MEMADDR := trans('Invalid memory address.'     , 'Dirección de memoria inválida.','',
+                        'Ungültige Speicheradresse.'  , 'Недійсна адреса памʼяті.','Недопустимый адрес памяти.', 'Adresse mémoire invalide.');
+ER_INV_MAD_DEV := trans('Invalid memory address for this device.', 'No existe esta dirección de memoria en este dispositivo.','Adresse mémoire invalide pour ce modèle PIC.',
+                        'Ungültige Speicheradresse für dieses Gerät.','Недійсна адреса памʼяті для цього пристрою.','Недопустимый адрес памяти для этого устройства.', '');
+

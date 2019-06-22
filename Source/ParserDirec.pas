@@ -4,8 +4,8 @@ unit ParserDirec;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, fgl, math, Graphics, Parser, SynFacilHighlighter, XpresBas,
-  MisUtils, Globales, XpresElementsPIC;
+  Classes, SysUtils, fgl, math, Graphics, CompBase, SynFacilHighlighter, XpresBas,
+  MisUtils, Globales, XpresElementsPIC, CompMain;
 type  //Tipos para manejo de expresiones
   TDirDatType = (ddtNumber, ddtString);
 
@@ -73,7 +73,7 @@ type
 
 
   { TParserDirecBase }
-  TParserDirecBase = class(TCompilerBase)
+  TParserDirecBase = class(TCompMain)
   private  //Parser and Expressions evaluation
     tokIni : integer;  //Posición inicial del token actual
     dirOperator: Integer;
@@ -164,16 +164,14 @@ var
   ER_UNEXP_ELSE, ER_ENDIF_NOFOU, ER_UNEXP_ENDIF : string;
   ER_MODE_UNKNOWN,
   ER_ERROR_FREQ, ER_IDENT_EXPEC, ER_EXPEC_EQUAL,
-  ER_SYNTAX_ERRO, ER_SYNTAX_ERR_: string;
-  ER_EXPECTED_BR: String;
+  ER_SYNTAX_ERRO, ER_SYNTAX_ERR_,ER_EXPECTED_BR: String;
   ER_FILE_NO_FND_, ER_ERIN_NUMBER_, ER_UNKNW_IDENT_: String;
   ER_DIVIDE_ZERO, ER_EVA_ZER_ZER, ER_OPE_NOT_IMP_: String;
-  ER_EXPECT_CAR_: String;
-  ER_TOOHIGHFRE: String;
+  ER_EXPECT_CAR_, ER_TOOHIGHFRE: String;
 
 procedure SetLanguage;
 begin
-//  ParserAsm_PIC16.SetLanguage;
+  CompMain.SetLanguage;
 {$I ..\language\tra_ParserDirec.pas}
 end;
 { TDirOperand }
@@ -1566,6 +1564,8 @@ begin
   varsList := TDirVar_list.Create(true);
   instList := TDirInstruc_list.Create(true);
   DefLexDirectiv;
+  //Initialize events and functions of Compiler
+  CodProcDIRline := @ProcDIRline;
 end;
 destructor TParserDirecBase.Destroy;
 begin
