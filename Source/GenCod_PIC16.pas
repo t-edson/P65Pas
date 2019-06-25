@@ -1185,7 +1185,7 @@ begin
     end;
   end;
   stVariab_Variab:begin
-    SetROBResultExpres_bool(Opt, logNormal);
+    SetROBResultExpres_bool(Opt, logInverted);
     _LDA(byte2);
     _CMP(byte1); //Result in C (inverted)
     Copy_C_to_A; //Copy C to A (still inverted)
@@ -3149,6 +3149,10 @@ begin
   opr.CreateOperation(typByte, @ROB_word_sub_byte);
   opr.CreateOperation(typWord, @ROB_word_sub_word);
 
+//  opr:=typWord.CreateBinaryOperator('>>',5,'shr');
+//  opr.CreateOperation(typByte,@ROB_word_shr_byte);
+//  opr:=typWord.CreateBinaryOperator('<<',5,'shl');
+//  opr.CreateOperation(typByte,@ROB_word_shl_byte);
 
   //////// Operaciones con String ////////////
   opr:=typString.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
