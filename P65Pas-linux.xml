@@ -3,8 +3,7 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="/media/sf_Proyectos_Software/Lazarus/P65Pas-0.4/temp/newfile-0.pas
-/media/sf_Proyectos_Software/Lazarus/P65Pas-0.1/temp/NewFile1.pas
+  <filesClosed Val="/media/sf_Proyectos_Software/Lazarus/P65Pas-0.1/temp/NewFile1.pas
 "/>
   <SplitterCol Val="2368548"/>
   <MessPanPan Val="2368548"/>
@@ -14,7 +13,7 @@
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="130"/>
   <ViewPanAssem Val="True"/>
-  <viewMode Val="0"/>
+  <viewMode Val="1"/>
   <MessPanBack Val="2368548"/>
   <MessPanText Val="16777215"/>
   <MessPanErr Val="5855743"/>
@@ -44,8 +43,8 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="/media/sf_Proyectos_Software/Lazarus/P65Pas-0.4/temp/newfile-0.pas
-/media/sf_Proyectos_Software/Lazarus/P65Pas-0.1/temp/NewFile1.pas
+    <recient Val="/media/sf_Proyectos_Software/Lazarus/P65Pas-0.1/temp/NewFile1.pas
+/media/sf_Proyectos_Software/Lazarus/P65Pas-0.4/temp/newfile-0.pas
 "/>
   </Edit>
   <IncDecVar Val="False"/>
