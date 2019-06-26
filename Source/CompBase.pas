@@ -93,7 +93,7 @@ protected
   procedure TipDefecBoolean(var Op: TOperand; tokcad: string); virtual; abstract;
   function EOExpres: boolean;
   function EOBlock: boolean;
-  procedure CaptureParamsFinal(out funPars: TxpParFUncArray);
+  procedure CaptureParamsFinal(var funPars: TxpParFUncArray);
   function CaptureTok(tok: string): boolean;
   function CaptureStr(str: string): boolean;
   procedure CaptureParams(out funPars: TxpParFuncArray);
@@ -758,7 +758,7 @@ begin
   fun.ClearParams;
   Result := fun;
 end;
-procedure TCompilerBase.CaptureParamsFinal(out funPars: TxpParFUncArray);
+procedure TCompilerBase.CaptureParamsFinal(var funPars: TxpParFUncArray);
 {Captura los parámetros asignándolos a las variables de la función que representan a los
 parámetros. No hace falta verificar, no debería dar error, porque ya se verificó con
 CaptureParams. }

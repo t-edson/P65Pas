@@ -2118,14 +2118,16 @@ mismo nombre y los mismos tipos de parámetros.}
 var
   ele: TxpElement;
   uname: String;
+  funbas: TxpEleFunBase;
 begin
   uname := Upcase(funName);
   for ele in curNode.elements do begin
     if ele.uname = uname then begin
       //hay coincidencia de nombre
-      if ele.idClass = eltFunc then begin
+      if ele.idClass in [eltFunc, eltFuncDec] then begin
+        funbas := TxpEleFunBase(ele);
         //para las funciones, se debe comparar los parámetros
-        if TxpEleFun(ele).SameParamsType(pars) then begin
+        if funbas.SameParamsType(pars) then begin
           exit(true);
         end;
       end else begin

@@ -53,10 +53,9 @@
       <Unit3>
         <Filename Value="GenCod_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
         <TopLine Value="53"/>
-        <CursorPos X="68" Y="71"/>
+        <CursorPos X="24" Y="71"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -96,10 +95,11 @@
       <Unit5>
         <Filename Value="CompBase.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="4"/>
-        <TopLine Value="1360"/>
-        <CursorPos X="14" Y="1378"/>
-        <FoldState Value=" TL0080193467 p0vL013124316132123]KuQ61115151C]ExM413 TMra0I0F141C121C]88[h4432031k]Bt041]MD2 T4C0]o5G01011 T8Y0B124])T3mJ035 pibj6]92333 pj8pD0A01]+]DflM2K2152 p0vV0D]8kFkV096]T7ig0q2]9KiF2s[R45kA0k3 T0n3J29 piYj9S28[94kaP3A241G]Ddq0U4F]vLmBE371151283116[%4nRkRD]93iYR5[@4fk8X3B]9XjFg3C]9cjUg[I5aiWg35[94fcQ3 T6nM01P p0yB0201D THsTVX]HvTUU TFvV633 p0@g23]mD^L2u TE{R27n"/>
+        <TopLine Value="734"/>
+        <CursorPos X="47" Y="761"/>
+        <FoldState Value=" TL0080193467 p0vL013124316132123]KuQ61115151C]ExM413 TMra0I0F141C121C]88[h4432031k]Bt041]MD2 T4C0]o5G01011 T8Y0B124])T3mJ035 pibj6]92333 pj8pD0A01]+]DflM2K6]9Fl40M122]kgtS0\6]9Zjb2O2]T4j20@[94giV2y[a5jW0a1 T0n3J29]HYj9S28[94kaP3A241G]Ddq0U4F]vLmBE37111131283116 pjKnRkRD]93iYR5[*4fk8X3B]9XjFg3C]9cjUg[I5aiWg35[94fcQ3 T6nM01P p0yB02E THsTVX]FvTUU TFvV63111]H@g23]mD^L2u TE{R27a"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -137,9 +137,9 @@
         <Filename Value="XpresElementsPIC.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="6"/>
-        <TopLine Value="413"/>
-        <CursorPos X="58" Y="417"/>
-        <FoldState Value=" TL0092225112121A22113]36 p0tQ2412[O4[66[E6[U4[T4302041]t4A[y5[K440104]W23362[e7H021 T4D0]65F0]o]MuN05 TMjN250f]GyS410U11]UC]FvC210D]n7dH55 pj0lLJJ3]9Sl2F5036 T8i822B piYlb23B78 TCkTG82 T3vB078]RajE06B[95D074]9Xj3089]9ZjC05D[+4]a8[\5]a34[9500I8113]Mj0mR0KC]Mdlf0A9[.4]wv[{@5kK0X4]9FiU2H[949jK0C1 T0vDK1J]iameK6X[r4oei373[K4YtXT4[{@5lGx3[{(60Y[I5cj5a47 T6vQ01N p0zX[84THwDA7]F@QNE1 TF#g2j1-"/>
+        <TopLine Value="2084"/>
+        <CursorPos X="38" Y="2128"/>
+        <FoldState Value=" TL0092225112121A22113]36 p0tQ2412[O4[66[E6[U4[T4302041]t4A[y5[K440104]W23362[e7H021 T4D0]65F0]o]MuN05 TMjN250f]GyS410U11]UC]FvC210D]n7dH55 pj0lLJJ3]9Sl2F5036 T8i822B piYlb23B78 TCkTG82 T3vB078]RajE06B[95D07016]BcjS0C[K4XjH03[94fjF05A]9d]9G]aj1jP054113B[{h5C0KC[V4lf0A9[w5C0v[{*5kK0X4]9FiU2H213 T0vDK1J]bameK6X[k4oei373[K4YtXT4[{+5lGx3[{\60Y4955 T6vQ01N p0zX[84THwDA7]F@QNE1 TF#g2j1d"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -349,16 +349,16 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="573"/>
         <CursorPos X="3" Y="579"/>
-        <UsageCount Value="160"/>
+        <UsageCount Value="162"/>
       </Unit28>
       <Unit29>
         <Filename Value="CompMain.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="3"/>
         <TopLine Value="1489"/>
-        <CursorPos X="27" Y="1517"/>
+        <CursorPos Y="1513"/>
         <FoldState Value=" T4302 T560k1 TLi5420151G piX-O23B242144 p0u0233 T79Eh T8A22]D3iK0]Lpj2jA0E2 plfX2F1]HdlW2![94Vje2{0[A4YjT2M]9mWkR2c2]I5lc0F[94Rk3094 piXj4073[R4jG0J311 T0iWI3A]SYjca4[b5YF4D]a4iYY35]9PPeAA]83j5P3E[H4jaX3[Z4SkBL3C]91jZX3F]zZkH:4C[94j9B3[94ajeO5B[}U58ZO[94LkDiD76112212A TMjN0S012V1D141A13121]%0uZ]a3]J91E1B]85111k]P-E61042 T6jH02L TFqW6i1 THw0MD TD;W2, TE,527+"/>
-        <UsageCount Value="154"/>
+        <UsageCount Value="156"/>
         <Bookmarks Count="1">
           <Item0 Y="1539" ID="2"/>
         </Bookmarks>
@@ -515,7 +515,7 @@
         <EditorIndex Value="5"/>
         <TopLine Value="598"/>
         <CursorPos Y="610"/>
-        <UsageCount Value="18"/>
+        <UsageCount Value="19"/>
         <Loaded Value="True"/>
       </Unit49>
       <Unit50>
@@ -554,123 +554,123 @@
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="66" Column="15" TopLine="47"/>
+        <Caret Line="1193" TopLine="1126"/>
       </Position1>
       <Position2>
-        <Filename Value="XpresElementsPIC.pas"/>
-        <Caret Line="418" Column="69" TopLine="397"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1195" TopLine="1119"/>
       </Position2>
       <Position3>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="397" Column="24" TopLine="249"/>
+        <Caret Line="1197" TopLine="1126"/>
       </Position3>
       <Position4>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="406" Column="14" TopLine="249"/>
+        <Caret Line="1206" TopLine="1189"/>
       </Position4>
       <Position5>
-        <Filename Value="XpresElementsPIC.pas"/>
-        <Caret Line="431" Column="5" TopLine="396"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1211" TopLine="1189"/>
       </Position5>
       <Position6>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="405" Column="7" TopLine="385"/>
+        <Caret Line="1212" TopLine="1189"/>
       </Position6>
       <Position7>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="397" Column="3" TopLine="351"/>
+        <Caret Line="1213" TopLine="1189"/>
       </Position7>
       <Position8>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="411" Column="3" TopLine="396"/>
+        <Caret Line="1214" TopLine="1189"/>
       </Position8>
       <Position9>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1221" TopLine="1192"/>
+        <Caret Line="1215" TopLine="1189"/>
       </Position9>
       <Position10>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1226" TopLine="1199"/>
+        <Caret Line="1216" TopLine="1189"/>
       </Position10>
       <Position11>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1221" Column="20" TopLine="1200"/>
+        <Caret Line="770" TopLine="714"/>
       </Position11>
       <Position12>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1284" Column="24" TopLine="1255"/>
+        <Caret Line="771" TopLine="714"/>
       </Position12>
       <Position13>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1378" Column="22" TopLine="1293"/>
+        <Caret Line="772" TopLine="714"/>
       </Position13>
       <Position14>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1284" Column="16" TopLine="1267"/>
+        <Caret Line="773" TopLine="714"/>
       </Position14>
       <Position15>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1221" Column="12" TopLine="1202"/>
+        <Caret Line="812" TopLine="774"/>
       </Position15>
       <Position16>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1284" Column="24" TopLine="1255"/>
+        <Caret Line="813" TopLine="774"/>
       </Position16>
       <Position17>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1387" Column="25" TopLine="1325"/>
+        <Caret Line="1221" Column="24" TopLine="1182"/>
       </Position17>
       <Position18>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1378" Column="29" TopLine="1360"/>
+        <Caret Line="1193" TopLine="1182"/>
       </Position18>
       <Position19>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="3503" Column="56" TopLine="3484"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1195" TopLine="1182"/>
       </Position19>
       <Position20>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1378" Column="14" TopLine="1360"/>
+        <Caret Line="1197" TopLine="1182"/>
       </Position20>
       <Position21>
-        <Filename Value="XpresElementsPIC.pas"/>
-        <Caret Line="431" Column="15" TopLine="413"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1206" TopLine="1182"/>
       </Position21>
       <Position22>
-        <Filename Value="XpresElementsPIC.pas"/>
-        <Caret Line="417" Column="58" TopLine="413"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1211" TopLine="1182"/>
       </Position22>
       <Position23>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="3502" Column="56" TopLine="3485"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1212" TopLine="1182"/>
       </Position23>
       <Position24>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="2486" Column="37" TopLine="2468"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1213" TopLine="1182"/>
       </Position24>
       <Position25>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="2445" Column="4" TopLine="2428"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1214" TopLine="1182"/>
       </Position25>
       <Position26>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="2486" Column="19" TopLine="2468"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1215" TopLine="1182"/>
       </Position26>
       <Position27>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="136" Column="70" TopLine="118"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1216" TopLine="1182"/>
       </Position27>
       <Position28>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="142" Column="68" TopLine="118"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="770" TopLine="722"/>
       </Position28>
       <Position29>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="3513" Column="59" TopLine="3494"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="771" TopLine="722"/>
       </Position29>
       <Position30>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="70" Column="70" TopLine="53"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="761" Column="25" TopLine="743"/>
       </Position30>
     </JumpHistory>
     <RunParams>
