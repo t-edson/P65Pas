@@ -23,7 +23,9 @@ type
   private
     linRep : string;   //línea para generar de reporte
     posFlash: Integer;
+    procedure CompileProcBody(fun: TxpEleFun);
     function DeviceError: string;
+    function GenCodBasCallCurrRAM(): integer;
     procedure GenCodLoadToA(Op: TOperand);
     procedure GenCodLoadToX(Op: TOperand);
     procedure GenCodLoadToY(Op: TOperand);
@@ -49,6 +51,11 @@ type
     function ValidateWordRange(n: integer): boolean;
     function ValidateDWordRange(n: Int64): boolean;
   protected
+    procedure ResetRAM;
+    procedure StartCodeSub(fun: TxpEleFun);
+    procedure EndCodeSub;
+    procedure FunctCall(fun: TxpEleFunBase; out AddrUndef: boolean);
+    procedure FunctParam(fun: TxpEleFunBase);
     procedure GenerateROBdetComment;
     procedure GenerateROUdetComment;
   protected  //Rutinas de gestión de memoria de bajo nivel
@@ -1546,6 +1553,11 @@ function TGenCodBas.DeviceError: string;
 begin
   exit (pic.MsjError);
 end;
+
+function TGenCodBas.GenCodBasCallCurrRAM(): integer;
+begin
+  exit(pic.iRam);
+end;
 //Inicialización
 procedure TGenCodBas.StartRegs;
 {Inicia los registros de trabajo en la lista.}
@@ -1628,6 +1640,49 @@ end;
 function TGenCodBas.RAMmax: integer;
 begin
    Result := high(pic.ram);
+end;
+procedure TGenCodBas.StartCodeSub(fun: TxpEleFun);
+{debe ser llamado para iniciar la codificación de una subrutina}
+begin
+//  iFlashTmp :=  pic.iFlash; //guarda puntero
+//  pic.iFlash := curBloSub;  //empieza a codificar aquí
+end;
+procedure TGenCodBas.EndCodeSub;
+{debe ser llamado al terminar la codificaión de una subrutina}
+begin
+//  curBloSub := pic.iFlash;  //indica siguiente posición libre
+//  pic.iFlash := iFlashTmp;  //retorna puntero
+end;
+procedure TGenCodBas.FunctParam(fun: TxpEleFunBase);
+{Rutina genérica, que se usa antes de leer los parámetros de una función.}
+begin
+  {Haya o no, parámetros se debe proceder como en cualquier expresión, asumiendo que
+  vamos a devolver una expresión.}
+  SetResultExpres(fun.typ);  //actualiza "RTstate"
+end;
+procedure TGenCodBas.FunctCall(fun: TxpEleFunBase; out AddrUndef: boolean);
+{Rutina genérica para llamar a una función definida por el usuario.}
+var
+  xfun: TxpEleFun;
+  fundec: TxpEleFunDec;
+begin
+  AddrUndef := false;
+  if fun.idClass = eltFunc then begin
+    //Is a implemented function
+    xfun := TxpEleFun(fun);
+    _JSR(xfun.adrr);  //It's a complete function
+  end else begin
+    //Must be a declaration
+    fundec := TxpEleFunDec(fun);
+    if fundec.implem <> nil then begin
+      //Is implemented
+      _JSR(fundec.implem.adrr);
+    end else begin
+      //Not implemented YET
+      _JSR($1234);  //Needs to be completed later.
+      AddrUndef := true;
+    end;
+  end;
 end;
 procedure TGenCodBas.CompileIF;
 {Compila una extructura IF}
@@ -1846,6 +1901,42 @@ _LABEL(LABEL1);
     exit;
   end;
 end;
+procedure TGenCodBas.CompileProcBody(fun: TxpEleFun);
+{Compila el cuerpo de un procedimiento}
+begin
+  CallStartCodeSub(fun);    //Inicia codificación de subrutina
+  CompileInstruction;
+  if HayError then exit;
+  if fun.IsInterrupt then begin
+    //Las interrupciones terminan así
+    _RTI;
+  end else begin
+    //Para los procedimeintos, podemos terminar siempre con un RTS u optimizar,
+    if OptRetProc then begin
+      //Verifica es que ya se ha incluido exit().
+      if fun.ObligatoryExit<>nil then begin
+        //Ya tiene un exit() obligatorio y en el final (al menos eso se espera)
+        //No es necesario incluir el RTS().
+      end else begin
+        //No hay un exit(), seguro
+        _RTS();  //instrucción de salida
+      end;
+    end else begin
+      _RTS();  //instrucción de salida
+    end;
+  end;
+  CallEndCodeSub;  //termina codificación
+  //Calcula tamaño
+  fun.srcSize := pic.iRam - fun.adrr;
+end;
+procedure TGenCodBas.ResetRAM;
+{Reinicia el dispositivo, para empezar a escribir en la posición $000 de la FLASH, y
+en la posición inicial de la RAM.}
+begin
+  pic.iRam := 0;  //Ubica puntero al inicio.
+  pic.ClearMemRAM;  //Pone las celdas como no usadas y elimina nombres.
+  StartRegs;        //Limpia registros de trabajo, auxiliares, y de pila.
+end;
 constructor TGenCodBas.Create;
 begin
   inherited Create;
@@ -1917,15 +2008,23 @@ begin
   INDF.addr := $00;
   INDF.assigned := true;   //ya está asignado desde el principio
   //Implement calls to Code Generator
+  CallCurrRAM := @GenCodBasCallCurrRAM;
+  CallResetRAM      := @ResetRAM;
   CodCreateVarInRAM := @CreateVarInRAM;
   CodDeviceError    := @DeviceError;
+  CallCompileProcBody := @CompileProcBody;
+  CallFunctParam    := @FunctParam;
+  CallFunctCall     := @FunctCall;
+  CallStartCodeSub  := @StartCodeSub;
+  CallEndCodeSub    := @EndCodeSub;
+
   CodCompileIF      := @CompileIF;;
   CodCompileWHILE   := @CompileWHILE;
   CodCompileREPEAT  := @CompileREPEAT;
   CodCompileFOR     := @CompileFOR;
-  CodLoadToA      := @GenCodLoadToA;
-  CodLoadToX      := @GenCodLoadToX;
-  CodLoadToY      := @GenCodLoadToY;
+  CodLoadToA        := @GenCodLoadToA;
+  CodLoadToX        := @GenCodLoadToX;
+  CodLoadToY        := @GenCodLoadToY;
 end;
 destructor TGenCodBas.Destroy;
 begin

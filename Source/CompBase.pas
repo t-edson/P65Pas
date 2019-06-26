@@ -11,7 +11,7 @@ técnica.
 unit CompBase;
 interface
 uses
-  Classes, SysUtils, Types, Forms, LCLType, lclProc, SynFacilHighlighter,
+  Classes, SysUtils, Types, fgl, Forms, LCLType, lclProc, SynFacilHighlighter,
   SynEditHighlighter, XpresBas, XpresTypesPIC, XpresElementsPIC, CompOperands,
   MisUtils, CPUCore, Globales;  //Para usar solo Trans()
 const
@@ -62,18 +62,22 @@ protected  //Creación de elementos
   function CreateVar(varName: string; eleTyp: TxpEleType): TxpEleVar;
   function CreateEleType(const typName: string; const srcPos: TSrcPos;
                          catType: TxpCatType): TxpEleType;
-  function CreateFunction(funName: string; typ: TxpEleType; procParam,
-    procCall: TProcExecFunction): TxpEleFun;
-  function CreateSysFunction(funName: string; procParam,
-    procCall: TProcExecFunction): TxpEleFun;
+  function CreateFunction(funName: string; typ: TxpEleType;
+    procParam: TxpProcParam; procCall: TxpProcCall): TxpEleFun;
+  function CreateSysFunction(funName: string; procParam: TxpProcParam;
+    procCall: TxpProcCall): TxpEleFun;
   function AddVariable(varName: string; eleTyp: TxpEleType; srcPos: TSrcPos
     ): TxpEleVar;
   function AddConstant(conName: string; eleTyp: TxpEleType; srcPos: TSrcPos
     ): TxpEleCon;
   procedure CreateFunctionParams(var funPars: TxpParFuncArray);
-  function AddFunction(funName: string; eleTyp: TxpEleType;
-    const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean;
-  procParam, procCall: TProcExecFunction): TxpEleFun;
+  function AddFunctionUNI(funName: string; eleTyp: TxpEleType; const srcPos: TSrcPos;
+    const pars: TxpParFuncArray; Interrup: boolean): TxpEleFun;
+  function AddFunctionDEC(funName: string; eleTyp: TxpEleType;
+    const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean
+  ): TxpEleFunDec;
+  function AddFunctionIMP(funName: string; eleTyp: TxpEleType;
+    const srcPos: TSrcPos; functDeclar: TxpEleFunDec): TxpEleFun;
   function AddInline(funName: string; eleTyp: TxpEleType; const srcPos: TSrcPos;
     const pars: TxpParInlinArray; procParam, procCall: TProcExecFunction
   ): TxpEleInlin;
@@ -89,7 +93,7 @@ protected
   procedure TipDefecBoolean(var Op: TOperand; tokcad: string); virtual; abstract;
   function EOExpres: boolean;
   function EOBlock: boolean;
-  procedure CaptureParamsFinal(fun: TxpEleFun);
+  procedure CaptureParamsFinal(out funPars: TxpParFUncArray);
   function CaptureTok(tok: string): boolean;
   function CaptureStr(str: string): boolean;
   procedure CaptureParams(out funPars: TxpParFuncArray);
@@ -119,9 +123,17 @@ protected //Calls to Assembler Module (ParserAsm.pas)
 protected //Call to Directive Module (ParserDirec.pas)
   CodProcDIRline  : procedure(const AsmLin: string; out ctxChanged: boolean) of object;
 protected //Calls to Code Generator (GenCodBas)
-  //Create vars
+  CallCurrRAM     : function(): integer of object;
+  CallResetRAM    : procedure of object;
   CodCreateVarInRAM: procedure(xVar: TxpEleVar; shared: boolean = false) of object;
   CodDeviceError  : function(): string of object;
+
+  CallCompileProcBody: procedure(fun: TxpEleFun) of object;
+  CallFunctParam  : procedure(fun: TxpEleFunBase) of object;
+  CallFunctCall   : procedure(fun: TxpEleFunBase; out AddrUndef: boolean) of object;
+  CallStartCodeSub: procedure(fun: TxpEleFun) of object;
+  CallEndCodeSub  : procedure() of object;
+
   CodCompileIF    : procedure of object;
   CodCompileWHILE : procedure of object;
   CodCompileREPEAT: procedure of object;
@@ -132,10 +144,8 @@ protected //Calls to Code Generator (GenCodBas)
   CodLoadToY: procedure(Op: TOperand) of object;
 protected //Calls to Code Generator (GenCod)
   {These are routines that must be implemented in Code-generator.}
-  //Implement code-generator routines to implemet Arrays.
-  CodDefineArray : procedure(etyp: TxpEleType) of object;
-  //Implement code-generator routines to implemet Pointers.
-  CodDefinePointer : procedure(etyp: TxpEleType) of object;
+  CodDefineArray : procedure(etyp: TxpEleType) of object;  //routines to implemet Arrays.
+  CodDefinePointer : procedure(etyp: TxpEleType) of object; //routines to implemet Pointers.
   //Validate phisycal address
   CodValidRAMaddr : procedure(addr: integer) of object;
 protected   //Rutinas de operación y expresiones
@@ -159,7 +169,8 @@ public    //Tipos de datos a implementar
 public    //Public attributes of compiler
   ID       : integer;     //Identificador para el compilador.
   Compiling: boolean;     //Bandera para el compilado
-  FirstPass: boolean;     //Indica que está en la primera pasada.
+  FirstPass: boolean;     //Flag to indicate we are in the First Pass
+  DisableAddCalls: boolean; //Flag to disable registering calls
   xLex     : TSynFacilSyn; //Resaltador - lexer
   CompiledUnit: boolean;  //Flag to identify a Unit
   //Variables públicas del compilador
@@ -383,7 +394,7 @@ begin
   Result := xTyp;
 end;
 function TCompilerBase.CreateFunction(funName: string; typ: TxpEleType;
-  procParam, procCall: TProcExecFunction): TxpEleFun;
+  procParam: TxpProcParam; procCall: TxpProcCall): TxpEleFun;
 {Crea una nueva función y devuelve la referencia a la función.}
 var
   fun : TxpEleFun;
@@ -397,7 +408,7 @@ begin
   Result := fun;
 end;
 function TCompilerBase.CreateSysFunction(funName: string;
-  procParam, procCall: TProcExecFunction): TxpEleFun;
+  procParam: TxpProcParam; procCall: TxpProcCall): TxpEleFun;
 {Crea una función del sistema. A diferencia de las funciones definidas por el usuario,
 una función del sistema se crea, sin crear espacios de nombre. La idea es poder
 crearlas rápidamente. "procParam", solo es necesario, cuando la función del sistema
@@ -527,21 +538,72 @@ begin
       funPars[i].pvar := xvar;
   end;
 end;
-function TCompilerBase.AddFunction(funName: string; eleTyp: TxpEleType;
-  const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean;
-  procParam, procCall: TProcExecFunction): TxpEleFun;
-{Crea una función y lo agrega en el nodo actual del árbol de sintaxis. }
+function TCompilerBase.AddFunctionUNI(funName: string; eleTyp: TxpEleType;
+  const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean
+  ): TxpEleFun;
+{Create a new function, in normal mode (In the Main program or a like a private function
+in Implementation section) and add it to the Syntax Tree in the current node.}
 var
   xfun: TxpEleFun;
 begin
-  xfun := CreateFunction(funName, eleTyp, procParam, procCall);
+  xfun := CreateFunction(funName, eleTyp, CallFunctParam, CallFunctCall);
   xfun.srcDec := srcPos;   //Toma ubicación en el código
-  xfun.pars := pars;  //Copia parámetros
+  xfun.declar := nil;   //This is declaration
+  xfun.pars := pars;    //Copy parameters
+  xfun.IsInterrupt := Interrup;
   //La validación de duplicidad no se puede hacer hasta tener los parámetros.
   TreeElems.AddElementAndOpen(xfun);  //Se abre un nuevo espacio de nombres
   Result := xfun;
   //Crea parámetros en el nuevo espacio de nombres de la función
   CreateFunctionParams(xfun.pars);
+end;
+
+function TCompilerBase.AddFunctionDEC(funName: string; eleTyp: TxpEleType;
+  const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean): TxpEleFunDec;
+{Create a new function, in DECLARATION mode (Forward or Interface) and add it
+to the Syntax Tree in the current node. No new node is opened.}
+var
+  xfundec: TxpEleFunDec;
+begin
+  xfundec := TxpEleFunDec.Create;
+  xfundec.name:= funName;
+  xfundec.typ := eletyp;
+  xfundec.procCall := CallFunctCall;
+  xfundec.procParam := CallFunctParam;
+//  xfun.ClearParams;
+
+  xfundec.srcDec := srcPos;   //Toma ubicación en el código
+  xfundec.implem := nil;  //Not yet implemented
+  xfundec.pars := pars;   //Copy parameters
+  xfundec.IsInterrupt := Interrup;
+  TreeElems.AddElement(xfundec);  //Doesn't open the element
+  Result := xfundec;
+  //Note that variables for parameters are not created here.
+end;
+function TCompilerBase.AddFunctionIMP(funName: string; eleTyp: TxpEleType;
+  const srcPos: TSrcPos; functDeclar: TxpEleFunDec): TxpEleFun;
+{Create a new function, in IMPLEMENTATION mode (Forward or Interface) and add it
+to the Syntax Tree in the current node. }
+var
+  xfun: TxpEleFun;
+  tmp: TxpListCallers;
+begin
+  xfun := CreateFunction(funName, eleTyp, CallFunctParam, CallFunctCall);
+  xfun.srcDec := srcPos;       //Take position in code.
+  functDeclar.implem := xfun;  //Complete reference
+  xfun.declar := functDeclar;  //Reference to declaration
+  xfun.pars := functDeclar.pars;     //Copy from declaration
+  xfun.IsInterrupt := functDeclar.IsInterrupt; //Copy from declaration
+  //La validación de duplicidad no se puede hacer hasta tener los parámetros.
+  TreeElems.AddElementAndOpen(xfun);  //Se abre un nuevo espacio de nombres
+  Result := xfun;
+  //Crea parámetros en el nuevo espacio de nombres de la función
+  CreateFunctionParams(xfun.pars);
+  //Pass calls list form declaration to implementation.
+  tmp := functDeclar.lstCallers;
+  functDeclar.lstCallers := xfun.lstCallers;
+  xfun.lstCallers := tmp;
+  //New calls will be added to implementation since now.
 end;
 function TCompilerBase.AddInline(funName: string; eleTyp: TxpEleType;
   const srcPos: TSrcPos; const pars: TxpParInlinArray;
@@ -696,7 +758,7 @@ begin
   fun.ClearParams;
   Result := fun;
 end;
-procedure TCompilerBase.CaptureParamsFinal(fun: TxpEleFun);
+procedure TCompilerBase.CaptureParamsFinal(out funPars: TxpParFUncArray);
 {Captura los parámetros asignándolos a las variables de la función que representan a los
 parámetros. No hace falta verificar, no debería dar error, porque ya se verificó con
 CaptureParams. }
@@ -708,8 +770,8 @@ var
 begin
   if EOBlock or EOExpres then exit;  //sin parámetros
   CaptureTok('(');   //No debe dar error porque ya se verificó
-  for i := 0 to high(fun.pars) do begin
-    par := fun.pars[i];
+  for i := 0 to high(funPars) do begin
+    par := funPars[i];
     {Ya sirvió "RTstate", ahora lo limpiamos, no vaya a pasar que las rutinas de
     asignación, piensen que los RT están ocupados, cuando la verdad es que han sido
     liberados, precisamente para ellas.}
@@ -900,18 +962,39 @@ Devuelve la referencia al elemento llamador, cuando es efectiva la agregación, 
 forma devuelve NIL.}
 var
   fc: TxpEleCaller;
+  fun: TxpEleFun;
+  fundec: TxpEleFunDec;
 begin
+  //Verify Flag
+  if DisableAddCalls then exit(nil);
+  //Solo se agregan llamadas en la primera pasada
   if not FirstPass then begin
-    //Solo se agregan llamadas en la primera pasada
-    Result := nil;
-    exit;
+    exit(nil);
   end;
   fc:= TxpEleCaller.Create;
   //Carga información del estado actual del parser
   fc.caller := TreeElems.curNode;
   fc.curPos := cIn.ReadSrcPos;
-  elem.lstCallers.Add(fc);
-  Result := fc;
+  if elem.idClass = eltFunc then begin
+    fun := TxpEleFun(elem);
+    fun.lstCallers.Add(fc);
+  end else if elem.idClass = eltFuncDec then begin
+    {When functions have declaration (INTERFACE or FORWARD), the calls have been added
+    to declaration elements (because implementation could not exist yet) but when
+    implementation appears, all calls must be passed to implementation.}
+    fundec := TxpEleFunDec(elem);
+    if fundec.implem = nil then begin
+      //Not yet implemented
+      fundec.lstCallers.Add(fc);
+    end else begin
+      //Pass call to the function
+      fundec.implem.lstCallers.Add(fc);
+    end;
+  end else begin
+    //Other elements
+    elem.lstCallers.Add(fc);
+  end;
+  exit(fc);
 end;
 function TCompilerBase.AddCallerTo(elem: TxpElement; callerElem: TxpElement): TxpEleCaller;
 {El elemento llamador es "callerElem". Agrega información sobre el elemento "llamador", es decir, el elemento que hace
@@ -1027,8 +1110,8 @@ var
   posCall : TSrcPos;
   posPar  : TPosCont;
   RTstate0: TxpEleType;
-  xfun    : TxpEleFun;
-  Found   : Boolean;
+  xfun    : TxpEleFunBase;
+  Found   , AddrUndef: Boolean;
   pars    : TxpParFuncArray;   //Para almacenar parámetros
 begin
 //cIn.ShowCurContInformat;
@@ -1093,12 +1176,12 @@ begin
       Op := res;  //notar que se usa "res".
       if HayError then exit;;
     end;
-  end else if ele.idClass = eltFunc then begin  //es función
+  end else if ele.idClass in [eltFunc, eltFuncDec] then begin  //es función
     {Se sabe que es función, pero no se tiene la función exacta porque puede haber
      versiones, sobrecargadas de la misma función.}
     posCall := cIn.ReadSrcPos;   //guarda la posición de llamada.
-    cIn.Next;    //Toma identificador
-    cIn.SkipWhites;  //Quita posibles blancos
+    cIn.Next;               //Toma identificador
+    cIn.SkipWhites;         //Quita posibles blancos
     posPar := cIn.PosAct;   //Guarda porque va a pasar otra vez por aquí
     OnReqStopCodeGen();     //Para que no se genere el código(Por ejemplo cuando se leen parámetros de tipo expresión.)
     RTstate0 := RTstate;    //Guarda porque se va a alterar con CaptureParams().
@@ -1107,7 +1190,7 @@ begin
       exit;
     end;
     //Aquí se identifica la función exacta, que coincida con sus parámetros
-    xfun := TxpEleFun(ele);
+    xfun := TxpEleFunBase(ele);  //The ancestor of eltFunc and eltFuncDec
     //Primero vemos si la primera función encontrada, coincide:
     if xfun.SameParamsType(pars) then begin
       //Coincide
@@ -1130,12 +1213,19 @@ begin
       RTstate := RTstate0;
       xfun.procParam(xfun);  //Antes de leer los parámetros
       if high(pars)+1>0 then begin
-        CaptureParamsFinal(xfun);  //evalúa y asigna
+        CaptureParamsFinal(xfun.pars);  //evalúa y asigna
       end;
-      //Se hace después de leer parámetros, para tener información del banco.
+      //Se hace después de leer parámetros.
       AddCallerTo(xfun, posCall);  {Corrige posición de llamada, sino estaría apuntando
                                     al final de los parámetros}
-      xfun.procCall(xfun); //codifica el "CALL"
+      xfun.procCall(xfun, AddrUndef); //codifica el "JSR"
+      if AddrUndef then begin
+        //"xfun" doesn't have been implemented.
+        GenError('Cannot get address of %s', [xfun.name]);
+        exit;
+        {What we can do is to mark the current prcc/body to be compiled later again
+        (In the same addres) after compiled all other fucntions to resolve address.}
+      end;
       RTstate := xfun.typ;  //para indicar que los RT están ocupados
       Op.SetAsExpres(xfun.typ);
       exit;
@@ -1204,7 +1294,7 @@ begin
 //      func0.Destroy;
 //    end;
   end else begin
-    GenError(ER_NOT_IMPLEM_);
+    GenError(ER_NOT_IMPLEM_, [ele.name]);
     exit;
   end;
 end;
@@ -1223,7 +1313,7 @@ var
   posAct: TPosCont;
   opr   : TxpOperator;
   cod   : Longint;
-  ReadType, endWithComma: Boolean;
+  ReadType, endWithComma, AddrUndef: Boolean;
   itType: TxpEleType;
   nitems: Integer;
   xtyp : TxpEleType;
@@ -1285,7 +1375,7 @@ begin
            INLINE, no vale la pena, gastar recursos.}
           AddCallerTo(xfun);
         end;
-        xfun.procCall(xfun);  //Para que devuelva el tipo y codifique el _CALL o lo implemente
+        xfun.procCall(xfun, AddrUndef);  //Para que devuelva el tipo y codifique el _CALL o lo implemente
         //Puede devolver typNull, si no es una función.
         Op := res;  //copia tipo, almacenamiento y otros campos relevantes
         {$IFDEF LogExpres} Op.txt:= tmp; {$ENDIF}    //toma el texto
@@ -1529,7 +1619,9 @@ begin
     OnReqStopCodeGen();
     //OnReqStopAddCaller()  //Formally we would need to stop adding "callers", in order to avoid add duplicating calls.
     p := cIn.PosAct;         //Save start of expression
+    DisableAddCalls := true; //To avoid duplicate calls
     GetOperand(Op1, false);  //We assume is getter
+    DisableAddCalls := false;
     if HayError then exit;
     ProcComments;
     opr1 := GetOperator(Op1); //We expect operand or end of instruction
@@ -1638,7 +1730,7 @@ Para que esta función trabaje bien, debe haberse llamado a RefreshAllElementLis
       if fun.nCalled = 0 then begin
         inc(Result);   //Lleva la cuenta
         //Si no se usa la función, tampoco sus elementos locales
-        fun.SetElementsUnused;
+        fun.SetElementsUnused;  //Elements are in Implementation
         //También se quita las llamadas que hace a otras funciones
         for fun2 in TreeElems.AllFuncs do begin
           fun2.RemoveCallsFrom(fun.BodyNode);

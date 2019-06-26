@@ -57,9 +57,6 @@ uses
 type
     { TGenCod }
     TGenCod = class(TGenCodBas)
-    protected
-      procedure callParam(fun: TxpEleFun);
-      procedure callFunct(fun: TxpEleFun);
     private
 //      f_byteXbyte_byte: TxpEleFun;  //índice para función
       f_byte_mul_byte_16: TxpEleFun;  //índice para función
@@ -70,8 +67,8 @@ type
       procedure byte_mul_byte_16(fun: TxpEleFun);
       procedure Copy_Z_to_A;
       procedure Copy_C_to_A;
-      procedure fun_Addr(fun: TxpEleFun);
-      procedure fun_Byte(fun: TxpEleFun);
+      procedure fun_Addr(fun: TxpEleFunBase; out AddrUndef: boolean);
+      procedure fun_Byte(fun: TxpEleFunBase; out AddrUndef: boolean);
       procedure DefineArray(etyp: TxpEleType);
       procedure ValidRAMaddr(addr: integer);
       function GetIdxParArray(out WithBrack: boolean; out par: TOperand
@@ -135,17 +132,15 @@ type
       procedure codif_delay_ms(fun: TxpEleFun);
       procedure expr_end(posExpres: TPosExpres);
       procedure expr_start;
-      procedure fun_delay_ms(fun: TxpEleFun);
-      procedure fun_Exit(fun: TxpEleFun);
-      procedure fun_Inc(fun: TxpEleFun);
-      procedure fun_Dec(fun: TxpEleFun);
-      procedure SetOrig(fun: TxpEleFun);
-      procedure fun_Ord(fun: TxpEleFun);
-      procedure fun_Chr(fun: TxpEleFun);
-      procedure fun_Word(fun: TxpEleFun);
+      procedure fun_delay_ms(fun: TxpEleFunBase; out AddrUndef: boolean);
+      procedure fun_Exit(fun: TxpEleFunBase; out AddrUndef: boolean);
+      procedure fun_Inc (fun: TxpEleFunBase; out AddrUndef: boolean);
+      procedure fun_Dec (fun: TxpEleFunBase; out AddrUndef: boolean);
+      procedure SetOrig (fun: TxpEleFunBase; out AddrUndef: boolean);
+      procedure fun_Ord (fun: TxpEleFunBase; out AddrUndef: boolean);
+      procedure fun_Chr (fun: TxpEleFunBase; out AddrUndef: boolean);
+      procedure fun_Word(fun: TxpEleFunBase; out AddrUndef: boolean);
     protected
-      procedure StartCodeSub(fun: TxpEleFun);
-      procedure EndCodeSub;
       procedure Cod_StartProgram;
       procedure Cod_EndProgram;
       procedure CreateSystemElements;
@@ -165,31 +160,6 @@ procedure SetLanguage;
 begin
   GenCodBas_PIC16.SetLanguage;
   {$I ..\language\tra_GenCod.pas}
-end;
-procedure TGenCod.StartCodeSub(fun: TxpEleFun);
-{debe ser llamado para iniciar la codificación de una subrutina}
-begin
-//  iFlashTmp :=  pic.iFlash; //guarda puntero
-//  pic.iFlash := curBloSub;  //empieza a codificar aquí
-end;
-procedure TGenCod.EndCodeSub;
-{debe ser llamado al terminar la codificaión de una subrutina}
-begin
-//  curBloSub := pic.iFlash;  //indica siguiente posición libre
-//  pic.iFlash := iFlashTmp;  //retorna puntero
-end;
-procedure TGenCod.callParam(fun: TxpEleFun);
-{Rutina genérica, que se usa antes de leer los parámetros de una función.}
-begin
-  {Haya o no, parámetros se debe proceder como en cualquier expresión, asumiendo que
-  vamos a devolver una expresión.}
-  SetResultExpres(fun.typ);  //actualiza "RTstate"
-end;
-procedure TGenCod.callFunct(fun: TxpEleFun);
-{Rutina genérica para llamar a una función definida por el usuario.}
-begin
-  //Por ahora, no se implementa paginación, pero despuñes habría que considerarlo.
-  _JSR(fun.adrr);  //codifica el salto
 end;
 procedure TGenCod.Copy_Z_to_A;
 begin
@@ -2513,7 +2483,7 @@ _LABEL(ZERO);
   EndCodeSub;  //termina codificación
   //aux.used := false;  //libera registro
 end;
-procedure TGenCod.fun_delay_ms(fun: TxpEleFun);
+procedure TGenCod.fun_delay_ms(fun: TxpEleFunBase; out AddrUndef: boolean);
 begin
   if not CaptureTok('(') then exit;
   res := GetExpression(0);  //captura parámetro
@@ -2523,10 +2493,20 @@ begin
   if HayError then exit;
   if res.Typ = typByte then begin
     //El parámetro byte, debe estar en A
-    _JSR(fun.adrr);
+    if fun.idClass = eltFunc then begin
+      _JSR(TxpEleFun(fun).adrr);
+    end else begin
+      GenError('Cannot get address of %s' + fun.name);
+      //_JSR($1234);
+    end;
   end else if res.Typ = typWord then begin
     //El parámetro word, debe estar en (H, A)
-    _JSR(fun.adrr2);
+    if fun.idClass = eltFunc then begin
+      _JSR(TxpEleFun(fun).adrr2);
+    end else begin
+      GenError('Cannot get address of %s' + fun.name);
+      //_JSR($1234);
+    end;
   end else begin
     GenError(MSG_INVAL_PARTYP, [res.Typ.name]);
     exit;
@@ -2534,7 +2514,7 @@ begin
   //Verifica fin de parámetros
   if not CaptureTok(')') then exit;
 end;
-procedure TGenCod.fun_Exit(fun: TxpEleFun);
+procedure TGenCod.fun_Exit(fun: TxpEleFunBase; out AddrUndef: boolean);
 {Se debe dejar en los registros de trabajo, el valor del parámetro indicado.}
 var
   curFunTyp: TxpEleType;
@@ -2588,7 +2568,7 @@ begin
   end;
   res.SetAsNull;  //No es función
 end;
-procedure TGenCod.fun_Inc(fun: TxpEleFun);
+procedure TGenCod.fun_Inc(fun: TxpEleFunBase; out AddrUndef: boolean);
 var
   LABEL1: integer;
 begin
@@ -2648,7 +2628,7 @@ _LABEL(LABEL1);
   //Verifica fin de parámetros
   if not CaptureTok(')') then exit;
 end;
-procedure TGenCod.fun_Dec(fun: TxpEleFun);
+procedure TGenCod.fun_Dec(fun: TxpEleFunBase; out AddrUndef: boolean);
 var
   lbl1: ShortInt;
 begin
@@ -2686,7 +2666,7 @@ _LABEL(lbl1);
   //Verifica fin de parámetros
   if not CaptureTok(')') then exit;
 end;
-procedure TGenCod.SetOrig(fun: TxpEleFun);
+procedure TGenCod.SetOrig(fun: TxpEleFunBase; out AddrUndef: boolean);
 {Define el origen para colocar el código binario.}
 // NO ES MUY ÚTIL PORQUE EL CAMBIO DE ORIGEN DEBE HACERSE ANTES DEL CÓDIGO
 begin
@@ -2704,7 +2684,7 @@ begin
   //Verifica fin de parámetros
   if not CaptureTok(')') then exit;
 end;
-procedure TGenCod.fun_Ord(fun: TxpEleFun);
+procedure TGenCod.fun_Ord(fun: TxpEleFunBase; out AddrUndef: boolean);
 var
   tmpVar: TxpEleVar;
 begin
@@ -2743,7 +2723,7 @@ begin
   end;
   if not CaptureTok(')') then exit;
 end;
-procedure TGenCod.fun_Chr(fun: TxpEleFun);
+procedure TGenCod.fun_Chr(fun: TxpEleFunBase; out AddrUndef: boolean);
 var
   tmpVar: TxpEleVar;
 begin
@@ -2782,7 +2762,7 @@ begin
   end;
   if not CaptureTok(')') then exit;
 end;
-procedure TGenCod.fun_Byte(fun: TxpEleFun);
+procedure TGenCod.fun_Byte(fun: TxpEleFunBase; out AddrUndef: boolean);
 var
   tmpVar: TxpEleVar;
 begin
@@ -2838,7 +2818,7 @@ begin
   end;
   if not CaptureTok(')') then exit;
 end;
-procedure TGenCod.fun_Word(fun: TxpEleFun);
+procedure TGenCod.fun_Word(fun: TxpEleFunBase; out AddrUndef: boolean);
 begin
   if not CaptureTok('(') then exit;
   res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
@@ -2896,7 +2876,7 @@ begin
   end;
   if not CaptureTok(')') then exit;
 end;
-procedure TGenCod.fun_Addr(fun: TxpEleFun);
+procedure TGenCod.fun_Addr(fun: TxpEleFunBase; out AddrUndef: boolean);
 {Resturn de addres of a datatype.}
 var
   xtyp: TxpEleType;
@@ -3149,10 +3129,6 @@ begin
   opr.CreateOperation(typByte, @ROB_word_sub_byte);
   opr.CreateOperation(typWord, @ROB_word_sub_word);
 
-//  opr:=typWord.CreateBinaryOperator('>>',5,'shr');
-//  opr.CreateOperation(typByte,@ROB_word_shr_byte);
-//  opr:=typWord.CreateBinaryOperator('<<',5,'shl');
-//  opr.CreateOperation(typByte,@ROB_word_shl_byte);
 
   //////// Operaciones con String ////////////
   opr:=typString.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
@@ -3532,11 +3508,11 @@ begin
   f := CreateSysFunction('Inc'      , nil, @fun_Inc);
   f := CreateSysFunction('Dec'      , nil, @fun_Dec);
   f := CreateSysFunction('SetOrig'  , nil, @SetOrig);
-  f := CreateSysFunction('Ord'      , @callParam, @fun_Ord);
-  f := CreateSysFunction('Chr'      , @callParam, @fun_Chr);
-  f := CreateSysFunction('Byte'     , @callParam, @fun_Byte);
-  f := CreateSysFunction('Word'     , @callParam, @fun_Word);
-  f := CreateSysFunction('addr'     , @callParam, @fun_Addr);
+  f := CreateSysFunction('Ord'      , @FunctParam, @fun_Ord);
+  f := CreateSysFunction('Chr'      , @FunctParam, @fun_Chr);
+  f := CreateSysFunction('Byte'     , @FunctParam, @fun_Byte);
+  f := CreateSysFunction('Word'     , @FunctParam, @fun_Word);
+  f := CreateSysFunction('addr'     , @FunctParam, @fun_Addr);
   //Funciones de sistema para operaciones aritméticas/lógicas complejas
   //Multiplicación byte por byte a word
   f_byte_mul_byte_16 := CreateSysFunction('byte_mul_byte_16', nil, nil);

@@ -42,4 +42,6 @@ ER_INST_NEV_EXE:= trans('Instruction will never execute.' , 'Esta instrucción n
                         'Bereich wird niemals ausgeführt.','Інструкція ніколи не виконуватиметься.','Инструкция никогда не будет выполнена.', 'L''instruction ne sera jamais exécutée.');
 ER_UNKN_STRUCT := trans('Unknown structure.'          , 'Estructura desconocida.','',
                         'Unbekannte Struktur.'        ,'Невідома структура.','Неизвестная структура.', 'Structure inconnue.');
+ER_DUPLIC_FUNC_:= trans('Duplicated function: %s'     ,'Función duplicada: %s', '',
+                        '', '', '', '');
 

@@ -2,8 +2,8 @@ unit CompMain;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, Types, CompBase, XpresElementsPIC, Globales, CompOperands,
-  XpresTypesPIC, XpresBas;
+  Classes, SysUtils, Types, fgl, CompBase, XpresElementsPIC, Globales,
+  CompOperands, XpresTypesPIC, XpresBas;
 type
 
   { TCompMain }
@@ -17,8 +17,9 @@ type
     procedure TipDefecBoolean(var Op: TOperand; tokcad: string); override;
   protected  //Elements processing
     procedure GetAdicVarDeclar(xType: TxpEleType; out aditVar: TAdicVarDec);
-    procedure ReadProcHeader(out procName: String; out retType: TxpEleType;
-      out srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt: Boolean);
+    procedure ReadProcHeader(out procName: String; out retType: TxpEleType; out
+      srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt,
+  IsForward: Boolean);
     procedure ReadInlineHeader(out procName: String; out retType: TxpEleType;
       out srcPos: TSrcPos; out pars: TxpParInlinArray);
     procedure CompileVarDeclar;
@@ -41,6 +42,9 @@ type
     procedure CompileCurBlock;
     procedure CompileCurBlockDummy;
     function IsUnit: boolean;
+    procedure CompileInlineBody(fun: TxpEleInlin);
+    procedure CompileProcDeclar;
+    procedure CompileInlineDeclar(elemLocat: TxpEleLocation);
   public
     {Indica que TCompiler, va a acceder a un archivo, peor está pregunatndo para ver
      si se tiene un Stringlist, con los datos ya caragdos del archivo, para evitar
@@ -51,12 +55,11 @@ type
 
 implementation
 var
-  ER_INV_MEMADDR, ER_EXP_VAR_IDE, ER_NUM_ADD_EXP, ER_CON_EXP_EXP,
-  ER_EQU_EXPECTD, ER_IDEN_EXPECT, ER_NOT_IMPLEM_, ER_SEM_COM_EXP,
-  ER_INV_ARR_SIZ, ER_ARR_SIZ_BIG, ER_IDE_TYP_EXP, ER_IDE_CON_EXP,
-  ER_EQU_COM_EXP, ER_DUPLIC_IDEN, ER_NOTYPDEF_NU, ER_BOOL_EXPECT,
-  ER_EOF_END_EXP, ER_ELS_UNEXPEC, ER_END_EXPECTE, ER_NOT_AFT_END,
-  ER_INST_NEV_EXE, ER_UNKN_STRUCT
+  ER_INV_MEMADDR, ER_EXP_VAR_IDE, ER_NUM_ADD_EXP, ER_CON_EXP_EXP, ER_EQU_EXPECTD,
+  ER_IDEN_EXPECT, ER_NOT_IMPLEM_, ER_SEM_COM_EXP, ER_INV_ARR_SIZ, ER_ARR_SIZ_BIG,
+  ER_IDE_TYP_EXP, ER_IDE_CON_EXP, ER_EQU_COM_EXP, ER_DUPLIC_IDEN, ER_NOTYPDEF_NU,
+  ER_BOOL_EXPECT, ER_EOF_END_EXP, ER_ELS_UNEXPEC, ER_END_EXPECTE, ER_NOT_AFT_END,
+  ER_INST_NEV_EXE, ER_UNKN_STRUCT, ER_DUPLIC_FUNC_
   : string;
 procedure SetLanguage;
 begin
@@ -386,7 +389,7 @@ begin
   end;
 end;
 procedure TCompMain.ReadProcHeader(out procName: String; out retType: TxpEleType;
-  out srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt: Boolean);
+  out srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt, IsForward: Boolean);
 {Hace el procesamiento del encabezado de la declaración de una función/procedimiento.
 Devuelve la referencia al objeto TxpEleFun creado, en "fun".
 Conviene separar el procesamiento del enzabezado, para poder usar esta rutina, también,
@@ -501,6 +504,13 @@ begin
     if not CaptureTok(';') then exit;
   end else begin
     IsInterrupt := false;
+  end;
+  if cIn.tokL = 'forward' then begin
+    cIn.Next;
+    IsForward := true;
+    if not CaptureTok(';') then exit;
+  end else begin
+    IsForward := false;
   end;
   ProcComments;  //Quita espacios. Puede salir con error
 end;
@@ -1368,6 +1378,366 @@ begin
   cIn.curCon.SetStartPos;   //retorna al inicio
   exit(false);
 end;
+procedure TCompMain.CompileInlineBody(fun: TxpEleInlin);
+{Compila el cuerpo de un procedimiento INLINE.}
+begin
+  //Faltaría revisar la compilación para que se adecúe a la de un proc. Inline
+  CompileInstructionDummy;
+end;
+//Compilación de secciones
+procedure TCompMain.CompileProcDeclar;
+{Compila la declaración de procedimientos. Tanto procedimientos como funciones
+ se manejan internamente como funciones.}
+  function FindProcInInterface(procName: string; const pars: TxpParFuncArray;
+                               const srcPos: TSrcPos): TxpEleFunDec;
+  {Explore the current context to verify (and validate) the existence, in the INTERFACE
+  section, of a function declared in the IMPLEMENTATION section.
+  If found the function, returns the reference. Otherwise returns NIL.
+  Also validate the duplicity in the same IMPLEMENTATION section.}
+  var
+    ele : TxpElement;
+    uname: String;
+    fun: TxpEleFun;
+    funInterface: TxpEleFunDec;
+  begin
+    {Se supone que esta exploración solo se hará en la primera pasada, así que no hay
+    problema, en hacer una exploración común.}
+    //debugln('Buscando declaración de %s en nodo %s desde 0 hasta %d', [fun.name, ParentElems.name, ParentElems.elements.Count-2]);
+    Result := nil;
+    uname := upcase(procName);
+    {This a doble-scanning, to detect: Existence of declaration in INTERFACE, and
+    name duplicity in IMPLEMENTATION. }
+    for ele in TreeElems.curNode.elements do begin
+      if ele.uname = uname then begin
+        //Match the name.
+        if ele.location = locInterface then begin
+          //Is an INTERFACE element.
+          if ele.idClass = eltFuncDec then begin
+            //Para las declaraciones, se debe comparar los parámetros
+            funInterface := TxpEleFunDec(ele);
+            if funInterface.SameParamsType(pars) then begin
+              Result := funInterface;
+              //Continue exploring to verify duplicity.
+            end;
+          end else begin
+            //The same name of other element, is conflict.
+            GenError('Identifier "%s" already defined', [uname]);
+            exit;
+          end;
+        end else if ele.location = locImplement then begin
+          //Is an IMPLEMENTATION element.
+          if ele.idClass = eltFunc then begin
+            //Para las funciones, se debe comparar los parámetros
+            fun := TxpEleFun(ele);
+            if fun.SameParamsType(pars) then begin
+              {Two similar functions in the same IMPLEMENTATION scope.}
+              GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+              exit(nil);
+            end;
+          end else begin
+            //The same name of other element, is conflict.
+            GenError('Identifier "%s" already defined', [uname]);
+            exit;
+          end;
+        end;
+      end;
+    end;
+    //Doesn't found.
+  end;
+  function FindProcAsForwawd(procName: string; const pars: TxpParFuncArray;
+                               const srcPos: TSrcPos): TxpEleFunDec;
+  {Explore the current context to verify (and validate) the existence of a functon
+  declared as FORWARD, of any ohter function (No FORWARD).
+  If found the function, returns the reference. Otherwise returns NIL.
+  Also validate the duplicity of the function.}
+  var
+    uname: String;
+    ele : TxpElement;
+    fun: TxpEleFun;
+    fundec: TxpEleFunDec;
+  begin
+    Result := nil;
+    uname := upcase(procName);
+    //Busca en el entorno para ver si está duplicada o con FORWARD
+    for ele in TreeElems.curNode.elements do begin
+      if ele.uname = uname then begin
+        //Match the name.
+        if ele.idClass = eltFuncDec then begin
+          //Must be a FORWARD
+          fundec := TxpEleFunDec(ele);
+          //if fun.IsForward ?
+          if fundec.SameParamsType(pars) then begin
+            Result := fundec;  //Return FORWARD function
+          end;
+          //Continue exploring to validate
+        end else if ele.idClass = eltFunc then begin
+          //Para las funciones, se debe comparar los parámetros
+          fun := TxpEleFun(ele);
+          if fun.SameParamsType(pars) then begin
+            //Is not FORWARD, must be duplicated:
+            GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+            exit;
+          end;
+        end else begin
+          //The same name of other element, is conflict.
+          GenError('Identifier "%s" already defined', [uname]);
+          exit;
+        end;
+      end;
+    end;
+  end;
+var
+  funDec, funInterface, funForward: TxpEleFunDec;
+  fun: TxpEleFun;
+  bod: TxpEleBody;
+  IsInterrupt, IsForward: Boolean;
+  procName: String;
+  retType: TxpEleType;
+  srcPos: TSrcPos;
+  pars: TxpParFuncArray;
+begin
+  {Este método, solo se ejecutará en la primera pasada, en donde todos los procedimientos
+  se codifican al inicio de la memoria, y las variables y registros se ubican al
+  inicio de la memoria RAM, ya que lo que importa es simplemente recabar información
+  del procedimiento, y no tanto codificarlo. }
+  CallResetRAM;   //Limpia RAM
+  case curLocation of
+  locInterface: begin
+    //Las declaraciones en INTERFACE son sencillas. Solo son caebceras.
+    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt, IsForward);
+    if HayError then exit;
+    if IsForward then begin
+      GenError('Cannot use FORWARD in INTERFACE section.');
+      exit;
+    end;
+    if TreeElems.FunctionExistInCur(procName, pars) then begin
+      GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+      exit;
+    end;
+    funDec := AddFunctionDEC(procName, retType, srcPos, pars, IsInterrupt);
+    funDec.location := curLocation;  //Set location
+    exit;  //No more task required.
+  end;
+  locImplement:  begin
+    //Se compila para implementación.
+    {Este proceso es más complejo. La idea es compilar el enzabezado de cualquier función,
+    y luego comparar para ver si corresponde a una implementación o no. Si es
+    implementación, se elimina el nodo creado y se trabaja con el de la declaración.}
+    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt, IsForward);
+    if HayError then exit;
+    //Verifica si es implementación de una función en la INTERFACE o no.
+    funInterface := FindProcInInterface(procName, pars, srcPos);
+    if HayError then exit;
+    if funInterface<>nil then begin
+      //Es una implementación normal
+      fun := AddFunctionIMP(procName, retType, srcPos, funInterface);
+    end else begin
+      //Debe ser una función privada. No declarada en INTERFACE.
+      //Ya verificamos que no hay conflicto en IMPLEMENTATION.
+      fun := AddFunctionUNI(procName, retType, srcPos, pars, IsInterrupt);
+    end;
+    fun.location := curLocation;
+  end;
+  locMain: begin
+    //Es una compilación en el programa principal. ¿Y si es FORWARD?
+    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt, IsForward);
+    if HayError then exit;
+    if IsForward then begin
+      if TreeElems.FunctionExistInCur(procName, pars) then begin
+        GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+        exit;
+      end;
+      funDec := AddFunctionDEC(procName, retType, srcPos, pars, IsInterrupt);
+      funDec.location := locMain;  //Set location
+      funDec.IsForward := true;    //Mark as Forward
+      exit;  //No more task required.
+    end;
+    //This is no-FORWARD function
+    funForward := FindProcAsForwawd(procName, pars, srcPos);
+    if HayError then exit;
+    if funForward<>nil then begin
+      //It's an implementation
+      fun := AddFunctionIMP(procName, retType, srcPos, funForward);
+    end else begin
+      //It's a common function
+      fun := AddFunctionUNI(procName, retType, srcPos, pars, IsInterrupt);
+    end;
+    fun.location := curLocation;
+  end;
+  else
+    GenError(ER_NOT_IMPLEM_, ['locMain in TCompMain.CompileProcDeclar()']);
+  end;
+  //Aquí ya se tiene "fun" abierta, validada y apuntando a la declaración.
+  //Empiezan las declaraciones VAR, CONST, PROCEDURE, TYPE
+  while StartOfSection do begin
+    if cIn.tokL = 'var' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'begin') do begin
+        CompileVarDeclar;
+        if HayError then exit;;
+      end;
+    end else if cIn.tokL = 'const' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'begin') do begin
+        CompileGlobalConstDeclar;
+        if HayError then exit;;
+      end;
+//    end else if cIn.tokL = 'procedure' then begin
+//      cIn.Next;    //lo toma
+//      CompileProcDeclar;
+    end else begin
+      GenError('Expected VAR, CONST or BEGIN.');
+      exit;
+    end;
+  end;
+  if cIn.tokL <> 'begin' then begin
+    GenError('Expected "begin", "var", "type" or "const".');
+    exit;
+  end;
+  //Ahora empieza el cuerpo de la función o las declaraciones
+  fun.adrr   := CallCurrRAM(); //toma dirección de inicio del código. Es solo referencial.
+  fun.posCtx := cIn.PosAct;  //Guarda posición para la segunda compilación
+  bod := CreateBody;   //crea elemento del cuerpo de la función
+  bod.srcDec := cIn.ReadSrcPos;
+  TreeElems.AddElementAndOpen(bod);  //Abre nodo Body
+  CallCompileProcBody(fun);
+  TreeElems.CloseElement;  //Cierra Nodo Body
+  TreeElems.CloseElement; //cierra espacio de nombres de la función
+  bod.srcEnd := cIn.ReadSrcPos;  //Fin de cuerpo
+//  fun.adrReturn := pic.iRam-1;  //Guarda dirección del i_RETURN
+  if not CaptureTok(';') then exit;
+  ProcComments;  //Quita espacios. Puede salir con error
+end;
+procedure TCompMain.CompileInlineDeclar(elemLocat: TxpEleLocation);
+{Compila la declaración de procedimientos INLINE. Tanto procedimientos como funciones
+ INLINE se manejan internamente como funciones.
+ IsImplementation, se usa para cuando se está compilando en la sección IMPLEMENTATION.}
+var
+  fun: TxpEleInlin;
+  bod: TxpEleBody;
+  ParentElems: TxpElements;
+  ele : TxpElement;
+  Found: Boolean;
+  procName, uname: String;
+  retType: TxpEleType;
+  srcPos: TSrcPos;
+  pars: TxpParInlinArray;
+begin
+//  {Este método, solo se ejecutará en la primera pasada, en donde todos los procedimientos
+//  se codifican al inicio de la memoria, y las variables y registros se ubican al
+//  inicio de la memoria RAM, ya que lo que importa es simplemente recabar información
+//  del procedimiento, y no tanto codificarlo. }
+//  CallResetRAM;   //Limpia RAM y FLASH, y fija CurrBank
+//  case elemLocat of
+//  locInterface: begin
+//    //Los procedimientos en INTERFACE, no se procesan aquí. Se procesan en CompileUnit().
+//  end;
+//  locImplement:  begin
+//    //Se compila para implementación.
+//    {Este proceso es más complejo. La idea es compilar el encabezado de cualquier función,
+//    y luego comparar para ver si corresponde a una implementación o no. Si es
+//    implementación, se elimina el nodo creado y se trabaja con el de la declaración.}
+//    ReadInlineHeader(procName, retType, srcPos, pars);
+//    if HayError then exit;
+//    //Verifica si es implementación de una función en la INTERFACE o no.
+//    ParentElems := TreeElems.curNode.elements;  //Para comparar
+//    {Se supone que esta exploración solo se hará en la primera pasada, así que no hay
+//    problema, en hacer una exploración común.}
+//    //debugln('Buscando declaración de %s en nodo %s desde 0 hasta %d', [fun.name, ParentElems.name, ParentElems.elements.Count-2]);
+//    Found := false;
+//    uname := upcase(procName);
+//    for ele in ParentElems do begin
+//      if ele.location = locInterface then begin
+//        //Es elemento de INTERFACE
+//        if ele.uname = uname then begin
+//          //Hay coincidencia de nombre
+//          if ele.idClass = eltFunc then begin
+//            //Para las funciones, se debe comparar los parámetros
+//            fun := TxpEleInlin(ele);
+//            if fun.SameParamsType(pars) then begin
+//              Found := true;
+//              break;
+//            end;
+//          end else begin
+//            //Si tiene el mismo nombre que cualquier otro elemento, es conflicto
+//            GenError('Identifier "%s" already defined', [uname]);
+//            exit;
+//          end;
+//        end;
+//      end else begin
+//        {Debe ser elemento de IMPLEMENTATION, no hay otra opción porque se supone que
+//        estamos en la sección de IMPLEMENTATION, así que el Parent, debe ser una unidad.}
+//        GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);  //Está duplicada en IMPLEMENTATION
+//        exit;
+//      end;
+//    end;
+//    if Found then begin
+//      //Es una implementación. No vale la pena tener otro nodo.
+//      TreeElems.OpenElement(fun);  //Abre el nodo anterior
+//    end else begin
+//      //Debe ser una función privada. No declarada en Interface.
+//      //La creamos con seguridad porque ya verificamos que no hay conflicto en IMPLEMENTATION.
+//      fun := AddInline(procName, retType, srcPos, pars, CallFunctParam, CallFunctCall);
+//      //Un caso especial de proced. declarado solo en IMPLEMENTATION.
+//      fun.location := locImplement;
+//    end;
+//  end;
+//  locMain: begin
+//    //Es una compilación en el programa principal. ¿Y si es FORWARD?
+//    ReadInlineHeader(procName, retType, srcPos, pars);  //Procesa el encabezado
+//    if HayError then exit;
+//    if TreeElems.InlineExistInCur(procName, pars) then begin
+//      GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+//      exit;
+//    end;
+//    fun := AddInline(procName, retType, srcPos, pars, CallFunctParam, CallFunctCall);
+//    //Aquí estamos en el entorno de la función.
+//    fun.location := locMain;
+//  end
+//  else
+//    GenError(ER_NOT_IMPLEM_, ['locMain in TCompMain.CompileInlineDeclar()']);
+//  end;
+//  //Aquí ya se tiene "fun" abierta, validada y apuntando a la declaración.
+//  //Empiezan las declaraciones VAR, CONST, PROCEDURE, TYPE
+//  while StartOfSection do begin
+//    if cIn.tokL = 'var' then begin
+//      cIn.Next;    //lo toma
+//      while not StartOfSection and (cIn.tokL <>'begin') do begin
+//        CompileVarDeclar;
+//        if HayError then exit;;
+//      end;
+//    end else if cIn.tokL = 'const' then begin
+//      cIn.Next;    //lo toma
+//      while not StartOfSection and (cIn.tokL <>'begin') do begin
+//        CompileGlobalConstDeclar;
+//        if HayError then exit;;
+//      end;
+////    end else if cIn.tokL = 'procedure' then begin
+////      cIn.Next;    //lo toma
+////      CompileProcDeclar;
+//    end else begin
+//      GenError('Expected VAR, CONST or BEGIN.');
+//      exit;
+//    end;
+//  end;
+//  if cIn.tokL <> 'begin' then begin
+//    GenError('Expected "begin", "var", "type" or "const".');
+//    exit;
+//  end;
+//  //Ahora empieza el cuerpo de la función o las declaraciones
+//  fun.posCtx := cIn.PosAct;  //Guarda posición para la segunda compilación
+//  bod := CreateBody;   //crea elemento del cuerpo de la función
+//  bod.srcDec := cIn.ReadSrcPos;
+//  TreeElems.AddElementAndOpen(bod);  //Abre nodo Body
+//  CompileInlineBody(fun);
+//  TreeElems.CloseElement;  //Cierra Nodo Body
+//  TreeElems.CloseElement; //cierra espacio de nombres de la función
+//  bod.srcEnd := cIn.ReadSrcPos;  //Fin de cuerpo
+////  fun.adrReturn := pic.iRam-1;  //Guarda dirección del i_RETURN
+//  if not CaptureTok(';') then exit;
+//  ProcComments;  //Quita espacios. Puede salir con error
+end;
+
 
 end.
 

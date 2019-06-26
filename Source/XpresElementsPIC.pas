@@ -77,6 +77,7 @@ type  //TxpElement y clases previas
                 eltCodeCont, //Contenedor de código
                 eltMain,  //Programa principal
                 eltVar,   //Variable
+                eltFuncDec,//Función
                 eltFunc,  //Función
                 eltInLin, //Función INLINE
                 eltCons,  //Constante
@@ -166,7 +167,7 @@ type  //TxpElement y clases previas
   end;
 
   { TxpElement }
-  //Clase base para todos los elementos
+  //Base class for all syntactic elements
   TxpElement = class
   private
     Fname    : string;   //Nombre del elemnto
@@ -174,7 +175,7 @@ type  //TxpElement y clases previas
     procedure Setname(AValue: string);
     function AddElement(elem: TxpElement; AtBegin: boolean): TxpElement;
   public  //Gestion de llamadas al elemento
-    //Lista de funciones que llaman a esta función.
+    //List of functions that calls to this function.
     lstCallers: TxpListCallers;
     function nCalled: integer; virtual; //número de llamadas
     function IsCalledBy(callElem: TxpElement): boolean; //Identifica a un llamador
@@ -224,11 +225,11 @@ type  //TxpElement y clases previas
     destructor Destroy; override;
   end;
 
-type //Clases de elementos
+type //Elements class
 
   { TxpEleCodeCont }
-  {Clase que define a un elemento que puede servir como contenedor general de código,
-  como el programa principal, un procedimiento o una unidad.}
+  {Define a element that can be used as a general code conatiner, like the main program,
+  a procedure or a unit.}
   TxpEleCodeCont = class(TxpElement)
   public
     function BodyNode: TxpEleBody;
@@ -411,44 +412,76 @@ type //Clases de elementos
   end;
 
   TxpEleFun = class;
-  { TxpEleFun }
+  TxpEleFunBase = class;
   //Clase para almacenar información de las funciones
-  TProcExecFunction = procedure(fun: TxpEleFun) of object;
-  TxpEleFun = class(TxpEleCodeCont)
-  public
-    typ    : TxpEleType;   //Referencia al tipo
+  TxpProcParam = procedure(fun: TxpEleFunBase) of object;
+  TxpProcCall = procedure(fun: TxpEleFunBase; out AddrUndef: boolean) of object;
+
+  TxpEleFunBase = class(TxpEleCodeCont)
+    typ         : TxpEleType;   //Type returned
+    IsInterrupt : boolean;      //Indicates the function is an ISR
+    IsForward   : boolean; //Identifies a forward declaration.
+  public //References
+    {Referencia a la función que implementa, la rutina de procesamiento que se debe
+    hacer, antes de empezar a leer los parámetros de la función.}
+    procParam: TxpProcParam;
+    {Referencia a la función que implementa, la llamada a la función en ensamblador.
+    En funciones del sistema, puede que se implemente INLINE, sin llamada a subrutinas,
+    pero en las funciones comunes, siempre usa CALL ... }
+    procCall: TxpProcCall;
+  public //Parameters manage
     pars   : TxpParFuncArray;  //parámetros de entrada
+    procedure ClearParams;
+    function SameParamsType(const funpars: TxpParFuncArray): boolean;
+    function ParamTypesList: string;
+  end;
+
+  { TxpEleFunDec }
+  {Basic class to represent a function header or declaration (INTERFASE o FORWARD).
+  Basically whar we store here is the name, the parameters ante return type.}
+  TxpEleFunDec = class(TxpEleFunBase)
+    implem      : TxpEleFun;    //Reference to implementation element.
+  public //Initialization
+    constructor Create; override;
+  end;
+
+  TProcExecFunction = procedure(fun: TxpEleFun) of object;
+
+  { TxpEleFun }
+  TxpEleFun = class(TxpEleFunBase)
+  public  //Main attributes
     adrr   : integer;     //Dirección física, en donde se compila
     adrr2  : integer;     //Punto de entrada adicional
     srcSize: integer;  {Tamaño del código compilado. En la primera pasada, es referencial,
                         porque el tamaño puede variar al reubicarse.}
-    {Referencia a la función que implementa, la rutina de procesamiento que se debe
-    hacer, antes de empezar a leer los parámetros de la función.}
-    procParam: TProcExecFunction;
-    {Referencia a la función que implementa, la llamada a la función en ensamblador.
-    En funciones del sistema, puede que se implemente INLINE, sin llamada a subrutinas,
-    pero en las funciones comunes, siempre usa CALL ... }
-    procCall: TProcExecFunction;
     {Método que llama a una rutina que codificará la rutina ASM que implementa la función.
      La idea es que este campo solo se use para algunas funciones del sistema.}
     compile: TProcExecFunction;
-    {Bandera para indicar si la función, ha sido implementada. Este campo es util, para
-     cuando se usa FORWARD o cuando se compilan unidades.}
-    Implemented: boolean;
-    {Indica si la función es una ISR. Se espera que solo exista una.}
-    IsInterrupt : boolean;
-    ///////////////
-    procedure ClearParams;
-    function SameParamsType(const funpars: TxpParFuncArray): boolean;
-    function ParamTypesList: string;
-    function Duplicated: boolean;
     procedure SetElementsUnused;
-  public  //Manejo de referencias
+  public //Declaration
+    {These properties allows to have reference to the function declaration, when there is
+    one:  Interface versions or Forward version.
+    In other cases there is just a function element without separated declaration.
+    According to design:
+     Declaration elements -> Contain information about:
+        - The parameters and return value.
+        - The calls.
+     Implementation elements -> Contain information about:
+        - The parameters and return value.
+        - The calls.
+        - Local variables.
+        - The body (Calls to other elements.)
+     Declaration elements are included too in the Syntax Tree, but they aer used only for
+     declaration. All the information must be read in the funtion.
+    }
+    declar : TxpEleFunDec; //Reference to declaration (When it's FORWARD or in INTERFACE)
+    function HasDeclar: boolean; inline;
+  public  //References information
     function nCalled: integer; override; //número de llamadas
     function nLocalVars: integer;
     function IsTerminal: boolean;
     function IsTerminal2: boolean;
-  public //Inicialización
+  public //Initialization
     constructor Create; override;
     destructor Destroy; override;
   end;
@@ -460,9 +493,6 @@ type //Clases de elementos
   public
     typ    : TxpEleType;   //Referencia al tipo
     pars   : TxpParInlinArray;  //parámetros de entrada
-    {Bandera para indicar si la función, ha sido implementada. Este campo es util, para
-     cuando se usa FORWARD o cuando se compilan unidades.}
-    Implemented: boolean;
     ///////////////
     procedure ClearParams;
     procedure CreateParam(parName: string; typ0: TxpEleType; sto0: TStoOperand);
@@ -593,8 +623,6 @@ function GenPointerTypeName(refTypeName: string): string; inline;
 begin
   exit(PREFIX_PTR + '-' +refTypeName);
 end;
-
-
 { TxpEleCaller }
 function TxpEleCaller.CallerUnit: TxpElement;
 {Devuelve el elemento unidad o programa principal, desde donde se hace esta llamada.}
@@ -647,7 +675,6 @@ begin
   type1 := parent.parent;
   Result := type1.name + ' ' + parent.txt + ' ' + ToType.name;
 end;
-
 { TxpElement }
 function TxpElement.AddElement(elem: TxpElement; AtBegin: boolean): TxpElement;
 {Agrega un elemento hijo al elemento actual. Devuelve referencia. }
@@ -1358,22 +1385,17 @@ begin
   idClass:=eltMain;
   Parent := nil;  //la raiz no tiene padre
 end;
-{ TxpEleFun }
-procedure TxpEleFun.ClearParams;
-//Elimina los parámetros de una función
-begin
-  setlength(pars,0);
-end;
-function TxpEleFun.SameParamsType(const funpars: TxpParFuncArray): boolean;
+{ TxpEleFunBase }
+function TxpEleFunBase.SameParamsType(const funpars: TxpParFuncArray): boolean;
 {Compara los parámetros de la función con una lista de parámetros. Si tienen el mismo
 número de parámetros y el mismo tipo, devuelve TRUE.}
 var
   i: Integer;
 begin
-  Result:=true;  //se asume que son iguales
+  Result:=true;   //We assume they are the same
   if High(pars) <> High(funpars) then
-    exit(false);   //distinto número de parámetros
-  //hay igual número de parámetros, verifica
+    exit(false);   //Distinct parameters number
+  //They have the same numbers of parameters, verify:
   for i := 0 to High(pars) do begin
     if pars[i].typ <> funpars[i].typ then begin
       exit(false);
@@ -1381,7 +1403,12 @@ begin
   end;
   //si llegó hasta aquí, hay coincidencia, sale con TRUE
 end;
-function TxpEleFun.ParamTypesList: string;
+procedure TxpEleFunBase.ClearParams;
+//Elimina los parámetros de una función
+begin
+  setlength(pars,0);
+end;
+function TxpEleFunBase.ParamTypesList: string;
 {Devuelve una lista con los nombres de los tipos de los parámetros, de la forma:
 (byte, word) }
 var
@@ -1396,29 +1423,13 @@ begin
   if length(tmp)>0 then tmp := copy(tmp,1,length(tmp)-2);
   Result := '('+tmp+')';
 end;
-function TxpEleFun.Duplicated: boolean;
-{Revisa la duplicidad de la función en su entorno. La función ya debe estar ingresada al
-árbol de sintaxis.  *******  ¿Realmente se usa?}
-var
-  ele: TxpElement;
+{ TxpEleFunDec }
+constructor TxpEleFunDec.Create;
 begin
-  for ele in Parent.elements do begin
-    if ele = self then Continue;  //no se compara el mismo
-    if ele.uname = uname then begin
-      //hay coincidencia de nombre
-      if ele.idClass = eltFunc then begin
-        //para las funciones, se debe comparar los parámetros
-        if SameParamsType(TxpEleFun(ele).pars) then begin
-          exit(true);
-        end;
-      end else begin
-        //si tiene el mismo nombre que cualquier otro elemento, es conflicto
-        exit(true);
-      end;
-    end;
-  end;
-  exit(false);
+  inherited Create;
+  idClass:=eltFuncDec;
 end;
+{ TxpEleFun }
 procedure TxpEleFun.SetElementsUnused;
 {Marca todos sus elementos con "nCalled = 0". Se usa cuando se determina que una función
 no es usada.}
@@ -1434,13 +1445,17 @@ begin
     end;
   end;
 end;
+function TxpEleFun.HasDeclar: boolean;
+begin
+  exit(declar<>nil);
+end;
 function TxpEleFun.nCalled: integer;
 begin
   if IsInterrupt then exit(1);   //Los INTERRUPT son llamados implícitamente
-  Result := inherited nCalled;
+  Result := lstCallers.Count;
 end;
 function TxpEleFun.nLocalVars: integer;
-{Devuelve el número de variables locales de la función.}
+{Returns the numbers of local variables for this function.}
 var
   elem : TxpElement;
 begin
@@ -1781,7 +1796,7 @@ begin
   case elem.idClass of
   eltCons: AllCons.Add(TxpEleCon(elem));
   eltVar : AllVars.Add(TxpEleVar(elem));
-  eltFunc: AllFuncs.Add(TxpEleFun(elem));
+  eltFunc: AllFuncs.Add(TxpEleFun(elem)); //Declarations are now stored in AllFuncs.
   eltType: AllTypes.Add(TxpEleType(elem));
   eltInLin: AllInLns.Add(TxpEleInlin(elem));
   //No se incluye el código de RefreshAllUnits() porque solo trabaja en el "main".
