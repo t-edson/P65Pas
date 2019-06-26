@@ -1,3 +1,10 @@
+P65PAS 0.6
+==========
+Se continuan moviendo métodos de la unidad Compiler_PIC16 a la unidad CompMain.
+Se cambia el método de creación de las funciones cuando se usan en INTERFACE y se 
+implementa la opción de FORWARD. Ahora se crea un elemento nuevo que representa solo 
+a la declaración y se cambia las rutinas de llamadas para la nueva gestión.
+
 P65PAS 0.5
 ==========
 Se modifica TCompilerBase.GetExpressionE() para darle otro enfoque y permitir procesar las

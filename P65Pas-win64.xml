@@ -3,7 +3,8 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.5\temp\newfile-0.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\aaa.pas
 "/>
   <SplitterCol Val="2368548"/>
   <MessPanPan Val="2368548"/>
@@ -11,7 +12,7 @@
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="153"/>
+  <SynTreeWidth Val="189"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="1"/>
   <MessPanBack Val="2368548"/>
@@ -43,11 +44,11 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.5\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.5\units\Commodore64.pas
-D:\tmp\P65Pas-0.5\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.5\temp\aaa.pas
-D:\tmp\P65Pas-0.5\units\Commodore64.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\aaa.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-0.pas
+D:\tmp\P65Pas-0.6\temp\newfile-0.pas
+D:\tmp\P65Pas-0.6\temp\aaa.pas
+D:\tmp\P65Pas-0.6\temp\NewFile1.pas
 "/>
   </Edit>
   <IncDecVar Val="False"/>
@@ -65,7 +66,6 @@ D:\tmp\P65Pas-0.5\units\Commodore64.pas
   <ReuProcVar Val="True"/>
   <OptRetProc Val="True"/>
   <ExternTool>
-    <extern_tools Val="Vice	                        	C:\Users\Usuario\Desktop\WinVICE-3.1-x64\x64.exe	$(hexFile)	F	V					
-"/>
+    <extern_tools Val=""/>
   </ExternTool>
 </CONFIG>

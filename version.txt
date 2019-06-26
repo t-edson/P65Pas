@@ -1,1 +1,1 @@
-VER_PROG = '0.5';
+VER_PROG = '0.6';
