@@ -3,12 +3,10 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\aaa.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.6\units\Commodore64.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-0.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-0.pas
 "/>
-  <SplitterCol Val="536870912"/>
-  <MessPanPan Val="536870912"/>
+  <SplitterCol Val="2368548"/>
+  <MessPanPan Val="2368548"/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
@@ -16,12 +14,12 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-0.pas
   <SynTreeWidth Val="189"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="1"/>
-  <MessPanBack Val="-2147483643"/>
-  <MessPanText Val="536870912"/>
-  <MessPanErr Val="255"/>
-  <MessPanSel Val="-2147483633"/>
-  <CodExplBack Val="-2147483643"/>
-  <CodExplText Val="536870912"/>
+  <MessPanBack Val="2368548"/>
+  <MessPanText Val="16777215"/>
+  <MessPanErr Val="5855743"/>
+  <MessPanSel Val="-2147483629"/>
+  <CodExplBack Val="2434341"/>
+  <CodExplText Val="12632256"/>
   <grpFiltypes Val="0"/>
   <TamLet Val="10"/>
   <TipLet Val="Courier New"/>
@@ -30,9 +28,9 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-0.pas
   <TabEdiState Val="0"/>
   <AutSynChk Val="True"/>
   <Edit>
-    <cTxtNor Val="0"/>
-    <cFonEdi Val="16777215"/>
-    <cLinAct Val="65535"/>
+    <cTxtNor Val="16777215"/>
+    <cFonEdi Val="2368548"/>
+    <cLinAct Val="4210688"/>
     <Autoindent Val="True"/>
     <MarLinAct Val="False"/>
     <ResPalCur Val="True"/>
@@ -43,12 +41,12 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-0.pas
     <VerPanVer Val="True"/>
     <VerNumLin Val="True"/>
     <VerMarPle Val="True"/>
-    <cFonPan Val="16777215"/>
-    <cTxtPan Val="0"/>
+    <cFonPan Val="2105376"/>
+    <cTxtPan Val="12632256"/>
     <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.6\units\Commodore64.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\aaa.pas
 D:\tmp\P65Pas-0.6\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\aaa.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.6\units\Commodore64.pas
 D:\tmp\P65Pas-0.6\temp\aaa.pas
 "/>
   </Edit>
