@@ -7,6 +7,32 @@ a la declaración y se cambia las rutinas de llamadas para la nueva gestión.
 Se implementa la asignación de arreglos.
 Se implementa asignación a nuevos tipos de almacenamiento para el tipo byte.
 
+Revisar el bug, cuando se ejecuta, con arreglos de bytes:
+  a[0] := b[i] + c[i];
+
+
+Las funciones INLINE se declaran de la sgte. forma:
+
+inline func1(var x: byte; const y: word; expr z: char);
+begin
+
+end;
+
+La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
+considerando el tipo de almacenamiento del operando.
+Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
+codificar operaciones sobre tipos objeto:
+
+octeto = object
+    value: byte;
+  public 
+    inline assign(var x: byte) operator ":="  precedence 5;
+    
+    end;
+    inline assign(x: byte) operator ":=";
+    
+    end;
+  end;
 
 P65PAS 0.5
 ==========
@@ -37,29 +63,6 @@ de Compiler_PIC16 a Parser.
 Se crea la unidad CompOperands y se mueven las rutinas básicas del compilador.
 Se cambia de nombre a la unidad Parser por CompBase.
 
-
-Las funciones INLINE se declaran de la sgte. forma:
-
-inline func1(var x: byte; const y: word; expr z: char);
-begin
-
-end;
-
-La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
-considerando el tipo de almacenamiento del operando.
-Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
-codificar operaciones sobre tipos objeto:
-
-octeto = object
-    value: byte;
-  public 
-    inline assign(var x: byte) operator ":="  precedence 5;
-    
-    end;
-    inline assign(x: byte) operator ":=";
-    
-    end;
-  end;
 
 P65PAS 0.4
 ==========
