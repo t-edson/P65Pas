@@ -1192,6 +1192,8 @@ begin
   if catType = tctArray then begin
     //Array size is calculated
     if nItems = -1 then exit(0) else exit(itmType.size * nItems);
+  end else if catType = tctPointer then begin
+    exit(2);  //Pointer are like words
   end else begin
     exit(fSize)
   end;

@@ -44,14 +44,15 @@ type
     property rVar: TxpEleVar  read FVar;   //Referencia a la variable, cuando es stVariab o stVarRef.
     procedure SetAs(Op: TOperand);
     procedure SetAsConst(xtyp: TxpEleType);
+    procedure SetAsConst(xtyp: TxpEleType; const iniVal: TConsValue);
     procedure SetAsVariab(xvar: TxpEleVar);
     procedure SetAsExpres(xtyp: TxpEleType);
     procedure SetAsExpresA(xtyp: TxpEleType);
     procedure SetAsExpresX(xtyp: TxpEleType);
     procedure SetAsExpresY(xtyp: TxpEleType);
 
-    procedure SetAsVarRef(VarBase: TxpEleVar);
-    procedure SetAsVarConRef(VarBase: TxpEleVar; ValOff: integer);
+    procedure SetAsVarRef(VarBase: TxpEleVar; xtyp: TxpEleType);
+    procedure SetAsVarConRef(VarBase: TxpEleVar; ValOff: integer; xtyp: TxpEleType);
     procedure SetAsExpRef(VarBase: TxpEleVar; Etyp: TxpEleType);
     procedure SetAsNull;
     function StoOpStr: string;
@@ -87,8 +88,10 @@ type
     procedure GetConsValFrom(const c: TxpEleCon);
   private //Manage items
     curSize: integer;
-  public  //Manage items
-    nItems: integer;
+    FnItems: integer;
+    function GetNItems: integer;
+  public  //Manage items when it's constant array
+    property nItems: integer read GetNItems;
     procedure InitItems;
     procedure AddConsItem(const c: TConsValue);
     procedure CloseItems;
@@ -296,35 +299,45 @@ begin
     //faltó implementar.
   end;
 end;
+function TOperand.GetNItems: integer;
+begin
+  if Sto = stVariab then begin
+    //It's a variable
+    exit(rVar.typ.nItems)
+  end else begin
+    //Must be constant
+    exit(FnItems);
+  end;
+end;
 //Manage items
 const CONS_ITEM_BLOCK = 3;
 procedure TOperand.InitItems;
 begin
-  nItems := 0;
+  FnItems := 0;
   curSize := CONS_ITEM_BLOCK;   //Block size
   setlength(FValue.items, curSize);  //initial size
 end;
 procedure TOperand.AddConsItem(const c: TConsValue);
 begin
-  FValue.items[nItems] := c;
-  inc(nItems);
-  if nItems >= curSize then begin
+  FValue.items[FnItems] := c;
+  inc(FnItems);
+  if FnItems >= curSize then begin
     curSize += CONS_ITEM_BLOCK;   //Increase size by block
     setlength(FValue.items, curSize);  //make space
   end;
 end;
 procedure TOperand.CloseItems;
 begin
-  setlength(FValue.items, nItems);
+  setlength(FValue.items, FnItems);
 end;
 procedure TOperand.StringToArrayOfChar(str: string);
 {Init the constant value as array of char from a string.}
 var
   i: Integer;
 begin
-  nItems := length(str);
-  setlength(FValue.items, nItems);
-  for i:=0 to nItems-1 do begin
+  FnItems := length(str);
+  setlength(FValue.items, FnItems);
+  for i:=0 to FnItems-1 do begin
     FValue.items[i].ValInt := ord(str[i+1]);
   end;
 end;
@@ -337,7 +350,7 @@ begin
   end else if Sto = stVarRef then begin
     //Variable referenciada por variables.
     //Se implementa de acuerdo a la Doc. Técnica - Sección "Operandos sVarRef"
-    Result := FVar.typ.itmType;   //¿No debería ser solo FVar.typ?
+    Result := Ftyp;
   end else if Sto = stExpRef then begin
     //Variable referenciada por expresión.
     //Se implementa de acuerdo a la Doc. Técnica - Sección "Operandos sExpRef"
@@ -384,6 +397,13 @@ begin
   FTyp := xtyp;
   rVarBase := nil;  //Inicia a este valor
 end;
+procedure TOperand.SetAsConst(xtyp: TxpEleType; const iniVal: TConsValue);
+begin
+  FSto := stConst;
+  FTyp := xtyp;
+  rVarBase := nil;  //Inicia a este valor
+  FValue := iniVal;
+end;
 procedure TOperand.SetAsVariab(xvar: TxpEleVar);
 {Set the operand storage to stVariab}
 begin
@@ -416,19 +436,23 @@ begin
   FTyp := xtyp;
   rVarBase := nil;  //Inicia a este valor
 end;
-procedure TOperand.SetAsVarRef(VarBase: TxpEleVar);
-{Fija el operando como de tipo stVarRef.}
+procedure TOperand.SetAsVarRef(VarBase: TxpEleVar; xtyp: TxpEleType);
+{Fija el operando como de tipo stVarRef, siguiendo el estandar de la
+documentación}
 begin
   FSto := stVarRef;
   FVar := VarBase;
+  FTyp := xtyp;
   rVarBase := nil;  //Inicia a este valor
 end;
-procedure TOperand.SetAsVarConRef(VarBase: TxpEleVar; ValOff: integer);
+procedure TOperand.SetAsVarConRef(VarBase: TxpEleVar; ValOff: integer;
+  xtyp: TxpEleType);
 {Fija el operando como de tipo stVarConRef.}
 begin
   FSto := stVarConRef;
   FVar := VarBase;
   FValue.ValInt := ValOff;
+  FTyp := xtyp;
   rVarBase := nil;  //Inicia a este valor
 end;
 procedure TOperand.SetAsExpRef(VarBase: TxpEleVar; Etyp: TxpEleType);

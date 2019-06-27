@@ -93,8 +93,8 @@ type
     procedure SetResultConst(typ: TxpEleType);
     procedure SetResultVariab(rVar: TxpEleVar; logic: TLogicType = logNormal);
     procedure SetResultExpres(typ: TxpEleType; ChkRTState: boolean = true);
-    procedure SetResultVarRef(rVarBase: TxpEleVar);
-    procedure SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer);
+    procedure SetResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
+    procedure SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer; xtyp: TxpEleType);
     procedure SetResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType; ChkRTState: boolean = true);
     //Fija el resultado de ROB como constante.
     procedure SetROBResultConst_bool(valBool: Boolean);
@@ -114,7 +114,7 @@ type
     procedure SetROUResultConst_bool(valBool: boolean);
     procedure SetROUResultConst_byte(valByte: integer);
     procedure SetROUResultVariab(rVar: TxpEleVar; logic: TLogicType = logNormal);
-    procedure SetROUResultVarRef(rVarBase: TxpEleVar);
+    procedure SetROUResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
     procedure SetROUResultExpres_bool(logic: TLogicType);
     procedure SetROUResultExpres_byte;
     procedure SetROUResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType);
@@ -124,7 +124,8 @@ type
   protected  //Instrucciones
     function _PC: word;
     function _CLOCK: integer;
-    procedure _LABEL(igot: integer);
+    procedure _LABEL_post(igot: integer);
+    procedure _LABEL_pre(out curAddr: integer);
     //Instrucciones simples
     procedure _ADC(const k: word);  //immidiate
     procedure _ADC(const f: TPicRegister);  //Absolute/Zeropage
@@ -135,16 +136,17 @@ type
     procedure _LSR(const f: word);
     procedure _LSRa;
     procedure _JMP(const ad: word);
-    procedure _JMP_lbl(out igot: integer);
+    procedure _JMP_post(out igot: integer);
     procedure _JSR(const ad: word);
     procedure _BEQ(const ad: ShortInt);
-    procedure _BEQ_lbl(out ibranch: integer);
+    procedure _BEQ_post(out ibranch: integer);
     procedure _BNE(const ad: ShortInt);
-    procedure _BNE_lbl(out ibranch: integer);
+    procedure _BNE_pre(curAddr: integer);
+    procedure _BNE_post(out ibranch: integer);
     procedure _BCC(const ad: ShortInt);
-    procedure _BCC_lbl(out ibranch: integer);
+    procedure _BCC_post(out ibranch: integer);
     procedure _BCS(const ad: ShortInt);
-    procedure _BCS_lbl(out ibranch: integer);
+    procedure _BCS_post(out ibranch: integer);
     procedure _CLC;
     procedure _CMP(const k: word);  //immidiate
     procedure _CMP(const f: TPicRegister);  //Absolute/Zeropage
@@ -156,11 +158,13 @@ type
     procedure _INC(const f: TPicRegister);
     procedure _INX;
     procedure _INY;
-    procedure _LDA(const k: word);
+    procedure _LDAi(const k: word);
     procedure _LDA(const f: TPicRegister);
-    procedure _LDX(const k: word);
+    procedure _LDA(const addr: integer);
+    procedure _LDXi(const k: word);
     procedure _LDX(const f: TPicRegister);
-    procedure _LDY(const k: word);
+    procedure _LDX(const addr: integer);
+    procedure _LDYi(const k: word);
     procedure _LDY(const f: TPicRegister);
     procedure _NOP;
     procedure _ORA(const k: word);
@@ -513,6 +517,10 @@ begin
       pic.MsjError := '';  //Para evitar generar otra vez el mensaje
       exit;
     end;
+    {May be problematic set absolute positions with a value, but we use this too to
+    allocate structures in RAM}
+    pic.ram[addr].value := iniVal;
+    pic.ram[addr].used := ruVar;   //mark as variable
   end;
 end;
 procedure TGenCodBas.CreateVarInRAM(xVar: TxpEleVar; shared: boolean = false);
@@ -686,18 +694,19 @@ begin
   //Actualiza el estado de los registros de trabajo.
   RTstate := typ;
 end;
-procedure TGenCodBas.SetResultVarRef(rVarBase: TxpEleVar);
+procedure TGenCodBas.SetResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
 begin
-  res.SetAsVarRef(rVarBase);
+  res.SetAsVarRef(rVarBase, xtyp);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
   AcumStatInZ := true;
   //No se usa "Inverted" en este almacenamiento
   res.logic := logNormal;
 end;
-procedure TGenCodBas.SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer);
+procedure TGenCodBas.SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer;
+  xtyp: TxpEleType);
 begin
-  res.SetAsVarConRef(rVarBase, consAddr);
+  res.SetAsVarConRef(rVarBase, consAddr, xtyp);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
   AcumStatInZ := true;
@@ -846,11 +855,11 @@ begin
   GenerateROUdetComment;
   SetResultVariab(rVar, logic);
 end;
-procedure TGenCodBas.SetROUResultVarRef(rVarBase: TxpEleVar);
+procedure TGenCodBas.SetROUResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
 {Fija el resultado como una referencia de tipo stVarRef}
 begin
   GenerateROUdetComment;
-  SetResultVarRef(rVarBase);
+  SetResultVarRef(rVarBase, xtyp);
 end;
 procedure TGenCodBas.SetROUResultExpres_bool(logic: TLogicType);
 begin
@@ -951,8 +960,8 @@ function TGenCodBas._CLOCK: integer; inline;
 begin
   Result := pic.frequen;
 end;
-procedure TGenCodBas._LABEL(igot: integer);
-{Termina de codificar el GOTO_PEND}
+procedure TGenCodBas._LABEL_post(igot: integer);
+{Finish a previous JMP_lbl, BNE_post, BEQ_post, or BCC_post instruction.}
 begin
   if pic.ram[igot].value = 0 then begin
     //Es salto absoluto
@@ -968,6 +977,11 @@ begin
       pic.ram[igot].value := 256 + (_PC - igot);
     end;
   end;
+end;
+procedure TGenCodBas._LABEL_pre(out curAddr: integer);
+{Set a label for a later jump BNE_pre, BEQ_pre or BCC_pre instruction.}
+begin
+  curAddr := pic.iRam;
 end;
 //Instrucciones simples
 procedure TGenCodBas._ADC(const k: word);
@@ -1022,7 +1036,7 @@ procedure TGenCodBas._JMP(const ad: word);
 begin
   pic.codAsm(i_JMP, aAbsolute, ad);  //pone salto indefinido
 end;
-procedure TGenCodBas._JMP_lbl(out igot: integer);
+procedure TGenCodBas._JMP_post(out igot: integer);
 {Escribe una instrucción GOTO, pero sin precisar el destino aún. Devuelve la dirección
  donde se escribe el GOTO, para poder completarla posteriormente.
 }
@@ -1042,7 +1056,7 @@ begin
     pic.codAsm(i_BEQ, aRelative, 256+ad);
   end;
 end;
-procedure TGenCodBas._BEQ_lbl(out ibranch: integer);
+procedure TGenCodBas._BEQ_post(out ibranch: integer);
 begin
   ibranch := pic.iRam+1;  //guarda posición del offset de salto
   pic.codAsm(i_BEQ, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
@@ -1055,10 +1069,14 @@ begin
     pic.codAsm(i_BNE, aRelative, 256+ad);
   end;
 end;
-procedure TGenCodBas._BNE_lbl(out ibranch: integer);
+procedure TGenCodBas._BNE_post(out ibranch: integer);
 begin
   ibranch := pic.iRam+1;  //guarda posición del offset de salto
   pic.codAsm(i_BNE, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
+end;
+procedure TGenCodBas._BNE_pre(curAddr: integer);
+begin
+  pic.codAsm(i_BNE, aRelative, (curAddr - pic.iRam-2) and $ff);  //1 en Offset indica que se completará con salto relativo
 end;
 procedure TGenCodBas._BCC(const ad: ShortInt);
 begin
@@ -1068,7 +1086,7 @@ begin
     pic.codAsm(i_BCC, aRelative, 256+ad);
   end;
 end;
-procedure TGenCodBas._BCC_lbl(out ibranch: integer);
+procedure TGenCodBas._BCC_post(out ibranch: integer);
 begin
   ibranch := pic.iRam+1;  //guarda posición del offset de salto
   pic.codAsm(i_BCC, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
@@ -1081,7 +1099,7 @@ begin
     pic.codAsm(i_BCS, aRelative, 256+ad);
   end;
 end;
-procedure TGenCodBas._BCS_lbl(out ibranch: integer);
+procedure TGenCodBas._BCS_post(out ibranch: integer);
 begin
   ibranch := pic.iRam+1;  //guarda posición del offset de salto
   pic.codAsm(i_BCS, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
@@ -1146,7 +1164,7 @@ procedure TGenCodBas._INY;
 begin
   pic.codAsm(i_INY, aImplicit, 0);
 end;
-procedure TGenCodBas._LDA(const k: word);  //LDA Immediate
+procedure TGenCodBas._LDAi(const k: word);  //LDA Immediate
 begin
   pic.codAsm(i_LDA, aImmediat, k);
 end;
@@ -1158,7 +1176,15 @@ begin
     pic.codAsm(i_LDA, aAbsolute, f.addr);
   end;
 end;
-procedure TGenCodBas._LDX(const k: word); inline;  //LDA Immediate
+procedure TGenCodBas._LDA(const addr: integer);
+begin
+  if addr<256 then begin
+    pic.codAsm(i_LDA, aZeroPage, addr);
+  end else begin
+    pic.codAsm(i_LDA, aAbsolute, addr);
+  end;
+end;
+procedure TGenCodBas._LDXi(const k: word); inline;  //LDA Immediate
 begin
   pic.codAsm(i_LDX, aImmediat, k);
 end;
@@ -1170,7 +1196,15 @@ begin
     pic.codAsm(i_LDX, aAbsolute, f.addr);
   end;
 end;
-procedure TGenCodBas._LDY(const k: word); inline;  //LDA Immediate
+procedure TGenCodBas._LDX(const addr: integer);
+begin
+  if addr<256 then begin
+    pic.codAsm(i_LDX, aZeroPage, addr);
+  end else begin
+    pic.codAsm(i_LDX, aAbsolute, addr);
+  end;
+end;
+procedure TGenCodBas._LDYi(const k: word); inline;  //LDA Immediate
 begin
   pic.codAsm(i_LDY, aImmediat, k);
 end;
@@ -1308,10 +1342,10 @@ begin
     //Result in variable
     if OpRes^.logic = logInverted then begin
       _LDA(OpRes^.rVar.adrByte0);
-      _BNE_lbl(info.igoto);
+      _BNE_post(info.igoto);
     end else begin
       _LDA(OpRes^.rVar.adrByte0);
-      _BEQ_lbl(info.igoto);
+      _BEQ_post(info.igoto);
     end;
   end else if OpRes^.Sto = stExpres then begin
     {We first evaluate the case when it could be done an optimization}
@@ -1320,35 +1354,35 @@ begin
       pic.iRam := BooleanFromC;   //Delete last instructions
       //Check C flag
       if OpRes^.logic = logInverted then begin
-        _BCS_lbl(info.igoto);
+        _BCS_post(info.igoto);
       end else begin
-        _BCC_lbl(info.igoto);
+        _BCC_post(info.igoto);
       end;
     end else if BooleanFromZ<>0 then begin
       //Expression result has been copied from Z to A
       pic.iRam := BooleanFromZ;   //Delete last instructions
       //Check Z flag
       if OpRes^.logic = logInverted then begin
-        _BEQ_lbl(info.igoto);
+        _BEQ_post(info.igoto);
       end else begin
-        _BNE_lbl(info.igoto);
+        _BNE_post(info.igoto);
       end;
     end else begin
       {Cannot be (or should be) optimized }
       if AcumStatInZ then begin
         //Still we can use the optimizaction of testing Z flag
         if OpRes^.logic = logInverted then begin
-          _BNE_lbl(info.igoto);
+          _BNE_post(info.igoto);
         end else begin
-          _BEQ_lbl(info.igoto);
+          _BEQ_post(info.igoto);
         end;
       end else begin
         //Operand value in A but not always in Z
         _TAX;  //To update Z
         if OpRes^.logic = logInverted then begin
-          _BNE_lbl(info.igoto);
+          _BNE_post(info.igoto);
         end else begin
-          _BEQ_lbl(info.igoto);
+          _BEQ_post(info.igoto);
         end;
       end;
     end;
@@ -1366,7 +1400,7 @@ end;
 procedure TGenCodBas.IF_END(const info: TIfInfo);
 {Define the End of the block, created with IF_TRUE().}
 begin
-  _LABEL(info.igoto);  //termina de codificar el salto
+  _LABEL_post(info.igoto);  //termina de codificar el salto
 end;
 function TGenCodBas.PICName: string;
 begin
@@ -1382,7 +1416,7 @@ begin
   Op := OpPtr;
   case Op^.Sto of  //el parámetro debe estar en "res"
   stConst : begin
-    _LDA(Op^.valInt);
+    _LDAi(Op^.valInt);
   end;
   stVariab: begin
     _LDA(Op^.rVar.adrByte0);
@@ -1429,10 +1463,10 @@ begin
   case Op^.Sto of  //el parámetro debe estar en "Op^"
   stConst : begin
     //byte alto
-    _LDA(Op^.HByte);
+    _LDAi(Op^.HByte);
     _STA(H);
     //byte bajo
-    _LDA(Op^.LByte);
+    _LDAi(Op^.LByte);
   end;
   stVariab: begin
     _LDA(Op^.rVar.adrByte1);
@@ -1538,7 +1572,6 @@ begin
     GenError('Syntax error.');
   end;
 end;
-
 procedure TGenCodBas.GenCodPicReqStopCodeGen;
 {Required Stop the Code generation}
 begin
@@ -1553,7 +1586,6 @@ function TGenCodBas.DeviceError: string;
 begin
   exit (pic.MsjError);
 end;
-
 function TGenCodBas.GenCodBasCallCurrRAM(): integer;
 begin
   exit(pic.iRam);
@@ -1572,13 +1604,12 @@ begin
   U := CreateRegisterByte(prtWorkReg);
   //Puede salir con error
 end;
-
 procedure TGenCodBas.GenCodLoadToA(Op: TOperand);
 begin
   if Op.Typ.IsByteSize then begin
     case Op.Sto. of
     stConst: begin
-      _LDA(Op.valInt and $ff);
+      _LDAi(Op.valInt and $ff);
     end;
     stVariab: begin
       _LDA(Op.rVar.adrByte0);
@@ -1598,7 +1629,7 @@ begin
   if Op.Typ.IsByteSize then begin
     case Op.Sto. of
     stConst: begin
-      _LDX(Op.valInt and $ff);
+      _LDXi(Op.valInt and $ff);
     end;
     stVariab: begin
       _LDX(Op.rVar.adrByte0);
@@ -1618,7 +1649,7 @@ begin
   if Op.Typ.IsByteSize then begin
     case Op.Sto. of
     stConst: begin
-      _LDY(Op.valInt and $ff);
+      _LDYi(Op.valInt and $ff);
     end;
     stVariab: begin
       _LDY(Op.rVar.adrByte0);
@@ -1736,26 +1767,26 @@ begin
   stVariab, stExpres:begin
     IF_TRUE(@res, lbl1);
 //    Cod_JumpIfTrue;
-//    _JMP_lbl(jFALSE);  //salto pendiente
+//    _JMP_post(jFALSE);  //salto pendiente
     //Compila la parte THEN
     if not CompileConditionalBody then exit;
     //Verifica si sigue el ELSE
     if cIn.tokL = 'else' then begin
       //Es: IF ... THEN ... ELSE ... END
       cIn.Next;   //toma "else"
-      _JMP_lbl(jEND_TRUE);  //llega por aquí si es TRUE
+      _JMP_post(jEND_TRUE);  //llega por aquí si es TRUE
       IF_END( lbl1);
       if not CompileConditionalBody then exit;
-      _LABEL(jEND_TRUE);   //termina de codificar el salto
+      _LABEL_post(jEND_TRUE);   //termina de codificar el salto
       VerifyEND;   //puede salir con error
     end else if cIn.tokL = 'elsif' then begin
       //Es: IF ... THEN ... ELSIF ...
       cIn.Next;
-      _JMP_lbl(jEND_TRUE);  //llega por aquí si es TRUE
+      _JMP_post(jEND_TRUE);  //llega por aquí si es TRUE
       IF_END( lbl1);
       CompileIF;  //más fácil es la forma recursiva
       if HayError then exit;
-      _LABEL(jEND_TRUE);   //termina de codificar el salto
+      _LABEL_post(jEND_TRUE);   //termina de codificar el salto
       //No es necesario verificar el END final.
     end else begin
       //Es: IF ... THEN ... END. (Puede ser recursivo)
@@ -1889,9 +1920,9 @@ begin
       _INC(Op1.rVar.adrByte0);
     end else if Op1.Typ = typWord then begin
       _INC(Op1.rVar.adrByte0);
-      _BNE_lbl(LABEL1);  //label
+      _BNE_post(LABEL1);  //label
       _INC(Op1.rVar.adrByte1);
-_LABEL(LABEL1);
+_LABEL_post(LABEL1);
     end;
     _JMP(l1);  //repite el lazo
     //ya se tiene el destino del salto

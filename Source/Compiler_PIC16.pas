@@ -498,7 +498,7 @@ begin
       pic.codByte($00, true);  //Sgte línea BASIC
     end;
   end;
-  _JMP_lbl(iniMain);   //Salto hasta después del espacio de variables
+  _JMP_post(iniMain);   //Salto hasta después del espacio de variables
   ///////////////////////////////////////////////////////////////////////////////
   //Asigna memoria, primero a las variables locales (y parámetros) de las funciones
   ///////////////////////////////////////////////////////////////////////////////
@@ -610,7 +610,7 @@ debugln('---Función usada: ' + fun.name);
     end;
   end;
   //Compila cuerpo del programa principal
-  _LABEL(iniMain);   //Termina de codificar el salto
+  _LABEL_post(iniMain);   //Termina de codificar el salto
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   if bod = nil then begin
     GenError('Body program not found.');
