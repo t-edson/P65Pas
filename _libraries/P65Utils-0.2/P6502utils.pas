@@ -265,7 +265,7 @@ begin
   end;
   ram[iRam].value := value;
   if isData then ram[iRam].name := 'data';
-  ram[iRam].used := ruVar;  //marca como usado
+  ram[iRam].used := ruData;  //marca como usado
   inc(iRam);
 end;
 procedure TP6502.codAsm(const inst: TP6502Inst; addMode: TP6502AddMode; param: word);
@@ -1155,7 +1155,7 @@ begin
   for i:=iRam to maxRam-1 do begin
     if (ram[i].state = cs_implemen) and (ram[i].used = ruUnused) then begin
       //Esta dirección está libre
-      ram[i].used := ruVar;   //marca como usado para variable
+      ram[i].used := ruData;   //marca como usado para variable
       if shared then begin
         ram[i].shared := true;  //Marca como compartido
       end;
@@ -1253,7 +1253,7 @@ begin
     comLat := ram[i].sideComment;
     comLin := ram[i].topComment;
     //Verifica si es variable
-    if ram[i].used = ruVar then begin
+    if ram[i].used in [ruData, ruAbsData] then begin
       //Escribe en forma de variable
       if incAdrr then begin
         if comLin<>'' then lOut.add(comLin);
@@ -1316,7 +1316,7 @@ begin
   maxUsed := 0;
   //Busca dirección de inicio usada
   for i := 0 to CPUMAXRAM-1 do begin
-    if ram[i].used<>ruUnused then begin
+    if ram[i].used in [ruCode, ruData] then begin
       if i<minUsed then minUsed := i;
       if i>maxUsed then maxUsed := i;
     end;

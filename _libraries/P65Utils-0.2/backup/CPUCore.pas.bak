@@ -27,8 +27,7 @@ type
   TCPURamUsed = (
      ruUnused,
      ruCode,  //Used for code
-     ruData,  //Used for variables
-     ruAbsData  //Used for variables in absolute positions
+     ruVar    //Used for variable
   );
 
 type //Models for RAM memory
@@ -279,7 +278,7 @@ procedure TCPUCore.UseConsecRAM(const i, n: word);
 var j: word;
 begin
   for j:=i to i+n-1 do begin
-    ram[j].used := ruData;  //todos los bits
+    ram[j].used := ruVar;  //todos los bits
   end;
 end;
 procedure TCPUCore.SetSharedUnused;
@@ -300,7 +299,7 @@ var
 begin
   for i:=0 to high(ram) do begin
     if (ram[i].state = cs_implemen) and (ram[i].shared) then begin
-      ram[i].used := ruData;  //Set as used for variables
+      ram[i].used := ruVar;  //Set as used for variables
     end;
   end;
 end;
@@ -355,7 +354,6 @@ end;
 procedure TCPUCore.addTopComm(comm: string; replace: boolean);
 {Agrega un comentario de línea al código en la posición de memoria actual}
 begin
-  if iRam>=CPUMAXRAM then exit;
   if replace then begin
     ram[iRam].topComment := comm;
   end else begin
