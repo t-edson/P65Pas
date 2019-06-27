@@ -71,6 +71,8 @@ type
       procedure fun_Byte(fun: TxpEleFunBase; out AddrUndef: boolean);
       procedure DefineArray(etyp: TxpEleType);
       procedure ROB_arr_asig_arr(Opt: TxpOperation; SetRes: boolean);
+      procedure ROB_word_shl_byte(Opt: TxpOperation; SetRes: boolean);
+      procedure ROB_word_shr_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ValidRAMaddr(addr: integer);
       function GetIdxParArray(out WithBrack: boolean; out par: TOperand
         ): boolean;
@@ -1194,10 +1196,71 @@ begin
 //    _RTS;
 end;
 procedure TGenCod.ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
+var
+  rVar: TxpEleVar;
 begin
-
+  case stoOperation of
+  stConst_Const: begin
+    SetROBResultConst_word(value1*value2);  //puede generar error
+  end;
+//  stConst_Variab: begin
+//    if value1 = 0 then begin
+//      //Caso especial
+//      SetROBResultVariab(p2^.rVar);  //devuelve la misma variable
+//      exit;
+//    end else if value1 = 1 then begin
+//      //Caso especial
+//      SetROBResultExpres_byte(Opt);
+//      _INC(byte2);
+//      exit;
+//    end;
+//    SetROBResultExpres_byte(Opt);
+//    _CLC;
+//    _LDAi(value1);
+//    _ADC(byte2);
+//  end;
+//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
+//    SetROBResultExpres_byte(Opt);
+//    _CLC;
+//    _ADC(value1);
+//  end;
+//  stVariab_Const: begin
+//    ExchangeP1_P2;
+//    ROB_byte_add_byte(Opt, true);
+//  end;
+//  stVariab_Variab:begin
+//    SetROBResultExpres_byte(Opt);
+//    _CLC;
+//    _LDA(byte1);
+//    _ADC(byte2);
+//  end;
+//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
+//    SetROBResultExpres_byte(Opt);
+//    _CLC;
+//    _ADC(byte1);
+//  end;
+//  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
+//    SetROBResultExpres_byte(Opt);
+//    _CLC;
+//    _ADC(value2);
+//  end;
+//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
+//    SetROBResultExpres_byte(Opt);
+//    _CLC;
+//    _ADC(byte2);
+//  end;
+//  stExpres_Expres:begin
+//    SetROBResultExpres_byte(Opt);
+//    //La expresión p1 debe estar salvada y p2 en el acumulador
+//    rVar := GetVarByteFromStk;
+//    _CLC;
+//    _ADC(rVar.adrByte0);  //opera directamente al dato que había en la pila. Deja en A
+//    FreeStkRegisterByte;   //libera pila porque ya se uso
+//  end;
+  else
+    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+  end;
 end;
-
 procedure TGenCod.ROB_byte_great_byte(Opt: TxpOperation; SetRes: boolean);
 begin
   if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
@@ -2341,6 +2404,116 @@ begin
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
 end;
+procedure TGenCod.ROB_word_shl_byte(Opt: TxpOperation; SetRes: boolean);
+var
+  i: Integer;
+begin
+  case stoOperation of
+  stConst_Const: begin
+    //Optimiza
+    SetROBResultConst_byte(value1 << value2);
+  end;
+//  stConst_Variab: begin
+//    SetROBResultExpres_byte(Opt);
+//    _LDAi(value1);
+//    _AND(byte2L);
+//  end;
+//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
+//    SetROBResultExpres_byte(Opt);
+//    _AND(value1L);      //Deja en A
+//  end;
+  stVariab_Const: begin
+    SetROBResultExpres_word(Opt);
+    if value2 < 4 then begin
+      _LDA(byte1H);
+      _STA(H);  //Load high byte
+      _LDA(byte1L);
+      for i:=1 to value2 do begin
+        _ASLa;
+        _ROL(H.addr);
+      end;
+    end else begin
+      genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+    end;
+  end;
+//  stVariab_Variab:begin
+//  end;
+//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
+//  end;
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
+    SetROBResultExpres_word(Opt);
+    if value2 < 4 then begin
+      for i:=1 to value2 do begin
+        _ASLa;
+        _ROL(H.addr);
+      end;
+    end else begin
+      genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+    end;
+  end;
+//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
+//  end;
+//  stExpres_Expres:begin
+//  end;
+  else
+    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+  end;
+end;
+procedure TGenCod.ROB_word_shr_byte(Opt: TxpOperation; SetRes: boolean);
+var
+  i: Integer;
+begin
+  case stoOperation of
+  stConst_Const: begin
+    //Optimiza
+    SetROBResultConst_byte(value1 >> value2);
+  end;
+//  stConst_Variab: begin
+//    SetROBResultExpres_byte(Opt);
+//    _LDAi(value1);
+//    _AND(byte2L);
+//  end;
+//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
+//    SetROBResultExpres_byte(Opt);
+//    _AND(value1L);      //Deja en A
+//  end;
+  stVariab_Const: begin
+    SetROBResultExpres_word(Opt);
+    if value2 < 4 then begin
+      _LDA(byte1H);
+      _STA(H);  //Load high byte
+      _LDA(byte1L);
+      for i:=1 to value2 do begin
+        _LSRa;
+        _ROR(H.addr);
+      end;
+    end else begin
+      genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+    end;
+  end;
+//  stVariab_Variab:begin
+//  end;
+//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
+//  end;
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
+    SetROBResultExpres_word(Opt);
+    if value2 < 4 then begin
+      for i:=1 to value2 do begin
+        _LSRa;
+        _ROR(H.addr);
+      end;
+    end else begin
+      genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+    end;
+  end;
+//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
+//  end;
+//  stExpres_Expres:begin
+//  end;
+  else
+    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+  end;
+end;
 //////////// Operaciones con Char
 procedure TGenCod.ROB_char_asig_char(Opt: TxpOperation; SetRes: boolean);
 begin
@@ -2722,7 +2895,7 @@ _LABEL_post(LABEL1);
 end;
 procedure TGenCod.fun_Dec(fun: TxpEleFunBase; out AddrUndef: boolean);
 var
-  lbl1: ShortInt;
+  lbl1: integer;
 begin
   if not CaptureTok('(') then exit;
   res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
@@ -2736,7 +2909,7 @@ begin
       _DEC(res.rVar.adrByte0);
     end else if res.Typ = typWord then begin
       _LDA(res.rVar.adrByte0);
-      _BNE(lbl1);
+      _BNE_post(lbl1);
       _DEC(res.rVar.adrByte1);
 _LABEL_post(lbl1);
       _DEC(res.rVar.adrByte0);
@@ -3221,6 +3394,11 @@ begin
   opr.CreateOperation(typByte, @ROB_word_sub_byte);
   opr.CreateOperation(typWord, @ROB_word_sub_word);
 
+  opr:=typWord.CreateBinaryOperator('>>',5,'shr');  { TODO : Definir bien la precedencia }
+  opr.CreateOperation(typByte,@ROB_word_shr_byte);
+  opr:=typWord.CreateBinaryOperator('<<',5,'shl');
+  opr.CreateOperation(typByte,@ROB_word_shl_byte);
+
 
   //////// Operaciones con String ////////////
   opr:=typString.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
@@ -3404,7 +3582,7 @@ begin
     if not CaptureTok('(') then exit(false);
   end;
   par := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
-  if HayError then exit(false);
+//  if HayError then exit(false);
   if HayError then exit(false);
   exit(true);
 end;
@@ -3603,12 +3781,12 @@ begin
         _STA(xvar.addr0+1);
         _STA(xvar.addr0+2);
         _STA(xvar.addr0+3);
-      end else if n <256 then begin  //Tamaño pequeño
+      end else if n <=256 then begin  //Tamaño pequeño
         _LDAi(0);
-        _LDXi(n-1);
+        _LDXi(n and $FF);
 LABEL1 := _PC;
         if xVar.addr0 <256 then pic.codAsm(i_STA, aZeroPagX, xVar.addr0)  //STA has not aZeroPagY
-        else pic.codAsm(i_STA, aAbsolutX, xVar.addr0);
+        else pic.codAsm(i_STA, aAbsolutX, xVar.addr0-1);
         _DEX;
         _BNE(LABEL1 - _PC - 2);
       end else begin  //Tamaño mayor

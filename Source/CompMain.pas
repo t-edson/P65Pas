@@ -812,15 +812,15 @@ If some problems happens, Error is generated and the NIL value is returned.
         exit(0);
       end;
       //Límites físicos predefinidos
-      if res.Typ <> typByte then begin
-        GenError('Only byte type allowed here.');
-        exit(0);
-      end;
+//      if res.Typ <> typByte then begin
+//        GenError('Only byte type allowed here.');
+//        exit(0);
+//      end;
       if res.valInt<0 then begin
         GenError(ER_INV_ARR_SIZ);
         exit(0);
       end;
-      if res.valInt>$FF then begin
+      if res.valInt>=$10000 then begin
         //Límite físico definido
         GenError(ER_ARR_SIZ_BIG);
         exit;
@@ -1146,8 +1146,10 @@ end;
 function TCompMain.GetExpressionBool: boolean;
 {Lee una expresión booleana. Si hay algún error devuelve FALSE.}
 begin
+  OnExprStart;
   res := GetExpression(0);
   if HayError then exit(false);
+  OnExprEnd(pexSTRUC);
   if res.Typ <> typBool then begin
     GenError(ER_BOOL_EXPECT);
     exit(false);

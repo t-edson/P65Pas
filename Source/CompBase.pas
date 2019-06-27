@@ -1631,7 +1631,7 @@ begin
       cIn.PosAct := p;   //Set to the start of expression
       GetOperand(Op1, false);  //Compile as getter.
       if HayError then exit;   //New errors can appear (memory)
-      if Op1.Sto  = stConst then begin
+      if (Op1.Sto  = stConst) and (Op1.Typ<>typNull) then begin
         //Instruction alone is not valid
         GenError('Constants are not allowed here.');
       end;

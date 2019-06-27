@@ -260,7 +260,7 @@ begin
       cv.Brush.Color := $80FF80;
       DrawBlock(marcoRam, ancMargenDir,
                 blockUse[i].add1, blockUse[i].add2, pic.CPUMAXRAM);  //dibuja;
-    end else if blockUse[i].used = ruVar then begin
+    end else if blockUse[i].used = ruData then begin
       cv.Brush.Color := $FF8080;
       DrawBlock(marcoRam, ancMargenDir,
                 blockUse[i].add1, blockUse[i].add2, pic.CPUMAXRAM);  //dibuja;

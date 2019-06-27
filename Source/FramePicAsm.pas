@@ -97,7 +97,7 @@ begin
       //Fila sin selección
       if ramCell^.used = ruCode then begin
         cv.Brush.Color := clWhite;  //fondo blanco
-      end else if ramCell^.used = ruVar then begin
+      end else if ramCell^.used = ruData then begin
         cv.Brush.Color := clWhite;  //fondo blanco
       end else begin  //Dirección no usada
         cv.Brush.Color := $E0E0E0;
@@ -380,7 +380,7 @@ begin
 //StringGrid1.Cells[1, f] := IntToStr(pic.ram[addr].value);
       StringGrid1.Cells[2, f] := '';
       inc(addr);
-    end else if pic.ram[addr].used = ruVar then begin
+    end else if pic.ram[addr].used = ruData then begin
       //Es espacio para variable
       StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
       StringGrid1.Cells[1, f] := '<< Variable >>';

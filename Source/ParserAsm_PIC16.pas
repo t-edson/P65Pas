@@ -866,19 +866,23 @@ begin
   end else if tok = '(' then begin
     //Direccionamiento Indirecto: (indirect), (indirect,X) o (indirect),Y
     lexAsm.Next;
-    if tokType = lexAsm.tnNumber then begin
-      n := StrToInt(lexAsm.GetToken);
-      if (n>$FFFF) then begin
+    if tokType in [lexAsm.tnNumber, lexAsm.tnIdentif] then begin
+//      n := StrToInt(lexAsm.GetToken);
+      if not CaptureAddress(idInst, ad) then begin
         GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
         exit;
-      end else if n>255 then begin
+      end;
+      if (ad>$FFFF) then begin
+        GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+        exit;
+      end else if ad>255 then begin
         //Es un word. Solo podría ser del tiipo JMP ($FFFF)
-        pic.codAsm(idInst, aIndirect, n);
-        lexAsm.Next;  //Toma número
+        pic.codAsm(idInst, aIndirect, ad);
+        //lexAsm.Next;  //Toma número
         CaptureParenthes;  //Captura ')'
       end else begin
         //Es un byte. Solo podría ser (indirect,X) o (indirect),Y
-        lexAsm.Next;  //Toma número
+        //lexAsm.Next;  //Toma número
         skipWhites;
         if lexAsm.GetToken = ',' then begin
           //Solo puede ser (indirect,X)
@@ -888,7 +892,7 @@ begin
             GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
             exit;
           end;
-          pic.codAsm(idInst, aIndirecX, n);
+          pic.codAsm(idInst, aIndirecX, ad);
           //Faltaría verificar  ')'
         end else if lexAsm.GetToken = ')' then begin
           //Solo puede ser (indirect),Y
@@ -898,7 +902,7 @@ begin
             GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
             exit;
           end;
-          pic.codAsm(idInst, aIndirecY, n);
+          pic.codAsm(idInst, aIndirecY, ad);
           lexAsm.Next;  //Toma número
           skipWhites;
           if UpCase(lexAsm.GetToken) <> 'Y' then begin

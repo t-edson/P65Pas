@@ -173,6 +173,8 @@ type
     procedure _PHP; inline;
     procedure _PLA; inline;
     procedure _PLP; inline;
+    procedure _ROL(const addr: integer);
+    procedure _ROR(const addr: integer);
     procedure _RTS;
     procedure _RTI;
     procedure _SEC;
@@ -520,7 +522,7 @@ begin
     {May be problematic set absolute positions with a value, but we use this too to
     allocate structures in RAM}
     pic.ram[addr].value := iniVal;
-    pic.ram[addr].used := ruVar;   //mark as variable
+    pic.ram[addr].used := ruAbsData;   //mark as variable in absolute
   end;
 end;
 procedure TGenCodBas.CreateVarInRAM(xVar: TxpEleVar; shared: boolean = false);
@@ -1247,6 +1249,22 @@ end;
 procedure TGenCodBas._PLP;
 begin
   pic.codAsm(i_PLP, aImplicit, 0);
+end;
+procedure TGenCodBas._ROL(const addr: integer);
+begin
+  if addr<256 then begin
+    pic.codAsm(i_ROL, aZeroPage, addr);
+  end else begin
+    pic.codAsm(i_ROL, aAbsolute, addr);
+  end;
+end;
+procedure TGenCodBas._ROR(const addr: integer);
+begin
+  if addr<256 then begin
+    pic.codAsm(i_ROR, aZeroPage, addr);
+  end else begin
+    pic.codAsm(i_ROR, aAbsolute, addr);
+  end;
 end;
 procedure TGenCodBas._RTS; inline;
 begin
