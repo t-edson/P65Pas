@@ -54,7 +54,7 @@ protected
   function AddCallerTo(elem: TxpElement; callerElem: TxpElement): TxpEleCaller;
   function AddCallerTo(elem: TxpElement; const curPos: TSrcPos): TxpEleCaller;
 protected  //Creación de elementos
-  procedure ClearTypes;
+  procedure ClearSystemTypes;
   function CreateSysType(nom0: string; cat0: TTypeGroup; siz0: smallint
     ): TxpEleType;
   function FindSysEleType(TypName: string): TxpEleType;
@@ -324,7 +324,7 @@ begin
   end;
 end;
 //Creación de elementos
-procedure TCompilerBase.ClearTypes;  //Limpia los tipos del sistema
+procedure TCompilerBase.ClearSystemTypes;  //Limpia los tipos del sistema
 begin
   listTypSys.Clear;
 end;
@@ -1028,8 +1028,6 @@ begin
    LogExpLevel('-- Op1='+Op1.txt+', Op2='+Op2.txt+' --');
    {$ENDIF}
    //Busca si hay una operación definida para: <tipo de Op1>-opr-<tipo de Op2>
-//debugln('Op1: cat=%s, typ=%s',[Op1.StoOpStr, Op1.Typ.name]);
-//debugln('Op2: cat=%s, typ=%s',[Op2.StoOpStr, Op2.Typ.name]);
    Operation := opr.FindOperation(Op2.Typ);
    if Operation = nil then begin
       tmp := '(' + Op1.Typ.name + ') '+ opr.txt;
@@ -1315,7 +1313,6 @@ var
   cod   : Longint;
   ReadType, endWithComma, AddrUndef: Boolean;
   itType: TxpEleType;
-  nitems: Integer;
   xtyp : TxpEleType;
   srcpos: TSrcPos;
 begin
@@ -1415,7 +1412,6 @@ begin
     ProcComments;
     //Start reading the items
     ReadType := true;  //Set flag to read the item type
-    nitems := 0;
     Op.InitItems;  //Prepare filling constant items
     while not cIn.Eof and (cIn.tok <> ']') do begin
       //Must be an item
@@ -1454,14 +1450,14 @@ begin
       Op.CloseItems;  //Resize
       //Now we can know the type of the item and of the array
       cIn.Next;  //Take ']'.
-      typName := GenArrayTypeName(itType.name, Op.nItems);
+      typName := GenArrayTypeName(itType.name, Op.Value.nItems); //Op.nItems won't work
       if TreeElems.DeclaredType(typName, xtyp) then begin
         //Type exists. We have the reference in "xtyp".
       end else begin
         //The type doesn't exist. We need to create.
         xtyp := CreateEleType(typName, srcPos, tctArray);  //Crea sin nombre por ahora
         if HayError then exit; //Exit with error.
-        xtyp.nItems  := Op.nItems;   //Number of items
+        xtyp.nItems  := Op.Value.nItems;   //Number of items
         xtyp.itmType := itType;  //Item type
         CodDefineArray(xtyp);    //Crea campos comunes del arreglo
         //Add to the syntax tree
@@ -1605,62 +1601,44 @@ valorres.}
 var
   Op1, Op2: TOperand;
   opr1: TxpOperator;
-  p: TPosCont;
 begin
   Inc(ExprLevel);  //cuenta el anidamiento
   {$IFDEF LogExpres} LogExpLevel('>Inic.expr'); {$ENDIF}
-  if OnExprStart<>nil then OnExprStart;  //llama a evento
+  OnExprStart;  //llama a evento
   try
     {First we stop code generation, because we don't know if the instruction is a getter:
       proc()
     or a setter:
       a := b;
     }
-    OnReqStopCodeGen();
-    //OnReqStopAddCaller()  //Formally we would need to stop adding "callers", in order to avoid add duplicating calls.
-    p := cIn.PosAct;         //Save start of expression
-    DisableAddCalls := true; //To avoid duplicate calls
-    GetOperand(Op1, false);  //We assume is getter
-    DisableAddCalls := false;
+    //First operand compiled always as setter, because it's supposed to be
+    //de first part of an assigment.
+    GetOperand(Op1, true);  //Compile as setter.
     if HayError then exit;
     ProcComments;
-    opr1 := GetOperator(Op1); //We expect operand or end of instruction
+    opr1 := GetOperator(Op1); //We can validate assigment
     if opr1 = nil then begin
       //Not following an operator. We assume instruction ends;
-      OnReqStartCodeGen();  //Restart the code generation.
-      cIn.PosAct := p;   //Set to the start of expression
-      GetOperand(Op1, false);  //Compile as getter.
-      if HayError then exit;   //New errors can appear (memory)
-      if (Op1.Sto  = stConst) and (Op1.Typ<>typNull) then begin
+      if (Op1.Sto  = stConst) {and (Op1.Typ<>typNull)} then begin
         //Instruction alone is not valid
         GenError('Constants are not allowed here.');
       end;
     end else begin
-      //We have an operator, verify if apply.
-      if opr1 = nullOper then begin
-        GenError(ER_UND_OPER_TY_, [opr1.txt, Op1.Typ.name]);
+      //We have an operator.
+      case opr1.txt of
+      ':=', '+=', '-=' : begin  end;  //Expected
+      else
+        GenError('Expected ":=", "+=" or "-=".');
         exit;
       end;
-      //OK. We have an operator now.
-      if opr1.txt <> ':=' then begin
-        GenError('Expected ":="');
-        exit;
-      end;
-      //Finally we have detected an assignment.
-      OnReqStartCodeGen();  //Restart the code generation.
-      cIn.PosAct := p;   //Set to the start of expression
-      GetOperand(Op1, true);  //Compile as setter.
-      if HayError then exit;   //New errors can appear (memory)
-      ProcComments;
-      opr1 := GetOperator(Op1); //No need to do more validations
-      Op2 := GetExpression(0); //VAlue to assign
+      Op2 := GetExpression(Opr1.prec); //Value to assign
       if HayError then exit;
       //Call de operation
       Oper(Op1, opr1, Op2);    //Compile operation
       //Can generate error
     end;
   finally
-    if OnExprEnd<>nil then OnExprEnd(posExpres);    //llama al evento de salida
+    OnExprEnd(posExpres);    //llama al evento de salida
     {$IFDEF LogExpres} LogExpLevel('>Fin.expr'); {$ENDIF}
     Dec(ExprLevel);
     {$IFDEF LogExpres}
@@ -1960,19 +1938,19 @@ El objetivo final es determinar los accesos a las unidades.}
     uni : TxpEleUnit;
     cal , c: TxpEleCaller;
   begin
-debugln('+Scanning in:'+nod.name);
+//debugln('+Scanning in:'+nod.name);
     if nod.elements<>nil then begin
       for ele in nod.elements do begin
         //Solo se explora a las unidades
         if ele.idClass = eltUnit then begin
-debugln('  Unit:'+ele.name);
+//debugln('  Unit:'+ele.name);
           //"ele" es una unidad de "nod". Verifica si es usada
           uni := TxpEleUnit(ele);    //Accede a la unidad.
           uni.ReadInterfaceElements; //Accede a sus campos
           {Buscamos por los elementos de la interfaz de la unidad para ver si son
            usados}
           for eleInter in uni.InterfaceElements do begin
-debugln('    Interface Elem:'+eleInter.name);
+//debugln('    Interface Elem:'+eleInter.name);
             //Explora por los llamadores de este elemento.
             for cal in eleInter.lstCallers do begin
               eleUnit := cal.CallerUnit;   //Unidad o programa
@@ -1981,10 +1959,9 @@ debugln('    Interface Elem:'+eleInter.name);
                 la unidad.}
                 c := AddCallerTo(uni);
                 c.caller := cal.caller;
-//                c.curBnk := cal.curBnk;
                 c.curPos := cal.curPos;
-                debugln('      Added caller to %s from %s (%d,%d)',
-                        [uni.name, c.curPos.fil, c.curPos.row, c.curPos.col]);
+//                debugln('      Added caller to %s from %s (%d,%d)',
+//                        [uni.name, c.curPos.fil, c.curPos.row, c.curPos.col]);
               end;
             end;
           end;

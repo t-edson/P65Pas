@@ -71,6 +71,8 @@ type
       procedure fun_Byte(fun: TxpEleFunBase; out AddrUndef: boolean);
       procedure DefineArray(etyp: TxpEleType);
       procedure ROB_arr_asig_arr(Opt: TxpOperation; SetRes: boolean);
+      procedure ROB_word_aadd_byte(Opt: TxpOperation; SetRes: boolean);
+      procedure ROB_word_asub_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_word_shl_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_word_shr_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ValidRAMaddr(addr: integer);
@@ -170,7 +172,7 @@ begin
   BooleanFromZ := _PC;  //Activates flag, and get current address.
   _PHP;
   _PLA;
-  _AND($02);
+  _ANDi($02);
 end;
 procedure TGenCod.Copy_C_to_A;
 begin
@@ -178,7 +180,7 @@ begin
   BooleanFromC := _PC;  //Activates flag, and get current address.
   _PHP;
   _PLA;
-  _AND($01);
+  _ANDi($01);
 end;
 ////////////rutinas obligatorias
 procedure TGenCod.Cod_StartProgram;
@@ -274,8 +276,7 @@ end;
 ////////////Byte operations
 procedure TGenCod.ROB_byte_asig_byte(Opt: TxpOperation; SetRes: boolean);
 var
-  aux: TPicRegister;
-  rVar, idxVar: TxpEleVar;
+  idxVar: TxpEleVar;
   offaddr: Word;
   addrNextOp1, addrNextOp2: Integer;
 begin
@@ -459,11 +460,11 @@ addrNextOp2 := pic.iRam + 1;  //Address next instruction
           if p2^.Sto = stExpres then _PLA;  //Save A
           _CLC;
           _LDA(idxVar.addr0);  //Load index
-          _ADC(lo(offaddr));
+          _ADCi(lo(offaddr));
 addrNextOp1 := pic.iRam + 1;  //Address next instruction
           pic.codAsm(i_STA, aAbsolute, 0); //Store forward
           _LDA(idxVar.addr0+1);  //Load MSB
-          _ADC(hi(offaddr));
+          _ADCi(hi(offaddr));
 addrNextOp2 := pic.iRam + 1;  //Address next instruction
           pic.codAsm(i_STA, aAbsolute, 0); //Store forward
           case p2^.Sto of //Operand2 to assign
@@ -495,12 +496,6 @@ procedure TGenCod.ROB_byte_and_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
-
   case stoOperation of
   stConst_Const: begin  //suma de dos constantes. Caso especial
     SetROBResultConst_byte(value1 and value2);  //puede generar error
@@ -515,7 +510,7 @@ begin
     end;
     SetROBResultExpres_byte(Opt);
     _LDA(byte2);
-    _AND(value1);
+    _ANDi(value1);
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
     if value1 = 0 then begin  //Caso especial
@@ -526,7 +521,7 @@ begin
       exit;
     end;
     SetROBResultExpres_byte(Opt);
-    _AND(value1);
+    _ANDi(value1);
   end;
   stVariab_Const: begin
     if value2 = 0 then begin  //Caso especial
@@ -558,7 +553,7 @@ begin
       exit;
     end;
     SetROBResultExpres_byte(Opt);
-    _AND(value2)
+    _ANDi(value2)
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
@@ -567,8 +562,12 @@ begin
   stExpres_Expres:begin
     SetROBResultExpres_byte(Opt);
     //p1 está en la pila y p2 en el acumulador
-    rVar := GetVarByteFromStk;
-    _AND(rVar.adrByte0);
+//    rVar := GetVarByteFromStk;
+    _TAX;  //Save A
+    _PLA;
+    _STA(H.addr);  //Use H a temp variable.
+    _TXA;  //Restore A
+    _AND(H.addr);
     FreeStkRegisterByte;   //libera pila porque ya se uso
   end;
   else
@@ -579,12 +578,6 @@ procedure TGenCod.ROB_byte_or_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
-
   case stoOperation of
   stConst_Const: begin  //suma de dos constantes. Caso especial
     SetROBResultConst_byte(value1 or value2);  //puede generar error
@@ -648,13 +641,13 @@ begin
     SetROBResultExpres_byte(Opt);
     _ORA(byte2);
   end;
-  stExpres_Expres:begin
-    SetROBResultExpres_byte(Opt);
-    //p1 está en la pila y p2 en el acumulador
-    rVar := GetVarByteFromStk;
-    _ORA(rVar.adrByte0);
-    FreeStkRegisterByte;   //libera pila porque ya se uso
-  end;
+//  stExpres_Expres:begin
+//    SetROBResultExpres_byte(Opt);
+//    //p1 está en la pila y p2 en el acumulador
+//    rVar := GetVarByteFromStk;
+//    _ORA(rVar.adrByte0);
+//    FreeStkRegisterByte;   //libera pila porque ya se uso
+//  end;
   else
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
@@ -663,12 +656,6 @@ procedure TGenCod.ROB_byte_xor_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
-
   case stoOperation of
   stConst_Const: begin  //suma de dos constantes. Caso especial
     SetROBResultConst_byte(value1 xor value2);  //puede generar error
@@ -704,24 +691,19 @@ begin
     SetROBResultExpres_byte(Opt);
     _EOR(byte2);
   end;
-  stExpres_Expres:begin
-    SetROBResultExpres_byte(Opt);
-    //p1 está en la pila y p2 en el acumulador
-    rVar := GetVarByteFromStk;
-    _EOR(rVar.adrByte0);
-    FreeStkRegisterByte;   //libera pila porque ya se uso
-  end;
+//  stExpres_Expres:begin
+//    SetROBResultExpres_byte(Opt);
+//    //p1 está en la pila y p2 en el acumulador
+//    rVar := GetVarByteFromStk;
+//    _EOR(rVar.adrByte0);
+//    FreeStkRegisterByte;   //libera pila porque ya se uso
+//  end;
   else
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
 end;
 procedure TGenCod.ROB_byte_equal_byte(Opt: TxpOperation; SetRes: boolean);
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin  //compara constantes. Caso especial
     SetROBResultConst_bool(value1 = value2);
@@ -732,7 +714,7 @@ begin
       _LDA(byte2);
     end else begin
       _LDA(byte2);
-      _CMP(value1);
+      _CMPi(value1);
     end;
     Copy_Z_to_A;
   end;
@@ -741,7 +723,7 @@ begin
     if value1 = 0 then begin  //caso especial
       //Nothing
     end else begin
-      _CMP(value1);
+      _CMPi(value1);
     end;
     Copy_Z_to_A;
   end;
@@ -751,7 +733,7 @@ begin
       _LDA(byte1);
     end else begin
       _LDA(byte1);
-      _CMP(value2);
+      _CMPi(value2);
     end;
     Copy_Z_to_A;
   end;
@@ -770,7 +752,7 @@ begin
     if value2 = 0 then begin  //caso especial
       //Nothing
     end else begin
-      _CMP(value2);
+      _CMPi(value2);
     end;
     Copy_Z_to_A;
   end;
@@ -796,13 +778,8 @@ begin
 end;
 procedure TGenCod.ROB_byte_aadd_byte(Opt: TxpOperation; SetRes: boolean);
 {Operación de asignación suma: +=}
-var
-  aux: TPicRegister;
-  rVar: TxpEleVar;
 begin
-  //Simplifcamos el caso en que p2, sea de tipo p2^
-  if not ChangePointerToExpres(p2^) then exit;
-  //Caso especial de asignación
+  //Special assigment
   if p1^.Sto = stVariab then begin
     SetResultNull;  //Fomalmente,  una aisgnación no devuelve valores en Pascal
     //Asignación a una variable
@@ -810,10 +787,17 @@ begin
     stConst : begin
       if value2=0 then begin
         //Caso especial. No hace nada
+      end else if value2=1 then begin
+        //Caso especial.
+        _INC(byte1);
+      end else if value2=2 then begin
+        //Caso especial.
+        _INC(byte1);
+        _INC(byte1);
       end else begin
         _CLC;
         _LDA(byte1);
-        _ADC(value2);
+        _ADCi(value2);
         _STA(byte1);
       end;
     end;
@@ -911,12 +895,7 @@ begin
   end;
 end;
 procedure TGenCod.ROB_byte_asub_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  aux: TPicRegister;
-  rVar: TxpEleVar;
 begin
-  //Simplifcamos el caso en que p2, sea de tipo p2^
-  if not ChangePointerToExpres(p2^) then exit;
   //Caso especial de asignación
   if p1^.Sto = stVariab then begin
     SetResultNull;  //Fomalmente,  una aisgnación no devuelve valores en Pascal
@@ -925,10 +904,17 @@ begin
     stConst : begin
       if value2=0 then begin
         //Caso especial. No hace nada
+      end else if value2=1 then begin
+        //Caso especial.
+        _DEC(byte1);
+      end else if value2=2 then begin
+        //Caso especial.
+        _DEC(byte1);
+        _DEC(byte1);
       end else begin
         _SEC;
         _LDA(byte1);
-        _SBC(value2);
+        _SBCi(value2);
         _STA(byte1);
       end;
     end;
@@ -944,7 +930,7 @@ begin
       //Invierte
       _EORi($ff);
       _CLC;
-      _ADC(1);
+      _ADCi(1);
       //Devuelve
       _STA(byte1);
     end;
@@ -1034,11 +1020,6 @@ procedure TGenCod.ROB_byte_add_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin
     SetROBResultConst_byte(value1+value2);  //puede generar error
@@ -1051,7 +1032,9 @@ begin
     end else if value1 = 1 then begin
       //Caso especial
       SetROBResultExpres_byte(Opt);
-      _INC(byte2);
+      _LDX(byte2);
+      _INX;
+      _TXA;
       exit;
     end;
     SetROBResultExpres_byte(Opt);
@@ -1062,7 +1045,7 @@ begin
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _CLC;
-    _ADC(value1);
+    _ADCi(value1);
   end;
   stVariab_Const: begin
     ExchangeP1_P2;
@@ -1082,21 +1065,21 @@ begin
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _CLC;
-    _ADC(value2);
+    _ADCi(value2);
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _CLC;
     _ADC(byte2);
   end;
-  stExpres_Expres:begin
-    SetROBResultExpres_byte(Opt);
-    //La expresión p1 debe estar salvada y p2 en el acumulador
-    rVar := GetVarByteFromStk;
-    _CLC;
-    _ADC(rVar.adrByte0);  //opera directamente al dato que había en la pila. Deja en A
-    FreeStkRegisterByte;   //libera pila porque ya se uso
-  end;
+//  stExpres_Expres:begin
+//    SetROBResultExpres_byte(Opt);
+//    //La expresión p1 debe estar salvada y p2 en el acumulador
+//    rVar := GetVarByteFromStk;
+//    _CLC;
+//    _ADC(rVar.adrByte0);  //opera directamente al dato que había en la pila. Deja en A
+//    FreeStkRegisterByte;   //libera pila porque ya se uso
+//  end;
   else
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
@@ -1105,11 +1088,6 @@ procedure TGenCod.ROB_byte_sub_byte(Opt: TxpOperation; SetRes: boolean);
 var
   rVar: TxpEleVar;
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const:begin  //suma de dos constantes. Caso especial
     SetROBResultConst_byte(value1-value2);  //puede generar error
@@ -1133,7 +1111,7 @@ begin
     SetROBResultExpres_byte(Opt);
     _SEC;
     _LDA(byte1);
-    _SBC(value2);
+    _SBCi(value2);
   end;
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);
@@ -1148,26 +1126,26 @@ begin
     //Invierte
     _EORi($FF);
     _CLC;
-    _ADC(1);
+    _ADCi(1);
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _SEC;
-    _SBC(value2);
+    _SBCi(value2);
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     _SEC;
     _SBC(byte2);
   end;
-  stExpres_Expres:begin
-    SetROBResultExpres_byte(Opt);
-    //la expresión p1 debe estar salvada y p2 en el acumulador
-    rVar := GetVarByteFromStk;
-    _SEC;
-    _SBC(rVar.adrByte0);
-    FreeStkRegisterByte;   //libera pila porque ya se uso
-  end;
+//  stExpres_Expres:begin
+//    SetROBResultExpres_byte(Opt);
+//    //la expresión p1 debe estar salvada y p2 en el acumulador
+//    rVar := GetVarByteFromStk;
+//    _SEC;
+//    _SBC(rVar.adrByte0);
+//    FreeStkRegisterByte;   //libera pila porque ya se uso
+//  end;
   else
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
@@ -1176,8 +1154,6 @@ procedure TGenCod.byte_mul_byte_16(fun: TxpEleFun);
 //Routine to multiply 8 bits X 8 bits
 //E * A -> [H:A]  Usa registros: A,H,E,U
 //Basado en código de Andrew Warren http://www.piclist.com
-var
-  LOOP: Word;
 begin
     typWord.DefineRegister;   //Ensure H register exists.
 //    _CLRF (H.offs);
@@ -1196,8 +1172,6 @@ begin
 //    _RTS;
 end;
 procedure TGenCod.ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
 begin
   case stoOperation of
   stConst_Const: begin
@@ -1222,7 +1196,7 @@ begin
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);
 //    _CLC;
-//    _ADC(value1);
+//    _ADCi(value1);
 //  end;
 //  stVariab_Const: begin
 //    ExchangeP1_P2;
@@ -1242,7 +1216,7 @@ begin
 //  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);
 //    _CLC;
-//    _ADC(value2);
+//    _ADCi(value2);
 //  end;
 //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);
@@ -1263,11 +1237,6 @@ begin
 end;
 procedure TGenCod.ROB_byte_great_byte(Opt: TxpOperation; SetRes: boolean);
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin  //compara constantes. Caso especial
     SetROBResultConst_byte(ord(value1 > value2));
@@ -1280,7 +1249,7 @@ begin
     end else begin
       SetROBResultExpres_bool(Opt, logInverted);
       _LDA(byte2);
-      _CMP(value1); //Result in C (inverted)
+      _CMPi(value1); //Result in C (inverted)
       Copy_C_to_A; //Copy C to A (still inverted)
     end;
   end;
@@ -1293,7 +1262,7 @@ begin
       //Se necesita asegurar que p1, es mayo que cero.
       SetROBResultExpres_bool(Opt, logInverted);
       //p2, already in A
-      _CMP(value1); //Result in C (inverted)
+      _CMPi(value1); //Result in C (inverted)
       Copy_C_to_A; //Copy C to A (still inverted)
     end;
   end;
@@ -1329,7 +1298,7 @@ begin
     end else begin
       SetROBResultExpres_bool(Opt, logNormal);
       //p1, already in A
-      _CMP(value2+1); //p1 >= p2+1. We've verified value2<255
+      _CMPi(value2+1); //p1 >= p2+1. We've verified value2<255
       Copy_C_to_A; //Copy C to A
     end;
   end;
@@ -1352,21 +1321,17 @@ begin
 end;
 procedure TGenCod.ROB_byte_less_byte(Opt: TxpOperation; SetRes: boolean);
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   //A < B es lo mismo que B > A
   case stoOperation of
   stExpres_Expres:begin
-    {Este es el único caso que no se puede invertir, por la posición de los operandos en
-     la pila.}
-    //la expresión p1 debe estar salvada y p2 en el acumulador
-    p1^.SetAsVariab(GetVarByteFromStk);  //Convierte a variable
-    //Luego el caso es similar a stVariab_Expres
-    ROB_byte_less_byte(Opt, SetRes);
-    FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
+//    {Este es el único caso que no se puede invertir, por la posición de los operandos en
+//     la pila.}
+//    //la expresión p1 debe estar salvada y p2 en el acumulador
+//    p1^.SetAsVariab(GetVarByteFromStk);  //Convierte a variable
+//    //Luego el caso es similar a stVariab_Expres
+//    ROB_byte_less_byte(Opt, SetRes);
+//    FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
+    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
   else
     //Para los otros casos, funciona
@@ -1386,11 +1351,6 @@ begin
 end;
 procedure TGenCod.ROB_byte_shr_byte(Opt: TxpOperation; SetRes: boolean);  //Desplaza a la derecha
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin  //compara constantes. Caso especial
     SetROBResultConst_byte(value1 >> value2);
@@ -1480,11 +1440,6 @@ begin
 end;
 procedure TGenCod.ROB_byte_shl_byte(Opt: TxpOperation; SetRes: boolean);   //Desplaza a la izquierda
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin  //compara constantes. Caso especial
     SetROBResultConst_byte(value1 << value2);
@@ -1575,8 +1530,6 @@ end;
 ////////////operaciones con Boolean
 procedure TGenCod.ROB_bool_asig_bool(Opt: TxpOperation; SetRes: boolean);
 begin
-  //Simplifcamos el caso en que p2, sea de tipo p2^
-  if not ChangePointerToExpres(p2^) then exit;
   //Realiza la asignación
   if p1^.Sto = stVariab then begin
     SetResultNull;  //Fomalmente, una asignación no devuelve valores en Pascal
@@ -1609,11 +1562,6 @@ procedure TGenCod.ROB_bool_and_bool(Opt: TxpOperation; SetRes: boolean);
 var
   sale0: integer;
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin  //Special case. Comapares constants.
     SetROBResultConst_bool(p1^.valBool and p2^.valBool);
@@ -1696,11 +1644,6 @@ _LABEL_post(sale0);
 end;
 procedure TGenCod.ROB_bool_equal_bool(Opt: TxpOperation; SetRes: boolean);
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin  //Special case. Comapares constants.
     SetROBResultConst_bool(p1^.valBool = p2^.valBool);
@@ -1755,7 +1698,7 @@ begin
     _PHP;     //Save SR
     _PLA;     //In A
     _EOR(H);  //0 if equals
-    _AND($02);//Mask position of bit Z. if equals -> Z = 1
+    _ANDi($02);//Mask position of bit Z. if equals -> Z = 1
     Copy_Z_to_A;  //Logic inverted
     {//Alternative version (not tested)
     SetROBResultExpres_bool(Opt);
@@ -1766,7 +1709,7 @@ begin
     //Invert Z
     _PHP;
     _PLA;
-    _AND($02);  //if Z was 1, set Z to 0, if Z was 0, set Z to 1
+    _ANDi($02);  //if Z was 1, set Z to 0, if Z was 0, set Z to 1
     _JMP_post(exit0);  //exit with result in Z
 _LABEL_post(false0):
     _LDA(byte2);  //if equal, Z=1
@@ -1785,7 +1728,7 @@ _LABEL_post(exit0):
     _PHP;     //Save SR
     _PLA;     //In A
     _EOR(H);  //0 if equals
-    _AND($02);//Mask position of bit Z. if equals -> Z = 1
+    _ANDi($02);//Mask position of bit Z. if equals -> Z = 1
     Copy_Z_to_A;  //Logic inverted
   end;
   stExpres_Const: begin   //Expresion p1 evaluated in A
@@ -1812,7 +1755,7 @@ _LABEL_post(exit0):
     _PHP;     //Save SR
     _PLA;     //In A
     _EOR(H);  //0 if equals
-    _AND($02);//Mask position of bit Z. if equals -> Z = 1
+    _ANDi($02);//Mask position of bit Z. if equals -> Z = 1
     Copy_Z_to_A;  //Logic inverted
   end;
 //  stExpres_Expres:begin
@@ -1834,8 +1777,6 @@ end;
 ////////////operaciones con Word
 procedure TGenCod.ROB_word_asig_word(Opt: TxpOperation; SetRes: boolean);
 begin
-  //Simplifcamos el caso en que p2, sea de tipo p2^
-  if not ChangePointerToExpres(p2^) then exit;
   //Realiza la asignación
   if p1^.Sto = stVariab then begin
     case p2^.Sto of
@@ -1967,11 +1908,6 @@ procedure TGenCod.ROB_word_equal_word(Opt: TxpOperation; SetRes: boolean);
 var
   sale0: integer;
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin  //compara constantes. Caso especial
     SetROBResultConst_byte(ORD(value1 = value2));
@@ -2003,10 +1939,10 @@ _LABEL_post(sale0);
   stVariab_Const: begin
     SetROBResultExpres_bool(Opt);
     _LDA(byte1L);
-    _CMP(value2L);
+    _CMPi(value2L);
     _BNE_post(sale0);  //different, exit with Z=0.
     _LDA(byte1H);
-    _CMP(value2H);  //different, ends with Z=0.
+    _CMPi(value2H);  //different, ends with Z=0.
 _LABEL_post(sale0);
     Copy_Z_to_A;  //Logic inverted
   end;
@@ -2079,16 +2015,16 @@ begin
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
 //    SetROBResultExpres_byte(Opt);
-//    _AND(value1L);      //Deja en A
+//    _ANDi(value1L);      //Deja en A
 //  end;
   stVariab_Const: begin
     SetROBResultExpres_word(Opt);
     _CLC;
     _LDA(byte1L);
-    _ADC(value2L);
+    _ADCi(value2L);
     _TAX;  //Save
     _LDA(byte1H);
-    _ADC(0);
+    _ADCi(0);
     _STA(H);
     _TXA;
   end;
@@ -2099,7 +2035,7 @@ begin
     _ADC(byte2L);
     _TAX;  //Save
     _LDA(byte1H);
-    _ADC(0);
+    _ADCi(0);
     _STA(H);
     _TXA;
   end;
@@ -2109,7 +2045,7 @@ begin
 //  end;
 //  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
 //    SetROBResultExpres_byte(Opt);
-//    _AND(value2L);
+//    _ANDi(value2L);
 //  end;
 //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
 //    SetROBResultExpres_byte(Opt);
@@ -2147,16 +2083,16 @@ begin
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
 //    SetROBResultExpres_byte(Opt);
-//    _AND(value1L);      //Deja en A
+//    _ANDi(value1L);      //Deja en A
 //  end;
   stVariab_Const: begin
     SetROBResultExpres_word(Opt);
     _CLC;
     _LDA(byte1L);
-    _ADC(value2L);
+    _ADCi(value2L);
     _TAX;  //Save
     _LDA(byte1H);
-    _ADC(value2H);
+    _ADCi(value2H);
     _STA(H);
     _TXA;  //Restore A
   end;
@@ -2176,7 +2112,7 @@ begin
 //  end;
 //  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
 //    SetROBResultExpres_byte(Opt);
-//    _AND(value2L);
+//    _ANDi(value2L);
 //  end;
 //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
 //    SetROBResultExpres_byte(Opt);
@@ -2195,8 +2131,6 @@ begin
   end;
 end;
 procedure TGenCod.ROB_word_sub_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
 begin
   case stoOperation of
   stConst_Const:begin  //suma de dos constantes. Caso especial
@@ -2210,7 +2144,7 @@ begin
     _SBC(byte2L);
     _TAX;  //Save
     _LDAi(value1H);
-    _SBC(0);
+    _SBCi(0);
     _STA(H);
     _TXA;  //Restore A
   end;
@@ -2226,10 +2160,10 @@ begin
     SetROBResultExpres_word(Opt);
     _SEC;
     _LDA(byte1L);
-    _SBC(value2L);
+    _SBCi(value2L);
     _TAX;  //Save
     _LDA(byte1H);
-    _SBC(0);
+    _SBCi(0);
     _STA(H);
     _TXA;  //Restore A
   end;
@@ -2240,7 +2174,7 @@ begin
     _SBC(byte2L);
     _TAX;  //Save
     _LDA(byte1H);
-    _SBC(0);
+    _SBCi(0);
     _STA(H);
     _TXA;  //Restore A
   end;
@@ -2251,12 +2185,12 @@ begin
 //    //Invierte
 //    _EORi($FF);
 //    _CLC;
-//    _ADC(1);
+//    _ADCi(1);
 //  end;
 //  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);
 //    _SEC;
-//    _SBC(value2);
+//    _SBCi(value2);
 //  end;
 //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);
@@ -2305,10 +2239,10 @@ begin
     SetROBResultExpres_word(Opt);
     _SEC;
     _LDA(byte1L);
-    _SBC(value2L);
+    _SBCi(value2L);
     _TAX;  //Save
     _LDA(byte1H);
-    _SBC(value2H);
+    _SBCi(value2H);
     _STA(H);
     _TXA;  //Restore A
   end;
@@ -2330,12 +2264,12 @@ begin
 //    //Invierte
 //    _EORi($FF);
 //    _CLC;
-//    _ADC(1);
+//    _ADCi(1);
 //  end;
 //  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);
 //    _SEC;
-//    _SBC(value2);
+//    _SBCi(value2);
 //  end;
 //  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);
@@ -2354,6 +2288,254 @@ begin
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
 end;
+procedure TGenCod.ROB_word_aadd_byte(Opt: TxpOperation; SetRes: boolean);
+var
+  L1, L2: integer;
+begin
+  //Special assigment
+  if p1^.Sto = stVariab then begin
+    SetResultNull;  //Fomalmente,  una aisgnación no devuelve valores en Pascal
+    //Asignación a una variable
+    case p2^.Sto of
+    stConst : begin
+      if value2=0 then begin
+        //Caso especial. No hace nada
+      end else if value2=1 then begin
+        //Caso especial.
+        _INC(byte1L);
+        _BNE_post(L1);
+        _INC(byte1H);
+_LABEL_post(L1);
+      end else begin
+        _CLC;
+        _LDA(byte1L);
+        _ADCi(value2);
+        _STA(byte1L);
+        _BCC_post(L2);
+        _INC(byte1H);
+_LABEL_post(L2);
+      end;
+    end;
+    stVariab: begin
+      _LDA(byte1);
+      _CLC;
+      _ADC(byte2);
+      _STA(byte1);
+    end;
+    stExpres: begin  //ya está en A
+      _CLC;
+      _ADC(byte1);
+      _STA(byte1);
+    end;
+    else
+      GenError(MSG_UNSUPPORTED); exit;
+    end;
+//  end else if p1^.Sto = stExpRef then begin
+//    {Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
+//    cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
+//    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+//    case p2^.Sto of
+//    stConst : begin
+//      //Asignación normal
+//      if value2=0 then begin
+//        //Caso especial. No hace nada
+//      end else begin
+//        kMOVWF(FSR);  //direcciona
+//        _ADDWF(0, toF);
+//      end;
+//    end;
+//    stVariab: begin
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(byte2, toW);
+//      _ADDWF(0, toF);
+//    end;
+//    stExpres: begin
+//      //La dirección está en la pila y la expresión en A
+//      aux := GetAuxRegisterByte;
+//      kMOVWF(aux);   //Salva A (p2)
+//      //Apunta con p1
+//      rVar := GetVarByteFromStk;
+//      kMOVF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en A
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(aux, toW);
+//      _ADDWF(0, toF);
+//      aux.used := false;
+//      exit;
+//    end;
+//    else
+//      GenError(MSG_UNSUPPORTED); exit;
+//    end;
+//  end else if p1^.Sto = stVarRef then begin
+//    //Asignación a una variable
+//    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+//    case p2^.Sto of
+//    stConst : begin
+//      //Asignación normal
+//      if value2=0 then begin
+//        //Caso especial. No hace nada
+//      end else begin
+//        //Caso especial de asignación a puntero dereferenciado: variable^
+//        kMOVF(byte1, toW);
+//        kMOVWF(FSR);  //direcciona
+//        _ADDWF(0, toF);
+//      end;
+//    end;
+//    stVariab: begin
+//      //Caso especial de asignación a puntero derefrrenciado: variable^
+//      kMOVF(byte1, toW);
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(byte2, toW);
+//      _ADDWF(0, toF);
+//    end;
+//    stExpres: begin  //ya está en A
+//      //Caso especial de asignación a puntero derefrrenciado: variable^
+//      aux := GetAuxRegisterByte;
+//      kMOVWF(aux);   //Salva A (p2)
+//      //Apunta con p1
+//      kMOVF(byte1, toW);
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(aux, toW);
+//      _ADDWF(0, toF);
+//      aux.used := false;
+//    end;
+//    else
+//      GenError(MSG_UNSUPPORTED); exit;
+//    end;
+  end else begin
+    GenError('Cannot assign to this Operand.'); exit;
+  end;
+end;
+procedure TGenCod.ROB_word_asub_byte(Opt: TxpOperation; SetRes: boolean);
+var
+  L1: integer;
+begin
+  //Caso especial de asignación
+  if p1^.Sto = stVariab then begin
+    SetResultNull;  //Fomalmente,  una aisgnación no devuelve valores en Pascal
+    //Asignación a una variable
+    case p2^.Sto of
+    stConst : begin
+      if value2=0 then begin
+        //Caso especial. No hace nada
+      end else if value2=1 then begin
+        //Caso especial.
+        _LDA(byte1L);
+        _BNE_post(L1);
+        _DEC(byte1H);
+_LABEL_post(L1);
+        _DEC(byte1L);
+      end else begin
+        _SEC;
+        _LDA(byte1L);
+        _SBCi(value2L);
+        _STA(byte1L);
+        _LDA(byte1H);
+        _SBCi(0);
+        _STA(byte1H);
+      end;
+    end;
+    stVariab: begin
+      _SEC;
+      _LDA(byte1);
+      _SBC(byte2);
+      _STA(byte1);
+    end;
+    stExpres: begin  //ya está en A
+      _SEC;
+      _SBC(byte1);   //a - p1 -> a
+      //Invierte
+      _EORi($ff);
+      _CLC;
+      _ADCi(1);
+      //Devuelve
+      _STA(byte1);
+    end;
+    else
+      GenError(MSG_UNSUPPORTED); exit;
+    end;
+//  end else if p1^.Sto = stExpRef then begin
+//    {Este es un caso especial de asignación a un puntero a byte dereferenciado, pero
+//    cuando el valor del puntero es una expresión. Algo así como (ptr + 1)^}
+//    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+//    case p2^.Sto of
+//    stConst : begin
+//      //Asignación normal
+//      if value2=0 then begin
+//        //Caso especial. No hace nada
+//      end else begin
+//        kMOVWF(FSR);  //direcciona
+//        _SUBWF(0, toF);
+//      end;
+//    end;
+//    stVariab: begin
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(byte2, toW);
+//      _SUBWF(0, toF);
+//    end;
+//    stExpres: begin
+//      //La dirección está en la pila y la expresión en A
+//      aux := GetAuxRegisterByte;
+//      kMOVWF(aux);   //Salva A (p2)
+//      //Apunta con p1
+//      rVar := GetVarByteFromStk;
+//      kMOVF(rVar.adrByte0, toW);  //opera directamente al dato que había en la pila. Deja en A
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(aux, toW);
+//      _SUBWF(0, toF);
+//      aux.used := false;
+//      exit;
+//    end;
+//    else
+//      GenError(MSG_UNSUPPORTED); exit;
+//    end;
+//  end else if p1^.Sto = stVarRef then begin
+//    //Asignación a una variable
+//    SetResultNull;  //Fomalmente, una aisgnación no devuelve valores en Pascal
+//    case p2^.Sto of
+//    stConst : begin
+//      //Asignación normal
+//      if value2=0 then begin
+//        //Caso especial. No hace nada
+//      end else begin
+//        //Caso especial de asignación a puntero dereferenciado: variable^
+//        kMOVF(byte1, toW);
+//        kMOVWF(FSR);  //direcciona
+//        _SUBWF(0, toF);
+//      end;
+//    end;
+//    stVariab: begin
+//      //Caso especial de asignación a puntero derefrrenciado: variable^
+//      kMOVF(byte1, toW);
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(byte2, toW);
+//      _SUBWF(0, toF);
+//    end;
+//    stExpres: begin  //ya está en A
+//      //Caso especial de asignación a puntero derefrrenciado: variable^
+//      aux := GetAuxRegisterByte;
+//      kMOVWF(aux);   //Salva A (p2)
+//      //Apunta con p1
+//      kMOVF(byte1, toW);
+//      kMOVWF(FSR);  //direcciona
+//      //Asignación normal
+//      kMOVF(aux, toW);
+//      _SUBWF(0, toF);
+//      aux.used := false;
+//    end;
+//    else
+//      GenError(MSG_UNSUPPORTED); exit;
+//    end;
+  end else begin
+    GenError('Cannot assign to this Operand.'); exit;
+  end;
+end;
 procedure TGenCod.ROB_word_and_byte(Opt: TxpOperation; SetRes: boolean);
 begin
   case stoOperation of
@@ -2368,12 +2550,12 @@ begin
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
     SetROBResultExpres_byte(Opt);
-    _AND(value1L);      //Deja en A
+    _ANDi(value1L);      //Deja en A
   end;
   stVariab_Const: begin
     SetROBResultExpres_byte(Opt);
     _LDA(byte1L);
-    _AND(value2L);
+    _ANDi(value2L);
   end;
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);
@@ -2386,7 +2568,7 @@ begin
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
     SetROBResultExpres_byte(Opt);
-    _AND(value2L);
+    _ANDi(value2L);
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
     SetROBResultExpres_byte(Opt);
@@ -2420,7 +2602,7 @@ begin
 //  end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
 //    SetROBResultExpres_byte(Opt);
-//    _AND(value1L);      //Deja en A
+//    _ANDi(value1L);      //Deja en A
 //  end;
   stVariab_Const: begin
     SetROBResultExpres_word(Opt);
@@ -2475,7 +2657,7 @@ begin
 //  end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
 //    SetROBResultExpres_byte(Opt);
-//    _AND(value1L);      //Deja en A
+//    _ANDi(value1L);      //Deja en A
 //  end;
   stVariab_Const: begin
     SetROBResultExpres_word(Opt);
@@ -2546,11 +2728,6 @@ procedure TGenCod.ROB_string_add_string(Opt: TxpOperation; SetRes: boolean);
 {Implementation of string is incomplete. Just created this oepration to facilitate
 initialization of ARRAY OF chars with string}
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin  //Special case. Comapares constants.
     SetResultConst(typString);
@@ -2564,11 +2741,6 @@ procedure TGenCod.ROB_string_add_char(Opt: TxpOperation; SetRes: boolean);
 {Implementation of string is incomplete. Just created this oepration to facilitate
 initialization of ARRAY OF chars with string}
 begin
-  if (p1^.Sto = stExpRef) and (p2^.Sto = stExpRef) then begin
-    GenError('Too complex pointer expression.'); exit;
-  end;
-  if not ChangePointerToExpres(p1^) then exit;
-  if not ChangePointerToExpres(p2^) then exit;
   case stoOperation of
   stConst_Const: begin  //Special case. Comapares constants.
     SetResultConst(typString);
@@ -3283,6 +3455,7 @@ begin
   xLex.Rebuild;   //es necesario para terminar la definición
 end;
 procedure TGenCod.DefCompiler;
+{}
 var
   opr: TxpOperator;
 begin
@@ -3290,13 +3463,51 @@ begin
   OnExprStart := @expr_start;
   OnExprEnd := @expr_End;
 
-  {Los operadores deben crearse con su precedencia correcta
-  Precedencia de operadores en Pascal:
-  6)    ~, not, signo "-"   (mayor precedencia)
+  ///////////Crea tipos
+  ClearSystemTypes;
+  //////////////// Boolean type /////////////
+  typBool := CreateSysType('boolean',t_uinteger,1);   //de 1 byte
+  typBool.OnLoadToRT   := @byte_LoadToRT;
+  typBool.OnDefRegister:= @byte_DefineRegisters;
+  typBool.OnSaveToStk  := @byte_SaveToStk;
+  //typBool.OnReadFromStk :=
+  //////////////// Byte type /////////////
+  typByte := CreateSysType('byte',t_uinteger,1);   //de 1 byte
+  typByte.OnLoadToRT   := @byte_LoadToRT;
+  typByte.OnDefRegister:= @byte_DefineRegisters;
+  typByte.OnSaveToStk  := @byte_SaveToStk;
+  //typByte.OnReadFromStk :=
+
+  //////////////// Char type /////////////
+  //Tipo caracter
+  typChar := CreateSysType('char',t_uinteger,1);   //de 1 byte. Se crea como uinteger para leer/escribir su valor como número
+  typChar.OnLoadToRT   := @byte_LoadToRT;  //Es lo mismo
+  typChar.OnDefRegister:= @byte_DefineRegisters;  //Es lo mismo
+  typChar.OnSaveToStk  := @byte_SaveToStk; //Es lo mismo
+
+  //////////////// Word type /////////////
+  //Tipo numérico de dos bytes
+  typWord := CreateSysType('word',t_uinteger,2);   //de 2 bytes
+  typWord.OnLoadToRT   := @word_LoadToRT;
+  typWord.OnDefRegister:= @word_DefineRegisters;
+  typWord.OnSaveToStk  := @word_SaveToStk;
+//  typWord.OnClearItems := @word_ClearItems;
+
+  typWord.CreateField('Low', @word_Low, @word_Low);
+  typWord.CreateField('High', @word_High, @word_High);
+
+  //////////////// String type /////////////
+  {Se crea el tipo String, solo para permitir inicializar arreglos de
+  caracteres. Por ahora no se implementan otras funcionalidades.}
+  typString := CreateSysType('string', t_string, 0);  //tamaño variable
+  { TODO : String debería definirse mejor como un tipo común, no del sistema }
+
+  {Operators must be created according to the Operator precedence in Pascal:
+  6)    ~, not, signo "-"   (high precedence)
   5)    *, /, div, mod, and, shl, shr, &
   4)    |, !, +, -, or, xor
   3)    =, <>, <, <=, >, >=, in
-  2)    :=                  (menor precedencia)
+  2)    :=                  (low precedence)
   }
   //////////////////////////////////////////
   //////// Boolean operations ////////////
@@ -3393,6 +3604,10 @@ begin
   opr:=typWord.CreateBinaryOperator('-',4,'sub');  //sub
   opr.CreateOperation(typByte, @ROB_word_sub_byte);
   opr.CreateOperation(typWord, @ROB_word_sub_word);
+  opr:=typWord.CreateBinaryOperator('+=',2,'aadd');  //asignación-suma
+  opr.CreateOperation(typByte,@ROB_word_aadd_byte);
+  opr:=typWord.CreateBinaryOperator('-=',2,'asub');  //asignación-resta
+  opr.CreateOperation(typByte,@ROB_word_asub_byte);
 
   opr:=typWord.CreateBinaryOperator('>>',5,'shr');  { TODO : Definir bien la precedencia }
   opr.CreateOperation(typByte,@ROB_word_shr_byte);
@@ -3416,7 +3631,7 @@ begin
   cIn.Next;  //Toma identificador de campo
   Op := OpPtr;
   case Op^.Sto of
-  stVariab: begin
+  stConst, stVariab: begin
     //Se devuelve una constante, byte
     res.SetAsConst(typByte);
     res.valInt := 0;  //por ahora siempre inicia en 0
@@ -3429,16 +3644,14 @@ procedure TGenCod.arrayHigh(const OpPtr: pointer);
 //Devuelve el índice máximo de un arreglo
 var
   Op: ^TOperand;
-  xvar: TxpEleVar;
 begin
   cIn.Next;  //Toma identificador de campo
   Op := OpPtr;
   case Op^.Sto of
-  stVariab: begin
-    xvar := Op^.rVar;  //Se supone que debe ser de tipo ARRAY
-    //Se devuelve una constante, byte
-    res.SetAsConst(typByte);
-    res.valInt {%H-}:= xvar.typ.nItems-1;
+  stConst, stVariab: begin
+    if Op^.nItems-1>255 then res.SetAsConst(typWord)
+    else res.SetAsConst(typByte);
+    res.valInt := Op^.nItems-1;  //Lee directamente
   end;
   else
     GenError('Syntax error.');
@@ -3448,16 +3661,14 @@ procedure TGenCod.arrayLength(const OpPtr: pointer);
 //Devuelve la cantidad de elementos de un arreglo
 var
   Op: ^TOperand;
-  xvar: TxpEleVar;
 begin
   cIn.Next;  //Toma identificador de campo
   Op := OpPtr;
   case Op^.Sto of
-  stVariab: begin
-    xvar := Op^.rVar;  //Se supone que debe ser de tipo ARRAY
-    //Se devuelve una constante, byte
-    res.SetAsConst(typByte);
-    res.valInt := xvar.typ.nItems;
+  stConst, stVariab: begin
+    if Op^.nItems>255 then res.SetAsConst(typWord)
+    else res.SetAsConst(typByte);
+    res.valInt := Op^.nItems;  //Lee directamente
   end;
   else
     GenError('Syntax error.');
@@ -3523,8 +3734,8 @@ begin
         //Now we have the variable created in RAM. Lets move
         _LDXi(nBytes);
 _LABEL_pre(j2);
-        pic.codAsm(i_LDA, aAbsolutX, startAddr-1);  //Fix address to fit the index loop
-        pic.codAsm(i_STA, aAbsolutX, p1^.rVar.addr0-1);  //Fix address to fit the index loop
+        pic.codAsm(i_LDA, aAbsolutX, (startAddr-1) and $FFFF);  //Fix address to fit the index loop
+        pic.codAsm(i_STA, aAbsolutX, (p1^.rVar.addr0-1) and $FFFF);  //Fix address to fit the index loop
         _DEX;
         _BNE_pre(j2);
       end else begin
@@ -3544,8 +3755,8 @@ _LABEL_pre(j2);
         //Now we have the variable created in RAM. Lets move
         _LDXi(nBytes);
 _LABEL_pre(j2);
-        pic.codAsm(i_LDA, aAbsolutX, p2^.rVar.addr0-1);  //Fix address to fit the index loop
-        pic.codAsm(i_STA, aAbsolutX, p1^.rVar.addr0-1);  //Fix address to fit the index loop
+        pic.codAsm(i_LDA, aAbsolutX, (p2^.rVar.addr0-1) and $FFFF);  //Fix address to fit the index loop
+        pic.codAsm(i_STA, aAbsolutX, (p1^.rVar.addr0-1) and $FFFF);  //Fix address to fit the index loop
         _DEX;
         _BNE_pre(j2);
       end else begin
@@ -3750,7 +3961,6 @@ procedure TGenCod.GenCodArrayClear(const OpPtr: pointer);
 var
   Op: ^TOperand;
   xvar: TxpEleVar;
-  j1: Word;
   n, LABEL1: Integer;
 begin
   cIn.Next;  //Toma identificador de campo
@@ -3856,7 +4066,7 @@ begin
   etyp.CreateField('high'  , @arrayHigh, nil);
   etyp.CreateField('low'   , @arrayLow, nil);
   etyp.CreateField('item'  , @GenCodArrayGetItem, @GenCodArraySetItem);
-  etyp.CreateField('clear' , @GenCodArrayClear, nil);
+  etyp.CreateField('clear' , @GenCodArrayClear, @GenCodArrayClear);
   etyp.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address); //defined in all types
   opr := etyp.CreateBinaryOperator(':=', 2, 'asig');
   opr.CreateOperation(etyp, @ROB_arr_asig_arr);

@@ -76,7 +76,6 @@ type
     function GetAuxRegisterByte: TPicRegister;
     //Gestión de la pila
     function GetStkRegisterByte: TPicRegister;
-    function GetVarByteFromStk: TxpEleVar;
     function GetVarWordFromStk: TxpEleVar;
     function FreeStkRegisterByte: boolean;
     function FreeStkRegisterWord: boolean;
@@ -120,17 +119,17 @@ type
     procedure SetROUResultExpRef(rVarBase: TxpEleVar; typ: TxpEleType);
     //Adicionales
     procedure ChangeResultCharToByte;
-    function ChangePointerToExpres(var ope: TOperand): boolean;
   protected  //Instrucciones
     function _PC: word;
     function _CLOCK: integer;
     procedure _LABEL_post(igot: integer);
     procedure _LABEL_pre(out curAddr: integer);
     //Instrucciones simples
-    procedure _ADC(const k: word);  //immidiate
+    procedure _ADCi(const k: word);  //immidiate
     procedure _ADC(const f: TPicRegister);  //Absolute/Zeropage
-    procedure _AND(const k: word);
+    procedure _ANDi(const k: word);
     procedure _AND(const f: TPicRegister);
+    procedure _AND(const addr: integer);
     procedure _ASL(const f: word);
     procedure _ASLa;
     procedure _LSR(const f: word);
@@ -148,7 +147,7 @@ type
     procedure _BCS(const ad: ShortInt);
     procedure _BCS_post(out ibranch: integer);
     procedure _CLC;
-    procedure _CMP(const k: word);  //immidiate
+    procedure _CMPi(const k: word);  //immidiate
     procedure _CMP(const f: TPicRegister);  //Absolute/Zeropage
     procedure _DEX;
     procedure _DEY;
@@ -179,7 +178,7 @@ type
     procedure _RTI;
     procedure _SEC;
     procedure _SED;
-    procedure _SBC(const k: word);   //SBC Immediate
+    procedure _SBCi(const k: word);   //SBC Immediate
     procedure _SBC(const f: TPicRegister);  //SBC Absolute/Zeropage
     procedure _STA(const f: TPicRegister);  //STX Absolute/Zeropage
     procedure _STA(addr: integer);          //STX Absolute/Zeropage
@@ -438,19 +437,19 @@ begin
   Result.used := true;   //lo marca
   inc(stackTop);  //actualiza
 end;
-function TGenCodBas.GetVarByteFromStk: TxpEleVar;
-{Devuelve la referencia a una variable byte, que representa al último byte agregado en
-la pila. Se usa como un medio de trabajar con los datos de la pila.}
-var
-  topreg: TPicRegister;
-begin
-  topreg := listRegStk[stackTop-1];  //toma referencia de registro de la pila
-  //Usamos la variable "varStkByte" que existe siempre, para devolver la referencia.
-  //Primero la hacemos apuntar a la dirección física de la pila
-  varStkByte.addr0 := topReg.addr;
-  //Ahora que tenemos ya la variable configurada, devolvemos la referecnia
-  Result := varStkByte;
-end;
+//function TGenCodBas.GetVarByteFromStk: TxpEleVar;
+//{Devuelve la referencia a una variable byte, que representa al último byte agregado en
+//la pila. Se usa como un medio de trabajar con los datos de la pila.}
+//var
+//  topreg: TPicRegister;
+//begin
+//  topreg := listRegStk[stackTop-1];  //toma referencia de registro de la pila
+//  //Usamos la variable "varStkByte" que existe siempre, para devolver la referencia.
+//  //Primero la hacemos apuntar a la dirección física de la pila
+//  varStkByte.addr0 := topReg.addr;
+//  //Ahora que tenemos ya la variable configurada, devolvemos la referecnia
+//  Result := varStkByte;
+//end;
 function TGenCodBas.GetVarWordFromStk: TxpEleVar;
 {Devuelve la referencia a una variable word, que representa al último word agregado en
 la pila. Se usa como un medio de trabajar con los datos de la pila.}
@@ -538,7 +537,6 @@ var
   //offs, bnk: byte;
   addr: word;
   valByte0, valByte1: Byte;
-  car: char;
   value: TConsValue;
   i: integer;
   items: array of TConsValue;
@@ -913,44 +911,6 @@ procedure TGenCodBas.ChangeResultCharToByte;
 begin
 
 end;
-function TGenCodBas.ChangePointerToExpres(var ope: TOperand): boolean;
-{Convierte un operando de tipo puntero dereferenciado (x^), en una expresión en los RT,
-para que pueda ser evaluado, sin problemas, por las ROP.
-Si hay error devuelve false.}
-begin
-  Result := true;
-  if ope.Sto = stVarRef then begin
-    //Se tiene una variable puntero dereferenciada: x^
-    {Convierte en expresión, verificando los RT}
-    if RTstate<>nil then begin
-      //Si se usan RT en la operación anterior. Hay que salvar en pila
-      RTstate.SaveToStk;  //Se guardan por tipo
-      if HayError then exit(false);
-    end;
-    //Llama a rutina que mueve el operando a RT
-    LoadToRT(ope);
-    if HayError then exit(false);  //Por si no está implementado
-    //COnfigura después SetAsExpres(), para que LoadToRT(), sepa el almacenamiento de "op"
-    ope.SetAsExpres(ope.Typ);  //"ope.Typ" es el tipo al que apunta
-    BooleanFromC:=0;
-    BooleanFromZ:=0;
-    AcumStatInZ := true;
-    RTstate := ope.Typ;
-  end else if ope.Sto = stExpRef then begin
-    //Es una expresión.
-    {Se asume que el operando tiene su resultado en los RT. SI estuvieran en la pila
-    no se aplicaría.}
-    //Llama a rutina que mueve el operando a RT
-    LoadToRT(ope);
-    if HayError then exit(false);  //Por si no está implementado
-    //COnfigura después SetAsExpres(), para que LoadToRT(), sepa el almacenamiento de "op"
-    ope.SetAsExpres(ope.Typ);  //"ope.Typ" es el tipo al que apunta
-    BooleanFromC:=0;
-    BooleanFromZ:=0;
-    AcumStatInZ := true;
-    RTstate := ope.Typ;
-  end;
-end;
 //Rutinas que facilitan la codifición de instrucciones
 function TGenCodBas._PC: word; inline;
 {Devuelve la dirección actual en Flash}
@@ -986,7 +946,7 @@ begin
   curAddr := pic.iRam;
 end;
 //Instrucciones simples
-procedure TGenCodBas._ADC(const k: word);
+procedure TGenCodBas._ADCi(const k: word);
 begin
   pic.codAsm(i_ADC, aImmediat, k);
 end;
@@ -998,7 +958,7 @@ begin
     pic.codAsm(i_ADC, aAbsolute, f.addr);
   end;
 end;
-procedure TGenCodBas._AND(const k: word);
+procedure TGenCodBas._ANDi(const k: word);
 begin
   pic.codAsm(i_AND, aImmediat, k);
 end;
@@ -1008,6 +968,14 @@ begin
     pic.codAsm(i_AND, aZeroPage, f.addr);
   end else begin
     pic.codAsm(i_AND, aAbsolute, f.addr);
+  end;
+end;
+procedure TGenCodBas._AND(const addr: integer);
+begin
+  if addr<256 then begin
+    pic.codAsm(i_AND, aZeroPage, addr);
+  end else begin
+    pic.codAsm(i_AND, aAbsolute, addr);
   end;
 end;
 procedure TGenCodBas._ASL(const f: word);  //ASL Absolute/Zeropage
@@ -1110,7 +1078,7 @@ procedure TGenCodBas._CLC;
 begin
   pic.codAsm(i_CLC, aImplicit, 0);
 end;
-procedure TGenCodBas._CMP(const k: word);
+procedure TGenCodBas._CMPi(const k: word);
 begin
   pic.codAsm(i_CMP, aImmediat, k);
 end;
@@ -1282,7 +1250,7 @@ procedure TGenCodBas._SED; inline;
 begin
   pic.codAsm(i_SED, aImplicit, 0);
 end;
-procedure TGenCodBas._SBC(const k: word); inline;  //SBC Immediate
+procedure TGenCodBas._SBCi(const k: word); inline;  //SBC Immediate
 begin
   pic.codAsm(i_SBC, aImmediat, k);
 end;
@@ -1429,7 +1397,6 @@ procedure TGenCodBas.byte_LoadToRT(const OpPtr: pointer);
 {Carga operando a registros de trabajo.}
 var
   Op: ^TOperand;
-  varPtr: TxpEleVar;
 begin
   Op := OpPtr;
   case Op^.Sto of  //el parámetro debe estar en "res"
@@ -1475,7 +1442,6 @@ procedure TGenCodBas.word_LoadToRT(const OpPtr: pointer);
 {Carga el valor de una expresión a los registros de trabajo.}
 var
   Op: ^TOperand;
-  varPtr: TxpEleVar;
 begin
   Op := OpPtr;
   case Op^.Sto of  //el parámetro debe estar en "Op^"
@@ -1995,45 +1961,6 @@ begin
   OnReqStopCodeGen:=@GenCodPicReqStopCodeGen;
   pic := TP6502.Create;
   picCore := pic;   //Referencia picCore
-  ///////////Crea tipos
-  ClearTypes;
-  //////////////// Boolean type /////////////
-  typBool := CreateSysType('boolean',t_uinteger,1);   //de 1 byte
-  typBool.OnLoadToRT   := @byte_LoadToRT;
-  typBool.OnDefRegister:= @byte_DefineRegisters;
-  typBool.OnSaveToStk  := @byte_SaveToStk;
-  //typBool.OnReadFromStk :=
-  //////////////// Byte type /////////////
-  typByte := CreateSysType('byte',t_uinteger,1);   //de 1 byte
-  typByte.OnLoadToRT   := @byte_LoadToRT;
-  typByte.OnDefRegister:= @byte_DefineRegisters;
-  typByte.OnSaveToStk  := @byte_SaveToStk;
-  //typByte.OnReadFromStk :=
-
-  //////////////// Char type /////////////
-  //Tipo caracter
-  typChar := CreateSysType('char',t_uinteger,1);   //de 1 byte. Se crea como uinteger para leer/escribir su valor como número
-  typChar.OnLoadToRT   := @byte_LoadToRT;  //Es lo mismo
-  typChar.OnDefRegister:= @byte_DefineRegisters;  //Es lo mismo
-  typChar.OnSaveToStk  := @byte_SaveToStk; //Es lo mismo
-
-  //////////////// Word type /////////////
-  //Tipo numérico de dos bytes
-  typWord := CreateSysType('word',t_uinteger,2);   //de 2 bytes
-  typWord.OnLoadToRT   := @word_LoadToRT;
-  typWord.OnDefRegister:= @word_DefineRegisters;
-  typWord.OnSaveToStk  := @word_SaveToStk;
-//  typWord.OnClearItems := @word_ClearItems;
-
-  typWord.CreateField('Low', @word_Low, @word_Low);
-  typWord.CreateField('High', @word_High, @word_High);
-
-  //////////////// String type /////////////
-  {Se crea el tipo String, solo para permitir inicializar arreglos de
-  caracteres. Por ahora no se implementan otras funcionalidades.}
-  typString := CreateSysType('string', t_string, 0);  //tamaño variable
-  { TODO : String deberái definirse mejor como un tipo común, no del sistema }
-
   //Crea variables de trabajo
   varStkByte   := TxpEleVar.Create;
   varStkByte.typ := typByte;

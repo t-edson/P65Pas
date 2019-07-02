@@ -823,6 +823,7 @@ procedure TxpElement.AddCalledAll_FromList(lstCalled0: TxpListCalled);
 var
   elem: TxpElement;
 begin
+//debugln('In AddCalledAll_FromList()');
   inc(curNesting);    //incrementa el anidamiento
   if curNesting>maxNesting then maxNesting := curNesting;
 
@@ -1215,19 +1216,19 @@ begin
     Result := nil;  //indica que hubo error
     exit;
   end;
-  //Crea y configura objeto
+  //Create and set object
   r := TxpOperator.Create;
   r.txt    := txt;
   r.prec   := prec;
   r.name   := OpName;
   r.kind   := opkBinary;
   r.parent := self;;
-  //Agrega operador
+  //Add operator
   Operators.Add(r);
   Result := r;
-  //Verifica si es el operador de asignación
+  //Verify is assigment operator
   if txt = ':=' then begin
-    //Lo guarda porque este operador se usa y no vale la pena buscarlo
+    //Save because this operator is important and not worth it to find always.
     operAsign := r;
   end;
 end;

@@ -33,10 +33,13 @@ type  //Enumerated types
     ValBool : boolean;  //Para alojar a los valores t_boolean
     ValStr  : string;   //Para alojar a los valores t_string
     items   : array of TConsValue;  //Lista de items cuando sea array
+    nItems  : integer;  //Number of items
   end;
 
   //Operand storage
   TStoOperand = (
+    //Without storage
+    stNull    = %1111, //Operand is not stored
     //Basic storage
     stConst   = %0000, {Operand is constant and its value is stored directly in the Operand
                        without use CPU resources. Includes evaluated constant expressions.}

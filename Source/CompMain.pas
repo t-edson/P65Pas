@@ -2,7 +2,7 @@ unit CompMain;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, Types, fgl, CompBase, XpresElementsPIC, Globales,
+  Classes, SysUtils, Types, CompBase, XpresElementsPIC, Globales,
   CompOperands, XpresTypesPIC, XpresBas;
 type
 
@@ -939,7 +939,7 @@ begin
       //Caso normal. Es un tipo del sistema
       typName := cIn.tok;
       typ := FindSysEleType(typName); //Busca elemento
-      if typ = nil then begin
+     if typ = nil then begin
         //Esto no debería pasar, porque el lexer indica que es un tipo del sistema.
         GenError(ER_NOT_IMPLEM_, [typName]);
         exit(nil);
@@ -1309,7 +1309,7 @@ end;
 procedure TCompMain.CompileInstructionDummy;
 {Compila una instrucción pero sin generar código. }
 var
-  p, InvertedFromZ0: Integer;
+  InvertedFromZ0: Integer;
   InvertedFromC0: Integer;
   AcumStatInZ0: Boolean;
 begin
@@ -1350,7 +1350,6 @@ end ;
 procedure TCompMain.CompileCurBlockDummy;
 {Compila un bloque pero sin geenrar código.}
 var
-  p: Integer;
   InvertedFromC0, InvertedFromZ0: Integer;
   AcumStatInZ0: Boolean;
 begin
@@ -1614,16 +1613,6 @@ procedure TCompMain.CompileInlineDeclar(elemLocat: TxpEleLocation);
 {Compila la declaración de procedimientos INLINE. Tanto procedimientos como funciones
  INLINE se manejan internamente como funciones.
  IsImplementation, se usa para cuando se está compilando en la sección IMPLEMENTATION.}
-var
-  fun: TxpEleInlin;
-  bod: TxpEleBody;
-  ParentElems: TxpElements;
-  ele : TxpElement;
-  Found: Boolean;
-  procName, uname: String;
-  retType: TxpEleType;
-  srcPos: TSrcPos;
-  pars: TxpParInlinArray;
 begin
 //  {Este método, solo se ejecutará en la primera pasada, en donde todos los procedimientos
 //  se codifican al inicio de la memoria, y las variables y registros se ubican al

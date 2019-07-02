@@ -84,11 +84,10 @@ type
     function CanBeByte: boolean;   //indica si cae en el rango de un BYTE
     function CanBeWord: boolean;   //indica si cae en el rango de un WORD
     //Métodos para mover valores desde/hacia una constante externa
-    procedure CopyConsValTo(var c: TxpEleCon);
-    procedure GetConsValFrom(const c: TxpEleCon);
+    procedure CopyConsValTo(var c: TxpEleCon); inline;
+    procedure GetConsValFrom(const c: TxpEleCon); inline;
   private //Manage items
     curSize: integer;
-    FnItems: integer;
     function GetNItems: integer;
   public  //Manage items when it's constant array
     property nItems: integer read GetNItems;
@@ -270,74 +269,55 @@ begin
 end;
 procedure TOperand.CopyConsValTo(var c: TxpEleCon);
 begin
-  //hace una copia selectiva por velocidad, de acuerdo al grupo
-  case Typ.grp of
-  t_boolean : c.val.ValBool:=FValue.ValBool;
-  t_integer,
-  t_uinteger: c.val.ValInt  := FValue.ValInt;
-  t_float   : c.val.ValFloat:= FValue.ValFloat;
-  t_string  : c.val.ValStr  := FValue.ValStr;
-  else
-    MsgErr('Internal PicPas error');
-    {En teoría, cualquier valor constante que pueda contener TOperand, debería poder
-    transferirse a una constante, porque usan el mismo contenedor, así que si pasa esto
-    solo puede ser que faltó implementar.}
-  end;
+  c.val := FValue;
 end;
 procedure TOperand.GetConsValFrom(const c: TxpEleCon);
 {Copia valores constante desde una constante. Primero TOperand, debería tener inicializado
  correctamente su campo "catTyp". }
 begin
-  case Typ.grp of
-  t_boolean : FValue.ValBool := c.val.ValBool;
-  t_integer,
-  t_uinteger: FValue.ValInt := c.val.ValInt;
-  t_float   : FValue.ValFloat := c.val.ValFloat;
-  t_string  : FValue.ValStr := c.val.ValStr;
-  else
-    MsgErr('Internal PicPas error');
-    //faltó implementar.
-  end;
+  FValue := c.val;
 end;
 function TOperand.GetNItems: integer;
+{Returns the number of items when operand is a static array.}
 begin
   if Sto = stVariab then begin
     //It's a variable
     exit(rVar.typ.nItems)
+  end else if Sto = stConst then begin
+    exit(FValue.nItems);
   end else begin
-    //Must be constant
-    exit(FnItems);
+      exit(0);
   end;
 end;
 //Manage items
 const CONS_ITEM_BLOCK = 3;
 procedure TOperand.InitItems;
 begin
-  FnItems := 0;
+  FValue.nItems := 0;
   curSize := CONS_ITEM_BLOCK;   //Block size
   setlength(FValue.items, curSize);  //initial size
 end;
 procedure TOperand.AddConsItem(const c: TConsValue);
 begin
-  FValue.items[FnItems] := c;
-  inc(FnItems);
-  if FnItems >= curSize then begin
+  FValue.items[FValue.nItems] := c;
+  inc(FValue.nItems);
+  if FValue.nItems >= curSize then begin
     curSize += CONS_ITEM_BLOCK;   //Increase size by block
     setlength(FValue.items, curSize);  //make space
   end;
 end;
 procedure TOperand.CloseItems;
 begin
-  setlength(FValue.items, FnItems);
+  setlength(FValue.items, FValue.nItems);
 end;
 procedure TOperand.StringToArrayOfChar(str: string);
 {Init the constant value as array of char from a string.}
 var
   i: Integer;
 begin
-  FnItems := length(str);
-  setlength(FValue.items, FnItems);
-  for i:=0 to FnItems-1 do begin
+  FValue.nItems := length(str);
+  setlength(FValue.items, FValue.nItems);
+  for i:=0 to FValue.nItems-1 do begin
     FValue.items[i].ValInt := ord(str[i+1]);
   end;
 end;
@@ -467,7 +447,7 @@ procedure TOperand.SetAsNull;
 begin
   {Se pone como constante, que es el tipo más simple, además se protege, pro si era
   variable}
-  FSto := stConst;
+  FSto := stNull;
   FTyp := typNull;   //Este es el tipo NULO
 end;
 function TOperand.StoOpStr: string;

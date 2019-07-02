@@ -4,7 +4,7 @@ unit Compiler_PIC16;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, lclProc, SynEditHighlighter, types, MisUtils, XpresBas,
+  Classes, SysUtils, lclProc, SynEditHighlighter, MisUtils, XpresBas,
   XpresTypesPIC, XpresElementsPIC, P6502utils, CPUCore, CompBase, ParserDirec,
   GenCodBas_PIC16, GenCod_PIC16, ParserDirec_PIC16, Globales, FormConfig,
   CompOperands {Por diseño, FormConfig, no debería accederse desde aquí};
@@ -636,6 +636,7 @@ procedure TCompiler_PIC16.Compile(NombArc: string; Link: boolean);
 var
   p: SizeInt;
 begin
+  DefCompiler;   //Debe hacerse solo una vez al inicio
   mode := modPicPas;   //Por defecto en sintaxis nueva
   mainFile := NombArc;
   hexfile := ChangeFileExt(NombArc, '.prg');     //Obtiene nombre
@@ -970,7 +971,6 @@ begin
   cIn.OnNewLine:=@cInNewLine;
   mode := modPicPas;   //Por defecto en sintaxis nueva
   StartSyntax;   //Debe hacerse solo una vez al inicio
-  DefCompiler;   //Debe hacerse solo una vez al inicio
 end;
 destructor TCompiler_PIC16.Destroy;
 begin

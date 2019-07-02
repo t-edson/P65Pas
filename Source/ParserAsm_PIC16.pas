@@ -872,10 +872,7 @@ begin
         GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
         exit;
       end;
-      if (ad>$FFFF) then begin
-        GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
-        exit;
-      end else if ad>255 then begin
+      if ad>255 then begin
         //Es un word. Solo podría ser del tiipo JMP ($FFFF)
         pic.codAsm(idInst, aIndirect, ad);
         //lexAsm.Next;  //Toma número
