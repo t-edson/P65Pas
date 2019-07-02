@@ -3,8 +3,7 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\sprite1.pas
+  <filesClosed Val="D:\tmp\P65Pas-0.6\temp\newfile-1.pas
 "/>
   <SplitterCol Val="2368548"/>
   <MessPanPan Val="2368548"/>
@@ -12,7 +11,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\sprite1.pas
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="236"/>
+  <SynTreeWidth Val="212"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="2"/>
   <MessPanBack Val="2368548"/>
@@ -44,11 +43,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\sprite1.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\sprite1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\sprite.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\aaa.pas
-D:\tmp\P65Pas-0.6\temp\newfile-0.pas
+    <recient Val="D:\tmp\P65Pas-0.6\temp\newfile-1.pas
+D:\tmp\P65Pas-0.6\units\Commodore64.pas
+D:\tmp\P65Pas-0.6\samples\AsmCode.pas
+D:\tmp\P65Pas-0.6\samples\Commodore Screen.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.6\temp\newfile-1.pas
 "/>
   </Edit>
   <IncDecVar Val="False"/>

@@ -6,10 +6,15 @@ implementa la opción de FORWARD. Ahora se crea un elemento nuevo que representa 
 a la declaración y se cambia las rutinas de llamadas para la nueva gestión.
 Se implementa la asignación de arreglos.
 Se implementa asignación a nuevos tipos de almacenamiento para el tipo byte.
+Se modifica el método TCompilerBase.GetExpressionE() para permitir operadores de tipo
++= y -=.
+Se crea el almacenamiento stNull, para procedimientos que no devuelven valor.
+Se implementan parcialmente las ROB para += y -= para el tipo Word.
+
 
 Revisar el bug, cuando se ejecuta, con arreglos de bytes:
   a[0] := b[i] + c[i];
-
+Revisar el caso de las expresiones con  +=, -=, ...
 
 Las funciones INLINE se declaran de la sgte. forma:
 
