@@ -3,6 +3,7 @@
 Se cambian variables a tipo dword para evitar desborde en TP6502.GetFreeBytes(). 
 Se cambia el tipo del  campo TCPURamCell.used al enumerado TCPURamUsed, para dar más libertad
 para definir a la RAM.
+Se agrega un estado más para la memoria RAM.
 
 0.1
 ===

@@ -1566,7 +1566,7 @@ begin
   PIC16InstName[i_TYA].name := 'TYA';  //Transfer Index Y to Accumulator
   PIC16InstName[i_TYA].AddAddressMode(aImplicit,$98,1,2,'');
 
-  PIC16InstName[i_Inval].name := 'Inv';
+  PIC16InstName[i_Inval].name := 'Inval';
 
 
 end;

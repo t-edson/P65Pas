@@ -25,10 +25,10 @@ type
      cs_unimplem    //Not implemented.
   );
   TCPURamUsed = (
-     ruUnused,
-     ruCode,  //Used for code
-     ruData,  //Used for variables
-     ruAbsData  //Used for variables in absolute positions
+     ruUnused,  //(NOT included in PRG output file)
+     ruCode,    //Used for code  (included in PRG output file)
+     ruData,    //Used for variables  (included in PRG output file)
+     ruAbsData  //Used for variables in absolute positions (NOT included in PRG output file)
   );
 
 type //Models for RAM memory
