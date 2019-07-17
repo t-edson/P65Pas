@@ -273,15 +273,15 @@ VAR
 ```
 The size of this array will be set to the size of the string. In this case is 4 chars.
 
-In general, arrays can be initialized when declaring a variable;
+En geenral, arrays can be initialized when declaring a varaible;
 
 ```
 TYPE 
   TAStr = [3]char;
   TAByte = [5]byte;
 VAR
-  str : TASrt = ['a','b','c'];
-  numb: TAByte = [1, 2]; //Only the first bytes are set.
+  str : TASrt = ('a','b','c');
+  numb: TAByte = (1, 2); //Only the first can be  set.
 ```
 
 Arrays support several methods:

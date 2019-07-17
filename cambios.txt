@@ -1,3 +1,32 @@
+P65PAS 0.7
+==========
+Se mueven dos rutinas más de Compiler_PIC16 a CompMain.
+Se modifica TGenCodBas.FunctCall() para gaurdar las llamadas pendientes.
+Se modifica TxpElement.UpdateCalledAll() para detectar llamadas recursivas.
+Se modifica CompileLinkProgram()-UpdateFunLstCalled() para protegerse de llamadas recursivas.
+Se crean las rutinas necesarias para crear funciones del sistema en la unidad system y así 
+puedan uniformizarse con las otras funciones y usar los mecanismos de optimización.
+Se modifican las rutimas de exploración del arbol de sintaxis, de la unidad XpresElementsPIC
+para implementar la búsqueda de Tipos en el árbol de sintaxis.
+Se modifica GetTypeDeclar() para que evite crear tipos nuevos de arreglos cuando ya existe
+un tipo equivalente.
+Se elimina el typo String y se implementa la lectura de literales cadena como arreglos de
+caracteres.
+Se reescribe y mejora la rutina CreateVarInRAM(). Además se elimina AssignRAMinByte(). 
+Ahora se permite inciailizar variables absolutas en direcciones superiores al inicio del 
+código.
+Se mejora la rutina TxpEleType.IsArrayOf() y se crea TxpEleType.IsPointerTo(), para detectar
+equivalencias de tipos.
+Se impleementa la asiganción de arrays de arrays:
+  x: arrplus = [[1,2,3],[1,2,3],[4,5,6]]; 
+Se eliminan los campos TxpEleVar.adrByte0, TxpEleVar.adrByte3, ... y sus objetos asociados 
+para pasar a usar solo las direcciones físicas como números.
+Se eliminan todas las referencias a las direcciones de tipo "offset", porque no tienen
+sentido en la arquitectura del 6502.
+Se hace una implementación básica del tipo "object" solo con soporte de atributos.
+Se habilita la compilación en tiempo real, como una opción de la IDE.
+Se mueve la rutina UpdateFunLstCalled() de Compiler_PIC16 a CompMain.
+
 P65PAS 0.6
 ==========
 Se continuan moviendo métodos de la unidad Compiler_PIC16 a la unidad CompMain.
