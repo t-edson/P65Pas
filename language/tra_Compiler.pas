@@ -22,8 +22,6 @@ ER_UNKNOWN_ID_ := trans('Unknown identifier: %s'      , 'Identificador desconoci
                         'Unbekannter Bezeichner: %s'  , 'Невідомий ідентифікатор: %s'   ,'Неизвестный идентификатор: %s', 'Identifiant inconnu : %s');
 ER_IDE_TYP_EXP := trans('Identifier of type expected.', 'Se esperaba identificador de tipo.','',
                         'Typenbezeichner erwartet.'   , 'Очікується ідентифікатор типу.','Ожидается идентификатор типа.', 'Identifiant de type attendu.');
-ER_PROG_NAM_EX := trans('Program name expected.'      , 'Se esperaba nombre de programa.','',
-                        'Name des Programms erwartet.','Очікується імʼя програми.','Ожидается имя программы.', 'Nom de programme attendu.');
 ER_COMPIL_PROC := trans('There is a compilation in progress.'      , 'Ya se está compilando un programa actualmente.','',
                         'Es ist (noch) ein Kompiliervorgang aktiv.', 'Триває компіляція.','Происходит компиляция.', 'Une compilation et en cours.');
 ER_CON_EXP_EXP := trans('Constant expression expected.', 'Se esperaba una expresión constante','',

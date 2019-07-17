@@ -28,8 +28,6 @@ ER_COMPIL_PROC := trans('There is a compilation in progress.'      , 'Ya se est�
                         'Es ist (noch) ein Kompiliervorgang aktiv.', 'Триває компіляція.','Происходит компиляция.', 'Une compilation et en cours.');
 ER_CON_EXP_EXP := trans('Constant expression expected.', 'Se esperaba una expresión constante','',
                         'Konstanter Ausdruck erwartet.', '', '', 'Expression constante attendue.');
-ER_ASIG_EXPECT := trans('":=" expected.'             , 'Se esperaba ":="', '',
-                        '":=" erwartet.'             , '":=" очікується.', '":=" ожидается.', '":=" attendu.');
 ER_FIL_NOFOUND := trans('File not found: %s'         , 'Archivo no encontrado: %s', '',
                         'Datei nicht gefunden: "%s"' , 'Файл не знайдено: %s','Файл не найден: %s', 'Fichier non trouvé: %s');
 WA_UNUSED_CON_ := trans('Unused constant: %s', 'Constante sin usar: %s', '',

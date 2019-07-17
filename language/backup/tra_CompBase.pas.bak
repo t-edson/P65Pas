@@ -39,6 +39,4 @@ ER_IN_CHARACTER := trans('Error in character.'        , 'Error en caracter.'    
                          '', '', '', '');
 ER_INV_COD_CHAR := trans('Invalid code for char.'     , 'Código inválido para caracter' , '',
                          '', '', '', '');
-ER_NOTYPDEF_NU := trans('No type defined to allocate this number.', 'No hay tipo para almacenar este número.', '',
-                        '','Не визначено тип, щоб виділити цей номер.','Нет определенного типа, чтобы выделить это число.', 'Aucun type défini pour allouer ce nombre');
 

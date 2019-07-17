@@ -190,8 +190,8 @@ type
     function DisassemblerAt(addr: word; out nBytesProc: byte; useVarName: boolean
       ): string; override;
   public  //RAM memory functions
-    function GetFreeByte(out addr: word; shared: boolean): boolean;
-    function GetFreeBytes(const size: integer; var addr: word): boolean;  //obtiene una dirección libre
+    function GetFreeByte(out addr: word): boolean;
+    function GetFreeBytes(const size: integer; out addr: word): boolean;  //obtiene una dirección libre
     function TotalMemRAM: integer; //devuelve el total de memoria RAM
     function UsedMemRAM: word;  //devuelve el total de memoria RAM usada
     procedure ExploreUsed(rutExplorRAM: TCPURutExplorRAM);    //devuelve un reporte del uso de la RAM
@@ -1140,7 +1140,7 @@ begin
   PC.W := AValue;
 end;
 //Funciones para la memoria RAM
-function TP6502.GetFreeByte(out addr: word; shared: boolean): boolean;
+function TP6502.GetFreeByte(out addr: word): boolean;
 {Devuelve una dirección libre de la memoria RAM, a partir de la dirección iRam.
 "Shared" indica que se marcará el bit como de tipo "Compartido", y se usa para el
 caso en que se quiera comaprtir la misma posición para diversos variables.
@@ -1155,10 +1155,10 @@ begin
   for i:=iRam to maxRam-1 do begin
     if (ram[i].state = cs_implemen) and (ram[i].used = ruUnused) then begin
       //Esta dirección está libre
-      ram[i].used := ruData;   //marca como usado para variable
-      if shared then begin
-        ram[i].shared := true;  //Marca como compartido
-      end;
+//      ram[i].used := ruData;   //marca como usado para variable
+//      if shared then begin
+//        ram[i].shared := true;  //Marca como compartido
+//      end;
       addr := i;
       //Notar que la posición de memoria puede estar mapeada.
       Result := true;  //indica que encontró espacio
@@ -1166,24 +1166,25 @@ begin
     end;
   end;
 end;
-function TP6502.GetFreeBytes(const size: integer; var addr: word): boolean;
-{Devuelve una dirección libre de la memoria RAM para ubicar un bloque
- del tamaño indicado. Si encuentra espacio, devuelve TRUE.
- El tamaño se da en bytes, pero si el valor es negativo, se entiende que es en bits.}
+function TP6502.GetFreeBytes(const size: integer; out addr: word): boolean;
+{Returns a free memory address of RAM to locate a block of the specified size (in bytes).
+ If found returns TRUE. }
 var
   i: dword;
   maxRam: dWord;
 begin
   Result := false;  //valor por defecto
-  if size=0 then exit(true);
+  if size=0 then begin
+    addr := 0;
+    exit(true);
+  end;
   maxRam := CPUMAXRAM;
   for i:=iRam to maxRam-1 do begin  //verifica 1 a 1, por seguridad
     if HaveConsecRAM(i, size, maxRam) then begin
       //encontró del tamaño buscado
-      UseConsecRAM(i, size);  //marca como usado
+      //UseConsecRAM(i, size);  //marca como usado
       addr := i;
-      Result := true;  //indica que encontró espacio
-      exit;
+      exit(true);
     end;
   end;
 end;

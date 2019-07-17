@@ -288,7 +288,7 @@ var
   i: Integer;
 begin
   for i:=0 to high(ram) do begin
-    if (ram[i].state = cs_implemen) and (ram[i].shared) then begin
+    if (ram[i].shared) and (ram[i].state = cs_implemen) then begin
       ram[i].used := ruUnused;
     end;
   end;
@@ -299,7 +299,7 @@ var
   i: Integer;
 begin
   for i:=0 to high(ram) do begin
-    if (ram[i].state = cs_implemen) and (ram[i].shared) then begin
+    if (ram[i].shared) and (ram[i].state = cs_implemen) then begin
       ram[i].used := ruData;  //Set as used for variables
     end;
   end;

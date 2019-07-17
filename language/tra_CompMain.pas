@@ -26,8 +26,6 @@ ER_EQU_COM_EXP := trans('"=" or "," expected.'        , 'Se esperaba "=" o ","' 
                         '"=" oder "," erwartet.'      , '"=" або "," очікується.','"=" или "," ожидается.', '"=" ou "," attendus.');
 ER_DUPLIC_IDEN := trans('Duplicated identifier: "%s"' , 'Identificador duplicado: "%s"' ,'',
                         'Doppelter Platzhalter: "%s"' , 'Дубльований ідентифікатор: "%s"','Дублированный идентификатор: "%s"', 'Identifiant à double : "%s"');
-ER_NOTYPDEF_NU := trans('No type defined to allocate this number.', 'No hay tipo para almacenar este número.', '',
-                        '','Не визначено тип, щоб виділити цей номер.','Нет определенного типа, чтобы выделить это число.', 'Aucun type défini pour allouer ce nombre');
 ER_BOOL_EXPECT := trans('Boolean expression expected.'  , 'Se esperaba expresión booleana.','',
                         'Bool''scher Ausdruck erwartet.','Очікується булевий вираз.','Ожидается булевое выражение.', 'Expression booléenne attendue');
 ER_EOF_END_EXP := trans('Unexpected end of file. "end" expected.', 'Inesperado fin de archivo. Se esperaba "end".','',
@@ -44,4 +42,8 @@ ER_UNKN_STRUCT := trans('Unknown structure.'          , 'Estructura desconocida.
                         'Unbekannte Struktur.'        ,'Невідома структура.','Неизвестная структура.', 'Structure inconnue.');
 ER_DUPLIC_FUNC_:= trans('Duplicated function: %s'     ,'Función duplicada: %s', '',
                         '', '', '', '');
+ER_FIL_NOFOUND := trans('File not found: %s'         , 'Archivo no encontrado: %s', '',
+                        'Datei nicht gefunden: "%s"' , 'Файл не знайдено: %s','Файл не найден: %s', 'Fichier non trouvé: %s');
+ER_PROG_NAM_EX := trans('Program name expected.'      , 'Se esperaba nombre de programa.','',
+                        'Name des Programms erwartet.','Очікується імʼя програми.','Ожидается имя программы.', 'Nom de programme attendu.');
 
