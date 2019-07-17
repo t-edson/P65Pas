@@ -1565,7 +1565,7 @@ begin
   instList := TDirInstruc_list.Create(true);
   DefLexDirectiv;
   //Initialize events and functions of Compiler
-  CodProcDIRline := @ProcDIRline;
+  callProcDIRline := @ProcDIRline;
 end;
 destructor TParserDirecBase.Destroy;
 begin

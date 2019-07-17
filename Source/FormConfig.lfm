@@ -10,7 +10,7 @@ object Config: TConfig
   OnCreate = FormCreate
   OnShow = FormShow
   Position = poScreenCenter
-  LCLVersion = '1.8.0.6'
+  LCLVersion = '1.8.4.0'
   object Panel1: TPanel
     Left = 0
     Height = 50
@@ -58,10 +58,10 @@ object Config: TConfig
     Height = 330
     Top = 0
     Width = 403
-    ActivePage = tabEnsamb
+    ActivePage = tabEditor
     Align = alClient
     ShowTabs = False
-    TabIndex = 6
+    TabIndex = 3
     TabOrder = 1
     object tabEnviron: TTabSheet
       Caption = 'Enviroment'
@@ -212,7 +212,7 @@ object Config: TConfig
     object tabCodeExp: TTabSheet
       Caption = 'tabCodeExp'
       ClientHeight = 322
-      ClientWidth = 391
+      ClientWidth = 395
       object colCodExplText: TColorBox
         Left = 232
         Height = 22
@@ -346,7 +346,7 @@ object Config: TConfig
     object tabEditor: TTabSheet
       Caption = 'General'
       ClientHeight = 322
-      ClientWidth = 391
+      ClientWidth = 395
       object grpTabEdiState: TRadioGroup
         Left = 16
         Height = 97
@@ -425,6 +425,14 @@ object Config: TConfig
         Width = 139
         Caption = 'Barra de desplaz &Horiz.'
         TabOrder = 3
+      end
+      object chkAutCompile: TCheckBox
+        Left = 206
+        Height = 19
+        Top = 232
+        Width = 124
+        Caption = 'Automatic Compile'
+        TabOrder = 6
       end
     end
     object tabEdiColor: TTabSheet
@@ -513,7 +521,7 @@ object Config: TConfig
     object tabCompiler: TTabSheet
       Caption = 'Compiler'
       ClientHeight = 322
-      ClientWidth = 391
+      ClientWidth = 395
       object grpOptimLev: TRadioGroup
         Left = 8
         Height = 120

@@ -1,12 +1,13 @@
 {
 XpresElementsPIC
 ================
-Definiciones para el manejo de los elementos del compilador: procedimientos, constantes,
-variables, tipos, ....
-Todos estos elementos se deberían almacenar en una estrucutura de arbol.
-Esta unidad esta basada en la unidad XpresElements de Xpres, pero adaptada a la
-arquitectura de los PIC y al lenguaje de PicPas.
-Por Tito Hinostroza.
+Definitions for syntactic elements of the compiler: functions, constants, variables,
+types, ...
+All these elements are stored in a Tree structure, that represents the syntax Tree.
+This unit is based in the unit XpresElements from the framework Xpres, and is adapted
+to the 6502 CPU architecture and to the Pascal dialect used here.
+
+                                                       By Tito Hinostroza.
 }
 unit XpresElementsPIC;
 {$mode objfpc}{$H+}
@@ -15,17 +16,16 @@ uses
   Classes, SysUtils, fgl, XpresTypesPIC, XpresBas, LCLProc;
 const
   ADRR_ERROR = $FFFF;
-type  //TxpElement y clases previas
+
+type  //TxpElement and prvious classes
   TVarOffs = word;
   TVarBank = byte;
 
   TxpOperator = class;
   TxpOperation = class;
 
-  {Evento que llama a una ROB. A las ROP binarias, se les envía la referencia a la
-  operación, para que puedan acceder a información adicional de la ROP. También se usa
-  el parámetro "Opt", para que se pueda identificar mejor a las ROB, y no confundirlas
-  con las ROU}
+  {Event to call a ROB. The "Opt" parameter, is used to give aditional information of
+  the ROP. }
   TProcBinaryROB = procedure(Opt: TxpOperation; SetRes: boolean) of object;
 
   {Evento que llama a una Rutina de Operación (ROP).
@@ -36,18 +36,18 @@ type  //TxpElement y clases previas
   TxpEleType= class;
 
   { TxpOperation }
-  //Tipo operación
+  //Operation class
   TxpOperation = class
-    parent    : TxpOperator;     //Referencia al operador que lo contiene
-    ToType    : TxpEleType;      //Tipo del Operando, sobre el cual se aplica la operación.
-    proc      : TProcBinaryROB;  //Procesamiento de la operación
+    parent    : TxpOperator;     //Reference to container operator.
+    ToType    : TxpEleType;      //Target operand type, where the operation is applied.
+    proc      : TProcBinaryROB;  //Operation process.
     function OperationString: string;
   end;
 
-  TxpOperations = specialize TFPGObjectList<TxpOperation>; //lista de operaciones
+  TxpOperations = specialize TFPGObjectList<TxpOperation>; //Operations list.
 
   { TxpOperator }
-  //Operador
+  //Operator class
   TxpOperator = class
   private
     Operations: TxpOperations;  //operaciones soportadas. Debería haber tantos como
@@ -187,17 +187,15 @@ type  //TxpElement y clases previas
     procedure ClearCallers;  //limpia lista de llamantes
     function ExistsIn(list: TxpElements): boolean;
   public  //Gestión de los elementos llamados
-    curNesting: Integer;   //Nivel de anidamiento de llamadas
-    maxNesting: Integer;   //Máximo nivel de anidamiento
+    curNesting: Integer;   //Nested level for calls
+    maxNesting: Integer;   //Max nested level for calls
     //Lista de funciones que son llamadas directamente (Se llena en el enlazado)
     lstCalled : TxpListCalled;
     //Lista de funciones que son llamadas dirceta o indirectamente (Se llena en el enlazado)
     lstCalledAll: TxpListCalled;
     //Métodos para el llemado
     procedure AddCalled(elem: TxpElement);
-    procedure AddCalledAll(elem: TxpElement);
-    procedure AddCalledAll_FromList(lstCalled0: TxpListCalled);
-    procedure UpdateCalledAll;
+    function UpdateCalledAll: integer;
   public
     Parent  : TxpElement;  //Referencia al elemento padre
     idClass : TxpIDClass;  //Para no usar RTTI
@@ -251,6 +249,14 @@ type //Elements class
     destructor Destroy; override;
   end;
 
+  //Model an attribute of a RECORD or OBJECT
+  TTypAttrib = class
+    name: string;      //Name od the field
+    offs: integer;     //Offset for Physycal address
+    typ : TxpEleType;  //Only reference to the type
+  end;
+  TTypATtributes = specialize TFPGObjectList<TTypAttrib>;
+
   TxpEleTypes= specialize TFPGObjectList<TxpEleType>; //lista de variables
 
   { TxpEleType }
@@ -260,9 +266,10 @@ type //Elements class
   TxpEleType= class(TxpElement)
   private
     fSize: SmallInt;
+    internalTypes: TxpEleTypes;  //Container for types recursively defined.
     function getSize: smallint;
     procedure setSize(AValue: smallint);
-  public   //Eventos
+  public   //Events
     {Estos eventos son llamados automáticamente por el Analizador de expresiones.
     Por seguridad, debe implementarse siempre para cada tipo creado. La implementación
     más simple sería devolver en "res", el operando "p1^".}
@@ -281,9 +288,11 @@ type //Elements class
     OnGlobalDef  : TProcDefineVar; {Es llamado cada vez que se encuentra la
                                   declaración de una variable (de este tipo) en el ámbito global.}
   public
-    copyOf  : TxpEleType;  //Indica que es una copia de otro tipo
-    grp     : TTypeGroup;  //Grupo del tipo (numérico, cadena, etc)
+    copyOf  : TxpEleType;  //Indicates this type is copy of other
+    grp     : TTypeGroup;  //Type group (numéric, string, etc)
     catType : TxpCatType;  //Categoría del tipo
+    property size: smallint read getSize write setSize;   //Tamaño en bytes del tipo
+  public  //Arrays and pointers
     nItems  : integer;     //Number of items, when is tctArray (-1 if it's dynamic.)
     itmType : TxpEleType;  {Reference to the item type when it's array.
                                 TArr = array[255] of byte;  //itemType = byte
@@ -291,10 +300,12 @@ type //Elements class
     ptrType : TxpEleType;  {Reference to the type pointed, when it's pointer.
                                 TPtr = ^integer;       //ptrType = integer
                            }
-    refTypes: TxpEleTypes; {Lista de tipos cuando se trata de un Registro:
-                                TRec = RECORD ... END;  }
-    property size: smallint read getSize write setSize;   //Tamaño en bytes del tipo
-  public  //Campos de operadores
+  public  //Attributes (When it's used as object: OBJECT ... END; ).
+    attribs: TTypATtributes;
+  public  //Functions members - inline (When it's used as object).
+    fields: TTypFields;
+    procedure CreateField(metName: string; procGet, procSet: TTypFieldProc);
+  public  //Operators fields
     Operators: TxpOperators;      //Operadores soportados
     operAsign: TxpOperator;       //Se guarda una referencia al operador de aignación
     function CreateBinaryOperator(txt: string; prec: byte; OpName: string): TxpOperator;
@@ -307,14 +318,14 @@ type //Elements class
     function FindUnaryPreOperator(const OprTxt: string): TxpOperator;
     function FindUnaryPostOperator(const OprTxt: string): TxpOperator;
     procedure SaveToStk;
-  public  //Manejo de campos
-    fields: TTypFields;
-    procedure CreateField(metName: string; procGet, procSet: TTypFieldProc);
   public  //Identificación
     function IsByteSize: boolean;
     function IsWordSize: boolean;
     function IsDWordSize: boolean;
     procedure DefineRegister;
+    function IsArrayOf(itTyp: TxpEleType; numIt: integer): boolean;
+    function IsPointerTo(ptTyp: TxpEleType): boolean;
+    function IsEquivalent(typ: TxpEleType): boolean;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -357,20 +368,7 @@ type //Elements class
      Las direcciones addr0, addr1, addr2 y addr3 son normalmente consecutivas, pero
      hay excepciones.
     }
-    addr0: word;   //Dirección base.
-    bit0 : byte;   //Posición de bit base
-    addr1: word;
-    addr2: word;
-    addr3: word;
-    //Devuelve las direcciones como TPicRegister
-    function adrByte0: TPicRegister;    //Dirección física, cuando es de tipo Byte/Char/Word/DWord
-    function adrByte1: TPicRegister;    //Dirección física, cuando es de tipo Word/DWord
-    function adrByte2: TPicRegister;    //Dirección física, cuando es de tipo DWord
-    function adrByte3: TPicRegister;    //Dirección física, cuando es de tipo DWord
-    //Estos campos deberían desaparecer
-    function offs: TVarOffs;    //Dirección relativa de inicio
-
-    function addr : word;   //Devuelve la dirección absoluta de la variable
+    addr0: word;   //Base address
     function addrL: word;   //Devuelve la dirección absoluta de la variable (LOW)
     function addrH: word;   //Devuelve la dirección absoluta de la variable (HIGH)
     function addrE: word;   //Devuelve la dirección absoluta de la variable (HIGH)
@@ -417,6 +415,8 @@ type //Elements class
   TxpProcParam = procedure(fun: TxpEleFunBase) of object;
   TxpProcCall = procedure(fun: TxpEleFunBase; out AddrUndef: boolean) of object;
 
+  { TxpEleFunBase }
+
   TxpEleFunBase = class(TxpEleCodeCont)
     typ         : TxpEleType;   //Type returned
     IsInterrupt : boolean;      //Indicates the function is an ISR
@@ -436,27 +436,29 @@ type //Elements class
     function ParamTypesList: string;
   end;
 
+  TProcExecFunction = procedure(fun: TxpEleFun) of object;
+
   { TxpEleFunDec }
   {Basic class to represent a function header or declaration (INTERFASE o FORWARD).
   Basically whar we store here is the name, the parameters ante return type.}
   TxpEleFunDec = class(TxpEleFunBase)
-    implem      : TxpEleFun;    //Reference to implementation element.
+  public
+    implem    : TxpEleFun;    //Reference to implementation element.
   public //Initialization
     constructor Create; override;
   end;
 
-  TProcExecFunction = procedure(fun: TxpEleFun) of object;
-
   { TxpEleFun }
   TxpEleFun = class(TxpEleFunBase)
   public  //Main attributes
-    adrr   : integer;     //Dirección física, en donde se compila
-    adrr2  : integer;     //Punto de entrada adicional
+    adrr   : integer;   //Physical address where function is compiled.
+    adrr2  : integer;   //Aditional physical address.
     srcSize: integer;  {Tamaño del código compilado. En la primera pasada, es referencial,
                         porque el tamaño puede variar al reubicarse.}
-    {Método que llama a una rutina que codificará la rutina ASM que implementa la función.
-     La idea es que este campo solo se use para algunas funciones del sistema.}
-    compile: TProcExecFunction;
+    linked : boolean;   //Indicates the function was compiled in its real address
+    {Call to routine that generate code for the function, when the function has not body
+    like used in system fucntions.}
+    compile : TProcExecFunction;
     procedure SetElementsUnused;
   public //Declaration
     {These properties allows to have reference to the function declaration, when there is
@@ -481,6 +483,13 @@ type //Elements class
     function nLocalVars: integer;
     function IsTerminal: boolean;
     function IsTerminal2: boolean;
+  private //Manage of pending calls
+    curSize: integer;
+  public //Manage of pending calls
+    {Address of pending calls (JSR) made when the function was not still implemented }
+    nAddresPend : integer;
+    addrsPend   : array of word;
+    procedure AddAddresPend(ad: word);
   public //Initialization
     constructor Create; override;
     destructor Destroy; override;
@@ -546,42 +555,48 @@ type //Elements class
   Este árbol se usa también como para resolver nombres de elementos, en una estructura
   en arbol.}
   TXpTreeElements = class
-  private
-    //Variables de estado para la búsqueda con FindFirst() - FindNext()
+  private  //State varaibles for searching with FindFirst() - FindNext()
     curFindName: string;
     curFindNode: TxpElement;
     curFindIdx : integer;
     inUnit     : boolean;
-  public
-    main     : TxpEleMain;  //nodo raiz
-    curNode  : TxpElement;  //referencia al nodo actual
+  public   //Tree definition/events
+    main     : TxpEleMain;  //Root node
+    curNode  : TxpElement;  //Reference to current node
+    OnAddElement: procedure(xpElem: TxpElement) of object; //Evento
+    OnFindElement: procedure(elem: TxpElement) of object;  //Evento de búsqueda
+  public  //Containers
     AllCons  : TxpEleCons;
     AllVars  : TxpEleVars;
     AllUnits : TxpEleUnits;
     AllFuncs : TxpEleFuns;
     AllInLns : TxpEleInlins;
     AllTypes : TxpEleTypes;
-    OnAddElement: procedure(xpElem: TxpElement) of object;  //Evento
-    OnFindElement: procedure(elem: TxpElement) of object;  //Evento de búsqueda
     procedure Clear;
     procedure RefreshAllUnits;
-    function CurNodeName: string;
-    function CurCodeContainer: TxpEleCodeCont;
-    function LastNode: TxpElement;
-    function BodyNode: TxpEleBody;
-  public  //Funciones para llenado del arbol
+  public  //Filling the tree
     procedure AddElement(elem: TxpElement; AtBegin: boolean = false);
     procedure AddElementAndOpen(elem: TxpElement);
     procedure AddElementParent(elem: TxpElement; AtBegin: boolean);
     procedure OpenElement(elem: TxpElement);
     procedure CloseElement;
-  public  //Métodos para identificación de nombres
-    function FindNext: TxpElement;
+  public  //Element resolution
     function FindFirst(const name: string): TxpElement;
-    function FindNextFunc: TxpEleFun;
+    function FindNext: TxpElement;
+    function FindNextFuncName: TxpEleFun;
+    function FindFirstType: TxpEleType;
+    function FindNextType: TxpEleType;
     function FindVar(varName: string): TxpEleVar;
     function FindType(typName: string): TxpEleType;
-    function DeclaredType(typName: string; out typFound: TxpEleType): boolean;
+  public  //Searching/Identification
+    function LastNode: TxpElement;
+    function BodyNode: TxpEleBody;
+    function CurNodeName: string;
+    function CurCodeContainer: TxpEleCodeCont;
+    function ExistsArrayType(itemType: TxpEleType; nEle: integer;
+                             out typFound: TxpEleType): boolean;
+    function ExistsPointerType(ptrType: TxpEleType;
+                             out typFound: TxpEleType): boolean;
     function GetElementBodyAt(posXY: TPoint): TxpEleBody;
     function GetElementAt(posXY: TPoint): TxpElement;
     function GetElementCalledAt(const srcPos: TSrcPos): TxpElement;
@@ -810,41 +825,92 @@ begin
     lstCalled.Add(elem);
   end;
 end;
-procedure TxpElement.AddCalledAll(elem: TxpElement);
-{Agrega referencia a procedimiento llamado.}
-begin
-  //Solo agrega una vez el elemento
-  if lstCalledAll.IndexOf(elem) = -1 then begin
-    lstCalledAll.Add(elem);
-  end;
-end;
-procedure TxpElement.AddCalledAll_FromList(lstCalled0: TxpListCalled);
-{Agrega referencia a procedimiento llamado, a partir de una lista, de forma recursiva}
-var
-  elem: TxpElement;
-begin
-//debugln('In AddCalledAll_FromList()');
-  inc(curNesting);    //incrementa el anidamiento
-  if curNesting>maxNesting then maxNesting := curNesting;
-
-  if lstCalled0.Count = 0 then exit;
-  for elem in lstCalled0 do begin
-    AddCalledAll(elem);  //Agrega elemento
-    if elem.lstCalled.Count <> 0 then begin  //Tiene otros elementos
-      AddCalledAll_FromList(elem.lstCalled);
+function TxpElement.UpdateCalledAll: integer;
+{Update list "lstCalledAll", using AddCalledAll_FromList().
+  The return value is:
+  * curNesting -> if not error happens.
+  * <0  ->  If found recursion.
+}
+  function AddCalledAll(elem: TxpElement): boolean;
+  {Add reference to lstCalledAll. That is, indicates some element is called from this
+  element.
+  If reference already exists, retunr FALSE.}
+  begin
+    //Solo agrega una vez el elemento
+    if lstCalledAll.IndexOf(elem) = -1 then begin
+      lstCalledAll.Add(elem);
+      exit(true);
+    end else begin
+      exit(false);
     end;
   end;
-  dec(curNesting);    //incrementa el anidamiento
-end;
-procedure TxpElement.UpdateCalledAll;
-{Actualiza la lista "lstCalledAll", usando AddCalledAll_FromList().}
+  function AddCalledAll_FromList(lstCalled0: TxpListCalled): integer;
+  {Add the call references (to lstCalledAll) of all elements of the list lstCalled0,
+  including its called too (recursive).}
+  var
+    elem: TxpElement;
+    err: Integer;
+  begin
+    inc(curNesting);    //incrementa el anidamiento
+    if curNesting>maxNesting then maxNesting := curNesting;
+
+    if lstCalled0.Count = 0 then exit;
+    for elem in lstCalled0 do begin
+//      debugln('Call to ' + elem.name + ' from ' + self.name);
+//      if elem = self then begin
+//        {This is some way to detect circular references like:
+//        procedure proc2;
+//        begin
+//          proc1;
+//        end;
+//        procedure proc1;
+//        begin
+//          proc2;
+//        end;
+//        But fails whe this element is not part of the circualr reference like
+//        procedure proc2;   <-- We are proc2
+//        begin
+//          proc1;
+//        end;
+//        procedure proc1; <-- Here is the recursion
+//        begin
+//          proc1;
+//        end;
+//        In this case, several call to proc1() will be adding.
+//        }
+//        if curNesting = 1 then begin
+//          exit(-1);
+//        end else begin
+//          exit(-2);
+//        end;
+//      end;
+      //Add element reference
+      if not AddCalledAll(elem) then begin
+        //This is better way to detect circle references, because lstCalled, doesn't
+        //contain duplicated calls.
+        exit(-1);
+      end;
+      if curNesting > 100 then begin
+        //This is a secure way (but less elegant) for checking recursion. (If curNesting
+        //grows too much). I don't expect this happens, unless exists some case I haven't
+        //considered.
+        exit(-1);
+      end;
+      //Verify if this element have other calls to add too.
+      if elem.lstCalled.Count <> 0 then begin
+        err := AddCalledAll_FromList(elem.lstCalled);
+        if err<0 then exit(err);
+      end;
+    end;
+    dec(curNesting);    //incrementa el anidamiento
+    exit(curNesting);
+  end;
 begin
-  lstCalledAll.Clear;  //Por si acaso
-  curNesting := 0;     //Inicia
-  maxNesting := 0;     //Inicia
-  AddCalledAll_FromList(lstCalled);
-  {Falta actualizar maxNesting, con las llamadas a funciones del sistema y
-   llamadas de interrupciones.}
+//debugln('UpdateCalledAll' + IntToStr(lstCalledAll.Count));
+  lstCalledAll.Clear;  //By security
+  curNesting := 0;
+  maxNesting := 0;
+  Result := AddCalledAll_FromList(lstCalled);
 end;
 function TxpElement.Path: string;
 {Devuelve una cadena, que indica la ruta del elemento, dentro del árbol de sintaxis.}
@@ -1033,98 +1099,33 @@ begin
   ftyp := AValue;
 end;
 
-function TxpEleVar.adrByte0: TPicRegister;
-begin
-  adrByteTmp.addr := addr0;
-  Result := adrByteTmp;
-end;
-function TxpEleVar.adrByte1: TPicRegister;
-begin
-  adrByteTmp.addr := addr1;
-  Result := adrByteTmp;
-end;
-function TxpEleVar.adrByte2: TPicRegister;
-begin
-  adrByteTmp.addr := addr2;
-  Result := adrByteTmp;
-end;
-function TxpEleVar.adrByte3: TPicRegister;
-begin
-  adrByteTmp.addr := addr3;
-  Result := adrByteTmp;
-end;
-
-function TxpEleVar.offs: TVarOffs;
-{Devuelve la dirección de inicio, en donde empieza a almacenarse la variable.}
-begin
-  Result := addr0;  //La variable siempre empieza en "addr0"
-end;
-function TxpEleVar.addr: word;
-{Devuelve la dirección absoluta de la variable. Tener en cuenta que la variable, no
-siempre tiene un solo byte, así que se trata de devolver siempre la dirección del
-byte de menor peso.}
-begin
-  if typ.catType = tctAtomic then begin
-    //Tipo básico
-    Result := addr0;
-  end else if typ.catType = tctArray then begin
-    //Arreglos
-    Result := addr0;
-  end else if typ.catType = tctPointer then begin
-    //Los punteros cortos son como bytes
-    Result := addr0;
-  end else begin
-    //No soportado
-    Result := ADRR_ERROR;
-  end;
-end;
 function TxpEleVar.addrL: word;
 {Dirección absoluta de la variable de menor pero, cuando es de tipo WORD.}
 begin
-  if typ.catType = tctAtomic then begin
-    Result := addr0;
-  end else begin
-    //No soportado
-    Result := ADRR_ERROR;
-  end;
+  Result := addr0;
 end;
 function TxpEleVar.addrH: word;
 {Dirección absoluta de la variable de mayor pero, cuando es de tipo WORD.}
 begin
-  if typ.catType = tctAtomic then begin
-    Result := addr1;
-  end else begin
-    //No soportado
-    Result := ADRR_ERROR;
-  end;
+  Result := addr0 + 1;
 end;
 function TxpEleVar.addrE: word;
 begin
-  if typ.catType = tctAtomic then begin
-    Result := addr2;
-  end else begin
-    //No soportado
-    Result := ADRR_ERROR;
-  end;
+  Result := addr0 + 2;
 end;
 function TxpEleVar.addrU: word;
 begin
-  if typ.catType = tctAtomic then begin
-    Result := addr3;
-  end else begin
-    //No soportado
-    Result := ADRR_ERROR;
-  end;
+  Result := addr0 + 3;
 end;
 function TxpEleVar.AddrString: string;
 {Devuelve una cadena, que representa a la dirección física.}
 begin
   if typ.IsByteSize then begin
-    Result := '$' + IntToHex(adrByte0.addr, 3);
+    Result := '$' + IntToHex(addr0, 3);
   end else if typ.IsWordSize then begin
-    Result := '$' + IntToHex(adrByte0.addr, 3);
+    Result := '$' + IntToHex(addr0, 3);
   end else if typ.IsDWordSize then begin
-    Result := '$' + IntToHex(adrByte0.addr, 3);
+    Result := '$' + IntToHex(addr0, 3);
   end else begin
     Result := '';   //Error
   end;
@@ -1132,8 +1133,6 @@ end;
 procedure TxpEleVar.ResetAddress;
 begin
   addr0 := 0;
-  bit0 := 0;
-
 end;
 constructor TxpEleVar.Create;
 begin
@@ -1189,12 +1188,18 @@ begin
   inherited Destroy;
 end;
 function TxpEleType.getSize: smallint;
+var
+  lastAttrib: TTypAttrib;
 begin
   if catType = tctArray then begin
     //Array size is calculated
     if nItems = -1 then exit(0) else exit(itmType.size * nItems);
   end else if catType = tctPointer then begin
     exit(2);  //Pointer are like words
+  end else if catType = tctObject then begin
+    if attribs.Count = 0 then exit(0);
+    lastAttrib := attribs[attribs.Count-1];
+    exit(lastAttrib.offs + lastAttrib.typ.size);  //
   end else begin
     exit(fSize)
   end;
@@ -1366,18 +1371,50 @@ procedure TxpEleType.DefineRegister;
 begin
   if OnDefRegister<>nil then OnDefRegister;
 end;
+function TxpEleType.IsArrayOf(itTyp: TxpEleType; numIt: integer): boolean;
+{Indicates if this type is an array of the specified type and with the specified
+number of elements.}
+begin
+  exit( (catType = tctArray) and (nItems = numIt) and itmType.IsEquivalent(itTyp)  );
+end;
+function TxpEleType.IsPointerTo(ptTyp: TxpEleType): boolean;
+begin
+  exit( (catType = tctPointer) and ptrType.IsEquivalent(ptTyp) );
+end;
+function TxpEleType.IsEquivalent(typ: TxpEleType): boolean;
+{Indicates if the type is the same type as the specified or has the same definition.}
+begin
+  if self = typ then exit(true);
+  if catType <> typ.catType then exit(false);
+  //Have the same category
+  if (self.copyOf = typ) or (typ.copyOf = self) then exit(true);
+  if (self.copyOf<>nil) and (self.copyOf = typ.copyOf) then exit(true);
+  if catType = tctArray then begin
+    //Equivalence for arrays
+    if (self.nItems = typ.nItems) and itmType.IsEquivalent(typ.itmType) then exit(true);
+  end else if catType = tctPointer then begin
+    //Equivalence for pointers
+    if (self.ptrType.IsEquivalent(typ.ptrType)) then exit(true);
+  end;
+  exit(false);
+end;
 constructor TxpEleType.Create;
 begin
   inherited;
   idClass:=eltType;
-  //Crea lista de campos
+  //Create list of methods
   fields:= TTypFields.Create(true);
-  //Ceea lista de operadores
-  Operators := TxpOperators.Create(true);  //Lista de operadores aplicables a este tipo
+  //Create list of attributes
+  attribs:= TTypATtributes.Create(true);
+  //Ceeate list of operators
+  Operators := TxpOperators.Create(true);  //Operators apllyed to this type
+  internalTypes:= TxpEleTypes.Create(true);
 end;
 destructor TxpEleType.Destroy;
 begin
+  internalTypes.Destroy;
   Operators.Destroy;
+  attribs.Destroy;
   fields.Destroy;
   inherited;
 end;
@@ -1430,7 +1467,7 @@ end;
 constructor TxpEleFunDec.Create;
 begin
   inherited Create;
-  idClass:=eltFuncDec;
+  idClass := eltFuncDec;
 end;
 { TxpEleFun }
 procedure TxpEleFun.SetElementsUnused;
@@ -1498,11 +1535,26 @@ begin
     exit(false);
   end;
 end;
+const CONS_ITEM_BLOCK = 10;
+procedure TxpEleFun.AddAddresPend(ad: word);
+{Add a pending address to the function to be completed later.}
+begin
+  addrsPend[nAddresPend] := ad;
+  inc(nAddresPend);
+  if nAddresPend > curSize then begin
+    curSize += CONS_ITEM_BLOCK;   //Increase size by block
+    setlength(addrsPend, curSize);  //make space
+  end;
+end;
 //Inicialización
 constructor TxpEleFun.Create;
 begin
   inherited;
   idClass:=eltFunc;
+  //Init addrsPend[]
+  nAddresPend := 0;
+  curSize := CONS_ITEM_BLOCK;   //Block size
+  setlength(addrsPend, curSize);  //initial size
 end;
 destructor TxpEleFun.Destroy;
 begin
@@ -1647,99 +1699,6 @@ begin
   AllFuncs.Clear;
   AllTypes.Clear;
 end;
-{********* No se utilizan ya estos métodos porque se está agregando código de
-identificación en TXpTreeElements.AddElement(). }
-//procedure TXpTreeElements.RefreshAllCons;
-//{Devuelve una lista de todas las constantes del árbol de sintaxis, incluyendo las de las
-//funciones y procedimientos. La lista se obtiene ordenada de acuerdo a como se haría en
-//una exploración sintáctica normal.}
-//  procedure AddCons(nod: TxpElement);
-//  var
-//    ele : TxpElement;
-//  begin
-//    if nod.elements<>nil then begin
-//      for ele in nod.elements do begin
-//        if ele.idClass = eltCons then begin
-//          AllCons.Add(TxpEleCon(ele));
-//        end else begin
-//          if ele.elements<>nil then
-//            AddCons(ele);  //recursivo
-//        end;
-//      end;
-//    end;
-//  end;
-//begin
-//  AllCons.Clear;   //por si estaba llena
-//  AddCons(main);
-//end;
-//procedure TXpTreeElements.RefreshAllVars;
-//{Devuelve una lista de todas las variables del árbol de sintaxis, incluyendo las de las
-//funciones y procedimientos. La lista se obtiene ordenada de acuerdo a como se haría en
-//una exploración sintáctica normal.}
-//  procedure AddVars(nod: TxpElement);
-//  var
-//    ele : TxpElement;
-//  begin
-//    if nod.elements<>nil then begin
-//      for ele in nod.elements do begin
-//        if ele.idClass = eltVar then begin
-//          AllVars.Add(TxpEleVar(ele));
-//        end else begin
-//          if ele.elements<>nil then
-//            AddVars(ele);  //recursivo
-//        end;
-//      end;
-//    end;
-//  end;
-//begin
-//  AllVars.Clear;   //por si estaba llena
-//  AddVars(main);
-//end;
-//procedure TXpTreeElements.RefreshAllFuncs;
-//{Actualiza una lista de todas las funciones del árbol de sintaxis, incluyendo las de las
-//unidades.}
-//  procedure AddFuncs(nod: TxpElement);
-//  var
-//    ele : TxpElement;
-//  begin
-//    if nod.elements<>nil then begin
-//      for ele in nod.elements do begin
-//        if ele.idClass = eltFunc then begin
-//          AllFuncs.Add(TxpEleFun(ele));
-//        end else begin
-//          if ele.elements<>nil then
-//            AddFuncs(ele);  //recursivo
-//        end;
-//      end;
-//    end;
-//  end;
-//begin
-//  AllFuncs.Clear;   //por si estaba llena
-//  AddFuncs(main);
-//end;
-//procedure TXpTreeElements.RefreshAllTypes;
-//{Devuelve una lista de todas las constantes del árbol de sintaxis, incluyendo las de las
-//funciones y procedimientos. La lista se obtiene ordenada de acuerdo a como se haría en
-//una exploración sintáctica normal.}
-//  procedure AddTypes(nod: TxpElement);
-//  var
-//    ele : TxpElement;
-//  begin
-//    if nod.elements<>nil then begin
-//      for ele in nod.elements do begin
-//        if ele.idClass = eltType then begin
-//          AllTypes.Add(TxpEleType(ele));
-//        end else begin
-//          if ele.elements<>nil then
-//            AddTypes(ele);  //recursivo
-//        end;
-//      end;
-//    end;
-//  end;
-//begin
-//  AllTypes.Clear;   //por si estaba llena
-//  AddTypes(main);
-//end;
 procedure TXpTreeElements.RefreshAllUnits;
 var
   ele : TxpElement;
@@ -1751,42 +1710,7 @@ begin
     end;
   end;
 end;
-function TXpTreeElements.CurNodeName: string;
-{Devuelve el nombre del nodo actual}
-begin
-  Result := curNode.name;
-end;
-function TXpTreeElements.CurCodeContainer: TxpEleCodeCont;
-{Devuelve una referencia al Contenedor de Cñodigo actual. Si no lo identifica,
-devuelve NIL}
-begin
-  case curNode.idClass of
-  eltFunc, eltMain, eltUnit: begin
-    {Este es un caso directo, porque estamos directamente en un contenedor de código.
-    No es común proque en este ámbito solo están las declaraciones, no el código}
-    exit( TxpEleCodeCont(curNode) );
-  end;
-  eltBody: begin
-    {Este es el caso mas común porque aquí si estamos dentro de un bloque que incluye
-    código.}
-    //Se supone que nunca debería fallar, porque un Body siempre pertenece a un CodeCont
-    exit( TxpEleCodeCont(curNode.Parent) );
-  end;
-  else
-    exit(nil);
-  end;
-end;
-function TXpTreeElements.LastNode: TxpElement;
-{Devuelve una referencia al último nodo de "main"}
-begin
-  Result := main.LastNode;
-end;
-function TXpTreeElements.BodyNode: TxpEleBody;
-{Devuelve la referencia al cuerpo principal del programa.}
-begin
-  Result := main.BodyNode;
-end;
-//funciones para llenado del arbol
+//Filling the tree
 procedure TXpTreeElements.AddElement(elem: TxpElement; AtBegin: boolean = false);
 {Add a new element to the current node. Commonly elements are add at the end of the list
 unless "AtBegin" is TRUE.
@@ -1837,18 +1761,16 @@ begin
   if curNode.Parent<>nil then
     curNode := curNode.Parent;
 end;
-//Métodos para identificación de nombres
+//Element resolution
 function TXpTreeElements.FindNext: TxpElement;
 {Realiza una búsqueda recursiva en el nodo "curFindNode", a partir de la posición,
 "curFindIdx", hacia "atrás", el elemento con nombre "curFindName". También implementa
 la búsqueda en unidades.
 Esta rutina es quien define la resolución de nombres (alcance) en PicPas.}
 var
-  tmp: String;
   elem: TxpElement;
 begin
 //  debugln(' Explorando nivel: [%s] en pos: %d', [curFindNode.name, curFindIdx - 1]);
-  tmp := UpCase(curFindName);  //convierte para comparación
   repeat
     curFindIdx := curFindIdx - 1;  //Siempre salta a la posición anterior
     if curFindIdx<0 then begin
@@ -1875,7 +1797,7 @@ begin
     //Genera evento para indicar que está buscando.
     if OnFindElement<>nil then OnFindElement(elem);
     //Compara
-    if elem.uname = tmp then begin
+    if (curFindName = '') or (elem.uname = curFindName) then begin
       //Encontró en "curFindIdx"
       Result := elem;
       //La siguiente búsqueda empezará en "curFindIdx-1".
@@ -1897,13 +1819,13 @@ begin
   until false;
 end;
 function TXpTreeElements.FindFirst(const name: string): TxpElement;
-{Rutina que permite resolver un identificador dentro del árbol de sintaxis, siguiendo las
-reglas de alcance de identificacdores (primero en el espacio actual y luego en los
-espacios padres).
-Si encuentra devuelve la referencia. Si no encuentra, devuelve NIL}
+{Routine to resolve an identifier inside the SyntaxTree, following the scope rules for
+identifiers of the Pascal syntax (first the current space and then the parents spaces).
+If found returns the reference to the element otherwise returns NIL.
+If "name" is empty string, all the elements, of the Syntax Tree, will be scanned.}
 begin
   //Busca recursivamente, a partir del espacio actual
-  curFindName := name;     //Este valor no cambiará en toda la búsqueda
+  curFindName := UpCase(name);     //This value won't change in all the search
   inUnit := false;     //Inicia bandera
   if curNode.idClass = eltBody then begin
     {Para los cuerpos de procemientos o de programa, se debe explorar hacia atrás a
@@ -1927,10 +1849,10 @@ begin
     Result := FindNext;
   end;
 end;
-function TXpTreeElements.FindNextFunc: TxpEleFun;
-{Explora recursivamente haciá la raiz, en el arbol de sintaxis, hasta encontrar el nombre
-de la fución indicada. Debe llamarse después de FindFirst().
-Si no encuentra devuelve NIL.}
+function TXpTreeElements.FindNextFuncName: TxpEleFun;
+{Scan recursively toward root, in the syntax tree, until find a function element with
+the same name provided in a previous call to FindFirst.
+Must be called after calling FindFirst(). If not found, returns NIL.}
 var
   ele: TxpElement;
 begin
@@ -1940,6 +1862,30 @@ begin
   //Puede que haya encontrado la función o no
   if ele = nil then exit(nil);  //No encontró
   Result := TxpEleFun(ele);   //devuelve como función
+end;
+function TXpTreeElements.FindFirstType: TxpEleType;
+{Starts the search for a element type in the syntax Tree.}
+var
+  ele: TxpElement;
+begin
+  ele := FindFirst('');
+  while (ele<>nil) and (ele.idClass <> eltType) do begin
+    ele := FindNext;
+  end;
+  if ele = nil then exit(nil) else exit( TxpEleType(ele) );
+end;
+function TXpTreeElements.FindNextType: TxpEleType;
+{Scan recursively toward root, in the syntax tree, until find a type element.
+Must be called after calling FindFirst(). If not found, returns NIL.}
+var
+  ele: TxpElement;
+begin
+  repeat
+    ele := FindNext;
+  until (ele=nil) or (ele.idClass = eltType);
+  //Puede que haya encontrado la función o no
+  if ele = nil then exit(nil);  //No encontró
+  Result := TxpEleType(ele);   //devuelve como función
 end;
 function TXpTreeElements.FindVar(varName: string): TxpEleVar;
 {Busca una variable con el nombre indicado en el espacio de nombres actual}
@@ -1957,35 +1903,76 @@ begin
   exit(nil);
 end;
 function TXpTreeElements.FindType(typName: string): TxpEleType;
-{Find a type, by name, in the current element opened.}
+{Find a type, by name, in the current element of the Synyax Tree.}
 var
-  ele : TxpElement;
-  uName: String;
+  ele: TxpElement;
 begin
-  uName := upcase(typName);
-  for ele in curNode.elements do begin
-    if (ele.idClass = eltType) and (ele.uname = uName) then begin
-      Result := TxpEleType(ele);
-      exit;
-    end;
-  end;
-  exit(nil);
+  ele := FindFirst(typName);
+//  while (ele<>nil) and (ele.idClass <> eltType) do begin
+//    ele := FindNext;
+//  end;
+  if ele = nil then exit(nil);
+  if ele.idClass = eltType then exit( TxpEleType(ele) ) else exit(nil);
 end;
-function TXpTreeElements.DeclaredType(typName: string; out typFound: TxpEleType
-  ): boolean;
-{Find a type declaration, accesible from the current position in the syntax tree.
-If found, returns TRUE and the type reference in "typFound".}
-var
-  sametype: TxpElement;
+//Searching/Identification
+function TXpTreeElements.LastNode: TxpElement;
+{Devuelve una referencia al último nodo de "main"}
 begin
-  sametype := FindFirst(typName);
-  if (sametype<>nil) and (sametype.idClass = eltType) then begin
-    {El tipo ya existe, así que mejor.}
-    typFound := TxpEleType(sametype);
-    exit(true);
-  end else begin
-    exit(false);
+  Result := main.LastNode;
+end;
+function TXpTreeElements.BodyNode: TxpEleBody;
+{Devuelve la referencia al cuerpo principal del programa.}
+begin
+  Result := main.BodyNode;
+end;
+function TXpTreeElements.CurNodeName: string;
+{Devuelve el nombre del nodo actual}
+begin
+  Result := curNode.name;
+end;
+function TXpTreeElements.CurCodeContainer: TxpEleCodeCont;
+{Devuelve una referencia al Contenedor de Cñodigo actual. Si no lo identifica,
+devuelve NIL}
+begin
+  case curNode.idClass of
+  eltFunc, eltMain, eltUnit: begin
+    {Este es un caso directo, porque estamos directamente en un contenedor de código.
+    No es común proque en este ámbito solo están las declaraciones, no el código}
+    exit( TxpEleCodeCont(curNode) );
   end;
+  eltBody: begin
+    {Este es el caso mas común porque aquí si estamos dentro de un bloque que incluye
+    código.}
+    //Se supone que nunca debería fallar, porque un Body siempre pertenece a un CodeCont
+    exit( TxpEleCodeCont(curNode.Parent) );
+  end;
+  else
+    exit(nil);
+  end;
+end;
+function TXpTreeElements.ExistsArrayType(itemType: TxpEleType; nEle: integer;
+  out typFound: TxpEleType): boolean;
+{Finds an array type declaration, accesible from the current position in the syntax tree.
+If found, returns TRUE and the type reference in "typFound".}
+begin
+  typFound := FindFirstType;
+  while (typFound <> nil) and not typFound.IsArrayOf(itemType, nEle) do begin
+    typFound := FindNextType;
+  end;
+  //Verify result
+  Result := typFound <> nil;
+end;
+function TXpTreeElements.ExistsPointerType(ptrType: TxpEleType; out
+  typFound: TxpEleType): boolean;
+{Finds a pointer type declaration, accesible from the current position in the syntax tree.
+If found, returns TRUE and the type reference in "typFound".}
+begin
+  typFound := FindFirstType;
+  while (typFound <> nil) and not typFound.IsPointerTo(ptrType) do begin
+    typFound := FindNextType;
+  end;
+  //Verify result
+  Result := typFound <> nil;
 end;
 function TXpTreeElements.GetElementBodyAt(posXY: TPoint): TxpEleBody;
 {Busca en el árbol de sintaxis, dentro del nodo principal, y sus nodos hijos, en qué

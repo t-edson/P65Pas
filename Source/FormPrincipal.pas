@@ -222,7 +222,7 @@ type
     fraSynTree  : TfraSyntaxTree; //Árbol de sintaxis
     fraMessages : TfraMessagesWin;
     CodeTool    : TCodeTool;
-    procedure CompileFile(filName: string);
+    procedure CompileFile(filName: string; verifErr: boolean);
     procedure ConfigExtTool_RequirePar(var comLine: string);
     procedure Compiler16_AfterCompile;
     procedure Compiler16_RequireFileString(FilePath: string; var strList: TStrings);
@@ -274,7 +274,6 @@ begin
   fraMessages.SetLanguage;
   frmDebug.SetLanguage;
   Compiler_PIC16.SetLanguage;
-  CompBase.SetLanguage;
   //ParserAsm_PIC16.SetLanguage;
   //ParserDirec_PIC16.SetLanguage;
   {$I ..\language\tra_FormPrincipal.pas}
@@ -557,7 +556,17 @@ begin
         exit;
       end;
       fraMessages.InitCompilation(Compiler, false);  //Limpia mensajes
-      Compiler.Compile(ed.FileName, false);
+      if Config.AutCompile then begin  //Compilación y enlace
+        CompileFile(ed.FileName, false);  //No verifica error para evitar que el cursor se mueva mientras se escribe.
+        edAsm.BeginUpdate(false);
+        edAsm.Lines.Clear;
+        Compiler.DumpCode(edAsm.Lines, (Config.AsmType = dvtASM),
+                          Config.IncVarDec , Config.ExcUnused,
+                          Config.IncAddress, true, Config.IncVarName );
+        edAsm.EndUpdate;
+      end else begin
+        Compiler.Compile(ed.FileName, false);  //Solo compilación para verificar sintaxis
+      end;
       //Puede haber generado error, los mismos que deben haberse mostrado en el panel.
       MarkErrors;  //Resalta errores, si están en el editor actual
       fraMessages.FilterGrid;  //Para que haga visible la lista de mensajes
@@ -827,7 +836,7 @@ begin
   end;
   MsgBox(MSG_NOFOUND_, [buscado]);
 end;
-procedure TfrmPrincipal.CompileFile(filName: string);
+procedure TfrmPrincipal.CompileFile(filName: string; verifErr: boolean);
 begin
   fraMessages.InitCompilation(Compiler, true);  //Limpia mensajes
   Compiler.incDetComm   := Config.IncComment2;   //Visualización de mensajes
@@ -840,7 +849,7 @@ begin
   Compiler.Compiling := false;
   if fraMessages.HaveErrors then begin
     fraMessages.EndCompilation;
-    VerificarError;
+    if verifErr then VerificarError;
     MarkErrors;
     exit;
   end;
@@ -999,7 +1008,7 @@ begin
     end;
   end;
 
-  CompileFile(filName);
+  CompileFile(filName, true);
   //Genera código ensamblador
   edAsm.BeginUpdate(false);
   edAsm.Lines.Clear;
@@ -1055,7 +1064,7 @@ procedure TfrmPrincipal.acToolTestUnitExecute(Sender: TObject);
           //Unidad de PIC
           nomArc := directorio + DirectorySeparator +  nomArc;
           DebugLn('Compiling: '+ nomArc);
-          CompileFile(nomArc);
+          CompileFile(nomArc, true);
           if Compiler.HayError then break;
         end;
         fraMessages.AddInformation(Format('%d files processed...', [nFil]));
@@ -1091,7 +1100,7 @@ procedure TfrmPrincipal.acToolTestPic16Execute(Sender: TObject);
           //Unidad de PIC
           nomArc := directorio + DirectorySeparator +  nomArc;
           DebugLn('Compiling: '+ nomArc);
-          CompileFile(nomArc);
+          CompileFile(nomArc, true);
           if Compiler.HayError then break;
         end;
         fraMessages.AddInformation(Format('%d files processed...', [nFil]));

@@ -87,8 +87,8 @@ type
       procedure ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_pointer_add_word(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_pointer_sub_word(Opt: TxpOperation; SetRes: boolean);
-      procedure ROB_string_add_char(Opt: TxpOperation; SetRes: boolean);
-      procedure ROB_string_add_string(Opt: TxpOperation; SetRes: boolean);
+//      procedure ROB_string_add_char(Opt: TxpOperation; SetRes: boolean);
+//      procedure ROB_string_add_string(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_word_add_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_word_add_word(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_word_sub_byte(Opt: TxpOperation; SetRes: boolean);
@@ -189,7 +189,7 @@ begin
   //Code('.CODE');   //inicia la sección de código
 end;
 procedure TGenCod.Cod_EndProgram;
-//Codifica la parte inicial del programa
+//Codifica la parte final del programa
 begin
   //Code('END');   //inicia la sección de código
 end;
@@ -234,18 +234,27 @@ begin
 end;
 procedure TGenCod.ROU_address(Opr: TxpOperator; SetRes: boolean);
 {Return the address of any operand.}
+var
+  startAddr: integer;
 begin
   case p1^.Sto of
   stConst : begin
-    genError('Cannot obtain address of constant.');
+    if p1^.Typ.catType = tctArray then begin
+      //We allow to get the address for constant arrays, storing first in RAM.
+      CreateValueInCode(p1^.Typ, p1^.Value, startAddr);
+      SetResultConst(typWord);
+      res.valInt := startAddr;
+    end else begin
+      genError('Cannot obtain address of constant.');
+    end;
   end;
   stVariab: begin
     //Es una variable normal
     //La dirección de una variable es constante
     SetResultConst(typWord);
-    res.valInt := p1^.rVar.addr;
+    res.valInt := p1^.rVar.addr0;
   end;
-  stExpres: begin  //ya está en STATUS.Z
+  stExpres: begin
     genError('Cannot obtain address of an expression.');
   end;
   else
@@ -262,7 +271,7 @@ begin
   stVariab: begin
     SetROUResultExpres_bool(logNormal);
     //We have to return logical value inverted in A
-    _LDA(p1^.rVar.adrByte0);   //Result of "NOT var" in Z
+    _LDA(p1^.rVar.addr0);   //Result of "NOT var" in Z
     Copy_Z_to_A;
   end;
 //  stExpres: begin
@@ -493,8 +502,6 @@ addrNextOp2 := pic.iRam + 1;  //Address next instruction
   end;
 end;
 procedure TGenCod.ROB_byte_and_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
 begin
   case stoOperation of
   stConst_Const: begin  //suma de dos constantes. Caso especial
@@ -575,8 +582,6 @@ begin
   end;
 end;
 procedure TGenCod.ROB_byte_or_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
 begin
   case stoOperation of
   stConst_Const: begin  //suma de dos constantes. Caso especial
@@ -653,8 +658,6 @@ begin
   end;
 end;
 procedure TGenCod.ROB_byte_xor_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
 begin
   case stoOperation of
   stConst_Const: begin  //suma de dos constantes. Caso especial
@@ -1017,8 +1020,6 @@ begin
   end;
 end;
 procedure TGenCod.ROB_byte_add_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
 begin
   case stoOperation of
   stConst_Const: begin
@@ -1085,8 +1086,6 @@ begin
   end;
 end;
 procedure TGenCod.ROB_byte_sub_byte(Opt: TxpOperation; SetRes: boolean);
-var
-  rVar: TxpEleVar;
 begin
   case stoOperation of
   stConst_Const:begin  //suma de dos constantes. Caso especial
@@ -1102,10 +1101,10 @@ begin
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
     typWord.DefineRegister;   //Asegura que exista H
-    _STA(H);
+    _STA(H.addr);
     _SEC;
     _LDAi(value1);
-    _SBC(H);
+    _SBC(H.addr);
   end;
   stVariab_Const: begin
     SetROBResultExpres_byte(Opt);
@@ -1693,11 +1692,11 @@ begin
     _LDA(byte1);
     _PHP;     //Save SR
     _PLA;
-    _STA(H);  //In H
+    _STA(H.addr);  //In H
     _LDA(byte2);
     _PHP;     //Save SR
     _PLA;     //In A
-    _EOR(H);  //0 if equals
+    _EOR(H.addr);  //0 if equals
     _ANDi($02);//Mask position of bit Z. if equals -> Z = 1
     Copy_Z_to_A;  //Logic inverted
     {//Alternative version (not tested)
@@ -1723,11 +1722,11 @@ _LABEL_post(exit0):
     if not AcumStatInZ then _TAX;   //Update Z, if needed.
     _PHP;     //Save SR
     _PLA;
-    _STA(H);  //In H
+    _STA(H.addr);  //In H
     _LDA(byte1);
     _PHP;     //Save SR
     _PLA;     //In A
-    _EOR(H);  //0 if equals
+    _EOR(H.addr);  //0 if equals
     _ANDi($02);//Mask position of bit Z. if equals -> Z = 1
     Copy_Z_to_A;  //Logic inverted
   end;
@@ -1750,11 +1749,11 @@ _LABEL_post(exit0):
     if not AcumStatInZ then _TAX;   //Update Z, if needed.
     _PHP;     //Save SR
     _PLA;
-    _STA(H);  //In H
+    _STA(H.addr);  //In H
     _LDA(byte2);
     _PHP;     //Save SR
     _PLA;     //In A
-    _EOR(H);  //0 if equals
+    _EOR(H.addr);  //0 if equals
     _ANDi($02);//Mask position of bit Z. if equals -> Z = 1
     Copy_Z_to_A;  //Logic inverted
   end;
@@ -1805,7 +1804,7 @@ begin
     stExpres: begin   //se asume que se tiene en (H,A)
       SetROBResultExpres_word(Opt);  //Realmente, el resultado no es importante
       _STA(byte1L);
-      _LDA(H);
+      _LDA(H.addr);
       _STA(byte1H);
     end;
     else
@@ -2010,7 +2009,7 @@ begin
     _TAX;  //Save
     _LDAi(0);
     _ADC(byte2H);
-    _STA(H);
+    _STA(H.addr);
     _TXA;
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
@@ -2025,7 +2024,7 @@ begin
     _TAX;  //Save
     _LDA(byte1H);
     _ADCi(0);
-    _STA(H);
+    _STA(H.addr);
     _TXA;
   end;
   stVariab_Variab:begin
@@ -2036,7 +2035,7 @@ begin
     _TAX;  //Save
     _LDA(byte1H);
     _ADCi(0);
-    _STA(H);
+    _STA(H.addr);
     _TXA;
   end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
@@ -2078,7 +2077,7 @@ begin
     _TAX;  //Save
     _LDAi(value1H);
     _ADC(byte2H);
-    _STA(H);
+    _STA(H.addr);
     _TXA;  //Restore A
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
@@ -2093,7 +2092,7 @@ begin
     _TAX;  //Save
     _LDA(byte1H);
     _ADCi(value2H);
-    _STA(H);
+    _STA(H.addr);
     _TXA;  //Restore A
   end;
   stVariab_Variab:begin
@@ -2103,7 +2102,7 @@ begin
     _TAX;  //Save
     _LDA(byte1H);
     _ADC(byte2H);
-    _STA(H);
+    _STA(H.addr);
     _TXA;  //Restore A
   end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
@@ -2145,7 +2144,7 @@ begin
     _TAX;  //Save
     _LDAi(value1H);
     _SBCi(0);
-    _STA(H);
+    _STA(H.addr);
     _TXA;  //Restore A
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
@@ -2164,7 +2163,7 @@ begin
     _TAX;  //Save
     _LDA(byte1H);
     _SBCi(0);
-    _STA(H);
+    _STA(H.addr);
     _TXA;  //Restore A
   end;
   stVariab_Variab:begin
@@ -2175,7 +2174,7 @@ begin
     _TAX;  //Save
     _LDA(byte1H);
     _SBCi(0);
-    _STA(H);
+    _STA(H.addr);
     _TXA;  //Restore A
   end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
@@ -2224,7 +2223,7 @@ begin
     _TAX;  //Save
     _LDAi(value1H);
     _SBC(byte2H);
-    _STA(H);
+    _STA(H.addr);
     _TXA;  //Restore A
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
@@ -2243,7 +2242,7 @@ begin
     _TAX;  //Save
     _LDA(byte1H);
     _SBCi(value2H);
-    _STA(H);
+    _STA(H.addr);
     _TXA;  //Restore A
   end;
   stVariab_Variab:begin
@@ -2254,7 +2253,7 @@ begin
     _TAX;  //Save
     _LDA(byte1H);
     _SBC(byte2H);
-    _STA(H);
+    _STA(H.addr);
     _TXA;  //Restore A
   end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
@@ -2608,7 +2607,7 @@ begin
     SetROBResultExpres_word(Opt);
     if value2 < 4 then begin
       _LDA(byte1H);
-      _STA(H);  //Load high byte
+      _STA(H.addr);  //Load high byte
       _LDA(byte1L);
       for i:=1 to value2 do begin
         _ASLa;
@@ -2663,7 +2662,7 @@ begin
     SetROBResultExpres_word(Opt);
     if value2 < 4 then begin
       _LDA(byte1H);
-      _STA(H);  //Load high byte
+      _STA(H.addr);  //Load high byte
       _LDA(byte1L);
       for i:=1 to value2 do begin
         _LSRa;
@@ -2723,33 +2722,33 @@ procedure TGenCod.ROB_char_difer_char(Opt: TxpOperation; SetRes: boolean);
 begin
   ROB_byte_difer_byte(Opt, SetRes); //es lo mismo
 end;
-//////////// Operaciones con Char
-procedure TGenCod.ROB_string_add_string(Opt: TxpOperation; SetRes: boolean);
-{Implementation of string is incomplete. Just created this oepration to facilitate
-initialization of ARRAY OF chars with string}
-begin
-  case stoOperation of
-  stConst_Const: begin  //Special case. Comapares constants.
-    SetResultConst(typString);
-    res.valStr := p1^.valStr + p2^.valStr;
-  end;
-  else
-    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-  end;
-end;
-procedure TGenCod.ROB_string_add_char(Opt: TxpOperation; SetRes: boolean);
-{Implementation of string is incomplete. Just created this oepration to facilitate
-initialization of ARRAY OF chars with string}
-begin
-  case stoOperation of
-  stConst_Const: begin  //Special case. Comapares constants.
-    SetResultConst(typString);
-    res.valStr := p1^.valStr + chr(p2^.valInt);
-  end;
-  else
-    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-  end;
-end;
+//////////// Operaciones con String
+//procedure TGenCod.ROB_string_add_string(Opt: TxpOperation; SetRes: boolean);
+//{Implementation of string is incomplete. Just created this oepration to facilitate
+//initialization of ARRAY OF chars with string}
+//begin
+//  case stoOperation of
+//  stConst_Const: begin  //Special case. Comapares constants.
+//    SetResultConst(typString);
+//    res.valStr := p1^.valStr + p2^.valStr;
+//  end;
+//  else
+//    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+//  end;
+//end;
+//procedure TGenCod.ROB_string_add_char(Opt: TxpOperation; SetRes: boolean);
+//{Implementation of string is incomplete. Just created this oepration to facilitate
+//initialization of ARRAY OF chars with string}
+//begin
+//  case stoOperation of
+//  stConst_Const: begin  //Special case. Comapares constants.
+//    SetResultConst(typString);
+//    res.valStr := p1^.valStr + chr(p2^.valInt);
+//  end;
+//  else
+//    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+//  end;
+//end;
 //////////// Pointer operations
 procedure TGenCod.ROB_pointer_add_byte(Opt: TxpOperation; SetRes: boolean);
 {Implementa la suma de un puntero (a cualquier tipo) y un byte.}
@@ -2848,7 +2847,7 @@ begin
   end;
   stExpres: begin
     //La expresión Esta en RT, pero es una dirección, no un valor
-    SetROUResultExpRef(nil, p1^.Typ);
+    SetROUResultExpRef(p1^.Typ);
   end;
   else
     genError('Not implemented: "%s"', [Opr.OperationString]);
@@ -2875,7 +2874,7 @@ begin
     _LDXi(nCyc1m div 5);  //2 cycles
   //delay:
     _DEX;       //2 cycles (1 byte)
-    _BNE(-3);   //3 cycles in loop, 2 cycles at end (2 bytes)
+    _BNE(-3);   //3 cycles in loop (in same page), 2 cycles at end (2 bytes)
   end else begin
     GenError('Clock frequency %d not supported for delay_ms().', [_CLOCK]);
   end;
@@ -2892,24 +2891,23 @@ begin
   typWord.DefineRegister;   //Se asegura de que se exista y lo marca como "usado".
   //aux := GetAuxRegisterByte;  //Pide un registro libre
   if HayError then exit;
-  fun.adrr := pic.iRam;  {Se hace justo antes de generar código por si se crea
-                          la variable _H}
   {Esta rutina recibe los milisegundos en los registros en (H,A) o en (A)
   En cualquier caso, siempre usa el registros H , el acumulador "A" y un reg. auxiliar.
   Se supone que para pasar los parámetros, ya se requirió H, así que no es necesario
   crearlo.}
-  _LDXi(0);     PutComm(' ;enter when parameters in (0,A)');
-  _STX(H);
-  fun.adrr2 := pic.iRam;  {Se hace justo antes de generar código por si se crea
-                          la variable _H}
+//  _LDXi(0);     PutComm(' ;enter when parameters in (0,A)');
+//  _STX(H);
+//  fun.adrr2 := pic.iRam;  {Se hace justo antes de generar código por si se crea
+//                          la variable _H}
   _TAY; PutComm(';enter when parameters in (H,A)');
   //Se tiene el número en H,Y
 delay:= _PC;
   _TYA;
   _BNE_post(LABEL1);  //label
-  _LDA(H);
-  _BEQ_post(ZERO); //NUM = $0000 (not decremented in that case)
-  _DEC(H);
+  //A (and Y) is zero
+  _LDA(H.addr);
+  _BEQ_post(ZERO); //H is zero too (not decremented in that case)
+  _DEC(H.addr);
 _LABEL_post(LABEL1);
   _DEY;
   codif_1mseg;   //codifica retardo 1 mseg
@@ -3018,15 +3016,15 @@ begin
   end;
   stVariab: begin
     if (res.Typ = typByte) or (res.Typ = typChar) then begin
-      _INC(res.rVar.adrByte0);
+      _INC(res.rVar.addr0);
     end else if res.Typ = typWord then begin
-      _INC(res.rVar.adrByte0);
+      _INC(res.rVar.addr0);
       _BNE_post(LABEL1);  //label
-      _INC(res.rVar.adrByte1);
+      _INC(res.rVar.addr0+1);
 _LABEL_post(LABEL1);
     end else if res.Typ.catType = tctPointer then begin
       //Es puntero corto
-      _INC(res.rVar.adrByte0);
+      _INC(res.rVar.addr0);
     end else begin
       GenError(MSG_INVAL_PARTYP, [res.Typ.name]);
       exit;
@@ -3036,17 +3034,17 @@ _LABEL_post(LABEL1);
 //    if (res.Typ = typByte) or (res.Typ = typChar) then begin
 //      _INCF(res.offs, toF);
 //    end else if res.Typ = typWord then begin
-//      _INCF(res.Loffs, toF);
+//      _INCF(res.addrL, toF);
 //      _BTFSC(STATUS, _Z);
-//      _INCF(res.Hoffs, toF);
+//      _INCF(res.addrH, toF);
 //    end else if res.Typ = typDWord then begin
-//      _INCF(res.Loffs, toF);
+//      _INCF(res.addrL, toF);
 //      _BTFSC(STATUS, _Z);
-//      _INCF(res.Hoffs, toF);
+//      _INCF(res.addrH, toF);
 //      _BTFSC(STATUS, _Z);
-//      _INCF(res.Eoffs, toF);
+//      _INCF(res.addrE, toF);
 //      _BTFSC(STATUS, _Z);
-//      _INCF(res.Uoffs, toF);
+//      _INCF(res.addrU, toF);
 //    end else if res.Typ.catType = tctPointer then begin
 //      //Es puntero corto
 //      _INCF(res.offs, toF);
@@ -3078,16 +3076,16 @@ begin
   end;
   stVariab: begin
     if (res.Typ = typByte) or (res.Typ = typChar) then begin
-      _DEC(res.rVar.adrByte0);
+      _DEC(res.rVar.addr0);
     end else if res.Typ = typWord then begin
-      _LDA(res.rVar.adrByte0);
+      _LDA(res.rVar.addr0);
       _BNE_post(lbl1);
-      _DEC(res.rVar.adrByte1);
+      _DEC(res.rVar.addr0+1);
 _LABEL_post(lbl1);
-      _DEC(res.rVar.adrByte0);
+      _DEC(res.rVar.addr0);
     end else if res.Typ.catType = tctPointer then begin
       //Es puntero corto
-      _DEC(res.rVar.adrByte0);
+      _DEC(res.rVar.addr0);
     end else begin
       GenError(MSG_INVAL_PARTYP, [res.Typ.name]);
       exit;
@@ -3277,13 +3275,13 @@ begin
     if res.Typ = typByte then begin
       SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
       _LDAi(0);
-      _STA(H);
-      _LDA(res.rVar.adrByte0);
+      _STA(H.addr);
+      _LDA(res.rVar.addr0);
     end else if res.Typ = typChar then begin
       SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
       _LDAi(0);
-      _STA(H);
-      _LDA(res.rVar.adrByte0);
+      _STA(H.addr);
+      _LDA(res.rVar.addr0);
     end else if res.Typ = typWord then begin
       //ya es Word
     end else begin
@@ -3296,12 +3294,12 @@ begin
       res.SetAsExpres(typWord);
       //Ya está en A el byte bajo
       _LDXi(0);
-      _STX(H);
+      _STX(H.addr);
     end else if res.Typ = typChar then begin
       res.SetAsExpres(typWord);
       //Ya está en A el byte bajo
       _LDXi(0);
-      _STX(H);
+      _STX(H.addr);
     end else if res.Typ = typWord then begin
 //      Ya es word
     end else begin
@@ -3333,19 +3331,14 @@ begin
   stVariab: begin
     //Es una variable simple. Debe devolver un puntero o (dirección)
     xvar := res.rVar;
-    {Genera nombre del tipo.
-    Este nombre es compatible con el que se genera en TCompiler_PIC16.CompileVarDeclar()
-    para que se pueda usar la reutilización y compatibilidad de tipos.}
-    ptrTypeName := GenPointerTypeName(xvar.typ.name);
     //Crea un tipo puntero a la variable.
-    if TreeElems.DeclaredType(ptrTypeName, xtyp) then begin
-      //El tipo ya existe. Simplemente dejamos la referencia en "xtyp".
-    end else begin
-      //No existe este tipo de puntero. Hay que crearlo.
-      xtyp := CreateEleType(ptrTypeName, srcPos, tctPointer);
-      if HayError then exit;       //Sale para ver otros errores
-      xtyp.ptrType := xvar.typ;      //El tipo a donde apunta
-      CodDefinePointer(xtyp);
+    if not TreeElems.ExistsPointerType(xvar.typ, xtyp) then begin
+      {Genera nombre del tipo. Este nombre es compatible con el que se genera en
+      TCompiler_PIC16.CompileVarDeclar().}
+      ptrTypeName := GenPointerTypeName(xvar.typ.name);
+      //There is not a similar type. We create a new type.
+      xtyp := CreateEleTypePtr(ptrTypeName, srcPos, xvar.typ);
+      if HayError then exit;
       //Add to the syntax tree
       xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
       if TreeElems.curNode.idClass = eltBody then begin
@@ -3369,258 +3362,6 @@ begin
     genError('Cannot obtain address of this operand.');
   end;
   if not CaptureTok(')') then exit;
-end;
-procedure TGenCod.StartSyntax;
-//Se ejecuta solo una vez al inicio
-begin
-  ///////////define la sintaxis del compilador
-  //Tipos de tokens personalizados
-  tnExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
-  tnBlkDelim := xLex.NewTokType('BlkDelim'); //delimitador de bloque
-  tnStruct   := xLex.NewTokType('Struct');   //personalizado
-  tnDirective:= xLex.NewTokType('Directive'); //personalizado
-  tnAsm      := xLex.NewTokType('Asm');      //personalizado
-  tnChar     := xLex.NewTokType('Char');     //personalizado
-  tnOthers   := xLex.NewTokType('Others');   //personalizado
-  //Configura atributos
-  tkKeyword.Style := [fsBold];     //en negrita
-  xLex.Attrib[tnBlkDelim].Foreground:=clGreen;
-  xLex.Attrib[tnBlkDelim].Style := [fsBold];    //en negrita
-  xLex.Attrib[tnStruct].Foreground:=clGreen;
-  xLex.Attrib[tnStruct].Style := [fsBold];      //en negrita
-  //inicia la configuración
-  xLex.ClearMethodTables;          //limpia tabla de métodos
-  xLex.ClearSpecials;              //para empezar a definir tokens
-  //crea tokens por contenido
-  xLex.DefTokIdentif('[A-Za-z_]', '[A-Za-z0-9_]*');
-  xLex.DefTokContent('[0-9]', '[0-9.]*', tnNumber);
-  xLex.DefTokContent('[$]','[0-9A-Fa-f]*', tnNumber);
-  xLex.DefTokContent('[%]','[01]*', tnNumber);
-  //define palabras claves
-  xLex.AddIdentSpecList('THEN var type absolute interrupt', tnKeyword);
-  xLex.AddIdentSpecList('program public private method const', tnKeyword);
-  xLex.AddIdentSpecList('class create destroy sub do begin', tnKeyword);
-  xLex.AddIdentSpecList('END ELSE ELSIF UNTIL', tnBlkDelim);
-  xLex.AddIdentSpecList('true false', tnBoolean);
-  xLex.AddIdentSpecList('if while repeat for', tnStruct);
-  xLex.AddIdentSpecList('and or xor not div mod in', tnOperator);
-  xLex.AddIdentSpecList('umulword', tnOperator);
-  //tipos predefinidos
-  xLex.AddIdentSpecList('bit boolean byte word char dword', tnType);
-  //funciones del sistema
-  xLex.AddIdentSpecList('exit delay_ms Inc Dec Ord Chr', tnSysFunct);
-  xLex.AddIdentSpecList('SetOrig addr', tnSysFunct);
-  //símbolos especiales
-  xLex.AddSymbSpec('+',  tnOperator);
-  xLex.AddSymbSpec('+=', tnOperator);
-  xLex.AddSymbSpec('-=', tnOperator);
-  xLex.AddSymbSpec('-',  tnOperator);
-  xLex.AddSymbSpec('*',  tnOperator);
-  xLex.AddSymbSpec('/',  tnOperator);
-  xLex.AddSymbSpec('\',  tnOperator);
-//  xLex.AddSymbSpec('%',  tnOperator);
-  xLex.AddSymbSpec('**', tnOperator);
-  xLex.AddSymbSpec('=',  tnOperator);
-  xLex.AddSymbSpec('>',  tnOperator);
-  xLex.AddSymbSpec('<',  tnOperator);
-  xLex.AddSymbSpec('>=', tnOperator);
-  xLex.AddSymbSpec('<=', tnOperator);
-  xLex.AddSymbSpec('<>', tnOperator);
-  xLex.AddSymbSpec('<=>',tnOperator);
-  xLex.AddSymbSpec(':=', tnOperator);
-  xLex.AddSymbSpec('>>', tnOperator);
-  xLex.AddSymbSpec('<<', tnOperator);
-  xLex.AddSymbSpec('^', tnOperator);
-  xLex.AddSymbSpec('@', tnOperator);
-  xLex.AddSymbSpec('.', tnOperator);
-  xLex.AddSymbSpec(';', tnExpDelim);
-  xLex.AddSymbSpec('(',  tnOthers);
-  xLex.AddSymbSpec(')',  tnOthers);
-  xLex.AddSymbSpec(':',  tnOthers);
-  xLex.AddSymbSpec(',',  tnOthers);
-  xLex.AddSymbSpec('[',  tnOthers);
-  xLex.AddSymbSpec(']',  tnOthers);
-  //crea tokens delimitados
-  xLex.DefTokDelim('''','''', tnString);
-  xLex.DefTokContent('[#]','[0-9]*', tnChar);
-//  xLex.DefTokDelim('"','"', tnString);
-
-  xLex.DefTokDelim('//','', xLex.tnComment);
-  xLex.DefTokDelim('{','}', xLex.tnComment, tdMulLin);
-  xLex.DefTokDelim('(\*','\*)', xLex.tnComment, tdMulLin);
-  xLex.DefTokDelim('{$','}', tnDirective, tdUniLin);
-  xLex.DefTokDelim('Asm','End', tnAsm, tdMulLin);
-  //define bloques de sintaxis
-//  xLex.AddBlock('{','}');
-  xLex.Rebuild;   //es necesario para terminar la definición
-end;
-procedure TGenCod.DefCompiler;
-{}
-var
-  opr: TxpOperator;
-begin
-  //Define métodos a usar
-  OnExprStart := @expr_start;
-  OnExprEnd := @expr_End;
-
-  ///////////Crea tipos
-  ClearSystemTypes;
-  //////////////// Boolean type /////////////
-  typBool := CreateSysType('boolean',t_uinteger,1);   //de 1 byte
-  typBool.OnLoadToRT   := @byte_LoadToRT;
-  typBool.OnDefRegister:= @byte_DefineRegisters;
-  typBool.OnSaveToStk  := @byte_SaveToStk;
-  //typBool.OnReadFromStk :=
-  //////////////// Byte type /////////////
-  typByte := CreateSysType('byte',t_uinteger,1);   //de 1 byte
-  typByte.OnLoadToRT   := @byte_LoadToRT;
-  typByte.OnDefRegister:= @byte_DefineRegisters;
-  typByte.OnSaveToStk  := @byte_SaveToStk;
-  //typByte.OnReadFromStk :=
-
-  //////////////// Char type /////////////
-  //Tipo caracter
-  typChar := CreateSysType('char',t_uinteger,1);   //de 1 byte. Se crea como uinteger para leer/escribir su valor como número
-  typChar.OnLoadToRT   := @byte_LoadToRT;  //Es lo mismo
-  typChar.OnDefRegister:= @byte_DefineRegisters;  //Es lo mismo
-  typChar.OnSaveToStk  := @byte_SaveToStk; //Es lo mismo
-
-  //////////////// Word type /////////////
-  //Tipo numérico de dos bytes
-  typWord := CreateSysType('word',t_uinteger,2);   //de 2 bytes
-  typWord.OnLoadToRT   := @word_LoadToRT;
-  typWord.OnDefRegister:= @word_DefineRegisters;
-  typWord.OnSaveToStk  := @word_SaveToStk;
-//  typWord.OnClearItems := @word_ClearItems;
-
-  typWord.CreateField('Low', @word_Low, @word_Low);
-  typWord.CreateField('High', @word_High, @word_High);
-
-  //////////////// String type /////////////
-  {Se crea el tipo String, solo para permitir inicializar arreglos de
-  caracteres. Por ahora no se implementan otras funcionalidades.}
-  typString := CreateSysType('string', t_string, 0);  //tamaño variable
-  { TODO : String debería definirse mejor como un tipo común, no del sistema }
-
-  {Operators must be created according to the Operator precedence in Pascal:
-  6)    ~, not, signo "-"   (high precedence)
-  5)    *, /, div, mod, and, shl, shr, &
-  4)    |, !, +, -, or, xor
-  3)    =, <>, <, <=, >, >=, in
-  2)    :=                  (low precedence)
-  }
-  //////////////////////////////////////////
-  //////// Boolean operations ////////////
-  //////////////////////////////////////////
-  opr:=typBool.CreateBinaryOperator(':=',2,'asig');  //asignación
-  opr.CreateOperation(typBool, @ROB_bool_asig_bool);
-  opr:=typBool.CreateUnaryPreOperator('NOT', 6, 'not', @ROU_not_bool);
-  opr:=typBool.CreateBinaryOperator('AND',5,'and');
-  opr.CreateOperation(typBool,@ROB_bool_and_bool);
-  opr:=typBool.CreateBinaryOperator('=',3,'equal');
-  opr.CreateOperation(typBool,@ROB_bool_equal_bool);
-  opr:=typBool.CreateBinaryOperator('<>',3,'difer');
-  opr.CreateOperation(typBool,@ROB_bool_difer_bool);
-
-  //////////////////////////////////////////
-  //////// Operaciones con Byte ////////////
-  //////////////////////////////////////////
-  {Los operadores deben crearse con su precedencia correcta}
-  opr:=typByte.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
-  opr:=typByte.CreateBinaryOperator(':=',2,'asig');  //asignación
-  opr.CreateOperation(typByte,@ROB_byte_asig_byte);
-  opr:=typByte.CreateBinaryOperator('+=',2,'aadd');  //asignación-suma
-  opr.CreateOperation(typByte,@ROB_byte_aadd_byte);
-  opr:=typByte.CreateBinaryOperator('-=',2,'asub');  //asignación-resta
-  opr.CreateOperation(typByte,@ROB_byte_asub_byte);
-
-  opr:=typByte.CreateBinaryOperator('+',4,'add');  //add
-  opr.CreateOperation(typByte,@ROB_byte_add_byte);
-  opr:=typByte.CreateBinaryOperator('-',4,'subs');  //sub
-  opr.CreateOperation(typByte,@ROB_byte_sub_byte);
-  opr:=typByte.CreateBinaryOperator('*',4,'subs');  //sub
-  opr.CreateOperation(typByte,@ROB_byte_mul_byte);
-
-  opr:=typByte.CreateBinaryOperator('AND',5,'and');
-  opr.CreateOperation(typByte,@ROB_byte_and_byte);
-  opr:=typByte.CreateBinaryOperator('OR',4,'or');
-  opr.CreateOperation(typByte,@ROB_byte_or_byte);
-  opr:=typByte.CreateBinaryOperator('XOR',4,'xor');
-  opr.CreateOperation(typByte,@ROB_byte_xor_byte);
-
-  opr:=typByte.CreateUnaryPreOperator('NOT', 6, 'not', @ROU_not_byte);
-
-  opr:=typByte.CreateBinaryOperator('=',3,'equal');
-  opr.CreateOperation(typByte,@ROB_byte_equal_byte);
-  opr:=typByte.CreateBinaryOperator('<>',3,'difer');
-  opr.CreateOperation(typByte,@ROB_byte_difer_byte);
-
-  opr:=typByte.CreateBinaryOperator('>',3,'great');
-  opr.CreateOperation(typByte,@ROB_byte_great_byte);
-  opr:=typByte.CreateBinaryOperator('<',3,'less');
-  opr.CreateOperation(typByte,@ROB_byte_less_byte);
-
-  opr:=typByte.CreateBinaryOperator('>=',3,'gequ');
-  opr.CreateOperation(typByte,@ROB_byte_gequ_byte);
-  opr:=typByte.CreateBinaryOperator('<=',3,'lequ');
-  opr.CreateOperation(typByte,@ROB_byte_lequ_byte);
-
-  opr:=typByte.CreateBinaryOperator('>>',5,'shr');  { TODO : Definir bien la precedencia }
-  opr.CreateOperation(typByte,@ROB_byte_shr_byte);
-  opr:=typByte.CreateBinaryOperator('<<',5,'shl');
-  opr.CreateOperation(typByte,@ROB_byte_shl_byte);
-  //////////////////////////////////////////
-  //////// Operaciones con Char ////////////
-  {Los operadores deben crearse con su precedencia correcta}
-  opr:=typChar.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
-  opr:=typChar.CreateBinaryOperator(':=',2,'asig');  //asignación
-  opr.CreateOperation(typChar,@ROB_char_asig_char);
-  opr.CreateOperation(typString, @ROB_char_asig_string);
-
-  opr:=typChar.CreateBinaryOperator('=',3,'equal');  //asignación
-  opr.CreateOperation(typChar,@ROB_char_equal_char);
-  opr:=typChar.CreateBinaryOperator('<>',3,'difer');  //asignación
-  opr.CreateOperation(typChar,@ROB_char_difer_char);
-
-  //////////////////////////////////////////
-  //////// Operaciones con Word ////////////
-  {Los operadores deben crearse con su precedencia correcta}
-
-  opr:=typWord.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
-  opr:=typWord.CreateBinaryOperator(':=',2,'asig');  //asignación
-  opr.CreateOperation(typWord,@ROB_word_asig_word);
-  opr.CreateOperation(typByte,@ROB_word_asig_byte);
-
-  opr:=typWord.CreateBinaryOperator('=',3,'equal');  //igualdad
-  opr.CreateOperation(typWord,@ROB_word_equal_word);
-  opr:=typWord.CreateBinaryOperator('<>',3,'difer');
-  opr.CreateOperation(typWord,@ROB_word_difer_word);
-
-  opr:=typWord.CreateBinaryOperator('AND', 5, 'and');  //AND
-  opr.CreateOperation(typByte, @ROB_word_and_byte);
-  opr:=typWord.CreateBinaryOperator('+',4,'add');  //add
-  opr.CreateOperation(typByte, @ROB_word_add_byte);
-  opr.CreateOperation(typWord, @ROB_word_add_word);
-  opr:=typWord.CreateBinaryOperator('-',4,'sub');  //sub
-  opr.CreateOperation(typByte, @ROB_word_sub_byte);
-  opr.CreateOperation(typWord, @ROB_word_sub_word);
-  opr:=typWord.CreateBinaryOperator('+=',2,'aadd');  //asignación-suma
-  opr.CreateOperation(typByte,@ROB_word_aadd_byte);
-  opr:=typWord.CreateBinaryOperator('-=',2,'asub');  //asignación-resta
-  opr.CreateOperation(typByte,@ROB_word_asub_byte);
-
-  opr:=typWord.CreateBinaryOperator('>>',5,'shr');  { TODO : Definir bien la precedencia }
-  opr.CreateOperation(typByte,@ROB_word_shr_byte);
-  opr:=typWord.CreateBinaryOperator('<<',5,'shl');
-  opr.CreateOperation(typByte,@ROB_word_shl_byte);
-
-
-  //////// Operaciones con String ////////////
-  opr:=typString.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
-  opr:=typString.CreateBinaryOperator('+',4,'add');  //add
-  opr.CreateOperation(typString,@ROB_string_add_string);
-  opr.CreateOperation(typChar,@ROB_string_add_char);
-
 end;
 //Routines to implement arrays and pointers
 procedure TGenCod.arrayLow(const OpPtr: pointer);
@@ -3677,7 +3418,7 @@ end;
 procedure TGenCod.ROB_arr_asig_arr(Opt: TxpOperation; SetRes: boolean);
 {Array asignation}
 var
-  nItems, itSize, i, j1: Integer;
+  nItems, itSize, i: Integer;
   nBytes, des: Integer;
   itType: TxpeleType;
   src: Word;
@@ -3716,22 +3457,9 @@ begin
           tmpVar.addr0 += itSize;
         end;
       end else if nBytes< 256 then begin
-        //Several ítems, we first create a Op2 as variable array.
-        _JMP_post(j1);   //Salto hasta después del espacio de variables
-        startAddr := pic.iRam;
-        tmpvar := CreateTmpVar('', itType);  //We'll use a variable to place data
-        tmpvar.adicPar.hasAdic := decAbsol;   //Using an absolute addres
-        tmpvar.adicPar.absAddr := pic.iRam;
-        tmpvar.adicPar.hasInit := true;
-        values := p2^.Value.items;
-        for i:=0 to nBytes-1 do begin
-          tmpvar.adicPar.iniVal := values[i];
-          CreateVarInRAM(tmpVar);  //CreateVarInRAM() knows how to place variables of any type in RAM
-          pic.iRam += itSize;
-          tmpvar.adicPar.absAddr += itSize;
-        end;
-        _LABEL_post(j1);   //Termina de codificar el salto
-        //Now we have the variable created in RAM. Lets move
+        //Several ítems, we first write Op2 in RAM.
+        CreateValueInCode(p2^.Typ, p2^.Value, startAddr);
+        //Now we have Op2 created in RAM. Lets move.
         _LDXi(nBytes);
 _LABEL_pre(j2);
         pic.codAsm(i_LDA, aAbsolutX, (startAddr-1) and $FFFF);  //Fix address to fit the index loop
@@ -3744,8 +3472,8 @@ _LABEL_pre(j2);
     end;
     stVariab: begin
       if nBytes < 5 then begin
-        des:=p1^.rVar.addr;
-        for src:=p2^.rVar.addr to p2^.rVar.addr+nBytes-1 do begin
+        des:=p1^.rVar.addr0;
+        for src:=p2^.rVar.addr0 to p2^.rVar.addr0+nBytes-1 do begin
           _LDA(src);
           _STA(des);
           inc(des);
@@ -3819,7 +3547,6 @@ begin
     stConst: begin  //ïndice constante
       tmpVar := CreateTmpVar('', itemType);  //VAriable del mismo tipo
       tmpVar.addr0 := arrVar.addr0 + idx.valInt * itemType.size;
-      tmpVar.addr1 := tmpVar.addr0 + 1;  //Para seguridad de la ROB
       SetResultVariab(tmpVar);
     end;
     stVariab: begin  //Indexado por variable
@@ -3828,16 +3555,16 @@ begin
           //Index is byte-size variable
           if itemType.IsByteSize then begin
             //And item is byte size, so it's easy to index in 6502
-            _LDX(idx.rVar.adrByte0);
-            if arrVar.addr<256 then begin
-              pic.codAsm(i_LDA, aZeroPagX, arrVar.addr);
+            _LDX(idx.rVar.addr0);
+            if arrVar.addr0<256 then begin
+              pic.codAsm(i_LDA, aZeroPagX, arrVar.addr0);
             end else begin
-              pic.codAsm(i_LDA, aAbsolutX, arrVar.addr);
+              pic.codAsm(i_LDA, aAbsolutX, arrVar.addr0);
             end;
           end else if itemType.IsWordSize then begin
             //Item is word size. We need to multiply index by 2 and load indexed.
             //WARNING this is "Auto-modifiying" code.
-            _LDA(idx.rVar.adrByte0);  //Load index
+            _LDA(idx.rVar.addr0);  //Load index
             pic.codAsm(i_STA, aAbsolute, _PC + 15); //Store forward
             _LDAi(0);  //Load virtual MSB index
             pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
@@ -3853,25 +3580,25 @@ begin
           //Index is word-size variable
           if itemType.IsByteSize then begin
             //Item is byte size. We need to index with a word.
-            if idx.rVar.addr<256 then begin
+            if idx.rVar.addr0<256 then begin
               //Index in zero page
               _LDYi(0);
-              pic.codAsm(i_LDA, aIndirecY, idx.rVar.addr);
+              pic.codAsm(i_LDA, aIndirecY, idx.rVar.addr0);
             end else begin
               //Index is out of zero page
               //WARNING this is "Auto-modifiying" code.
-              _LDA(idx.rVar.adrByte0);  //Load index
+              _LDA(idx.rVar.addr0);  //Load index
               pic.codAsm(i_STA, aAbsolute, _PC + 10); //Store forward
-              _LDA(idx.rVar.adrByte1);  //Load MSB index
+              _LDA(idx.rVar.addr0+1);  //Load MSB index
               pic.codAsm(i_STA, aAbsolute, _PC + 5); //Store forward
               pic.codAsm(i_LDA, aAbsolute, 0);
             end;
           end else if itemType.IsWordSize then begin
             //Item is word size. We need to multiply index by 2 and load indexed.
             //WARNING this is "Auto-modifiying" code.
-            _LDA(idx.rVar.adrByte0);  //Load index
+            _LDA(idx.rVar.addr0);  //Load index
             pic.codAsm(i_STA, aAbsolute, _PC + 16); //Store forward
-            _LDA(idx.rVar.adrByte1);  //Load virtual MSB index
+            _LDA(idx.rVar.addr0+1);  //Load virtual MSB index
             pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
             pic.codAsm(i_ASL, aAbsolute, _PC + 7);  //Shift operand of LDA
             PIC.codAsm(i_ROL, aAbsolute, _pc + 5);  //Shift operand of LDA
@@ -3925,16 +3652,26 @@ begin
     stConst: begin  //ïndice constante
         tmpVar := CreateTmpVar('', itemType);  //VAriable del mismo tipo
         tmpVar.addr0 := arrVar.addr0 + idx.valInt * itemType.size;
-        tmpVar.addr1 := tmpVar.addr0 + 1;  //Para seguridad de la ROB
         SetResultVariab(tmpVar);
       end;
-    stVariab: begin  //Indexado por variable
-      if itemType.size = 1 then begin
-        //This is important because we know the variable can direct the current position
-        SetResultVarConRef(idx.rVar, arrVar.addr, itemType);  //Devuelve el mismo tipo
+    stVariab: begin  //Indexed by variable
+      if idx.Typ.IsByteSize then begin
+        //Index is byte-size variable
+        if itemType.IsByteSize then begin
+          //This is important because we know the variable can direct the current position
+          SetResultVarConRef(idx.rVar, arrVar.addr0, itemType);  //Devuelve el mismo tipo
+//        end else if itemType.IsWordSize then begin
+//          SetResultExpRef(itemType, false);  //We don't need to check RT here in setter.
+//          //Item is word size. We need to multiply index by 2 and load indexed.
+//          //WARNING this is "Auto-modifiying" code.
+//          _LDA(idx.rVar.addr0);  //Load index
+//          _
+        end else begin
+          //We need to calculate the final address accoridng to the item size
+          GenError('Not supported this item size to assigment.');
+        end;
       end else begin
-        //We need to calculate the final address accoridng to the item size
-        GenError('Not supported this item size to assigment.');
+        GenError('Not supported this index.');
       end;
     end;
 //    stExpres: begin
@@ -4084,16 +3821,314 @@ begin
     exit;
   end;
 end;
-procedure TGenCod.CreateSystemElements;
-{Inicia los elementos del sistema. Se ejecuta cada vez que se compila.}
-var
-  f: TxpEleFun;  //índice para funciones
+procedure TGenCod.StartSyntax;
+//Se ejecuta solo una vez al inicio
 begin
+  ///////////define la sintaxis del compilador
+  //Tipos de tokens personalizados
+  tnExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
+  tnBlkDelim := xLex.NewTokType('BlkDelim'); //delimitador de bloque
+  tnStruct   := xLex.NewTokType('Struct');   //personalizado
+  tnDirective:= xLex.NewTokType('Directive'); //personalizado
+  tnAsm      := xLex.NewTokType('Asm');      //personalizado
+  tnChar     := xLex.NewTokType('Char');     //personalizado
+  tnOthers   := xLex.NewTokType('Others');   //personalizado
+  //Configura atributos
+  tkKeyword.Style := [fsBold];     //en negrita
+  xLex.Attrib[tnBlkDelim].Foreground:=clGreen;
+  xLex.Attrib[tnBlkDelim].Style := [fsBold];    //en negrita
+  xLex.Attrib[tnStruct].Foreground:=clGreen;
+  xLex.Attrib[tnStruct].Style := [fsBold];      //en negrita
+  //inicia la configuración
+  xLex.ClearMethodTables;          //limpia tabla de métodos
+  xLex.ClearSpecials;              //para empezar a definir tokens
+  //crea tokens por contenido
+  xLex.DefTokIdentif('[A-Za-z_]', '[A-Za-z0-9_]*');
+  xLex.DefTokContent('[0-9]', '[0-9.]*', tnNumber);
+  xLex.DefTokContent('[$]','[0-9A-Fa-f]*', tnNumber);
+  xLex.DefTokContent('[%]','[01]*', tnNumber);
+  //define palabras claves
+  xLex.AddIdentSpecList('THEN var type absolute interrupt', tnKeyword);
+  xLex.AddIdentSpecList('program public private method const', tnKeyword);
+  xLex.AddIdentSpecList('class create destroy sub do begin', tnKeyword);
+  xLex.AddIdentSpecList('END ELSE ELSIF UNTIL', tnBlkDelim);
+  xLex.AddIdentSpecList('true false', tnBoolean);
+  xLex.AddIdentSpecList('if while repeat for', tnStruct);
+  xLex.AddIdentSpecList('and or xor not div mod in', tnOperator);
+  xLex.AddIdentSpecList('umulword', tnOperator);
+  //tipos predefinidos
+  xLex.AddIdentSpecList('bit boolean byte word char dword', tnType);
+  //funciones del sistema
+  xLex.AddIdentSpecList('exit Inc Dec Ord Chr', tnSysFunct);
+  xLex.AddIdentSpecList('SetOrig addr', tnSysFunct);
+  //símbolos especiales
+  xLex.AddSymbSpec('+',  tnOperator);
+  xLex.AddSymbSpec('+=', tnOperator);
+  xLex.AddSymbSpec('-=', tnOperator);
+  xLex.AddSymbSpec('-',  tnOperator);
+  xLex.AddSymbSpec('*',  tnOperator);
+  xLex.AddSymbSpec('/',  tnOperator);
+  xLex.AddSymbSpec('\',  tnOperator);
+//  xLex.AddSymbSpec('%',  tnOperator);
+  xLex.AddSymbSpec('**', tnOperator);
+  xLex.AddSymbSpec('=',  tnOperator);
+  xLex.AddSymbSpec('>',  tnOperator);
+  xLex.AddSymbSpec('<',  tnOperator);
+  xLex.AddSymbSpec('>=', tnOperator);
+  xLex.AddSymbSpec('<=', tnOperator);
+  xLex.AddSymbSpec('<>', tnOperator);
+  xLex.AddSymbSpec('<=>',tnOperator);
+  xLex.AddSymbSpec(':=', tnOperator);
+  xLex.AddSymbSpec('>>', tnOperator);
+  xLex.AddSymbSpec('<<', tnOperator);
+  xLex.AddSymbSpec('^', tnOperator);
+  xLex.AddSymbSpec('@', tnOperator);
+  xLex.AddSymbSpec('.', tnOperator);
+  xLex.AddSymbSpec(';', tnExpDelim);
+  xLex.AddSymbSpec('(',  tnOthers);
+  xLex.AddSymbSpec(')',  tnOthers);
+  xLex.AddSymbSpec(':',  tnOthers);
+  xLex.AddSymbSpec(',',  tnOthers);
+  xLex.AddSymbSpec('[',  tnOthers);
+  xLex.AddSymbSpec(']',  tnOthers);
+  //crea tokens delimitados
+  xLex.DefTokDelim('''','''', tnString);
+  xLex.DefTokContent('[#]','[0-9]*', tnChar);
+//  xLex.DefTokDelim('"','"', tnString);
+
+  xLex.DefTokDelim('//','', xLex.tnComment);
+  xLex.DefTokDelim('{','}', xLex.tnComment, tdMulLin);
+  xLex.DefTokDelim('(\*','\*)', xLex.tnComment, tdMulLin);
+  xLex.DefTokDelim('{$','}', tnDirective, tdUniLin);
+  xLex.DefTokDelim('Asm','End', tnAsm, tdMulLin);
+  //define bloques de sintaxis
+//  xLex.AddBlock('{','}');
+  xLex.Rebuild;   //es necesario para terminar la definición
+end;
+procedure TGenCod.DefCompiler;
+{}
+var
+  opr: TxpOperator;
+begin
+  //Define métodos a usar
+  OnExprStart := @expr_start;
+  OnExprEnd := @expr_End;
+
+  ///////////Crea tipos
+  ClearSystemTypes;
+  //////////////// Boolean type /////////////
+  typBool := CreateSysType('boolean',t_uinteger,1);   //de 1 byte
+  typBool.OnLoadToRT   := @byte_LoadToRT;
+  typBool.OnDefRegister:= @byte_DefineRegisters;
+  typBool.OnSaveToStk  := @byte_SaveToStk;
+  //typBool.OnReadFromStk :=
+  //////////////// Byte type /////////////
+  typByte := CreateSysType('byte',t_uinteger,1);   //de 1 byte
+  typByte.OnLoadToRT   := @byte_LoadToRT;
+  typByte.OnDefRegister:= @byte_DefineRegisters;
+  typByte.OnSaveToStk  := @byte_SaveToStk;
+  //typByte.OnReadFromStk :=
+
+  //////////////// Char type /////////////
+  //Tipo caracter
+  typChar := CreateSysType('char',t_uinteger,1);   //de 1 byte. Se crea como uinteger para leer/escribir su valor como número
+  typChar.OnLoadToRT   := @byte_LoadToRT;  //Es lo mismo
+  typChar.OnDefRegister:= @byte_DefineRegisters;  //Es lo mismo
+  typChar.OnSaveToStk  := @byte_SaveToStk; //Es lo mismo
+
+  //////////////// Word type /////////////
+  //Tipo numérico de dos bytes
+  typWord := CreateSysType('word',t_uinteger,2);   //de 2 bytes
+  typWord.OnLoadToRT   := @word_LoadToRT;
+  typWord.OnDefRegister:= @word_DefineRegisters;
+  typWord.OnSaveToStk  := @word_SaveToStk;
+//  typWord.OnClearItems := @word_ClearItems;
+
+  typWord.CreateField('Low', @word_Low, @word_Low);
+  typWord.CreateField('High', @word_High, @word_High);
+
+  //////////////// String type /////////////
+  {Se crea el tipo String, solo para permitir inicializar arreglos de
+  caracteres. Por ahora no se implementan otras funcionalidades.}
+//  typString := CreateSysType('string', t_string, 0);  //tamaño variable
+  { TODO : String debería definirse mejor como un tipo común, no del sistema }
+
+  {Operators must be created according to the Operator precedence in Pascal:
+  6)    ~, not, sign "-"    (high precedence)
+  5)    *, /, div, mod, and, shl, shr, &
+  4)    |, !, +, -, or, xor
+  3)    =, <>, <, <=, >, >=, in
+  2)    :=, +=, -=, *=, /=  (low precedence)
+  }
+  //////////////////////////////////////////
+  //////// Boolean operations ////////////
+  //////////////////////////////////////////
+  opr:=typBool.CreateBinaryOperator(':=',2,'asig');  //asignación
+  opr.CreateOperation(typBool, @ROB_bool_asig_bool);
+  opr:=typBool.CreateUnaryPreOperator('NOT', 6, 'not', @ROU_not_bool);
+  opr:=typBool.CreateBinaryOperator('AND',5,'and');
+  opr.CreateOperation(typBool,@ROB_bool_and_bool);
+  opr:=typBool.CreateBinaryOperator('=',3,'equal');
+  opr.CreateOperation(typBool,@ROB_bool_equal_bool);
+  opr:=typBool.CreateBinaryOperator('<>',3,'difer');
+  opr.CreateOperation(typBool,@ROB_bool_difer_bool);
+
+  //////////////////////////////////////////
+  //////// Operaciones con Byte ////////////
+  //////////////////////////////////////////
+  {Los operadores deben crearse con su precedencia correcta}
+  opr:=typByte.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
+  opr:=typByte.CreateBinaryOperator(':=',2,'asig');  //asignación
+  opr.CreateOperation(typByte,@ROB_byte_asig_byte);
+  opr:=typByte.CreateBinaryOperator('+=',2,'aadd');  //asignación-suma
+  opr.CreateOperation(typByte,@ROB_byte_aadd_byte);
+  opr:=typByte.CreateBinaryOperator('-=',2,'asub');  //asignación-resta
+  opr.CreateOperation(typByte,@ROB_byte_asub_byte);
+
+  opr:=typByte.CreateBinaryOperator('+',4,'add');  //add
+  opr.CreateOperation(typByte,@ROB_byte_add_byte);
+  opr:=typByte.CreateBinaryOperator('-',4,'subs');  //sub
+  opr.CreateOperation(typByte,@ROB_byte_sub_byte);
+  opr:=typByte.CreateBinaryOperator('*',4,'subs');  //sub
+  opr.CreateOperation(typByte,@ROB_byte_mul_byte);
+
+  opr:=typByte.CreateBinaryOperator('AND',5,'and');
+  opr.CreateOperation(typByte,@ROB_byte_and_byte);
+  opr:=typByte.CreateBinaryOperator('OR',4,'or');
+  opr.CreateOperation(typByte,@ROB_byte_or_byte);
+  opr:=typByte.CreateBinaryOperator('XOR',4,'xor');
+  opr.CreateOperation(typByte,@ROB_byte_xor_byte);
+
+  opr:=typByte.CreateUnaryPreOperator('NOT', 6, 'not', @ROU_not_byte);
+
+  opr:=typByte.CreateBinaryOperator('=',3,'equal');
+  opr.CreateOperation(typByte,@ROB_byte_equal_byte);
+  opr:=typByte.CreateBinaryOperator('<>',3,'difer');
+  opr.CreateOperation(typByte,@ROB_byte_difer_byte);
+
+  opr:=typByte.CreateBinaryOperator('>',3,'great');
+  opr.CreateOperation(typByte,@ROB_byte_great_byte);
+  opr:=typByte.CreateBinaryOperator('<',3,'less');
+  opr.CreateOperation(typByte,@ROB_byte_less_byte);
+
+  opr:=typByte.CreateBinaryOperator('>=',3,'gequ');
+  opr.CreateOperation(typByte,@ROB_byte_gequ_byte);
+  opr:=typByte.CreateBinaryOperator('<=',3,'lequ');
+  opr.CreateOperation(typByte,@ROB_byte_lequ_byte);
+
+  opr:=typByte.CreateBinaryOperator('>>',5,'shr');  { TODO : Definir bien la precedencia }
+  opr.CreateOperation(typByte,@ROB_byte_shr_byte);
+  opr:=typByte.CreateBinaryOperator('<<',5,'shl');
+  opr.CreateOperation(typByte,@ROB_byte_shl_byte);
+  //////////////////////////////////////////
+  //////// Operaciones con Char ////////////
+  {Los operadores deben crearse con su precedencia correcta}
+  opr:=typChar.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
+  opr:=typChar.CreateBinaryOperator(':=',2,'asig');  //asignación
+  opr.CreateOperation(typChar,@ROB_char_asig_char);
+//  opr.CreateOperation(typString, @ROB_char_asig_string);
+
+  opr:=typChar.CreateBinaryOperator('=',3,'equal');  //asignación
+  opr.CreateOperation(typChar,@ROB_char_equal_char);
+  opr:=typChar.CreateBinaryOperator('<>',3,'difer');  //asignación
+  opr.CreateOperation(typChar,@ROB_char_difer_char);
+
+  //////////////////////////////////////////
+  //////// Operaciones con Word ////////////
+  {Los operadores deben crearse con su precedencia correcta}
+
+  opr:=typWord.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
+  opr:=typWord.CreateBinaryOperator(':=',2,'asig');  //asignación
+  opr.CreateOperation(typWord,@ROB_word_asig_word);
+  opr.CreateOperation(typByte,@ROB_word_asig_byte);
+
+  opr:=typWord.CreateBinaryOperator('=',3,'equal');  //igualdad
+  opr.CreateOperation(typWord,@ROB_word_equal_word);
+  opr:=typWord.CreateBinaryOperator('<>',3,'difer');
+  opr.CreateOperation(typWord,@ROB_word_difer_word);
+
+  opr:=typWord.CreateBinaryOperator('AND', 5, 'and');  //AND
+  opr.CreateOperation(typByte, @ROB_word_and_byte);
+  opr:=typWord.CreateBinaryOperator('+',4,'add');  //add
+  opr.CreateOperation(typByte, @ROB_word_add_byte);
+  opr.CreateOperation(typWord, @ROB_word_add_word);
+  opr:=typWord.CreateBinaryOperator('-',4,'sub');  //sub
+  opr.CreateOperation(typByte, @ROB_word_sub_byte);
+  opr.CreateOperation(typWord, @ROB_word_sub_word);
+  opr:=typWord.CreateBinaryOperator('+=',2,'aadd');  //asignación-suma
+  opr.CreateOperation(typByte,@ROB_word_aadd_byte);
+  opr:=typWord.CreateBinaryOperator('-=',2,'asub');  //asignación-resta
+  opr.CreateOperation(typByte,@ROB_word_asub_byte);
+
+  opr:=typWord.CreateBinaryOperator('>>',5,'shr');  { TODO : Definir bien la precedencia }
+  opr.CreateOperation(typByte,@ROB_word_shr_byte);
+  opr:=typWord.CreateBinaryOperator('<<',5,'shl');
+  opr.CreateOperation(typByte,@ROB_word_shl_byte);
+
+
+  //////// Operaciones con String ////////////
+//  opr:=typString.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
+//  opr:=typString.CreateBinaryOperator('+',4,'add');  //add
+//  opr.CreateOperation(typString,@ROB_string_add_string);
+//  opr.CreateOperation(typChar,@ROB_string_add_char);
+
+end;
+procedure TGenCod.CreateSystemElements;
+{Initialize the system elements. Must be executed just one time when compiling.}
+  procedure AddParam(var pars: TxpParFuncArray; parName: string; const srcPos: TSrcPos;
+                     typ0: TxpEleType; adicDec: TxpAdicDeclar);
+  //Create a new parameter to the function.
+  var
+    n: Integer;
+  begin
+    //Add record to the array
+    n := high(pars)+1;
+    setlength(pars, n+1);
+    pars[n].name := parName;  //Name is not important
+    pars[n].srcPos := srcPos;
+    pars[n].typ  := typ0;  //Agrega referencia
+    pars[n].adicVar.hasAdic := adicDec;
+    pars[n].adicVar.hasInit := false;
+  end;
+  function CreateSystemFunction(name: string; retType: TxpEleType; const srcPos: TSrcPos;
+                                const pars: TxpParFuncArray;
+                                compile: TProcExecFunction): TxpEleFun;
+  {Create a new system fucntion in the current element of the Syntax Tree.
+   Returns the reference to the function created.}
+  var
+     fundec: TxpEleFunDec;
+     bod: TxpEleBody;
+  begin
+    //Add declaration
+    curLocation := locInterface;
+    fundec := AddFunctionDEC(name, retType, srcPos, pars, false);
+    //Implementation
+    {Note that implementation is added always after declarartion. It's not the usual
+    in common units, where all declarations are first}
+    curLocation := locImplement;
+    Result := AddFunctionIMP(name, retType, srcPos, fundec);
+    //Here varaibles can be added
+    {Create a body, to be uniform with normal function and for have a space where
+    compile code and access to posible variables or other elements.}
+    bod := CreateBody;
+    bod.srcDec := srcPos;
+    TreeElems.AddElement(bod);  //Add Body (not need to open)
+    Result.compile := compile;  //Set routine to geenrate code
+    TreeElems.CloseElement;  //Close function implementation
+  end;
+
+var
+  f: TxpEleFun;
+  uni: TxpEleUnit;
+  pars: TxpParFuncArray;  //Array of parameters
+  srcPos: TSrcPos;
+begin
+  listFunSys.Clear;
   //////// Funciones del sistema ////////////
   {Notar que las funciones del sistema no crean espacios de nombres.}
-  f := CreateSysFunction('delay_ms', nil, @fun_delay_ms);
-  f.adrr:=$0;
-  f.compile := @codif_delay_ms;  //rutina de compilación
+//  f := CreateSysFunction('delay_ms', nil, @fun_delay_ms);
+//  f.adrr:=$0;
+//  f.compile := @codif_delay_ms;  //rutina de compilación
   //Funciones INLINE
   f := CreateSysFunction('exit'     , nil, @fun_Exit);
   f := CreateSysFunction('Inc'      , nil, @fun_Inc);
@@ -4113,9 +4148,29 @@ begin
   f_word_mul_word_16 := CreateSysFunction('word_mul_word_16', nil, nil);
   f_word_mul_word_16.adrr:=$0;
   //Implement calls to Code Generator
-  CodDefineArray  := @DefineArray;
-  CodDefinePointer:= @DefinePointer;
-  CodValidRAMaddr := @ValidRAMaddr;
+  callDefineArray  := @DefineArray;
+  callDefinePointer:= @DefinePointer;
+  callValidRAMaddr := @ValidRAMaddr;
+  callStartProgram := @Cod_StartProgram;
+  callEndProgram   := @Cod_EndProgram;
+  //Create "System" Unit. Must be done once in First Pass
+  {Originally system functions were created in a special list and has a special treatment
+  but it implied a lot of work for manage the memory, linking, use of variables, and
+  optimization. Now we create a "system unit" like a real unit (more less) and we create
+  the system fucntion here, so we use the same code for linking, calling and optimization
+  that we use in common fucntions. Moreover, we can create private functions.}
+  uni := CreateUnit('-');
+  TreeElems.AddElementAndOpen(uni);  //Open Unit
+  //Create a fictional position
+  srcPos.fil := '';
+  srcPos.row := 1;
+  srcPos.col := 1;
+  //Create system function "delay_ms"
+  setlength(pars, 0);  //Reset parameters
+  AddParam(pars, 'ms', srcPos, typWord, decRegis);  //Add parameter
+  CreateSystemFunction('delay_ms', typNull, srcPos,  pars, @codif_delay_ms);
+
+  TreeElems.CloseElement; //Close Unit
 end;
 end.
 

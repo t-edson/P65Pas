@@ -38,8 +38,6 @@ type  //Enumerated types
 
   //Operand storage
   TStoOperand = (
-    //Without storage
-    stNull    = %1111, //Operand is not stored
     //Basic storage
     stConst   = %0000, {Operand is constant and its value is stored directly in the Operand
                        without use CPU resources. Includes evaluated constant expressions.}
@@ -54,7 +52,10 @@ type  //Enumerated types
     //Aditional expressions types
     stExpresA = %1000, {Operand value is stored in register A.}
     stExpresX = %1001, {Operand value is stored in register X.}
-    stExpresY = %1010  {Operand value is stored in register Y.}
+    stExpresY = %1010,  {Operand value is stored in register Y.}
+
+    //Without storage
+    stNull    = %1111 //Operand is not stored
   );
   {Almacenamiento combinado para una ROB. Se construye para poder representar dos valores
   de TStoOperand en una solo valor byte (juntando sus bits), para facilitar el uso de un
@@ -84,8 +85,11 @@ type  //Enumerated types
     opkUnaryPost,  //operador Unario Post
     opkBinary      //operador Binario
   );
-  {Evento para llamar al código de procesamiento de un campo.
-  "OpPtr" debería ser "TOperand", pero aún no se define "TOperand".}
+
+type  //Type Methods
+
+  {Event to call code for process and method (INLINE).
+  "OpPtr" should be "TOperand", but "TOperand" is not yet defined.}
   TTypFieldProc = procedure(const OpPtr: pointer) of object;
 
   TTypField = class
@@ -94,6 +98,8 @@ type  //Enumerated types
     procSet : TTypFieldProc;  //routine to process when writing
   end;
   TTypFields = specialize TFPGObjectList<TTypField>;
+
+
 
 const  //Prefixes used to name the anonym type declarations
   //Short string are used to don't afect the speed of searchings

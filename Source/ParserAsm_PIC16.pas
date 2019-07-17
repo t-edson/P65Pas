@@ -268,7 +268,7 @@ begin
       //Para varaibles, se toma la dirección
       xvar := TxpEleVar(ele);
       AddCallerTo(xvar);  //lleva la cuenta
-      n := xvar.addr;
+      n := xvar.addr0;
       k := GetFaddressByte(n);
       lexAsm.Next;
       exit(true);
@@ -393,7 +393,7 @@ begin
       xvar := TxpEleVar(ele);
       AddCallerTo(xvar);  //lleva la cuenta
       if xvar.typ.IsByteSize then begin
-        n := xvar.addr;
+        n := xvar.addr0;
         f := GetFaddressByte(n);
         lexAsm.Next;
         Result := true;
@@ -403,17 +403,17 @@ begin
         if HaveByteInformation(bytePos) then begin
           //Hay precisión de byte
           if bytePos = 0 then begin  //Byte bajo
-            n := xvar.adrByte0.addr;
+            n := xvar.addr0;
             f := GetFaddressByte(n);
           end else if bytePos = 1 then begin        //Byte alto
-            n := xvar.adrByte1.addr;
+            n := xvar.addr0+1;
             f := GetFaddressByte(n);
           end else begin
              GenErrorAsm(ER_NOGETADD_VAR);
              exit(false);
           end;
         end else begin
-           n := xvar.addr;
+           n := xvar.addr0;
            f := GetFaddressByte(n);
         end;
         exit(true);
@@ -422,23 +422,23 @@ begin
         if HaveByteInformation(bytePos) then begin
           //Hay precisión de byte
           if bytePos = 0 then begin  //Byte bajo
-            n := xvar.adrByte0.addr;
+            n := xvar.addr0;
             f := GetFaddressByte(n);
           end else if bytePos = 1 then begin        //Byte alto
-            n := xvar.adrByte1.addr;
+            n := xvar.addr0+1;
             f := GetFaddressByte(n);
           end else if bytePos = 2 then begin        //Byte alto
-            n := xvar.adrByte2.addr;
+            n := xvar.addr0 + 2;
             f := GetFaddressByte(n);
           end else if bytePos = 3 then begin        //Byte alto
-            n := xvar.adrByte3.addr;
+            n := xvar.addr0 + 3;
             f := GetFaddressByte(n);
           end else begin
              GenErrorAsm(ER_NOGETADD_VAR);
              exit(false);
           end;
         end else begin
-           n := xvar.addr;
+           n := xvar.addr0;
            f := GetFaddressByte(n);
         end;
         exit(true);
@@ -545,37 +545,37 @@ begin
           if HaveByteInformation(bytePos) then begin
             //Hay precisión de byte
             if bytePos = 0 then begin  //Byte bajo
-              ad := xvar.adrByte0.addr;
+              ad := xvar.addr0;
             end else if bytePos = 1 then begin        //Byte alto
-              ad := xvar.adrByte1.addr;
+              ad := xvar.addr0+1;
             end else begin
                GenErrorAsm(ER_NOGETADD_VAR);
                exit(false);
             end;
           end else begin
-             ad := xvar.addr;
+             ad := xvar.addr0;
           end;
         end else if xvar.typ.IsDWordSize then begin
           lexAsm.Next;
           if HaveByteInformation(bytePos) then begin
             //Hay precisión de byte
             if bytePos = 0 then begin  //Byte bajo
-              ad := xvar.adrByte0.addr;
+              ad := xvar.addr0;
             end else if bytePos = 1 then begin        //Byte alto
-              ad := xvar.adrByte1.addr;
+              ad := xvar.addr0+1;
             end else if bytePos = 2 then begin        //Byte alto
-              ad := xvar.adrByte2.addr;
+              ad := xvar.addr0 + 2;
             end else if bytePos = 3 then begin        //Byte alto
-              ad := xvar.adrByte3.addr;
+              ad := xvar.addr0 + 3;
             end else begin
                GenErrorAsm(ER_NOGETADD_VAR);
                exit(false);
             end;
           end else begin
-             ad := xvar.addr;
+             ad := xvar.addr0;
           end;
         end else begin  //Es BYTE u otro tipo de variable
-          ad := xvar.addr;  //Lee su dirección
+          ad := xvar.addr0;  //Lee su dirección
           lexAsm.Next;
         end;
         exit(true);
@@ -728,7 +728,7 @@ begin
         xvar := TxpEleVar(ele);
         AddCallerTo(xvar);  //lleva la cuenta
         lexAsm.Next;
-        n := xvar.addr;  //Lee dirección
+        n := xvar.addr0;  //Lee dirección
         if tok = '#<' then n := n and $FF else n := (n and $ff00) >> 8;
         pic.codAsm(idInst, aImmediat, n);
         if pic.MsjError<>'' then begin
@@ -786,7 +786,7 @@ begin
         xvar := TxpEleVar(ele);
         AddCallerTo(xvar);  //lleva la cuenta
         lexAsm.Next;
-        n := xvar.addr;  //Lee dirección
+        n := xvar.addr0;  //Lee dirección
         pic.codAsm(idInst, aImmediat, n and $FF);
         if pic.MsjError<>'' then begin
           GenErrorAsm(pic.MsjError);
@@ -1118,7 +1118,7 @@ begin
   lexAsm.AddSymbSpec(')', lexAsm.tnSymbol);
   lexAsm.Rebuild;
   //Initialize events and functions of Compiler
-  CodProcASMlime := @ProcASMlime;
+  callProcASMlime := @ProcASMlime;
 end;
 destructor TParserAsm.Destroy;
 begin

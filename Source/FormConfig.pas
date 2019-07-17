@@ -31,6 +31,7 @@ type
     BitCancel: TBitBtn;
     BitAceptar: TBitBtn;
     butSaveCurThem: TButton;
+    chkAutCompile: TCheckBox;
     chkOptBnkAftIF: TCheckBox;
     chkAutSynChk: TCheckBox;
     chkIncVarName: TCheckBox;
@@ -127,6 +128,7 @@ type
     VerBarDesH : boolean;   //ver barras de desplazamiento
     TabEdiMode: integer;  //Estado de pestañas del editor
     AutSynChk : boolean;  //Verificación automática de sintaxis
+    AutCompile : boolean;  //Compilación automática
     property ViewStatusbar: Boolean read FViewStatusbar write SetViewStatusbar;
     property ViewToolbar: boolean read FViewToolbar write SetViewToolbar;
     property ViewPanMsg: boolean read FViewPanMsg write SetViewPanMsg;
@@ -396,8 +398,9 @@ begin
   s.categ := 1;
   s:=cfgFile.Asoc_Bol('VerBarDesV', @VerBarDesV, chkViewVScroll, true);
   s:=cfgFile.Asoc_Bol('VerBarDesH', @VerBarDesH, chkViewHScroll, false);
-  s:=cfgFile.Asoc_Int('TabEdiState', @TabEdiMode, grpTabEdiState, 0);
-  s:=cfgFile.Asoc_Bol('AutSynChk',  @AutSynChk  , chkAutSynChk , false);
+  s:=cfgFile.Asoc_Int('TabEdiState',@TabEdiMode, grpTabEdiState, 0);
+  s:=cfgFile.Asoc_Bol('AutSynChk',  @AutSynChk , chkAutSynChk , false);
+  s:=cfgFile.Asoc_Bol('AutCompile', @AutCompile, chkAutCompile, false);
   //Configuraciones del Editor-Colores
   fraCfgSynEdit.Iniciar('Edit', cfgFile);
   //Configuración del Editor-Sintaxis

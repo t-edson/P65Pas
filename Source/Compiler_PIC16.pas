@@ -14,9 +14,6 @@ type
   private   //Funciones básicas
     procedure cInNewLine(lin: string);
   private //Compilación de secciones
-    procedure CompileUnit(uni: TxpElement);
-    procedure CompileUsesDeclaration;
-    procedure CompileProgram;
     procedure CompileLinkProgram;
   public
     OnAfterCompile: procedure of object;   //Al finalizar la compilación.
@@ -39,7 +36,7 @@ var
   ER_DUPLIC_IDEN, ER_NOT_IMPLEM_, ER_IDEN_EXPECT, ER_INVAL_FLOAT: string;
   ER_ERR_IN_NUMB, ER_UNDEF_TYPE_, ER_EXP_VAR_IDE, ER_BIT_VAR_REF: String;
   ER_UNKNOWN_ID_, ER_DUPLIC_FUNC_, ER_IDE_TYP_EXP : String;
-  ER_PROG_NAM_EX, ER_COMPIL_PROC, ER_CON_EXP_EXP: String;
+  ER_COMPIL_PROC, ER_CON_EXP_EXP: String;
   ER_FIL_NOFOUND, WA_UNUSED_CON_, WA_UNUSED_VAR_,WA_UNUSED_PRO_: String;
   MSG_RAM_USED, MSG_FLS_USED: String;
 //Funciones básicas
@@ -55,410 +52,18 @@ begin
     pic.addTopComm('    ;'+trim(lin));  //agrega _Línea al código ensmblador
   end;
 end;
-
-procedure TCompiler_PIC16.CompileUnit(uni: TxpElement);
-{Realiza la compilación de una unidad}
-var
-  elem: TxpElement;
-  fundec: TxpEleFunDec;
-begin
-//debugln('   Ini Unit: %s-%s',[TreeElems.curNode.name, ExtractFIleName(cIn.curCon.arc)]);
-  ClearError;
-  pic.MsjError := '';
-  ProcComments;
-  //Busca UNIT
-  if cIn.tokL = 'unit' then begin
-    cIn.Next;  //pasa al nombre
-    ProcComments;
-    if cIn.Eof then begin
-      GenError('Name of unit expected.');
-      exit;
-    end;
-    if UpCase(cIn.tok)<>uni.uname then begin
-      GenError('Name of unit doesn''t match file name.');
-      exit;
-    end;
-    cIn.Next;  //Toma el nombre y pasa al siguiente
-    if not CaptureDelExpres then exit;
-  end else begin
-    GenError('Expected: UNIT');
-    exit;
-  end;
-  ProcComments;
-  if cIn.tokL <> 'interface' then begin
-    GenError('Expected: INTERFACE');
-    exit;
-  end;
-  cIn.Next;   //toma
-  ProcComments;
-  curLocation := locInterface;
-  if cIn.Eof then begin
-    GenError('Expected "uses", "var", "type", "const" or "implementation".');
-    exit;
-  end;
-  ProcComments;
-  //Busca USES
-  CompileUsesDeclaration;
-  if cIn.Eof then begin
-    GenError('Expected "var", "type" or "const".');
-    exit;
-  end;
-  ProcComments;
-//  Cod_StartProgram;  //Se pone antes de codificar procedimientos y funciones
-  if HayError then exit;
-  //Empiezan las declaraciones
-  while StartOfSection do begin
-    if cIn.tokL = 'var' then begin
-      cIn.Next;    //lo toma
-      while not StartOfSection and (cIn.tokL <>'implementation') do begin
-        CompileVarDeclar;  //marca como "IsInterface"
-        if HayError then exit;;
-      end;
-    end else if cIn.tokL = 'type' then begin
-      cIn.Next;    //lo toma
-      while not StartOfSection and (cIn.tokL <>'implementation') do begin
-        CompileTypeDeclar(locInterface);
-        if HayError then exit;
-      end;
-    end else if cIn.tokL = 'const' then begin
-      cIn.Next;    //lo toma
-      while not StartOfSection and (cIn.tokL <>'implementation') do begin
-        CompileGlobalConstDeclar;
-        if HayError then exit;;
-      end;
-    end else if cIn.tokL = 'procedure' then begin
-      cIn.Next;    //lo toma
-      CompileProcDeclar;
-      if HayError then exit;
-    end else begin
-      GenError(ER_NOT_IMPLEM_, [cIn.tok]);
-      exit;
-    end;
-  end;
-  ProcComments;
-  if cIn.tokL <> 'implementation' then begin
-    GenError('Expected: IMPLEMENTATION');
-    exit;
-  end;
-  cIn.Next;   //toma
-  /////////////////  IMPLEMENTATION /////////////////////
-  ProcComments;
-  //Explora las declaraciones e implementaciones
-  curLocation := locImplement;
-  //Empiezan las declaraciones
-  while StartOfSection do begin
-    if cIn.tokL = 'var' then begin
-      cIn.Next;    //lo toma
-      while not StartOfSection and (cIn.tokL <>'end') do begin
-        CompileVarDeclar;
-        if HayError then exit;;
-      end;
-    end else if cIn.tokL = 'const' then begin
-      cIn.Next;    //lo toma
-      while not StartOfSection and (cIn.tokL <>'end') do begin
-        CompileGlobalConstDeclar;
-        if HayError then exit;;
-      end;
-    end else if cIn.tokL = 'procedure' then begin
-      cIn.Next;    //lo toma
-      CompileProcDeclar;  //Compila en IMPLEMENTATION
-      if HayError then exit;
-    end else begin
-      GenError(ER_NOT_IMPLEM_, [cIn.tok]);
-      exit;
-    end;
-  end;
-  //Verifica si todas las funciones de INTERFACE, se implementaron
-  for elem in TreeElems.curNode.elements do if elem.idClass = eltFuncDec then begin
-    fundec := TxpEleFunDec(elem);
-    if fundec.implem = nil then begin
-      GenErrorPos('Function %s not implemented.', [fundec.name], fundec.srcDec);
-      exit;
-    end;
-  end;
-  CompileLastEnd;
-  if HayError then exit;
-//  //procesa cuerpo
-//  ResetRAM;  {No es tan necesario, pero para seguir un orden y tener limpio
-//                     también, la flash y memoria, después de algún psoible procedimiento.}
-//  if cIn.tokL = 'begin' then begin
-//    bod := CreateBody;
-//    bod.srcDec := cIn.ReadSrcPos;
-//    cIn.Next;   //coge "begin"
-//    //Guardamos la ubicación física, real, en el archivo, después del BEGIN
-//    bod.posCtx := cIn.PosAct;
-//    //codifica el contenido
-//    CompileCurBlock;   //compila el cuerpo
-//    if HayError then exit;
-
-//    _SLEEP();   //agrega instrucción final
-//  end else begin
-//    GenError('Expected "begin", "var", "type" or "const".');
-//    exit;
-//  end;
-//  Cod_EndProgram;
-//debugln('   Fin Unit: %s-%s',[TreeElems.curNode.name, ExtractFIleName(cIn.curCon.arc)]);
-end;
-procedure TCompiler_PIC16.CompileUsesDeclaration;
-{Compila la unidad indicada.}
-var
-  uni: TxpEleUnit;
-  uPath: String;
-  uName: String;
-  p: TPosCont;
-begin
-  if cIn.tokL = 'uses' then begin
-    cIn.Next;  //pasa al nombre
-    //Toma una a una las unidades
-    repeat
-      ProcComments;
-      //ahora debe haber un identificador
-      if cIn.tokType <> tnIdentif then begin
-        GenError(ER_IDEN_EXPECT);
-        exit;
-      end;
-      //hay un identificador de unidad
-      uName := cIn.tok;
-      uni := CreateUnit(uName);
-      //Verifica si existe ya el nombre de la unidad
-      if uni.ExistsIn(TreeElems.curNode.elements) then begin
-        GenError('Identifier duplicated: %s.', [uName]);
-        uni.Destroy;
-        exit;
-      end;
-      uni.srcDec := cIn.ReadSrcPos;   //guarda posición de declaración
-      uName := uName + '.pas';  //nombre de archivo
-{----}TreeElems.AddElementAndOpen(uni);
-      //Ubica al archivo de la unidad
-      p := cIn.PosAct;   //Se debe guardar la posición antes de abrir otro contexto
-      //Primero busca en la misma ubicación del archivo fuente
-      uPath := ExtractFileDir(mainFile) + DirectorySeparator + uName;
-      if OpenContextFrom(uPath) then begin
-        uni.srcFile := uPath;   //Gaurda el archivo fuente
-      end else begin
-        //No lo encontró, busca en la carpeta de dispositivos
-        uPath := devicesPath + DirectorySeparator + uName;
-        if OpenContextFrom(uPath) then begin
-          uni.srcFile := uPath;   //Gaurda el archivo fuente
-        end else begin
-           //No lo encontró, busca en la carpeta de librerías
-           uPath := patUnits + DirectorySeparator + uName;
-           if OpenContextFrom(uPath) then begin
-             uni.srcFile := uPath;   //Gaurda el archivo fuente
-           end else begin
-             //No lo encuentra
-             GenError(ER_FIL_NOFOUND, [uName]);
-             exit;
-           end;
-        end;
-      end;
-      //Aquí ya se puede realizar otra exploración, como si fuera el archivo principal
-      CompileUnit(uni);
-      cIn.PosAct := p;
-      if HayError then exit;  //El error debe haber guardado la ubicaicón del error
-{----}TreeElems.CloseElement; //cierra espacio de nombres de la función
-      cIn.Next;  //toma nombre
-      cIn.SkipWhites;
-      if cIn.tok <> ',' then break; //sale
-      cIn.Next;  //toma la coma
-    until false;
-    if not CaptureDelExpres then exit;
-  end;
-end;
-procedure TCompiler_PIC16.CompileProgram;
-{Compila un programa en el contexto actual. Empieza a codificar el código a partir de
-la posición actual de memoria en el PIC (iRam).}
-var
-  bod: TxpEleBody;
-  elem: TxpElement;
-  fundec: TxpEleFunDec;
-begin
-  ClearError;
-  pic.MsjError := '';
-  ProcComments;
-  //Busca PROGRAM
-  if cIn.tokL = 'unit' then begin
-    //Se intenta compilar una unidad
-    GenError('Expected a program. No a unit.');
-    exit;
-  end;
-  if cIn.tokL = 'program' then begin
-    cIn.Next;  //pasa al nombre
-    ProcComments;
-    if cIn.Eof then begin
-      GenError(ER_PROG_NAM_EX);
-      exit;
-    end;
-    cIn.Next;  //Toma el nombre y pasa al siguiente
-    if not CaptureDelExpres then exit;
-  end;
-  if cIn.Eof then begin
-    GenError('Expected "program", "begin", "var", "type" or "const".');
-    exit;
-  end;
-  ProcComments;
-  //Busca USES
-  if HayError then exit;  //CompileUsesDeclaration, va a limpiar "HayError"
-  CompileUsesDeclaration;
-  if cIn.Eof then begin
-    GenError('Expected "begin", "var", "type" or "const".');
-    exit;
-  end;
-  ProcComments;
-  Cod_StartProgram;  //Se pone antes de codificar procedimientos y funciones
-  curLocation := locMain;
-  if HayError then exit;
-  //Empiezan las declaraciones
-  while StartOfSection do begin
-    if cIn.tokL = 'var' then begin
-      cIn.Next;    //lo toma
-      while not StartOfSection and (cIn.tokL <>'begin') do begin
-        CompileVarDeclar;
-        if HayError then exit;
-      end;
-    end else if cIn.tokL = 'type' then begin
-      cIn.Next;    //lo toma
-      while not StartOfSection and (cIn.tokL <>'begin') do begin
-        CompileTypeDeclar(locMain);
-        if HayError then exit;
-      end;
-    end else if cIn.tokL = 'const' then begin
-      cIn.Next;    //lo toma
-      while not StartOfSection and (cIn.tokL <>'begin') do begin
-        CompileGlobalConstDeclar;
-        if HayError then exit;
-      end;
-    end else if cIn.tokL = 'procedure' then begin
-      cIn.Next;    //lo toma
-      CompileProcDeclar;
-      if HayError then exit;
-    end else if cIn.tokL = 'inline' then begin
-      cIn.Next;    //lo toma
-      CompileInlineDeclar(locMain);
-      if HayError then exit;
-    end else begin
-      GenError(ER_NOT_IMPLEM_, [cIn.tok]);
-      exit;
-    end;
-  end;
-  //procesa cuerpo
-  ResetRAM;  {No es tan necesario, pero para seguir un orden y tener limpio
-                     también, la flash y memoria, después de algún posible procedimiento.}
-  if cIn.tokL <> 'begin' then begin
-    GenError('Expected "begin", "var", "type" or "const".');
-    exit;
-  end;
-  bod := CreateBody;
-  bod.srcDec := cIn.ReadSrcPos;
-  TreeElems.AddElementAndOpen(bod);  //Abre nodo Body
-  cIn.Next;   //coge "begin"
-  //Guardamos popsisicón en contexto para la segunda compilación
-  bod.posCtx := cIn.PosAct;
-  //codifica el contenido
-  CompileCurBlock;   //compila el cuerpo
-  TreeElems.CloseElement;   //No debería ser tan necesario.
-  bod.srcEnd := cIn.ReadSrcPos;
-  if HayError then exit;
-  //Verifica si todas las funciones FORWARD, se implementaron
-  for elem in TreeElems.curNode.elements do if elem.idClass = eltFuncDec then begin
-    fundec := TxpEleFunDec(elem);
-    if fundec.implem = nil then begin
-      GenErrorPos('Function %s not implemented.', [fundec.name], fundec.srcDec);
-      exit;
-    end;
-  end;
-  CompileLastEnd;  //Compila el "END." final
-  if HayError then exit;
-  //_RTS();   //agrega instrucción final
-  Cod_EndProgram;
-end;
 procedure TCompiler_PIC16.CompileLinkProgram;
 {Genera el código compilado final. Usa la información del árbol de sintaxis, para
 ubicar a los diversos elementos que deben compilarse.
 Se debe llamar después de compilar con CompileProgram.
 Esto es lo más cercano a un enlazador, que hay en PicPas.}
-  procedure UpdateFunLstCalled;
-  {Actualiza la lista lstCalled de las funciones, para saber, a qué fúnciones llama
-   cada función.}
-  var
-    fun    : TxpEleFun;
-    itCall : TxpEleCaller;
-    whoCalls: TxpEleBody;
-  begin
-    for fun in TreeElems.AllFuncs do begin
-      if fun.nCalled = 0 then continue;  //No usada
-      //Procesa las llamadas hechas desde otras funciones, para llenar
-      //su lista "lstCalled", y así saber a quienes llama
-      for itCall in fun.lstCallers do begin
-        //Agrega la referencia de la llamada a la función
-        if itCall.caller.idClass <> eltBody then begin
-          //Según diseño, itCall.caller debe ser TxpEleBody
-          GenError('Design error.');
-          exit;
-        end;
-        whoCalls := TxpEleBody(itCall.caller);
-        //Se agregan todas las llamadas (así sean al mismo porcedimiento) pero luego
-        //AddCalled(), los filtra.
-        whoCalls.Parent.AddCalled(fun);  //Agrega al procediminto
-      end;
-    end;
-    {Actualizar la lista fun.lstCalledAll con la totalidad de llamadas a todas
-     las funciones, sean de forma directa o indirectamente.}
-    for fun in TreeElems.AllFuncs do begin
-      fun.UpdateCalledAll;
-    end;
-    //Actualiza el programa principal
-    TreeElems.main.UpdateCalledAll;
-    if TreeElems.main.maxNesting>8 then begin
-      GenError('Not enough stack.');
-    end;
-  end;
-  procedure AssignRAMtoVar(xvar: TxpEleVar; shared: boolean = false);
-  var
-    posAct : TPosCont;
-    adicVarDec: TAdicVarDec;
-  begin
-//debugln('  Asignando espacio a %s', [xvar.name]);
-    case xvar.adicPar.hasAdic of
-    decAbsol: begin
-//debugln('Abs: xvar=%s at %d', [xvar.name, xvar.adicPar.absAddr]);
-      {Tiene declaración absoluta. Mejor compilamos de nuevo la declaración, porque
-      puede haber referencia a variables que han cambiado de ubicación, por
-      optimización.
-      Se podría hacer una verificación, para saber si la referencia es a direcciones
-      absolutas, en lugar de a variables (o a variables temporales), y así evitar
-      tener que compilar de nuevo, la declaración.}
-      posAct := cIn.PosAct;   //guarda posición actual
-      cIn.PosAct := xVar.adicPar.srcDec;  //Posiciona en la declaración adicional
-      TreeElems.curNode := xvar.Parent;   {Posiciona el árbol, tal cual estaría en la
-                                           primera pasada, para una correcta resolución
-                                           de nombres}
-      GetAdicVarDeclar(xvar.typ, adicVarDec);
-      //No debería dar error, porque ya pasó la primera pasada
-      xvar.adicPar := adicVarDec;
-      cIn.PosAct := posAct;
-      //Asigna RAM
-      CreateVarInRAM(xVar, shared);  //Crea la variable
-      xvar.typ.DefineRegister;  //Asegura que se dispondrá de los RT necesarios
-      //Puede salir con error
-    end;
-    decRegis, decRegisA, decRegisX, decRegisY: begin
-      //Variable registro. No se asigna espacio.
-    end;
-    decNone: begin
-      //Variable normal. Necesita ser asiganda en RAM
-      CreateVarInRAM(xVar, shared);  //Crea la variable
-      xvar.typ.DefineRegister;  //Asegura que se dispondrá de los RT necesarios
-      //Puede salir con error
-    end;
-    end;
-  end;
 var
   elem   : TxpElement;
   bod    : TxpEleBody;
   xvar   : TxpEleVar;
   fun    : TxpEleFun;
-  iniMain: integer;
+  iniMain, i: integer;
+  add: Word;
 begin
   ExprLevel := 0;
   ResetRAM;
@@ -499,40 +104,11 @@ begin
     end;
   end;
   _JMP_post(iniMain);   //Salto hasta después del espacio de variables
-  ///////////////////////////////////////////////////////////////////////////////
-  //Asigna memoria, primero a las variables locales (y parámetros) de las funciones
-  ///////////////////////////////////////////////////////////////////////////////
   UpdateFunLstCalled;   //Actualiza lista "lstCalled" de las funciones usadas
   if HayError then exit;
-  //Explora primero a las funciones terminales
-  for fun in TreeElems.AllFuncs do if fun.nCalled > 0 then begin
-    if not fun.IsTerminal2 then continue;
-    //DebugLn('función terminal: %s con %d var.loc.', [fun.name, fun.nLocalVars]);
-    //Los parámetros y variables locales aparecen como elementos de la función
-    for elem in fun.elements do if elem.idClass = eltVar then begin
-      xvar := TxpEleVar(elem);
-      if xvar.nCalled>0 then begin
-        //Asigna una dirección válida para esta variable
-        AssignRAMtoVar(xvar, true);
-        if HayError then exit;
-      end;
-    end;
-    if OptReuProVar then pic.SetSharedUnused;   //limpia las posiciones usadas
-  end;
-  if OptReuProVar then pic.SetSharedUsed;  //Ahora marca como usados, porque ya se creó la zona de bytes comaprtidos
-  //Explora solo a las funciones que no son terminales
-  for fun in TreeElems.AllFuncs do if fun.nCalled > 0 then begin
-    if fun.IsTerminal2 then continue;
-    //Los parámetros y variables locales aparecen como elementos de la función
-    for elem in fun.elements do if elem.idClass = eltVar then begin
-      xvar := TxpEleVar(elem);
-      if xvar.nCalled>0 then begin
-        //Asigna una dirección válida para esta variable
-        AssignRAMtoVar(xvar);
-        if HayError then exit;
-      end;
-    end;
-  end;
+  SeparateUsedFunctions;
+  //Asigna memoria, primero a las variables locales (y parámetros) de las funciones
+  CreateLocalVarsAndPars;
   ///////////////////////////////////////////////////////////////////////////////
   //Reserva espacio para las variables (Que no son de funciones).
   for xvar in TreeElems.AllVars do begin
@@ -550,62 +126,69 @@ begin
       end;
     end;
   end;
-  //Codifica la función INTERRUPT, si existe
-  for fun in TreeElems.AllFuncs do begin
-      if fun.IsInterrupt then begin
-        //Compila la función en la dirección 0x04
-        pic.iRam := $04;
-        fun.adrr := pic.iRam;    //Actualiza la dirección final
-        fun.typ.DefineRegister;    //Asegura que se dispondrá de los RT necesarios
-        cIn.PosAct := fun.posCtx;  //Posiciona escáner
-        PutLabel('__'+fun.name);
-        TreeElems.OpenElement(fun.BodyNode); //Ubica el espacio de nombres, de forma similar a la pre-compilación
-        CallCompileProcBody(fun);
-        TreeElems.CloseElement;  //cierra el body
-        TreeElems.CloseElement;  //cierra la función
-        if HayError then exit;     //Puede haber error
-      end;
+  //Codifica la función INTERRUPT, si existe (Must be optimizaed)
+  if interruptFunct<>nil then begin;
+    fun := interruptFunct;
+    //Compila la función en la dirección 0x04
+    pic.iRam := $04;
+    fun.adrr := pic.iRam;    //Actualiza la dirección final
+    fun.typ.DefineRegister;    //Asegura que se dispondrá de los RT necesarios
+    cIn.PosAct := fun.posCtx;  //Posiciona escáner
+    PutLabel('__'+fun.name);
+    TreeElems.OpenElement(fun.BodyNode); //Ubica el espacio de nombres, de forma similar a la pre-compilación
+    callCompileProcBody(fun);
+    TreeElems.CloseElement;  //cierra el body
+    TreeElems.CloseElement;  //cierra la función
+    if HayError then exit;     //Puede haber error
   end;
-  //Codifica las funciones del sistema usadas
-  for fun in listFunSys do begin
-    if (fun.nCalled > 0) and (fun.compile<>nil) then begin
-      //Función usada y que tiene una subrutina ASM
-      fun.adrr := pic.iRam;  //actualiza la dirección final
-      PutLabel('__'+fun.name);
+  //Codifica las subrutinas usadas
+  for fun in usedFuncs do begin
+    if fun.IsInterrupt then continue;
+debugln('---Función usada: ' + fun.name);
+    {According the method we use to add callers (See TCompilerBase.AddCallerTo() ),
+    condition "fun.nCalled>0" ensure we have here the first ocurrence of a function. So
+    it can be:
+      - A common function/procedure in the main program.
+      - A INTERFACE function.
+      - A private IMPLEMENTATION function (without previous declaration).
+    }
+    //Compila la función en la dirección actual
+    fun.adrr := pic.iRam;     //Actualiza la dirección final
+    fun.typ.DefineRegister;   //Asegura que se dispondrá de los RT necesarios
+    PutLabel('__'+fun.name);
+    cIn.PosAct := fun.posCtx; //Posiciona escáner
+    if fun.compile<>nil then begin
+      //Is system function. Has not body.
       fun.compile(fun);   //codifica
-      if HayError then exit;  //Puede haber error
+    end else begin
+      //Is a common function with body.
+      TreeElems.OpenElement(fun.BodyNode); //Ubica el espacio de nombres, de forma similar a la pre-compilación
+      callCompileProcBody(fun);
+      if HayError then exit;     //Puede haber error
       if pic.MsjError<>'' then begin //Error en el mismo PIC
           GenError(pic.MsjError);
           exit;
       end;
-    end;
-  end;
-  //Codifica las subrutinas usadas
-  for fun in TreeElems.AllFuncs do begin
-    if fun.IsInterrupt then continue;
-    if fun.nCalled>0 then begin
-debugln('---Función usada: ' + fun.name);
-      {According the method we use to add callers (See TCompilerBase.AddCallerTo() ),
-      condition "fun.nCalled>0" ensure we have here the first ocurrence of a function. So
-      it can be:
-        - A common function/procedure in the main program.
-        - A INTERFACE function.
-        - A private IMPLEMENTATION function (without previous declaration).
-      }
-      //Compila la función en la dirección actual
-      fun.adrr := pic.iRam;    //Actualiza la dirección final
-      fun.typ.DefineRegister;    //Asegura que se dispondrá de los RT necesarios
-      PutLabel('__'+fun.name);
-
-      cIn.PosAct := fun.posCtx;  //Posiciona escáner
-      TreeElems.OpenElement(fun.BodyNode); //Ubica el espacio de nombres, de forma similar a la pre-compilación
-
-      CallCompileProcBody(fun);
       TreeElems.CloseElement;  //cierra el body
       TreeElems.CloseElement;  //cierra la función
-      if HayError then exit;     //Puede haber error
-    end else begin
-      //Esta función no se usa.
+    end;
+    fun.linked := true;      //Marca como ya enlazada
+    //Verifica si hace falta completar llamadas
+    if fun.nAddresPend>0 then begin
+        //Hay llamadas pendientes qie completar a esta función
+        for i:=0 to fun.nAddresPend -1 do begin
+          debugln('Completando lllamadas pendientes a %s en %d', [fun.name, fun.addrsPend[i]]);
+          //Completa la instrucción JSR $0000
+          add := fun.addrsPend[i];
+          pic.ram[add].value   := fun.adrr and $ff;
+          pic.ram[add+1].value := (fun.adrr >> 8) and $ff;
+        end;
+      end;
+  end;
+  for fun in unusedFuncs do begin
+    //Esta función no se usa.
+    if fun.Parent = TreeElems.main then begin
+      //Genera mensaje solo para funciones del programa principal.
       GenWarnPos(WA_UNUSED_PRO_, [fun.name], fun.srcDec);
     end;
   end;
@@ -627,8 +210,8 @@ debugln('---Función usada: ' + fun.name);
   {No es necesario hacer más validaciones, porque ya se hicieron en la primera pasada}
   //_RTS();   //agrega instrucción final
   if pic.MsjError<>'' then begin //Puede ser error al escribir la última instrucción
-      GenError(pic.MsjError);
-      exit;
+    GenError(pic.MsjError);
+    exit;
   end;
 end;
 procedure TCompiler_PIC16.Compile(NombArc: string; Link: boolean);
@@ -668,7 +251,7 @@ begin
     //Continúa con preparación
     TreeDirec.Clear;
     TreeElems.OnAddElement := @Tree_AddElement;   //Se va a modificar el árbol
-    listFunSys.Clear;
+    FirstPass := true;
     CreateSystemElements;  //Crea los elementos del sistema
     ClearMacros;           //Limpia las macros
     //Inicia PIC
@@ -679,8 +262,7 @@ begin
       CompiledUnit := true;
       //Hay que compilar una unidad
       consoleTickStart;
-//      debugln('*** Compiling unit: Pass 1.');
-      FirstPass := true;
+      debugln('*** Compiling unit: Pass 1.');
       CompileUnit(TreeElems.main);
       UpdateCallersToUnits;
       consoleTickCount('** First Pass.');
@@ -691,9 +273,8 @@ begin
       procedimientos, y variables son realmente usados, de modo que solo estos, serán
       codificados en la segunda pasada. Así evitamos incluir, código innecesario.}
       consoleTickStart;
-//      debugln('*** Compiling program: Pass 1.');
+      debugln('*** Compiling program: Pass 2.');
       pic.iRam := 0;     //dirección de inicio del código principal
-      FirstPass := true;
       CompileProgram;  //puede dar error
       if HayError then exit;
       UpdateCallersToUnits;
@@ -733,7 +314,7 @@ begin
       if ExcUnused and (v.nCalled = 0) then continue;
       if v.nCalled = 0 then subUsed := '; <Unused>' else subUsed := '';
       if v.typ.IsByteSize then begin
-        lins.Add(v.name + ' EQU ' +  AdrStr(v.addr)+ subUsed);
+        lins.Add(v.name + ' EQU ' +  AdrStr(v.addr0)+ subUsed);
       end else if v.typ.IsWordSize then begin
         lins.Add(v.name+'@0' + ' EQU ' +  AdrStr(v.addrL)+ subUsed);
         lins.Add(v.name+'@1' + ' EQU ' +  AdrStr(v.addrH)+ subUsed);
@@ -743,7 +324,7 @@ begin
         lins.Add(v.name+'@2' + ' EQU ' +  AdrStr(v.addrE)+ subUsed);
         lins.Add(v.name+'@3' + ' EQU ' +  AdrStr(v.addrU)+ subUsed);
       end else begin
-        lins.Add('"' + v.name + '"->' +  AdrStr(v.addr) + subUsed);
+        lins.Add('"' + v.name + '"->' +  AdrStr(v.addr0) + subUsed);
       end;
   end;
   //Reporte de registros de trabajo, auxiliares y de pila
@@ -814,9 +395,9 @@ begin
   totRAM := pic.TotalMemRAM;
   if totRAM = 0 then exit;  //protección
   usedRAM := pic.UsedMemRAM;
-  ramUse := usedRAM/ totRAM;
+  ramUse := usedRAM/totRAM;
   //Calcula STACK
-  TreeElems.main.UpdateCalledAll;   //Debe haberse llenado TreeElems.main.lstCalled
+//  nes := TreeElems.main.UpdateCalledAll;   //Debe haberse llenado TreeElems.main.lstCalled
   //No considera el anidamiento por interrupciones
   stkUse := TreeElems.main.maxNesting/STACK_SIZE;
 end;
@@ -978,4 +559,4 @@ begin
 end;
 
 end.
-//2909
+

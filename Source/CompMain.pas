@@ -8,13 +8,11 @@ type
 
   { TCompMain }
   TCompMain = class(TCompilerBase)
-  protected //Métodos OVERRIDE
+  protected
     function StartOfSection: boolean;
     procedure CompileLastEnd;
-  protected
-    procedure TipDefecNumber(var Op: TOperand; toknum: string); override;
-    procedure TipDefecString(var Op: TOperand; tokcad: string); override;
-    procedure TipDefecBoolean(var Op: TOperand; tokcad: string); override;
+    procedure AssignRAMtoVar(xvar: TxpEleVar; shared: boolean = false);
+    procedure CreateLocalVarsAndPars;
   protected  //Elements processing
     procedure GetAdicVarDeclar(xType: TxpEleType; out aditVar: TAdicVarDec);
     procedure ReadProcHeader(out procName: String; out retType: TxpEleType; out
@@ -45,6 +43,9 @@ type
     procedure CompileInlineBody(fun: TxpEleInlin);
     procedure CompileProcDeclar;
     procedure CompileInlineDeclar(elemLocat: TxpEleLocation);
+    procedure CompileUnit(uni: TxpElement);
+    procedure CompileUsesDeclaration;
+    procedure CompileProgram;
   public
     {Indica que TCompiler, va a acceder a un archivo, peor está pregunatndo para ver
      si se tiene un Stringlist, con los datos ya caragdos del archivo, para evitar
@@ -57,12 +58,13 @@ implementation
 var
   ER_INV_MEMADDR, ER_EXP_VAR_IDE, ER_NUM_ADD_EXP, ER_CON_EXP_EXP, ER_EQU_EXPECTD,
   ER_IDEN_EXPECT, ER_NOT_IMPLEM_, ER_SEM_COM_EXP, ER_INV_ARR_SIZ, ER_ARR_SIZ_BIG,
-  ER_IDE_TYP_EXP, ER_IDE_CON_EXP, ER_EQU_COM_EXP, ER_DUPLIC_IDEN, ER_NOTYPDEF_NU,
+  ER_IDE_TYP_EXP, ER_IDE_CON_EXP, ER_EQU_COM_EXP, ER_DUPLIC_IDEN,
   ER_BOOL_EXPECT, ER_EOF_END_EXP, ER_ELS_UNEXPEC, ER_END_EXPECTE, ER_NOT_AFT_END,
-  ER_INST_NEV_EXE, ER_UNKN_STRUCT, ER_DUPLIC_FUNC_
+  ER_INST_NEV_EXE,ER_UNKN_STRUCT, ER_DUPLIC_FUNC_, ER_FIL_NOFOUND, ER_PROG_NAM_EX
   : string;
 procedure SetLanguage;
 begin
+  CompBase.SetLanguage;
   {$I ..\language\tra_CompMain.pas}
 end;
 function TCompMain.StartOfSection: boolean;
@@ -97,88 +99,7 @@ begin
     exit;       //sale
   end;
 end;
-//Métodos OVERRIDE
-procedure TCompMain.TipDefecNumber(var Op: TOperand; toknum: string);
-{Procesa constantes numéricas, ubicándolas en el tipo de dato apropiado (byte, word, ... )
- Si no logra ubicar el tipo de número, o no puede leer su valor, generará  un error.}
-var
-  n: int64;   //para almacenar a los enteros
-//  f: extended;  //para almacenar a reales
-begin
-  if pos('.',toknum) <> 0 then begin  //es flotante
-    GenError('Unvalid float number.');  //No hay soporte aún para flotantes
-//    try
-//      f := StrToFloat(toknum);  //carga con la mayor precisión posible
-//    except
-//      Op.typ := nil;
-//      GenError('Unvalid float number.');
-//      exit;
-//    end;
-//    //busca el tipo numérico más pequeño que pueda albergar a este número
-//    Op.size := 4;   //se asume que con 4 bytes bastará
-//    {Aquí se puede decidir el tamaño de acuerdo a la cantidad de decimales indicados}
-//
-//    Op.valFloat := f;  //debe devolver un extended
-//    menor := 1000;
-//    for i:=0 to typs.Count-1 do begin
-//      { TODO : Se debería tener una lista adicional TFloatTypes, para acelerar la
-//      búsqueda}
-//      if (typs[i].cat = t_float) and (typs[i].size>=Op.size) then begin
-//        //guarda el menor
-//        if typs[i].size < menor then  begin
-//           imen := i;   //guarda referencia
-//           menor := typs[i].size;
-//        end;
-//      end;
-//    end;
-//    if menor = 1000 then  //no hubo tipo
-//      Op.typ := nil
-//    else  //encontró
-//      Op.typ:=typs[imen];
-//
-  end else begin     //es entero
-    //Intenta convertir la cadena. Notar que se reconocen los formatos $FF y %0101
-    if not TryStrToInt64(toknum, n) then begin
-      //Si el lexer ha hecho bien su trabajo, esto solo debe pasar, cuando el
-      //número tiene mucHos dígitos.
-      GenError('Error in number.');
-      exit;
-    end;
-    Op.valInt := n;   //copia valor de constante entera
-    {Asigna un tipo, de acuerdo al rango. Notar que el tipo más pequeño, usado
-    es el byte, y no el bit.}
-    if (n>=0) and  (n<=255) then begin
-      Op.SetAsConst(typByte);
-    end else if (n>= 0) and (n<=$FFFF) then begin
-      Op.SetAsConst(typWord);
-    end else  begin //no encontró
-      GenError(ER_NOTYPDEF_NU);
-      Op.SetAsNull;
-    end;
-  end;
-end;
-procedure TCompMain.TipDefecString(var Op: TOperand; tokcad: string);
-//Devuelve el tipo de cadena encontrado en un token
-//var
-//  i: Integer;
-begin
-{  Op.catTyp := t_string;   //es cadena
-  Op.size:=length(tokcad);
-  //toma el texto
-  Op.valStr := copy(cIn.tok,2, length(cIn.tok)-2);   //quita comillas
-  //////////// Verifica si hay tipos string definidos ////////////
-  if length(Op.valStr)=1 then begin
-    Op.typ := tipChr;
-  end else
-    Op.typ :=nil;  //no hay otro tipo}
-end;
-procedure TCompMain.TipDefecBoolean(var Op: TOperand; tokcad: string);
-//Devuelve el tipo de cadena encontrado en un token
-begin
-  //convierte valor constante
-  Op.SetAsConst(typBool);
-  Op.valBool:= (tokcad[1] in ['t','T']);
-end;
+
 //Elements processing
 procedure TCompMain.GetAdicVarDeclar(xType: TxpEleType; out aditVar: TAdicVarDec) ;
 {Verify aditional settings for var declarations, after the type definition. These settings
@@ -202,7 +123,7 @@ initialization is provided. No new type elements are created or destroyed.
       GenError(ER_INV_MEMADDR);
       {%H-}exit;
     end;
-    CodValidRAMaddr(n);  //Validate address
+    callValidRAMaddr(n);  //Validate address
     if HayError then exit(0);
     Result := n;
   end;
@@ -258,7 +179,7 @@ begin
         aditVar.absVar := Op.rVarBase;  //Guarda referencia
       end;
       //Ya tiene la variable en "xvar".
-      aditVar.absAddr := xvar.addr;  //debe ser absoluta
+      aditVar.absAddr := xvar.addr0;  //debe ser absoluta
       if aditVar.absAddr = ADRR_ERROR then begin
         //No se puede obtener la dirección.
         GenError('Cannot locate variable at: %s', [xvar.name]);
@@ -336,12 +257,12 @@ begin
       if (xType.itmType = typChar) then begin
         //Special case for Char arrays. They can be initializaed with string.
         if OpInit.Typ = typChar then begin
-          //Caso especial. Se puede considerar un string
+          //Caso especial. Se puede considerar un array[1] of char
           OpInit.SetAsConst(xType);  //Set as constant array of char
           OpInit.StringToArrayOfChar( chr(OpInit.valInt) );  //Set ítems from string
-        end else if OpInit.Typ = typString then begin
-          OpInit.SetAsConst(xType);  //Set as constant array of char
-          OpInit.StringToArrayOfChar( OpInit.valStr );  //Set ítems from string
+//        end else if OpInit.Typ = typString then begin
+//          OpInit.SetAsConst(xType);  //Set as constant array of char
+//          OpInit.StringToArrayOfChar( OpInit.valStr );  //Set ítems from string
         end;
       end;
       //Validation for category
@@ -431,6 +352,17 @@ en el procesamiento de unidades.}
         if not CaptureTok(':') then exit;
         typ := GetTypeDeclarSimple;  //lee tipo
         if HayError then exit;
+//        /////// Allows new types definition here /////
+//        typ := GetTypeDeclar(decStyle, TypeCreated);  //lee tipo
+//        if HayError then exit;
+//        if typeCreated then begin
+//          //Es un tipo nuevo.
+//          typ.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
+//          TreeElems.AddElement(typ); {Tendría que agregarse después de abrir el elemento función, no ahora}
+//        end else begin
+//          //El tipo ya existe en el arbol de sintaxis
+//        end;
+//        ///////////////////////////////////////////////
         ProcComments;
         GetAdicVarDeclar(typ, adicVarDec);
         if adicVarDec.hasInit then begin
@@ -632,127 +564,6 @@ begin
   if not CaptureTok(';') then exit;
   ProcComments;  //Quita espacios. Puede salir con error
 end;
-procedure TCompMain.CompileVarDeclar;
-{Compila la declaración de variables en el nodo actual.
-"IsInterface", indica el valor que se pondrá al as variables, en la bandera "IsInterface" }
-  function GenTypeName(const xtyp: TxpEleType; const baseName: string): string;
-  {Genera un nombre para un tipo de acuerdo a su definición. Se supone que no es un tipo
-  "atomic".
-  Se generan nombres representativos, para poder luego verificar la existencia de tipos
-  compatibles. Así por ejemplo si se crea un ARRAY OF char y luego se crea otro ARRAY OF
-  char con el mismo tamaño, se preferirá usar el tipo ya creado que además es compatible.}
-  begin
-    //Genera nombre con caracter inválido para que no se pueda confundir con los que declara el usuario.
-    case xtyp.catType of
-    tctAtomic : //caso inútil
-       exit(xtyp.name);
-    tctArray  :  //Arreglo de algo
-      exit(GenArrayTypeName(xtyp.itmType.name, xtyp.nItems));
-    tctPointer:  //Puntero a algo
-      exit(GenPointerTypeName(xtyp.ptrType.name));
-    tctObject :  {Objeto. No se da un nombre fijo porque los objetos son muy variables. Podría
-                  intentarse con obj-<tipos de campos>, pero podría ser muy largo y poco útil
-                  para buscar compatibilidades de tipo}
-      exit(PREFIX_OBJ + '-' + baseName); //Caso particular
-    else  //Solo pasaría cuando hay ampliaciones
-      exit('???-' + baseName);
-    end;
-  end;
-var
-  varNames: array of string;  //nombre de variables
-  srcPosArray: TSrcPosArray;
-  i: Integer;
-  xvar: TxpEleVar;
-  adicVarDec: TAdicVarDec;
-  xtyp, sametype: TxpEleType;
-  decStyle: TTypDeclarStyle;
-  typeCreated: boolean;
-begin
-  SetLength(varNames, 0);
-  //Procesa variables a,b,c : int;
-  getListOfIdent(varNames, srcPosArray);
-  if HayError then begin  //precisa el error
-    GenError(ER_EXP_VAR_IDE);
-    exit;
-  end;
-  //usualmente debería seguir ":"
-  if cIn.tok = ':' then begin
-    //Debe seguir, el tipo de la variable
-    cIn.Next;  //lo toma
-    ProcComments;
-    //Lee el tipo de la variable.
-    xtyp := GetTypeDeclar(decStyle, typeCreated );
-    if HayError then exit;
-    //Lee información adicional de la declaración (ABSOLUTE, REGISTER, initial value)
-    ProcComments;
-    GetAdicVarDeclar(xtyp, adicVarDec);
-    if HayError then begin
-      if typeCreated then xtyp.Destroy;
-      exit;
-    end;
-    //Verifica si hay asignación de valor inicial.
-    ProcComments;
-    {Elimina la llamada agregada a la variable, porque se van a agregar llamadas más
-    específicas desde la(s) variable(s) declaradas.}
-    if adicVarDec.absVar<>nil then begin
-      adicVarDec.absVar.RemoveLastCaller;
-    end;
-    {Aquí, finalmente, se tiene el tipo completo en su estructura porque, si había un
-    arreglo no diemnsionado, como:  foo []CHAR = 'HELLO'; ya se verificó la
-    inicialización.}
-    if (decStyle = ttdDirect) or not typeCreated then begin
-      //Tipo directo. No se ha creado ningún tipo nuevo.
-      //El tipo ya existe en el arbol de sintaxis
-    end else if decStyle = ttdDeclar then begin
-      //Se ha creado un tipo nuevo. Verifica y agrega.
-      //xtyp.name := GenTypeName(xtyp, varNames[0]);  //Update name
-      xtyp.location := curLocation;
-      if TreeElems.DeclaredType(xtyp.name, sametype) then begin
-        {El tipo ya existe (con esa misma estructura y en ese alcance), así que mejor
-        pasamos a reutilizar ese tipo. Esta reutilización de tipos evita la creación de
-        múltiples tipos con la misma definición.}
-        xtyp.Destroy;
-        xtyp := sametype;
-        //"sametype" ya está en el árbol de sintaxis.
-      end else begin
-        //Es un tipo nuevo.
-        xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
-        TreeElems.AddElement(xtyp); {¿Comviene agregarlo en este espacio o en otro más accesible desde otros espacios? }
-      end;
-    end else begin
-      //No hay otra opción
-      GenError(ER_NOT_IMPLEM_, ['']);
-    end;
-    //Aquí ya se tiene el tipo creado y en el árbol de sintaxis
-    //Reserva espacio para las variables
-    for i := 0 to high(varNames) do begin
-      xvar := AddVariable(varNames[i], xtyp, srcPosArray[i]);
-      if HayError then break;        //Sale para ver otros errores
-      xvar.adicPar := adicVarDec;    //Actualiza propiedades adicionales
-      xvar.location := curLocation;  //Actualiza bandera
-      {Técnicamente, no sería necesario, asignar RAM a la variable aquí (y así se
-      optimizaría), porque este método, solo se ejecuta en la primera pasada, y no
-      es vital tener las referencias a memoria, en esta pasada.
-      Pero se incluye la ásignación de RAM, por:
-      * Porque el acceso con directivas, a variables del sistema como "CurrBank",
-      se hace en la primera pasada, y es necesario que estas variables sean válidas.
-      * Para tener en la primera pasada, un código más similar al código final.}
-      if adicVarDec.hasAdic in [decNone, decAbsol] then  begin
-         CodCreateVarInRAM(xvar);  //Crea la variable
-      end;
-      //Agrega la llamada, específica, desde esta variable.
-      if adicVarDec.absVar<>nil then begin
-        AddCallerTo(adicVarDec.absVar, xvar);
-      end
-    end;
-  end else begin
-    GenError(ER_SEM_COM_EXP);
-    exit;
-  end;
-  if not CaptureDelExpres then exit;
-  ProcComments;
-  //puede salir con error
-end;
 function TCompMain.GetTypeDeclar(out decStyle: TTypDeclarStyle;
                                        out TypeCreated: boolean): TxpEleType;
 {Extrae la sección de declaración de tipo (De una variable, parámetro o de una definición
@@ -788,6 +599,7 @@ debería quedar completamente especificada la declaración del tipo.
 
 "TypeCreated" indicates when a new Type instance was created (and will be destroyed or
 added to the syntax Tree).
+In general, creating new types is avoided when exists other type equivalent.
 
 If some problems happens, Error is generated and the NIL value is returned.
 }
@@ -836,11 +648,11 @@ If some problems happens, Error is generated and the NIL value is returned.
   Se asume que ya se ha identificado el inicio de la declaración de un arreglo,
   sea en su forma larga: "ARRAY[] OF BYTE" o en su forma corta: []BYTE }
   var
-    decStyle: TTypDeclarStyle;
+    itemDecStyle: TTypDeclarStyle;
     itemTyp, xtyp: TxpEleType;
     nElem: Integer;
     typName: String;
-    otherTypeCreated: boolean;
+    itemTypeCreated: boolean;
   begin
     if cIn.tok = '[' then begin
       //Declaración corta
@@ -861,9 +673,9 @@ If some problems happens, Error is generated and the NIL value is returned.
       if not CaptureStr('of') then exit(nil);
     end;
     //Lee el tipo que sigue. Llamada RECURSIVA.
-    itemTyp := GetTypeDeclar(decStyle, otherTypeCreated);
+    itemTyp := GetTypeDeclar(itemDecStyle, itemTypeCreated);
     if HayError then exit(nil);
-    if otherTypeCreated then begin
+    if itemTypeCreated then begin
       //No support for nested declaration
       itemTyp.Destroy;
       GenError('Too complex type declaration');
@@ -876,15 +688,90 @@ If some problems happens, Error is generated and the NIL value is returned.
     end;
     //Se supone que ahora solo tenemos un tipo simple en "itemTyp".
     //Ya se tiene la información para crear un nuevo tipo array.
-    typName := GenArrayTypeName(itemTyp.name, nElem);
-    {typName could change later if not size specified for this array but it's initialized.
-    Something like: []byte = (1,2,3);  }
-    xtyp := CreateEleType(typName, srcPos, tctArray);
-    TypeCreated  := true;     //Activate flag
-    xtyp.nItems  := nElem;   //Número de ítems
-    xtyp.itmType := itemTyp; //Tipo de dato
-    CodDefineArray(xtyp);    //Crea campos comunes del arreglo
+    if not TreeElems.ExistsArrayType(itemTyp, nElem, xtyp) then begin
+      //There is not a similar type. We create a new type.
+      typName := GenArrayTypeName(itemTyp.name, nElem);
+      {typName could change later if not size specified for this array but it's initialized.
+      Something like: []byte = (1,2,3);  }
+      xtyp := CreateEleTypeArray(typName, srcPos, itemTyp, nElem);
+      TypeCreated  := true;     //Activate flag
+    end;
     Result := xtyp;
+  end;
+  function ObjectDeclaration(const srcpos: Tsrcpos): TxpEleType;
+  {Procesa la declaración de un tipo objeto y devuelve el tipo, ya creado para su
+  validación. No agrega el tipo al árbol de sintaxis.
+  Se asume que ya se ha identificado el inicio de la declaración de un objeto.}
+  var
+    xtyp, atTyp: TxpEleType;
+    i, offs: Integer;
+    srcPosArray: TSrcPosArray;
+    varNames: TStringDynArray;
+    attr: TTypAttrib;
+  begin
+    //Declaración: OBJECT ... END
+    cIn.Next; //Toma 'OBJECT'. Se asume que ya se identificó.
+    ProcComments;
+    {When declaring objets, we don't complicate in find previous declarations (rare).
+    We alwalys create a new type}
+    xtyp := CreateEleTypeObject(GenerateUniqName('Obj'), srcPos);
+    TypeCreated  := true;     //Activate flag
+    Result := xtyp;  //By default
+    //Start reading attributes
+    try
+      offs := 0;   //Addres offset
+      while not cIn.Eof and (cIn.tokl <> 'end') do begin
+        if cIn.tokL = 'procedure' then begin
+          //Es un método. ¿No se debería crear mejor dentro del nodo tipo?
+          cIn.Next;    //lo toma
+          CompileProcDeclar;
+          if HayError then exit;
+        end else begin
+          //Debe ser un campo
+          //Esta parte es como la de la declaración de variables pero simplificada.
+          SetLength(varNames, 0);
+          //Procesa variables a,b,c : int;
+          getListOfIdent(varNames, srcPosArray);
+          if HayError then begin  //precisa el error
+            GenError(ER_EXP_VAR_IDE);
+            exit;
+          end;
+          //usualmente debería seguir ":"
+          if cIn.tok = ':' then begin
+            //Debe seguir, el tipo de la variable
+            cIn.Next;  //lo toma
+            ProcComments;
+            //Lee el tipo de la variable.
+            atTyp := GetTypeDeclarSimple;   //Solo tipos simples por ahora
+            if HayError then exit;
+            //Reserva espacio para las variables
+            for i := 0 to high(varNames) do begin
+              attr := TTypAttrib.Create;
+              attr.name:=varNames[i];
+              attr.typ := atTyp;
+              attr.offs := offs;
+              xtyp.attribs.Add(attr);
+              offs += atTyp.size;
+            end;
+          end else begin
+            GenError(ER_SEM_COM_EXP);
+            exit;
+          end;
+          if not CaptureDelExpres then exit;
+          ProcComments;
+        end;
+      end;
+    finally
+      //Unique exit point
+      if HayError then begin
+        //There was an error
+        xtyp.Destroy;
+        TypeCreated := false;
+        Result := nil;
+      end;
+    end;
+    //Capture final "END"
+    if not CaptureStr('end') then exit;
   end;
   function PointerDeclaration(const srcpos: TSrcPos): TxpEleType;
   {Procesa la declaración de un tipo puntero y devuelve el tipo, ya creado para su
@@ -909,18 +796,21 @@ If some problems happens, Error is generated and the NIL value is returned.
     if reftyp = nil then begin
       //No es un tipo del sistema, pero puede ser un tipo prdefinido
       reftyp := TreeElems.FindType(cIn.tok); //Busca elemento
+//      reftyp := GetTypeDeclar(decStyle2, TypeCreated2); //Recursive definition
+      if HayError then exit;
       if reftyp = nil then begin
         GenError('Expected a type identifier.');
         exit;
       end;
     end;
-    //Encontró un tipo
-    cIn.Next;   //lo toma
-    typName := GenPointerTypeName(refTyp.name);
-    xtyp := CreateEleType(typName, srcPos, tctPointer);  //
-    TypeCreated  := true;     //Activate flag
-    xtyp.ptrType := reftyp;  //El tipo a donde apunta
-    CodDefinePointer(xtyp);  //Fija operaciones para la aritmética del puntero
+    //Verify type existence
+    if not TreeElems.ExistsPointerType(reftyp, xtyp) then begin
+      typName := GenPointerTypeName(refTyp.name);
+      xtyp := CreateEleTypePtr(typName, srcPos, reftyp);
+      if HayError then exit;
+      TypeCreated  := true;     //Activate flag
+    end;
+    cIn.Next;   //take type name
     Result := xtyp;
   end;
 var
@@ -957,6 +847,11 @@ begin
       //Es declaración de puntero
       decStyle := ttdDeclar;  //Es declaración elaborada
       typ := PointerDeclaration(srcpos);
+      if HayError then exit(nil);     //Sale para ver otros errores
+    end else if (cIn.tokL = 'object') then begin
+      //Es declaración de objeto
+      decStyle := ttdDeclar;  //Es declaración elaborada
+      typ := ObjectDeclaration(srcpos);
       if HayError then exit(nil);     //Sale para ver otros errores
     end else if cIn.tokType = tnIdentif then begin
       //Es un identificador de tipo
@@ -997,6 +892,7 @@ begin
       //Some error was happen
       if TypeCreated then begin
         typ.Destroy;  //Release object
+        TypeCreated:=false;
       end;
     end;
   end;
@@ -1131,6 +1027,466 @@ begin
   TreeElems.AddElement(etyp);  //No problem in adding, because we are in the right position of Syntax Tree.
   if not CaptureDelExpres then exit;
   ProcComments;
+end;
+procedure TCompMain.CompileVarDeclar;
+{Compila la declaración de variables en el nodo actual.
+"IsInterface", indica el valor que se pondrá al as variables, en la bandera "IsInterface" }
+  function GenTypeName(const xtyp: TxpEleType; const baseName: string): string;
+  {Genera un nombre para un tipo de acuerdo a su definición. Se supone que no es un tipo
+  "atomic".
+  Se generan nombres representativos, para poder luego verificar la existencia de tipos
+  compatibles. Así por ejemplo si se crea un ARRAY OF char y luego se crea otro ARRAY OF
+  char con el mismo tamaño, se preferirá usar el tipo ya creado que además es compatible.}
+  begin
+    //Genera nombre con caracter inválido para que no se pueda confundir con los que declara el usuario.
+    case xtyp.catType of
+    tctAtomic : //caso inútil
+       exit(xtyp.name);
+    tctArray  :  //Arreglo de algo
+      exit(GenArrayTypeName(xtyp.itmType.name, xtyp.nItems));
+    tctPointer:  //Puntero a algo
+      exit(GenPointerTypeName(xtyp.ptrType.name));
+    tctObject :  {Objeto. No se da un nombre fijo porque los objetos son muy variables. Podría
+                  intentarse con obj-<tipos de campos>, pero podría ser muy largo y poco útil
+                  para buscar compatibilidades de tipo}
+      exit(PREFIX_OBJ + '-' + baseName); //Caso particular
+    else  //Solo pasaría cuando hay ampliaciones
+      exit('???-' + baseName);
+    end;
+  end;
+var
+  varNames: array of string;  //nombre de variables
+  srcPosArray: TSrcPosArray;
+  i: Integer;
+  xvar: TxpEleVar;
+  adicVarDec: TAdicVarDec;
+  xtyp: TxpEleType;
+  decStyle: TTypDeclarStyle;
+  typeCreated: boolean;
+begin
+  SetLength(varNames, 0);
+  //Procesa variables a,b,c : int;
+  getListOfIdent(varNames, srcPosArray);
+  if HayError then begin  //precisa el error
+    GenError(ER_EXP_VAR_IDE);
+    exit;
+  end;
+  //usualmente debería seguir ":"
+  if cIn.tok = ':' then begin
+    //Debe seguir, el tipo de la variable
+    cIn.Next;  //lo toma
+    ProcComments;
+    //Lee el tipo de la variable.
+    xtyp := GetTypeDeclar(decStyle, typeCreated );
+    if HayError then exit;
+    //Lee información adicional de la declaración (ABSOLUTE, REGISTER, initial value)
+    ProcComments;
+    GetAdicVarDeclar(xtyp, adicVarDec);
+    if HayError then begin
+      if typeCreated then xtyp.Destroy;
+      exit;
+    end;
+    //Verifica si hay asignación de valor inicial.
+    ProcComments;
+    {Elimina la llamada agregada a la variable, porque se van a agregar llamadas más
+    específicas desde la(s) variable(s) declaradas.}
+    if adicVarDec.absVar<>nil then begin
+      adicVarDec.absVar.RemoveLastCaller;
+    end;
+    {Aquí, finalmente, se tiene el tipo completo en su estructura porque, si había un
+    arreglo no diemnsionado, como:  foo []CHAR = 'HELLO'; ya se verificó la
+    inicialización.}
+    if typeCreated then begin
+//      //Se ha creado un tipo nuevo. Verifica y agrega.
+//      //xtyp.name := GenTypeName(xtyp, varNames[0]);  //Update name
+//      xtyp.location := curLocation;
+//      if TreeElems.DeclaredType(xtyp.name, sametype) then begin
+//        {El tipo ya existe (con esa misma estructura y en ese alcance), así que mejor
+//        pasamos a reutilizar ese tipo. Esta reutilización de tipos evita la creación de
+//        múltiples tipos con la misma definición.}
+//        xtyp.Destroy;
+//        xtyp := sametype;
+//        //"sametype" ya está en el árbol de sintaxis.
+//      end else begin
+        //Es un tipo nuevo.
+        xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
+        TreeElems.AddElement(xtyp); {¿Comviene agregarlo en este espacio o en otro más accesible desde otros espacios? }
+//      end;
+    end else begin
+      //Tipo directo. No se ha creado ningún tipo nuevo.
+      //El tipo ya existe en el arbol de sintaxis
+    end;
+    //Aquí ya se tiene el tipo creado y en el árbol de sintaxis
+    //Reserva espacio para las variables
+    for i := 0 to high(varNames) do begin
+      xvar := AddVariable(varNames[i], xtyp, srcPosArray[i]);
+      if HayError then break;        //Sale para ver otros errores
+      xvar.adicPar := adicVarDec;    //Actualiza propiedades adicionales
+      xvar.location := curLocation;  //Actualiza bandera
+      {Técnicamente, no sería necesario, asignar RAM a la variable aquí (y así se
+      optimizaría), porque este método, solo se ejecuta en la primera pasada, y no
+      es vital tener las referencias a memoria, en esta pasada.
+      Pero se incluye la ásignación de RAM, por:
+      * Porque el acceso con directivas, a variables del sistema
+      se hace en la primera pasada, y es necesario que estas variables sean válidas.
+      * Para tener en la primera pasada, un código más similar al código final.}
+      if adicVarDec.hasAdic in [decNone, decAbsol] then  begin
+         callCreateVarInRAM(xvar);  //Crea la variable
+      end;
+      //Agrega la llamada, específica, desde esta variable.
+      if adicVarDec.absVar<>nil then begin
+        AddCallerTo(adicVarDec.absVar, xvar);
+      end
+    end;
+  end else begin
+    GenError(ER_SEM_COM_EXP);
+    exit;
+  end;
+  if not CaptureDelExpres then exit;
+  ProcComments;
+  //puede salir con error
+end;
+procedure TCompMain.CompileProcDeclar;
+{Compila la declaración de procedimientos. Tanto procedimientos como funciones
+ se manejan internamente como funciones.}
+  function FindProcInInterface(procName: string; const pars: TxpParFuncArray;
+                               const srcPos: TSrcPos): TxpEleFunDec;
+  {Explore the current context to verify (and validate) the existence, in the INTERFACE
+  section, of a function declared in the IMPLEMENTATION section.
+  If found the function, returns the reference. Otherwise returns NIL.
+  Also validate the duplicity in the same IMPLEMENTATION section.}
+  var
+    ele : TxpElement;
+    uname: String;
+    fun: TxpEleFun;
+    funInterface: TxpEleFunDec;
+  begin
+    {Se supone que esta exploración solo se hará en la primera pasada, así que no hay
+    problema, en hacer una exploración común.}
+    //debugln('Buscando declaración de %s en nodo %s desde 0 hasta %d', [fun.name, ParentElems.name, ParentElems.elements.Count-2]);
+    Result := nil;
+    uname := upcase(procName);
+    {This a doble-scanning, to detect: Existence of declaration in INTERFACE, and
+    name duplicity in IMPLEMENTATION. }
+    for ele in TreeElems.curNode.elements do begin
+      if ele.uname = uname then begin
+        //Match the name.
+        if ele.location = locInterface then begin
+          //Is an INTERFACE element.
+          if ele.idClass = eltFuncDec then begin
+            //Para las declaraciones, se debe comparar los parámetros
+            funInterface := TxpEleFunDec(ele);
+            if funInterface.SameParamsType(pars) then begin
+              Result := funInterface;
+              //Continue exploring to verify duplicity.
+            end;
+          end else begin
+            //The same name of other element, is conflict.
+            GenError('Identifier "%s" already defined', [uname]);
+            exit;
+          end;
+        end else if ele.location = locImplement then begin
+          //Is an IMPLEMENTATION element.
+          if ele.idClass = eltFunc then begin
+            //Para las funciones, se debe comparar los parámetros
+            fun := TxpEleFun(ele);
+            if fun.SameParamsType(pars) then begin
+              {Two similar functions in the same IMPLEMENTATION scope.}
+              GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+              exit(nil);
+            end;
+          end else begin
+            //The same name of other element, is conflict.
+            GenError('Identifier "%s" already defined', [uname]);
+            exit;
+          end;
+        end;
+      end;
+    end;
+    //Doesn't found.
+  end;
+  function FindProcAsForwawd(procName: string; const pars: TxpParFuncArray;
+                               const srcPos: TSrcPos): TxpEleFunDec;
+  {Explore the current context to verify (and validate) the existence of a functon
+  declared as FORWARD, of any ohter function (No FORWARD).
+  If found the function, returns the reference. Otherwise returns NIL.
+  Also validate the duplicity of the function.}
+  var
+    uname: String;
+    ele : TxpElement;
+    fun: TxpEleFun;
+    fundec: TxpEleFunDec;
+  begin
+    Result := nil;
+    uname := upcase(procName);
+    //Busca en el entorno para ver si está duplicada o con FORWARD
+    for ele in TreeElems.curNode.elements do begin
+      if ele.uname = uname then begin
+        //Match the name.
+        if ele.idClass = eltFuncDec then begin
+          //Must be a FORWARD
+          fundec := TxpEleFunDec(ele);
+          //if fun.IsForward ?
+          if fundec.SameParamsType(pars) then begin
+            Result := fundec;  //Return FORWARD function
+          end;
+          //Continue exploring to validate
+        end else if ele.idClass = eltFunc then begin
+          //Para las funciones, se debe comparar los parámetros
+          fun := TxpEleFun(ele);
+          if fun.SameParamsType(pars) then begin
+            //Is not FORWARD, must be duplicated:
+            GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+            exit;
+          end;
+        end else begin
+          //The same name of other element, is conflict.
+          GenError('Identifier "%s" already defined', [uname]);
+          exit;
+        end;
+      end;
+    end;
+  end;
+var
+  funDec, funInterface, funForward: TxpEleFunDec;
+  fun: TxpEleFun;
+  bod: TxpEleBody;
+  IsInterrupt, IsForward: Boolean;
+  procName: String;
+  retType: TxpEleType;
+  srcPos: TSrcPos;
+  pars: TxpParFuncArray;
+begin
+  {Este método, solo se ejecutará en la primera pasada, en donde todos los procedimientos
+  se codifican al inicio de la memoria, y las variables y registros se ubican al
+  inicio de la memoria RAM, ya que lo que importa es simplemente recabar información
+  del procedimiento, y no tanto codificarlo. }
+  callResetRAM;   //Limpia RAM
+  case curLocation of
+  locInterface: begin
+    //Las declaraciones en INTERFACE son sencillas. Solo son caebceras.
+    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt, IsForward);
+    if HayError then exit;
+    if IsForward then begin
+      GenError('Cannot use FORWARD in INTERFACE section.');
+      exit;
+    end;
+    if TreeElems.FunctionExistInCur(procName, pars) then begin
+      GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+      exit;
+    end;
+    funDec := AddFunctionDEC(procName, retType, srcPos, pars, IsInterrupt);
+    funDec.location := curLocation;  //Set location
+    exit;  //No more task required.
+  end;
+  locImplement:  begin
+    //Se compila para implementación.
+    {Este proceso es más complejo. La idea es compilar el enzabezado de cualquier función,
+    y luego comparar para ver si corresponde a una implementación o no. Si es
+    implementación, se elimina el nodo creado y se trabaja con el de la declaración.}
+    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt, IsForward);
+    if HayError then exit;
+    //Verifica si es implementación de una función en la INTERFACE o no.
+    funInterface := FindProcInInterface(procName, pars, srcPos);
+    if HayError then exit;
+    if funInterface<>nil then begin
+      //Es una implementación normal
+      fun := AddFunctionIMP(procName, retType, srcPos, funInterface);
+    end else begin
+      //Debe ser una función privada. No declarada en INTERFACE.
+      //Ya verificamos que no hay conflicto en IMPLEMENTATION.
+      fun := AddFunctionUNI(procName, retType, srcPos, pars, IsInterrupt);
+    end;
+    fun.location := curLocation;
+  end;
+  locMain: begin
+    //Es una compilación en el programa principal. ¿Y si es FORWARD?
+    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt, IsForward);
+    if HayError then exit;
+    if IsForward then begin
+      if TreeElems.FunctionExistInCur(procName, pars) then begin
+        GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+        exit;
+      end;
+      funDec := AddFunctionDEC(procName, retType, srcPos, pars, IsInterrupt);
+      funDec.location := locMain;  //Set location
+      funDec.IsForward := true;    //Mark as Forward
+      exit;  //No more task required.
+    end;
+    //This is no-FORWARD function
+    funForward := FindProcAsForwawd(procName, pars, srcPos);
+    if HayError then exit;
+    if funForward<>nil then begin
+      //It's an implementation
+      fun := AddFunctionIMP(procName, retType, srcPos, funForward);
+    end else begin
+      //It's a common function
+      fun := AddFunctionUNI(procName, retType, srcPos, pars, IsInterrupt);
+    end;
+    fun.location := curLocation;
+  end;
+  else
+    GenError(ER_NOT_IMPLEM_, ['locMain in TCompMain.CompileProcDeclar()']);
+  end;
+  //Aquí ya se tiene "fun" abierta, validada y apuntando a la declaración.
+  //Empiezan las declaraciones VAR, CONST, PROCEDURE, TYPE
+  while StartOfSection do begin
+    if cIn.tokL = 'var' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'begin') do begin
+        CompileVarDeclar;
+        if HayError then exit;;
+      end;
+    end else if cIn.tokL = 'const' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'begin') do begin
+        CompileGlobalConstDeclar;
+        if HayError then exit;;
+      end;
+//    end else if cIn.tokL = 'procedure' then begin
+//      cIn.Next;    //lo toma
+//      CompileProcDeclar;
+    end else begin
+      GenError('Expected VAR, CONST or BEGIN.');
+      exit;
+    end;
+  end;
+  if cIn.tokL <> 'begin' then begin
+    GenError('Expected "begin", "var", "type" or "const".');
+    exit;
+  end;
+  //Ahora empieza el cuerpo de la función o las declaraciones
+  fun.adrr   := callCurrRAM(); //toma dirección de inicio del código. Es solo referencial.
+  fun.posCtx := cIn.PosAct;  //Guarda posición para la segunda compilación
+  bod := CreateBody;   //crea elemento del cuerpo de la función
+  bod.srcDec := cIn.ReadSrcPos;
+  TreeElems.AddElementAndOpen(bod);  //Abre nodo Body
+  callCompileProcBody(fun);
+  TreeElems.CloseElement;  //Cierra Nodo Body
+  TreeElems.CloseElement; //cierra espacio de nombres de la función
+  bod.srcEnd := cIn.ReadSrcPos;  //Fin de cuerpo
+//  fun.adrReturn := pic.iRam-1;  //Guarda dirección del i_RETURN
+  if not CaptureTok(';') then exit;
+  ProcComments;  //Quita espacios. Puede salir con error
+end;
+procedure TCompMain.CompileInlineDeclar(elemLocat: TxpEleLocation);
+{Compila la declaración de procedimientos INLINE. Tanto procedimientos como funciones
+ INLINE se manejan internamente como funciones.
+ IsImplementation, se usa para cuando se está compilando en la sección IMPLEMENTATION.}
+begin
+//  {Este método, solo se ejecutará en la primera pasada, en donde todos los procedimientos
+//  se codifican al inicio de la memoria, y las variables y registros se ubican al
+//  inicio de la memoria RAM, ya que lo que importa es simplemente recabar información
+//  del procedimiento, y no tanto codificarlo. }
+//  CallResetRAM;   //Limpia RAM y FLASH, y fija CurrBank
+//  case elemLocat of
+//  locInterface: begin
+//    //Los procedimientos en INTERFACE, no se procesan aquí. Se procesan en CompileUnit().
+//  end;
+//  locImplement:  begin
+//    //Se compila para implementación.
+//    {Este proceso es más complejo. La idea es compilar el encabezado de cualquier función,
+//    y luego comparar para ver si corresponde a una implementación o no. Si es
+//    implementación, se elimina el nodo creado y se trabaja con el de la declaración.}
+//    ReadInlineHeader(procName, retType, srcPos, pars);
+//    if HayError then exit;
+//    //Verifica si es implementación de una función en la INTERFACE o no.
+//    ParentElems := TreeElems.curNode.elements;  //Para comparar
+//    {Se supone que esta exploración solo se hará en la primera pasada, así que no hay
+//    problema, en hacer una exploración común.}
+//    //debugln('Buscando declaración de %s en nodo %s desde 0 hasta %d', [fun.name, ParentElems.name, ParentElems.elements.Count-2]);
+//    Found := false;
+//    uname := upcase(procName);
+//    for ele in ParentElems do begin
+//      if ele.location = locInterface then begin
+//        //Es elemento de INTERFACE
+//        if ele.uname = uname then begin
+//          //Hay coincidencia de nombre
+//          if ele.idClass = eltFunc then begin
+//            //Para las funciones, se debe comparar los parámetros
+//            fun := TxpEleInlin(ele);
+//            if fun.SameParamsType(pars) then begin
+//              Found := true;
+//              break;
+//            end;
+//          end else begin
+//            //Si tiene el mismo nombre que cualquier otro elemento, es conflicto
+//            GenError('Identifier "%s" already defined', [uname]);
+//            exit;
+//          end;
+//        end;
+//      end else begin
+//        {Debe ser elemento de IMPLEMENTATION, no hay otra opción porque se supone que
+//        estamos en la sección de IMPLEMENTATION, así que el Parent, debe ser una unidad.}
+//        GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);  //Está duplicada en IMPLEMENTATION
+//        exit;
+//      end;
+//    end;
+//    if Found then begin
+//      //Es una implementación. No vale la pena tener otro nodo.
+//      TreeElems.OpenElement(fun);  //Abre el nodo anterior
+//    end else begin
+//      //Debe ser una función privada. No declarada en Interface.
+//      //La creamos con seguridad porque ya verificamos que no hay conflicto en IMPLEMENTATION.
+//      fun := AddInline(procName, retType, srcPos, pars, CallFunctParam, CallFunctCall);
+//      //Un caso especial de proced. declarado solo en IMPLEMENTATION.
+//      fun.location := locImplement;
+//    end;
+//  end;
+//  locMain: begin
+//    //Es una compilación en el programa principal. ¿Y si es FORWARD?
+//    ReadInlineHeader(procName, retType, srcPos, pars);  //Procesa el encabezado
+//    if HayError then exit;
+//    if TreeElems.InlineExistInCur(procName, pars) then begin
+//      GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
+//      exit;
+//    end;
+//    fun := AddInline(procName, retType, srcPos, pars, CallFunctParam, CallFunctCall);
+//    //Aquí estamos en el entorno de la función.
+//    fun.location := locMain;
+//  end
+//  else
+//    GenError(ER_NOT_IMPLEM_, ['locMain in TCompMain.CompileInlineDeclar()']);
+//  end;
+//  //Aquí ya se tiene "fun" abierta, validada y apuntando a la declaración.
+//  //Empiezan las declaraciones VAR, CONST, PROCEDURE, TYPE
+//  while StartOfSection do begin
+//    if cIn.tokL = 'var' then begin
+//      cIn.Next;    //lo toma
+//      while not StartOfSection and (cIn.tokL <>'begin') do begin
+//        CompileVarDeclar;
+//        if HayError then exit;;
+//      end;
+//    end else if cIn.tokL = 'const' then begin
+//      cIn.Next;    //lo toma
+//      while not StartOfSection and (cIn.tokL <>'begin') do begin
+//        CompileGlobalConstDeclar;
+//        if HayError then exit;;
+//      end;
+////    end else if cIn.tokL = 'procedure' then begin
+////      cIn.Next;    //lo toma
+////      CompileProcDeclar;
+//    end else begin
+//      GenError('Expected VAR, CONST or BEGIN.');
+//      exit;
+//    end;
+//  end;
+//  if cIn.tokL <> 'begin' then begin
+//    GenError('Expected "begin", "var", "type" or "const".');
+//    exit;
+//  end;
+//  //Ahora empieza el cuerpo de la función o las declaraciones
+//  fun.posCtx := cIn.PosAct;  //Guarda posición para la segunda compilación
+//  bod := CreateBody;   //crea elemento del cuerpo de la función
+//  bod.srcDec := cIn.ReadSrcPos;
+//  TreeElems.AddElementAndOpen(bod);  //Abre nodo Body
+//  CompileInlineBody(fun);
+//  TreeElems.CloseElement;  //Cierra Nodo Body
+//  TreeElems.CloseElement; //cierra espacio de nombres de la función
+//  bod.srcEnd := cIn.ReadSrcPos;  //Fin de cuerpo
+////  fun.adrReturn := pic.iRam-1;  //Guarda dirección del i_RETURN
+//  if not CaptureTok(';') then exit;
+//  ProcComments;  //Quita espacios. Puede salir con error
 end;
 
 function TCompMain.VerifyEND: boolean;
@@ -1274,22 +1630,22 @@ begin
       if cIn.tokl = 'if' then begin
         curCodCon.OpenBlock(sbiIF);
         cIn.Next;         //pasa "if"
-        CodCompileIF;
+        callCompileIF;
         curCodCon.CloseBlock;
       end else if cIn.tokl = 'while' then begin
         curCodCon.OpenBlock(sbiWHILE);
         cIn.Next;         //pasa "while"
-        CodCompileWHILE;
+        callCompileWHILE;
         curCodCon.CloseBlock;
       end else if cIn.tokl = 'repeat' then begin
         curCodCon.OpenBlock(sbiREPEAT);
         cIn.Next;         //pasa "until"
-        CodCompileREPEAT;
+        callCompileREPEAT;
         curCodCon.CloseBlock;
       end else if cIn.tokl = 'for' then begin
         curCodCon.OpenBlock(sbiFOR);
         cIn.Next;         //pasa "until"
-        CodCompileFOR;
+        callCompileFOR;
         curCodCon.CloseBlock;
       end else begin
         GenError(ER_UNKN_STRUCT);
@@ -1300,9 +1656,9 @@ begin
       GetExpressionE(pexASIG);
     end;
     if HayError then exit;
-    if CodDeviceError()<>'' then begin
+    if callDeviceError()<>'' then begin
       //El CPU también puede dar error
-      GenError(CodDeviceError());
+      GenError(callDeviceError());
     end;
   end;
 end;
@@ -1385,348 +1741,401 @@ begin
   //Faltaría revisar la compilación para que se adecúe a la de un proc. Inline
   CompileInstructionDummy;
 end;
-//Compilación de secciones
-procedure TCompMain.CompileProcDeclar;
-{Compila la declaración de procedimientos. Tanto procedimientos como funciones
- se manejan internamente como funciones.}
-  function FindProcInInterface(procName: string; const pars: TxpParFuncArray;
-                               const srcPos: TSrcPos): TxpEleFunDec;
-  {Explore the current context to verify (and validate) the existence, in the INTERFACE
-  section, of a function declared in the IMPLEMENTATION section.
-  If found the function, returns the reference. Otherwise returns NIL.
-  Also validate the duplicity in the same IMPLEMENTATION section.}
-  var
-    ele : TxpElement;
-    uname: String;
-    fun: TxpEleFun;
-    funInterface: TxpEleFunDec;
-  begin
-    {Se supone que esta exploración solo se hará en la primera pasada, así que no hay
-    problema, en hacer una exploración común.}
-    //debugln('Buscando declaración de %s en nodo %s desde 0 hasta %d', [fun.name, ParentElems.name, ParentElems.elements.Count-2]);
-    Result := nil;
-    uname := upcase(procName);
-    {This a doble-scanning, to detect: Existence of declaration in INTERFACE, and
-    name duplicity in IMPLEMENTATION. }
-    for ele in TreeElems.curNode.elements do begin
-      if ele.uname = uname then begin
-        //Match the name.
-        if ele.location = locInterface then begin
-          //Is an INTERFACE element.
-          if ele.idClass = eltFuncDec then begin
-            //Para las declaraciones, se debe comparar los parámetros
-            funInterface := TxpEleFunDec(ele);
-            if funInterface.SameParamsType(pars) then begin
-              Result := funInterface;
-              //Continue exploring to verify duplicity.
-            end;
-          end else begin
-            //The same name of other element, is conflict.
-            GenError('Identifier "%s" already defined', [uname]);
-            exit;
-          end;
-        end else if ele.location = locImplement then begin
-          //Is an IMPLEMENTATION element.
-          if ele.idClass = eltFunc then begin
-            //Para las funciones, se debe comparar los parámetros
-            fun := TxpEleFun(ele);
-            if fun.SameParamsType(pars) then begin
-              {Two similar functions in the same IMPLEMENTATION scope.}
-              GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
-              exit(nil);
-            end;
-          end else begin
-            //The same name of other element, is conflict.
-            GenError('Identifier "%s" already defined', [uname]);
-            exit;
-          end;
-        end;
-      end;
-    end;
-    //Doesn't found.
-  end;
-  function FindProcAsForwawd(procName: string; const pars: TxpParFuncArray;
-                               const srcPos: TSrcPos): TxpEleFunDec;
-  {Explore the current context to verify (and validate) the existence of a functon
-  declared as FORWARD, of any ohter function (No FORWARD).
-  If found the function, returns the reference. Otherwise returns NIL.
-  Also validate the duplicity of the function.}
-  var
-    uname: String;
-    ele : TxpElement;
-    fun: TxpEleFun;
-    fundec: TxpEleFunDec;
-  begin
-    Result := nil;
-    uname := upcase(procName);
-    //Busca en el entorno para ver si está duplicada o con FORWARD
-    for ele in TreeElems.curNode.elements do begin
-      if ele.uname = uname then begin
-        //Match the name.
-        if ele.idClass = eltFuncDec then begin
-          //Must be a FORWARD
-          fundec := TxpEleFunDec(ele);
-          //if fun.IsForward ?
-          if fundec.SameParamsType(pars) then begin
-            Result := fundec;  //Return FORWARD function
-          end;
-          //Continue exploring to validate
-        end else if ele.idClass = eltFunc then begin
-          //Para las funciones, se debe comparar los parámetros
-          fun := TxpEleFun(ele);
-          if fun.SameParamsType(pars) then begin
-            //Is not FORWARD, must be duplicated:
-            GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
-            exit;
-          end;
-        end else begin
-          //The same name of other element, is conflict.
-          GenError('Identifier "%s" already defined', [uname]);
-          exit;
-        end;
-      end;
-    end;
-  end;
+procedure TCompMain.AssignRAMtoVar(xvar: TxpEleVar; shared: boolean = false);
 var
-  funDec, funInterface, funForward: TxpEleFunDec;
-  fun: TxpEleFun;
-  bod: TxpEleBody;
-  IsInterrupt, IsForward: Boolean;
-  procName: String;
-  retType: TxpEleType;
-  srcPos: TSrcPos;
-  pars: TxpParFuncArray;
+  posAct : TPosCont;
+  adicVarDec: TAdicVarDec;
 begin
-  {Este método, solo se ejecutará en la primera pasada, en donde todos los procedimientos
-  se codifican al inicio de la memoria, y las variables y registros se ubican al
-  inicio de la memoria RAM, ya que lo que importa es simplemente recabar información
-  del procedimiento, y no tanto codificarlo. }
-  CallResetRAM;   //Limpia RAM
-  case curLocation of
-  locInterface: begin
-    //Las declaraciones en INTERFACE son sencillas. Solo son caebceras.
-    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt, IsForward);
-    if HayError then exit;
-    if IsForward then begin
-      GenError('Cannot use FORWARD in INTERFACE section.');
-      exit;
-    end;
-    if TreeElems.FunctionExistInCur(procName, pars) then begin
-      GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
-      exit;
-    end;
-    funDec := AddFunctionDEC(procName, retType, srcPos, pars, IsInterrupt);
-    funDec.location := curLocation;  //Set location
-    exit;  //No more task required.
+//debugln('  Asignando espacio a %s', [xvar.name]);
+  case xvar.adicPar.hasAdic of
+  decAbsol: begin
+//debugln('Abs: xvar=%s at %d', [xvar.name, xvar.adicPar.absAddr]);
+    {Tiene declaración absoluta. Mejor compilamos de nuevo la declaración, porque
+    puede haber referencia a variables que han cambiado de ubicación, por
+    optimización.
+    Se podría hacer una verificación, para saber si la referencia es a direcciones
+    absolutas, en lugar de a variables (o a variables temporales), y así evitar
+    tener que compilar de nuevo, la declaración.}
+    posAct := cIn.PosAct;   //guarda posición actual
+    cIn.PosAct := xVar.adicPar.srcDec;  //Posiciona en la declaración adicional
+    TreeElems.curNode := xvar.Parent;   {Posiciona el árbol, tal cual estaría en la
+                                         primera pasada, para una correcta resolución
+                                         de nombres}
+    GetAdicVarDeclar(xvar.typ, adicVarDec);
+    //No debería dar error, porque ya pasó la primera pasada
+    xvar.adicPar := adicVarDec;
+    cIn.PosAct := posAct;
+    //Asigna RAM
+    callCreateVarInRAM(xVar, shared);  //Crea la variable
+    xvar.typ.DefineRegister;  //Asegura que se dispondrá de los RT necesarios
+    //Puede salir con error
   end;
-  locImplement:  begin
-    //Se compila para implementación.
-    {Este proceso es más complejo. La idea es compilar el enzabezado de cualquier función,
-    y luego comparar para ver si corresponde a una implementación o no. Si es
-    implementación, se elimina el nodo creado y se trabaja con el de la declaración.}
-    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt, IsForward);
-    if HayError then exit;
-    //Verifica si es implementación de una función en la INTERFACE o no.
-    funInterface := FindProcInInterface(procName, pars, srcPos);
-    if HayError then exit;
-    if funInterface<>nil then begin
-      //Es una implementación normal
-      fun := AddFunctionIMP(procName, retType, srcPos, funInterface);
-    end else begin
-      //Debe ser una función privada. No declarada en INTERFACE.
-      //Ya verificamos que no hay conflicto en IMPLEMENTATION.
-      fun := AddFunctionUNI(procName, retType, srcPos, pars, IsInterrupt);
-    end;
-    fun.location := curLocation;
+  decRegis, decRegisA, decRegisX, decRegisY: begin
+    //Variable registro. No se asigna espacio.
   end;
-  locMain: begin
-    //Es una compilación en el programa principal. ¿Y si es FORWARD?
-    ReadProcHeader(procName, retType, srcPos, pars, IsInterrupt, IsForward);
-    if HayError then exit;
-    if IsForward then begin
-      if TreeElems.FunctionExistInCur(procName, pars) then begin
-        GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
-        exit;
+  decNone: begin
+    //Variable normal. Necesita ser asiganda en RAM
+    callCreateVarInRAM(xVar, shared);  //Crea la variable
+    xvar.typ.DefineRegister;  //Asegura que se dispondrá de los RT necesarios
+    //Puede salir con error
+  end;
+  end;
+end;
+
+procedure TCompMain.CreateLocalVarsAndPars;
+{Create in RAM, local varisbles and parameters for functions.}
+var
+  elem   : TxpElement;
+  xvar   : TxpEleVar;
+  fun    : TxpEleFun;
+begin
+  //Explora primero a las funciones terminales
+  for fun in usedFuncs do begin
+    if not fun.IsTerminal2 then continue;
+    //DebugLn('función terminal: %s con %d var.loc.', [fun.name, fun.nLocalVars]);
+    //Los parámetros y variables locales aparecen como elementos de la función
+    for elem in fun.elements do if elem.idClass = eltVar then begin
+      xvar := TxpEleVar(elem);
+      if xvar.nCalled>0 then begin
+        //Asigna una dirección válida para esta variable
+        AssignRAMtoVar(xvar, true);
+        if HayError then exit;
       end;
-      funDec := AddFunctionDEC(procName, retType, srcPos, pars, IsInterrupt);
-      funDec.location := locMain;  //Set location
-      funDec.IsForward := true;    //Mark as Forward
-      exit;  //No more task required.
     end;
-    //This is no-FORWARD function
-    funForward := FindProcAsForwawd(procName, pars, srcPos);
-    if HayError then exit;
-    if funForward<>nil then begin
-      //It's an implementation
-      fun := AddFunctionIMP(procName, retType, srcPos, funForward);
-    end else begin
-      //It's a common function
-      fun := AddFunctionUNI(procName, retType, srcPos, pars, IsInterrupt);
+    if OptReuProVar then callSetSharedUnused;   //limpia las posiciones usadas
+  end;
+  if OptReuProVar then callSetSharedUsed;  //Ahora marca como usados, porque ya se creó la zona de bytes compartidos
+  //Explora solo a las funciones que no son terminales
+  for fun in usedFuncs do begin
+    if fun.IsTerminal2 then continue;
+    //Los parámetros y variables locales aparecen como elementos de la función
+    for elem in fun.elements do if elem.idClass = eltVar then begin
+      xvar := TxpEleVar(elem);
+      if xvar.nCalled>0 then begin
+        //Asigna una dirección válida para esta variable
+        AssignRAMtoVar(xvar);
+        if HayError then exit;
+      end;
     end;
-    fun.location := curLocation;
   end;
-  else
-    GenError(ER_NOT_IMPLEM_, ['locMain in TCompMain.CompileProcDeclar()']);
+end;
+
+//Compilación de secciones
+procedure TCompMain.CompileUnit(uni: TxpElement);
+{Realiza la compilación de una unidad}
+var
+  elem: TxpElement;
+  fundec: TxpEleFunDec;
+begin
+//debugln('   Ini Unit: %s-%s',[TreeElems.curNode.name, ExtractFIleName(cIn.curCon.arc)]);
+  ClearError;
+  callClearDeviceError;
+  ProcComments;
+  //Busca UNIT
+  if cIn.tokL = 'unit' then begin
+    cIn.Next;  //pasa al nombre
+    ProcComments;
+    if cIn.Eof then begin
+      GenError('Name of unit expected.');
+      exit;
+    end;
+    if UpCase(cIn.tok)<>uni.uname then begin
+      GenError('Name of unit doesn''t match file name.');
+      exit;
+    end;
+    cIn.Next;  //Toma el nombre y pasa al siguiente
+    if not CaptureDelExpres then exit;
+  end else begin
+    GenError('Expected: UNIT');
+    exit;
   end;
-  //Aquí ya se tiene "fun" abierta, validada y apuntando a la declaración.
-  //Empiezan las declaraciones VAR, CONST, PROCEDURE, TYPE
+  ProcComments;
+  if cIn.tokL <> 'interface' then begin
+    GenError('Expected: INTERFACE');
+    exit;
+  end;
+  cIn.Next;   //toma
+  ProcComments;
+  curLocation := locInterface;
+  if cIn.Eof then begin
+    GenError('Expected "uses", "var", "type", "const" or "implementation".');
+    exit;
+  end;
+  ProcComments;
+  //Busca USES
+  CompileUsesDeclaration;
+  if cIn.Eof then begin
+    GenError('Expected "var", "type" or "const".');
+    exit;
+  end;
+  ProcComments;
+//  Cod_StartProgram;  //Se pone antes de codificar procedimientos y funciones
+  if HayError then exit;
+  //Empiezan las declaraciones
   while StartOfSection do begin
     if cIn.tokL = 'var' then begin
       cIn.Next;    //lo toma
-      while not StartOfSection and (cIn.tokL <>'begin') do begin
+      while not StartOfSection and (cIn.tokL <>'implementation') do begin
+        CompileVarDeclar;  //marca como "IsInterface"
+        if HayError then exit;;
+      end;
+    end else if cIn.tokL = 'type' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'implementation') do begin
+        CompileTypeDeclar(locInterface);
+        if HayError then exit;
+      end;
+    end else if cIn.tokL = 'const' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'implementation') do begin
+        CompileGlobalConstDeclar;
+        if HayError then exit;;
+      end;
+    end else if cIn.tokL = 'procedure' then begin
+      cIn.Next;    //lo toma
+      CompileProcDeclar;
+      if HayError then exit;
+    end else begin
+      GenError(ER_NOT_IMPLEM_, [cIn.tok]);
+      exit;
+    end;
+  end;
+  ProcComments;
+  if cIn.tokL <> 'implementation' then begin
+    GenError('Expected: IMPLEMENTATION');
+    exit;
+  end;
+  cIn.Next;   //toma
+  /////////////////  IMPLEMENTATION /////////////////////
+  ProcComments;
+  //Explora las declaraciones e implementaciones
+  curLocation := locImplement;
+  //Empiezan las declaraciones
+  while StartOfSection do begin
+    if cIn.tokL = 'var' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'end') do begin
         CompileVarDeclar;
         if HayError then exit;;
       end;
     end else if cIn.tokL = 'const' then begin
       cIn.Next;    //lo toma
-      while not StartOfSection and (cIn.tokL <>'begin') do begin
+      while not StartOfSection and (cIn.tokL <>'end') do begin
         CompileGlobalConstDeclar;
         if HayError then exit;;
       end;
-//    end else if cIn.tokL = 'procedure' then begin
-//      cIn.Next;    //lo toma
-//      CompileProcDeclar;
+    end else if cIn.tokL = 'procedure' then begin
+      cIn.Next;    //lo toma
+      CompileProcDeclar;  //Compila en IMPLEMENTATION
+      if HayError then exit;
     end else begin
-      GenError('Expected VAR, CONST or BEGIN.');
+      GenError(ER_NOT_IMPLEM_, [cIn.tok]);
       exit;
     end;
   end;
+  //Verifica si todas las funciones de INTERFACE, se implementaron
+  for elem in TreeElems.curNode.elements do if elem.idClass = eltFuncDec then begin
+    fundec := TxpEleFunDec(elem);
+    if fundec.implem = nil then begin
+      GenErrorPos('Function %s not implemented.', [fundec.name], fundec.srcDec);
+      exit;
+    end;
+  end;
+  CompileLastEnd;
+  if HayError then exit;
+//  //procesa cuerpo
+//  ResetRAM;  {No es tan necesario, pero para seguir un orden y tener limpio
+//                     también, la flash y memoria, después de algún psoible procedimiento.}
+//  if cIn.tokL = 'begin' then begin
+//    bod := CreateBody;
+//    bod.srcDec := cIn.ReadSrcPos;
+//    cIn.Next;   //coge "begin"
+//    //Guardamos la ubicación física, real, en el archivo, después del BEGIN
+//    bod.posCtx := cIn.PosAct;
+//    //codifica el contenido
+//    CompileCurBlock;   //compila el cuerpo
+//    if HayError then exit;
+
+//    _SLEEP();   //agrega instrucción final
+//  end else begin
+//    GenError('Expected "begin", "var", "type" or "const".');
+//    exit;
+//  end;
+//  Cod_EndProgram;
+//debugln('   Fin Unit: %s-%s',[TreeElems.curNode.name, ExtractFIleName(cIn.curCon.arc)]);
+end;
+procedure TCompMain.CompileUsesDeclaration;
+{Compila la unidad indicada.}
+var
+  uni: TxpEleUnit;
+  uPath: String;
+  uName: String;
+  p: TPosCont;
+begin
+  if cIn.tokL = 'uses' then begin
+    cIn.Next;  //pasa al nombre
+    //Toma una a una las unidades
+    repeat
+      ProcComments;
+      //ahora debe haber un identificador
+      if cIn.tokType <> tnIdentif then begin
+        GenError(ER_IDEN_EXPECT);
+        exit;
+      end;
+      //hay un identificador de unidad
+      uName := cIn.tok;
+      uni := CreateUnit(uName);
+      //Verifica si existe ya el nombre de la unidad
+      if uni.ExistsIn(TreeElems.curNode.elements) then begin
+        GenError('Identifier duplicated: %s.', [uName]);
+        uni.Destroy;
+        exit;
+      end;
+      uni.srcDec := cIn.ReadSrcPos;   //guarda posición de declaración
+      uName := uName + '.pas';  //nombre de archivo
+{----}TreeElems.AddElementAndOpen(uni);
+      //Ubica al archivo de la unidad
+      p := cIn.PosAct;   //Se debe guardar la posición antes de abrir otro contexto
+      //Primero busca en la misma ubicación del archivo fuente
+      uPath := ExtractFileDir(mainFile) + DirectorySeparator + uName;
+      if OpenContextFrom(uPath) then begin
+        uni.srcFile := uPath;   //Gaurda el archivo fuente
+      end else begin
+        //No lo encontró, busca en la carpeta de dispositivos
+        uPath := devicesPath + DirectorySeparator + uName;
+        if OpenContextFrom(uPath) then begin
+          uni.srcFile := uPath;   //Gaurda el archivo fuente
+        end else begin
+           //No lo encontró, busca en la carpeta de librerías
+           uPath := patUnits + DirectorySeparator + uName;
+           if OpenContextFrom(uPath) then begin
+             uni.srcFile := uPath;   //Gaurda el archivo fuente
+           end else begin
+             //No lo encuentra
+             GenError(ER_FIL_NOFOUND, [uName]);
+             exit;
+           end;
+        end;
+      end;
+      //Aquí ya se puede realizar otra exploración, como si fuera el archivo principal
+      CompileUnit(uni);
+      cIn.PosAct := p;
+      if HayError then exit;  //El error debe haber guardado la ubicación del error
+{----}TreeElems.CloseElement; //cierra espacio de nombres de la función
+      cIn.Next;  //toma nombre
+      cIn.SkipWhites;
+      if cIn.tok <> ',' then break; //sale
+      cIn.Next;  //toma la coma
+    until false;
+    if not CaptureDelExpres then exit;
+  end;
+end;
+procedure TCompMain.CompileProgram;
+{Compila un programa en el contexto actual. Empieza a codificar el código a partir de
+la posición actual de memoria en el PIC (iRam).}
+var
+  bod: TxpEleBody;
+  elem: TxpElement;
+  fundec: TxpEleFunDec;
+begin
+  ClearError;
+  callClearDeviceError;
+  ProcComments;
+  //Busca PROGRAM
+  if cIn.tokL = 'unit' then begin
+    //Se intenta compilar una unidad
+    GenError('Expected a program. No a unit.');
+    exit;
+  end;
+  if cIn.tokL = 'program' then begin
+    cIn.Next;  //pasa al nombre
+    ProcComments;
+    if cIn.Eof then begin
+      GenError(ER_PROG_NAM_EX);
+      exit;
+    end;
+    cIn.Next;  //Toma el nombre y pasa al siguiente
+    if not CaptureDelExpres then exit;
+  end;
+  if cIn.Eof then begin
+    GenError('Expected "program", "begin", "var", "type" or "const".');
+    exit;
+  end;
+  ProcComments;
+  //Busca USES
+  if HayError then exit;  //CompileUsesDeclaration, va a limpiar "HayError"
+  CompileUsesDeclaration;
+  if cIn.Eof then begin
+    GenError('Expected "begin", "var", "type" or "const".');
+    exit;
+  end;
+  ProcComments;
+  callStartProgram;  //Se pone antes de codificar procedimientos y funciones
+  curLocation := locMain;
+  if HayError then exit;
+  //Empiezan las declaraciones
+  while StartOfSection do begin
+    if cIn.tokL = 'var' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'begin') do begin
+        CompileVarDeclar;
+        if HayError then exit;
+      end;
+    end else if cIn.tokL = 'type' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'begin') do begin
+        CompileTypeDeclar(locMain);
+        if HayError then exit;
+      end;
+    end else if cIn.tokL = 'const' then begin
+      cIn.Next;    //lo toma
+      while not StartOfSection and (cIn.tokL <>'begin') do begin
+        CompileGlobalConstDeclar;
+        if HayError then exit;
+      end;
+    end else if cIn.tokL = 'procedure' then begin
+      cIn.Next;    //lo toma
+      CompileProcDeclar;
+      if HayError then exit;
+    end else if cIn.tokL = 'inline' then begin
+      cIn.Next;    //lo toma
+      CompileInlineDeclar(locMain);
+      if HayError then exit;
+    end else begin
+      GenError(ER_NOT_IMPLEM_, [cIn.tok]);
+      exit;
+    end;
+  end;
+  //procesa cuerpo
+  callResetRAM;  {No es tan necesario, pero para seguir un orden y tener limpio
+                     también, la flash y memoria, después de algún posible procedimiento.}
   if cIn.tokL <> 'begin' then begin
     GenError('Expected "begin", "var", "type" or "const".');
     exit;
   end;
-  //Ahora empieza el cuerpo de la función o las declaraciones
-  fun.adrr   := CallCurrRAM(); //toma dirección de inicio del código. Es solo referencial.
-  fun.posCtx := cIn.PosAct;  //Guarda posición para la segunda compilación
-  bod := CreateBody;   //crea elemento del cuerpo de la función
+  bod := CreateBody;
   bod.srcDec := cIn.ReadSrcPos;
   TreeElems.AddElementAndOpen(bod);  //Abre nodo Body
-  CallCompileProcBody(fun);
-  TreeElems.CloseElement;  //Cierra Nodo Body
-  TreeElems.CloseElement; //cierra espacio de nombres de la función
-  bod.srcEnd := cIn.ReadSrcPos;  //Fin de cuerpo
-//  fun.adrReturn := pic.iRam-1;  //Guarda dirección del i_RETURN
-  if not CaptureTok(';') then exit;
-  ProcComments;  //Quita espacios. Puede salir con error
-end;
-procedure TCompMain.CompileInlineDeclar(elemLocat: TxpEleLocation);
-{Compila la declaración de procedimientos INLINE. Tanto procedimientos como funciones
- INLINE se manejan internamente como funciones.
- IsImplementation, se usa para cuando se está compilando en la sección IMPLEMENTATION.}
-begin
-//  {Este método, solo se ejecutará en la primera pasada, en donde todos los procedimientos
-//  se codifican al inicio de la memoria, y las variables y registros se ubican al
-//  inicio de la memoria RAM, ya que lo que importa es simplemente recabar información
-//  del procedimiento, y no tanto codificarlo. }
-//  CallResetRAM;   //Limpia RAM y FLASH, y fija CurrBank
-//  case elemLocat of
-//  locInterface: begin
-//    //Los procedimientos en INTERFACE, no se procesan aquí. Se procesan en CompileUnit().
-//  end;
-//  locImplement:  begin
-//    //Se compila para implementación.
-//    {Este proceso es más complejo. La idea es compilar el encabezado de cualquier función,
-//    y luego comparar para ver si corresponde a una implementación o no. Si es
-//    implementación, se elimina el nodo creado y se trabaja con el de la declaración.}
-//    ReadInlineHeader(procName, retType, srcPos, pars);
-//    if HayError then exit;
-//    //Verifica si es implementación de una función en la INTERFACE o no.
-//    ParentElems := TreeElems.curNode.elements;  //Para comparar
-//    {Se supone que esta exploración solo se hará en la primera pasada, así que no hay
-//    problema, en hacer una exploración común.}
-//    //debugln('Buscando declaración de %s en nodo %s desde 0 hasta %d', [fun.name, ParentElems.name, ParentElems.elements.Count-2]);
-//    Found := false;
-//    uname := upcase(procName);
-//    for ele in ParentElems do begin
-//      if ele.location = locInterface then begin
-//        //Es elemento de INTERFACE
-//        if ele.uname = uname then begin
-//          //Hay coincidencia de nombre
-//          if ele.idClass = eltFunc then begin
-//            //Para las funciones, se debe comparar los parámetros
-//            fun := TxpEleInlin(ele);
-//            if fun.SameParamsType(pars) then begin
-//              Found := true;
-//              break;
-//            end;
-//          end else begin
-//            //Si tiene el mismo nombre que cualquier otro elemento, es conflicto
-//            GenError('Identifier "%s" already defined', [uname]);
-//            exit;
-//          end;
-//        end;
-//      end else begin
-//        {Debe ser elemento de IMPLEMENTATION, no hay otra opción porque se supone que
-//        estamos en la sección de IMPLEMENTATION, así que el Parent, debe ser una unidad.}
-//        GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);  //Está duplicada en IMPLEMENTATION
-//        exit;
-//      end;
-//    end;
-//    if Found then begin
-//      //Es una implementación. No vale la pena tener otro nodo.
-//      TreeElems.OpenElement(fun);  //Abre el nodo anterior
-//    end else begin
-//      //Debe ser una función privada. No declarada en Interface.
-//      //La creamos con seguridad porque ya verificamos que no hay conflicto en IMPLEMENTATION.
-//      fun := AddInline(procName, retType, srcPos, pars, CallFunctParam, CallFunctCall);
-//      //Un caso especial de proced. declarado solo en IMPLEMENTATION.
-//      fun.location := locImplement;
-//    end;
-//  end;
-//  locMain: begin
-//    //Es una compilación en el programa principal. ¿Y si es FORWARD?
-//    ReadInlineHeader(procName, retType, srcPos, pars);  //Procesa el encabezado
-//    if HayError then exit;
-//    if TreeElems.InlineExistInCur(procName, pars) then begin
-//      GenErrorPos(ER_DUPLIC_FUNC_,[procName], srcPos);
-//      exit;
-//    end;
-//    fun := AddInline(procName, retType, srcPos, pars, CallFunctParam, CallFunctCall);
-//    //Aquí estamos en el entorno de la función.
-//    fun.location := locMain;
-//  end
-//  else
-//    GenError(ER_NOT_IMPLEM_, ['locMain in TCompMain.CompileInlineDeclar()']);
-//  end;
-//  //Aquí ya se tiene "fun" abierta, validada y apuntando a la declaración.
-//  //Empiezan las declaraciones VAR, CONST, PROCEDURE, TYPE
-//  while StartOfSection do begin
-//    if cIn.tokL = 'var' then begin
-//      cIn.Next;    //lo toma
-//      while not StartOfSection and (cIn.tokL <>'begin') do begin
-//        CompileVarDeclar;
-//        if HayError then exit;;
-//      end;
-//    end else if cIn.tokL = 'const' then begin
-//      cIn.Next;    //lo toma
-//      while not StartOfSection and (cIn.tokL <>'begin') do begin
-//        CompileGlobalConstDeclar;
-//        if HayError then exit;;
-//      end;
-////    end else if cIn.tokL = 'procedure' then begin
-////      cIn.Next;    //lo toma
-////      CompileProcDeclar;
-//    end else begin
-//      GenError('Expected VAR, CONST or BEGIN.');
-//      exit;
-//    end;
-//  end;
-//  if cIn.tokL <> 'begin' then begin
-//    GenError('Expected "begin", "var", "type" or "const".');
-//    exit;
-//  end;
-//  //Ahora empieza el cuerpo de la función o las declaraciones
-//  fun.posCtx := cIn.PosAct;  //Guarda posición para la segunda compilación
-//  bod := CreateBody;   //crea elemento del cuerpo de la función
-//  bod.srcDec := cIn.ReadSrcPos;
-//  TreeElems.AddElementAndOpen(bod);  //Abre nodo Body
-//  CompileInlineBody(fun);
-//  TreeElems.CloseElement;  //Cierra Nodo Body
-//  TreeElems.CloseElement; //cierra espacio de nombres de la función
-//  bod.srcEnd := cIn.ReadSrcPos;  //Fin de cuerpo
-////  fun.adrReturn := pic.iRam-1;  //Guarda dirección del i_RETURN
-//  if not CaptureTok(';') then exit;
-//  ProcComments;  //Quita espacios. Puede salir con error
+  cIn.Next;   //coge "begin"
+  //Guardamos popsisicón en contexto para la segunda compilación
+  bod.posCtx := cIn.PosAct;
+  //codifica el contenido
+  CompileCurBlock;   //compila el cuerpo
+  TreeElems.CloseElement;   //No debería ser tan necesario.
+  bod.srcEnd := cIn.ReadSrcPos;
+  if HayError then exit;
+  //Verifica si todas las funciones FORWARD, se implementaron
+  for elem in TreeElems.curNode.elements do if elem.idClass = eltFuncDec then begin
+    fundec := TxpEleFunDec(elem);
+    if fundec.implem = nil then begin
+      GenErrorPos('Function %s not implemented.', [fundec.name], fundec.srcDec);
+      exit;
+    end;
+  end;
+  CompileLastEnd;  //Compila el "END." final
+  if HayError then exit;
+  //_RTS();   //agrega instrucción final
+  callEndProgram;
 end;
 
 

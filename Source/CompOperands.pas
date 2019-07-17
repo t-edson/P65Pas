@@ -53,7 +53,7 @@ type
 
     procedure SetAsVarRef(VarBase: TxpEleVar; xtyp: TxpEleType);
     procedure SetAsVarConRef(VarBase: TxpEleVar; ValOff: integer; xtyp: TxpEleType);
-    procedure SetAsExpRef(VarBase: TxpEleVar; Etyp: TxpEleType);
+    procedure SetAsExpRef(Etyp: TxpEleType);
     procedure SetAsNull;
     function StoOpStr: string;
     function StoOpChr: char;
@@ -62,12 +62,11 @@ type
     procedure Invert;  //Invierte la lógica del operando
   public  //Campos acceso cuando sea variable.
     function VarName: string; inline; //nombre de la variable, cuando sea de categ. coVariab
-    function offs : TVarOffs; //dirección de la variable
-    function Loffs: TVarOffs; inline; //dirección del byte bajo
-    function Hoffs: TVarOffs; inline; //dirección del byte alto
-    function Eoffs: TVarOffs; inline; //dirección del byte alto
-    function Uoffs: TVarOffs; inline; //dirección del byte alto
     function addr : TVarOffs; //dirección absoluta de la variable
+    function addrL: TVarOffs; inline; //dirección del byte bajo
+    function addrH: TVarOffs; inline; //dirección del byte alto
+    function addrE: TVarOffs; inline; //dirección del byte alto
+    function addrU: TVarOffs; inline; //dirección del byte alto
   public  //Campos de acceso a los valores constantes
     property Value   : TConsValue read FValue;
     property valInt  : Int64 read FValue.ValInt write SetvalInt;
@@ -98,6 +97,8 @@ type
   end;
   TOperandPtr = ^TOperand;
 
+  { TCompOperands }
+
   TCompOperands = class
   protected //Access to properties of p1^ y p2^.
     p1, p2   : ^TOperand;   //Pointers to the operands of the current operation
@@ -110,16 +111,12 @@ type
     function value2: dword;
     function value2L: word;
     function value2H: word;
-    function byte1: TPicRegister;
-    function byte1L: TPicRegister;
-    function byte1H: TPicRegister;
-    function byte1E: TPicRegister;
-    function byte1U: TPicRegister;
-    function byte2: TPicRegister;
-    function byte2L: TPicRegister;
-    function byte2H: TPicRegister;
-    function byte2E: TPicRegister;
-    function byte2U: TPicRegister;
+    function byte1: word;
+    function byte1L: word;
+    function byte1H: word;
+    function byte2: word;
+    function byte2L: word;
+    function byte2H: word;
     function stoOperation: TStoOperandsROB; inline;
     procedure ExchangeP1_P2;
     function OperationStr(Opt: TxpOperation): string;
@@ -191,40 +188,26 @@ function TOperand.VarName: string; inline;
 begin
   Result := rVar.name;
 end;
-function TOperand.offs: TVarOffs;
-{Dirección de memoria, cuando es de tipo Char, Byte, Bit o Boolean.}
-begin
-  if FSto = stVarRef then begin
-    //Caso especial, de stVarRef
-//    if FVar = nil then
-//      Result := Foffset.offs
-//    else
-      Result := FVar.offs;
-  end else begin
-    //Para todos los otros casos, esto debe funcionar, según la docuemntación.
-    Result := FVar.offs;
-  end;
-end;
-function TOperand.Loffs: TVarOffs;
-{Dirección de memoria baja, cuando es de tipo Word.}
-begin
-  Result := rVar.adrByte0.addr;
-end;
-function TOperand.Hoffs: TVarOffs;
-begin
-  Result := rVar.adrByte1.addr;
-end;
-function TOperand.Eoffs: TVarOffs;
-begin
-  Result := rVar.adrByte2.addr;
-end;
-function TOperand.Uoffs: TVarOffs;
-begin
-  Result := rVar.adrByte3.addr;
-end;
 function TOperand.addr: TVarOffs;
 begin
-  Result := FVar.addr;
+  Result := FVar.addr0;
+end;
+function TOperand.addrL: TVarOffs;
+{Dirección de memoria baja, cuando es de tipo Word.}
+begin
+  Result := rVar.addrL;
+end;
+function TOperand.addrH: TVarOffs;
+begin
+  Result := rVar.addrH;
+end;
+function TOperand.addrE: TVarOffs;
+begin
+  Result := rVar.addrE;
+end;
+function TOperand.addrU: TVarOffs;
+begin
+  Result := rVar.addrU;
 end;
 procedure TOperand.Invert;
 begin
@@ -435,10 +418,9 @@ begin
   FTyp := xtyp;
   rVarBase := nil;  //Inicia a este valor
 end;
-procedure TOperand.SetAsExpRef(VarBase: TxpEleVar; Etyp: TxpEleType);
+procedure TOperand.SetAsExpRef(Etyp: TxpEleType);
 begin
   FSto := stExpRef;
-  FVar := VarBase;
   FTyp := Etyp;
   rVarBase := nil;  //Inicia a este valor
 end;
@@ -527,45 +509,29 @@ function TCompOperands.value2H: word; inline;
 begin
   Result := p2^.HByte;
 end;
-function TCompOperands.byte1: TPicRegister; inline;
+function TCompOperands.byte1: word;
 begin
-  Result := p1^.rVar.adrByte0;
+  Result := p1^.rVar.addr0;
 end;
-function TCompOperands.byte1L: TPicRegister; inline;
+function TCompOperands.byte1L: word;
 begin
-  Result := p1^.rVar.adrByte0;
+  Result := p1^.rVar.addr0;
 end;
-function TCompOperands.byte1H: TPicRegister; inline;
+function TCompOperands.byte1H: word; inline;
 begin
-  Result := p1^.rVar.adrByte1;
+  Result := p1^.rVar.addrH;
 end;
-function TCompOperands.byte1E: TPicRegister;
+function TCompOperands.byte2: word;
 begin
-  Result := p1^.rVar.adrByte2;
+  Result := p2^.rVar.addr0;
 end;
-function TCompOperands.byte1U: TPicRegister;
+function TCompOperands.byte2L: word;
 begin
-  Result := p1^.rVar.adrByte3;
+  Result := p2^.rVar.addr0;
 end;
-function TCompOperands.byte2: TPicRegister; inline;
+function TCompOperands.byte2H: word; inline;
 begin
-  Result := p2^.rVar.adrByte0;
-end;
-function TCompOperands.byte2L: TPicRegister; inline;
-begin
-  Result := p2^.rVar.adrByte0;
-end;
-function TCompOperands.byte2H: TPicRegister; inline;
-begin
-  Result := p2^.rVar.adrByte1;
-end;
-function TCompOperands.byte2E: TPicRegister;
-begin
-  Result := p2^.rVar.adrByte2;
-end;
-function TCompOperands.byte2U: TPicRegister;
-begin
-  Result := p2^.rVar.adrByte3;
+  Result := p2^.rVar.addrH;
 end;
 function TCompOperands.OperationStr(Opt: TxpOperation): string;
 {Return a string with types/storag and operation, having in "p1", "p2" y "Opt".}
