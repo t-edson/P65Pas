@@ -1,12 +1,10 @@
-<!--
 ## Donate to the project
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=7LKYWG9LXNQ9C&lc=ES&item_name=Tito%20Hinostroza&item_number=2153&no_note=0&cn=Dar%20instrucciones%20especiales%20al%20vendedor%3a&no_shipping=2&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
--->
 
 
-P65Pas 0.6
-==========
+P65Pas 0.7.1
+============
 
 Cross-platform Pascal cross-compiler for 6502 CPU.
 
@@ -109,6 +107,7 @@ Some features of the IDE are:
 
 ![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2018/05/P65PasMac.jpg "P65Pas for Mac")
 
+Some functions like the "File Explorer" is implemented only for the Windows version.
 
 ## Debugger/Simulator
 
@@ -123,6 +122,46 @@ F6 -> Reste the device.
 F7 -> Step by step into subroutine.
 F8 -> Step by step over subroutine.
 F9 -> Run the program in real time.
+
+## Compiler
+
+The P65pas compiler is integrated with the IDE. It cannot be used separated.
+
+The compiler implements a simplified and adpated version of the Pascal language.
+
+Some differences with the standard Pascal are:
+
+* Functions and procedures are declared with PROCEDURE (Like in Modula 2).
+* Conditional (IF) and loop structures (WHILE) don't use the initial BEGIN for the block (Like in Modula 2).
+* Byte variables cannot be free assigned to word variables. A cast is needed.
+* There is not a string type predefined. The closer data type could be an array of chars.
+* Word variables have the methods .high and .low to access to individual bytes. The Lo() and Hi() functions are not implemented because .low and .high can do the same and even can be assigned like common variables.
+* Arrays are declared in the form: "ARRAY[n] OF type" without specifying the initial index, because all arrays start always in the index zero.
+* Arrays admit an simplified declaration "[n]type".
+* Pointers and words can be free interchanged.
+* REGISTER variables and parameters can be defined in the native syntax.
+* Functions/Procedures can be overloaded like in modern versions of Pascal.
+* Records are defined with the reserved word OBJECT and don't support variable part.
+* No recursion is supported.
+* No SET are impemented.
+
+Compiler generates directly, a PRG output file without any dependency. 
+
+When compiling for Commodore 64, the PRG output file (starting at $800) includes the isntruction "SYS 2062" in the BASIC buffer, to run automatically the program after loading the PRG file.
+
+In normal conditions the compiled program follows the following structure:
+
+```
+<JMP instruction to the start of code>
+<Local variables and procedures/functions parameters>
+<Procedures/fucntions code, including Units.>
+<Start of code>
+<Main program>
+```
+
+The start of the program if defined with the directive $ORG. If it's not specified, the program will start at the $000 address.
+
+Procedure and function parameters don't use the stack, they are stored as global variables. This variables can be shared when optimizing options are enabled.
 
 
 ## Language Reference
@@ -247,8 +286,14 @@ Variables can be defined too, at an absolute memory address:
 ```
 var
   PORTB : BYTE absolute $06;
-  flag  : boolean absolute $07;
+  flag  : boolean absolute SomeOtherVariable;
   letter: char @$07;   //"@" if the alias for ABSOLUTE
+```
+
+ABSOLUTE variables cannot be initialized in the declaration, because the compiler cannot generate an output file when separated blocks of memory.
+
+```
+  c    : char = 'A' absolute $FF;  //Fails
 ```
 
 ### Arrays
@@ -275,7 +320,7 @@ VAR
 ```
 The size of this array will be set to the size of the string. In this case is 4 chars.
 
-En geenral, arrays can be initialized when declaring a varaible;
+In general, arrays can be initialized when declaring a variable;
 
 ```
 TYPE 
@@ -283,7 +328,7 @@ TYPE
   TAByte = [5]byte;
 VAR
   str : TASrt = ('a','b','c');
-  numb: TAByte = (1, 2); //Only the first can be  set.
+  numb: TAByte = (1, 2); //Only the first items can be set.
 ```
 
 Arrays support several methods:
@@ -296,9 +341,44 @@ array.high -> high index of the array. Always returns n-1.
 
 array.clear -> Clear the elements of array to its default value (Chars->#0, Byte, Word -> 0, Boolean -> false).
 
+Arrays can be constant too:
+
+```
+const
+  ARRCONST = [1,2,3];
+```
+
+Assigment between arrays is possible;
+
+```
+  arrayA := arrayB;
+```
+
+The assigment is only possible if both arrays are of the same type.
+
 No dynamic arrays are supported.
 
-### Control structures
+### Pointers
+
+Pointers are declared in the Pascal common syntax:
+
+``` 
+var 
+  p: ^byte;
+```
+
+Then, the pointer can be used to address some byet variable:
+
+```
+  p := @somebytevar;
+  p^ := $FF;   //Write to "somebytevar".
+```
+
+Pointers can address all the 64K RAM memory, because they use 2 bytes like a word variable.
+
+Pointers can be incremented or decremented like word variables.
+
+### Conditional structures
 
 P65Pas doens't follow the common Pascal syntax. Instead, a new Modula-2, style syntax is implemented.
 
@@ -322,7 +402,15 @@ ELSIF <condition> THEN
 ELSE
   <block of code>
 END;
+```
 
+All conditional blocks need the final END delimiter, even if one instructions is used in the IF body.
+
+### Loop structures
+
+P65pas implements the following loop structures:
+
+```
 WHILE <condition> DO
   <block of code>
 END;
@@ -331,7 +419,7 @@ REPEAT
   <block of code>
 UNTIL <condition>;
 
-FOR  <variable> := <start-value> TO <end-value> DO 
+FOR <variable> := <start-value> TO <end-value> DO 
   <block of code>
 END;
 ```
@@ -345,7 +433,7 @@ FUNCTION       DESCRIPTION
 ============== =================================================
 delay_ms()	   Generate a time delay in miliseconds, from 0 to 65536.
 Inc()          Increase a variable.
-Dec()          Decrease a varaible.
+Dec()          Decrease a variable.
 Exit()         Exit from a procedure or end the program.
 Ord()          Convert a char to a byte.
 Chr()          Convert a byte to a char.
@@ -619,16 +707,16 @@ x := {$INCLUDE expression.txt};
 
 #### $OUTPUTHEX
 
-Defines the name of the output binary file *.hex.
+Defines the name of the output binary file *.prg.
 
 ```
-{$OUTPUTHEX myoutput.hex}  // Relative path
-{$OUTPUTHEX d:\temp\myoutput.hex}  //Absolute path
+{$OUTPUTHEX myoutput.prg}  // Relative path
+{$OUTPUTHEX d:\temp\myoutput.prg}  //Absolute path
 ```
 
 When relative path is used, the file will be created in the same folder the Pascal program is.
 
-If it's not defined the name of the *.hex file, it will be used the name of the program/unit compiled. So if the program is called "myprogram" (and the file is "myprogram.pas"), then the *.hex file will be "myprogram.hex".
+If it's not defined the name of the *.prg file, it will be used the name of the program/unit compiled. So if the program is called "myprogram" (and the file is "myprogram.pas"), then the *.prg file will be "myprogram.prg".
 
 Directive {$OUTPUTHEX}, can be placed in any part of the source code and can be used several times. If so, the output file will be the defined by the last directive.
 
@@ -790,20 +878,96 @@ var x: word;
 {$ENDIF}
 ```
 
+#### $SET_STATE_RAM
+
+Set the state of the RAM memory for the current CPU device.
+
+The state of a byte of RAM can have 2 values:
+
+* SFR: Special RAM, like Operative System o Kernel locations.
+* GPR: General Purpose RAM. Used as free memory for the compiler.
+* NIM: Not implemented cell.
+
+$SET_STATE_RAM, let us to define the state of the RAM using a range of addresses.
+
+The syntax of $SET_STATE_RAM is: 
+
+```
+{$SET_STATE_RAM <list of commands>}
+```
+
+Commands are separaed by commas. One command have the syntax:
+
+<Begin adrress>-<End address>:<state>
+
+One valid example, for this directive, would be:
+
+```
+{$SET_STATE_RAM '0100-01FF:SFR'};
+```
+
+That indicates the bytes in RAM from $0100 to $01FF are special RAM and cannot be used by the compiler.
+
+Addresses are expressed always in hexadecimal. 
+
+Other example is:
+
+```
+//Multiple commands in one directive
+{$SET_STATE_RAM '0800-1FFF:GPR, 00F0-00FF:GPR'}  
+```
+
+By default all the 64K of RAM is defined a GPR in the virtual memory of the compiler.
+
+IMPORTANT: The IDE maintains the previous state of $SET_STATE_RAM. It's recommended to include $CLEAR_STATE_RAM, always before any directive $SET_STATE_RAM.
+
+WARNING: Defining RAM as NIM or SFR make the compiler don't use that locations for allocating variables, unless they are defined as ABSOLUTE.
+
 #### $CLEAR_STATE_RAM
 
-USed to define the initial state of RAM memory. 
+Used to define the initial state of RAM memory. 
 
 $CLEAR_STATE_RAM, set the state of all the RAM as unimplemented, clearing all previous setting.
 
-It's used before of starting to define the RAM for a device, using the directives $SET_STATE_RAM and $SET_MAPPED_RAM.
+It's used before of starting to define the RAM for a device, using the directives $SET_STATE_RAM.
 
+#### $SET_DATA_ADDR
+
+Allow to define a separate block of RAM for placing the variables. This block is called the Primary variables address.
+
+The syntax of $SET_DATA_ADDR is: 
+
+```
+{$SET_DATA_ADDR '<Begin adrress>-<End address>'}
+```
+
+The directive $SET_DATA_ADDR specify a range of memory where the variables will be located firstly. If this space is not enought, the program block space will be used (like it's done in the normal way).
+
+One valid example, for this directive, would be:
+
+```
+{$SET_DATA_ADDR '0070-0075'}
+```
+
+Commomly, the compiler locates variables in the same position used for the program code, except for the ABSOLUTE variables. 
+
+If we can define to store the variables (or part of them) in some other location. This is useful for the 6502, considering it works faster when accessing the zero page RAM.
+
+Only one block for variables can be defined. If multiples directives $SET_DATA_ADDR are used, just the last is considered. 
+
+It's recommendable to use $SET_DATA_ADDR at the beginning of the code. However the location is not important, because memory assignment is done after compiling all the program. 
+
+Using $SET_DATA_ADDR with an empty string will disable the effect of a previous $SET_DATA_ADDR directive:
+
+```
+{$SET_DATA_ADDR ''}
+```
+
+Variables allocated in a separate block, are considered as ABSOLUTE variables, so they cannot be initialized in the declaration.
 
 ## P65Pas Limitations
 
 •	Only basic types are implemented: byte, char, boolean, word an dword(limited support).
-
-•	Cannot declare records.
 
 •	No recursion implemented, Because of the limited hardware resources.
 

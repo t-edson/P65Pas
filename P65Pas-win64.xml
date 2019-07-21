@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <language Val="en - English"/>
+  <language Val="es - Español"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7\temp\C64sprites.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7\temp\aPistas.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\aPistas.pas
 "/>
   <SplitterCol Val="2368548"/>
   <MessPanPan Val="2368548"/>
@@ -46,14 +45,14 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.7\temp\aPistas.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7\temp\aPistas.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7\temp\C64sprites.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7\samples\HelloWorld.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7\temp\aaa.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\aPistas.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\HolaMundo.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\aaa.pas
 "/>
   </Edit>
-  <IncDecVar Val="False"/>
+  <IncDecVar Val="True"/>
   <VarDecType Val="0"/>
   <IncAddress Val="True"/>
   <IncComment Val="True"/>
