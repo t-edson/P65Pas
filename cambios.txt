@@ -13,6 +13,7 @@ Se eliminan, también, los registros E y U, de la misma forma que se hace con H.
 Se crea el registro de índice IX.
 Se implementa la operación de multiplicación de bytes y se revisan las operaciones de
 suma.
+Se implementa la optimización para reusar variables para parámetros.
 
 Revisar el bug, cuando se ejecuta, con arreglos de bytes:
   a[0] := b[i] + c[i];
