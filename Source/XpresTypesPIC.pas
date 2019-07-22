@@ -48,7 +48,7 @@ type  //Enumerated types
     stVarRef  = %0011, {Operand is addressed by the value of a variable. Doesn't use RT.}
     stVarConRef=%0100, {Operand is addressed by the value of a variable plus a constant
                       offset. Doesn't use RT.}
-    stExpRef  = %0101,  {Operand is addressed by the value stored in RT}
+    stExpRef  = %0101,  {Operand is addressed by the value stored in IX}
     //Aditional expressions types
     stExpresA = %1000, {Operand value is stored in register A.}
     stExpresX = %1001, {Operand value is stored in register X.}

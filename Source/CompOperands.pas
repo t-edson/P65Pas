@@ -17,6 +17,11 @@ type
     logNormal,   //Normal logic
     logInverted  //Inverted logic
   );
+  //Mode operand must be read
+  TOpReadMode = (
+    opmGetter,   //When operand must be read as Getter
+    opmSetter    //When operand must be read as Setter
+  );
   { TOperand }
   //Operand Object.
   TOperand = object
@@ -190,7 +195,7 @@ begin
 end;
 function TOperand.addr: TVarOffs;
 begin
-  Result := FVar.addr0;
+  Result := FVar.addr;
 end;
 function TOperand.addrL: TVarOffs;
 {Dirección de memoria baja, cuando es de tipo Word.}
@@ -317,13 +322,7 @@ begin
   end else if Sto = stExpRef then begin
     //Variable referenciada por expresión.
     //Se implementa de acuerdo a la Doc. Técnica - Sección "Operandos sExpRef"
-    if FVar = nil then begin
-      //Debe ser puntero.
-      Result := FTyp.itmType;
-    end else begin
-      //Debe ser arreglo
-      Result := FVar.typ;
-    end;
+    Result := Ftyp;
   end else begin
     //Constante o expresión
     Result := FTyp;
@@ -511,11 +510,11 @@ begin
 end;
 function TCompOperands.byte1: word;
 begin
-  Result := p1^.rVar.addr0;
+  Result := p1^.rVar.addr;
 end;
 function TCompOperands.byte1L: word;
 begin
-  Result := p1^.rVar.addr0;
+  Result := p1^.rVar.addr;
 end;
 function TCompOperands.byte1H: word; inline;
 begin
@@ -523,11 +522,11 @@ begin
 end;
 function TCompOperands.byte2: word;
 begin
-  Result := p2^.rVar.addr0;
+  Result := p2^.rVar.addr;
 end;
 function TCompOperands.byte2L: word;
 begin
-  Result := p2^.rVar.addr0;
+  Result := p2^.rVar.addr;
 end;
 function TCompOperands.byte2H: word; inline;
 begin

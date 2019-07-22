@@ -60,7 +60,6 @@ type
     private
 //      f_byteXbyte_byte: TxpEleFun;  //índice para función
       f_byte_mul_byte_16: TxpEleFun;  //índice para función
-      f_word_mul_word_16: TxpEleFun;  //índice para función
       procedure arrayHigh(const OpPtr: pointer);
       procedure arrayLength(const OpPtr: pointer);
       procedure arrayLow(const OpPtr: pointer);
@@ -71,6 +70,7 @@ type
       procedure fun_Byte(fun: TxpEleFunBase; out AddrUndef: boolean);
       procedure DefineArray(etyp: TxpEleType);
       procedure ROB_arr_asig_arr(Opt: TxpOperation; SetRes: boolean);
+      procedure ROB_byte_add_word(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_word_aadd_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_word_asub_byte(Opt: TxpOperation; SetRes: boolean);
       procedure ROB_word_shl_byte(Opt: TxpOperation; SetRes: boolean);
@@ -198,8 +198,8 @@ procedure TGenCod.expr_start;
 begin
   //Inicia banderas de estado para empezar a calcular una expresión
   A.used := false;        //Su ciclo de vida es de instrucción
-  if H<>nil then
-    H.used := false;      //Su ciclo de vida es de instrucción
+//  if H<>nil then
+//    H.used := false;      //Su ciclo de vida es de instrucción
   RTstate := nil;         //Inicia con los RT libres.
   //Limpia tabla de variables temporales
   varFields.Clear;
@@ -252,7 +252,7 @@ begin
     //Es una variable normal
     //La dirección de una variable es constante
     SetResultConst(typWord);
-    res.valInt := p1^.rVar.addr0;
+    res.valInt := p1^.rVar.addr;
   end;
   stExpres: begin
     genError('Cannot obtain address of an expression.');
@@ -271,7 +271,7 @@ begin
   stVariab: begin
     SetROUResultExpres_bool(logNormal);
     //We have to return logical value inverted in A
-    _LDA(p1^.rVar.addr0);   //Result of "NOT var" in Z
+    _LDA(p1^.rVar.addr);   //Result of "NOT var" in Z
     Copy_Z_to_A;
   end;
 //  stExpres: begin
@@ -376,11 +376,14 @@ begin
     else
       GenError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
     end;
-  end else if p1^.Sto = stVarRef then begin
-    //Asignación a una variable referenciada por variable
+  end else if p1^.Sto in [stVarRef, stExpRef] then begin
+    //Asignación a una variable referenciada por variable (o IX)
     case p2^.Sto of
     stConst, stVariab, stExpres: begin
-      idxVar := p1^.rVar;
+      if p1^.Sto =stVarRef then
+        idxVar := p1^.rVar
+      else
+        idxVar := IX;
       if idxVar.typ.IsByteSize then begin
         //Index is byte-size. It's easy.
         case p2^.Sto of //Operand2 to assign
@@ -388,28 +391,28 @@ begin
         stVariab: _LDA(byte2);
         stExpres: ;  //Already in A
         end;
-        _LDX(idxVar.addr0);
+        _LDX(idxVar.addr);
         pic.codAsm(i_STA, aZeroPagX, 0);
       end else if idxvar.typ.IsWordSize then begin
         //Index is word-size
         //If it's in zero-page will be wonderful
-        if (idxvar.addr0<256) then begin
+        if (idxvar.addr<256) then begin
           _LDYi(0);
           case p2^.Sto of //Operand2 to assign
           stConst:  _LDAi(value2);
           stVariab: _LDA(byte2);
           stExpres: ;  //Already in A
           end;
-          pic.codAsm(i_STA, aIndirecY, idxvar.addr0); //Store forward
+          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
         end else begin
           //No problem. We create self-modifying code
           //Add to the index, the offset
           if p2^.Sto = stExpres then _PLA;  //Save A
           _CLC;
-          _LDA(idxVar.addr0);  //Load index
+          _LDA(idxVar.addr);  //Load index
 addrNextOp1 := pic.iRam + 1;  //Address next instruction
           pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-          _LDA(idxVar.addr0+1);  //Load MSB
+          _LDA(idxVar.addr+1);  //Load MSB
 addrNextOp2 := pic.iRam + 1;  //Address next instruction
           pic.codAsm(i_STA, aAbsolute, 0); //Store forward
           case p2^.Sto of //Operand2 to assign
@@ -417,6 +420,7 @@ addrNextOp2 := pic.iRam + 1;  //Address next instruction
           stVariab: _LDA(byte2);
           stExpres: _PLA;  //Restore A
           end;
+          //Modifiying instruction
           pic.codAsm(i_STA, aAbsolute, 0); //Store forward
           //Complete address
           pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
@@ -445,7 +449,7 @@ addrNextOp2 := pic.iRam + 1;  //Address next instruction
         stVariab: _LDA(byte2);
         stExpres: ;  //Already in A
         end;
-        _LDX(idxVar.addr0);
+        _LDX(idxVar.addr);
         if offaddr<256 then begin
           pic.codAsm(i_STA, aZeroPagX, offaddr);
         end else begin
@@ -455,24 +459,24 @@ addrNextOp2 := pic.iRam + 1;  //Address next instruction
         //Index is word-size
         offaddr := p1^.valInt;  //offset addres
         //If it's in zero-page will be wonderful
-        if (idxvar.addr0<256) and (offaddr<256) then begin
+        if (idxvar.addr<256) and (offaddr<256) then begin
           _LDYi(offaddr);
           case p2^.Sto of //Operand2 to assign
           stConst:  _LDAi(value2);
           stVariab: _LDA(byte2);
           stExpres: ;  //Already in A
           end;
-          pic.codAsm(i_STA, aIndirecY, idxvar.addr0); //Store forward
+          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
         end else begin
           //No problem. We create self-modifying code
           //Add to the index, the offset
           if p2^.Sto = stExpres then _PLA;  //Save A
           _CLC;
-          _LDA(idxVar.addr0);  //Load index
+          _LDA(idxVar.addr);  //Load index
           _ADCi(lo(offaddr));
 addrNextOp1 := pic.iRam + 1;  //Address next instruction
           pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-          _LDA(idxVar.addr0+1);  //Load MSB
+          _LDA(idxVar.addr+1);  //Load MSB
           _ADCi(hi(offaddr));
 addrNextOp2 := pic.iRam + 1;  //Address next instruction
           pic.codAsm(i_STA, aAbsolute, 0); //Store forward
@@ -575,7 +579,6 @@ begin
     _STA(H.addr);  //Use H a temp variable.
     _TXA;  //Restore A
     _AND(H.addr);
-    FreeStkRegisterByte;   //libera pila porque ya se uso
   end;
   else
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
@@ -1085,6 +1088,99 @@ begin
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
 end;
+procedure TGenCod.ROB_byte_add_word(Opt: TxpOperation; SetRes: boolean);
+begin
+  //A < B es lo mismo que B > A
+  case stoOperation of
+  stExpres_Expres:begin
+//    {Este es el único caso que no se puede invertir, por la posición de los operandos en
+//     la pila.}
+//    //la expresión p1 debe estar salvada y p2 en el acumulador
+//    p1^.SetAsVariab(GetVarByteFromStk);  //Convierte a variable
+//    //Luego el caso es similar a stVariab_Expres
+//    ROB_byte_less_byte(Opt, SetRes);
+//    FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
+    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+  end;
+  else
+    //Para los otros casos, funciona
+    ExchangeP1_P2;
+    ROB_word_add_byte(Opt, SetRes);
+  end;
+
+//  case stoOperation of
+//  stConst_Const: begin
+//    //Optimize
+//    SetROBResultConst_word(value1 + value2);
+//  end;
+//  stConst_Variab: begin
+//    SetROBResultExpres_word(Opt);
+//    _CLC;
+//    _LDAi(value1L);
+//    _ADC(byte2L);
+//    _TAX;  //Save
+//    _LDAi(0);
+//    _ADC(byte2H);
+//    _STA(H.addr);
+//    _TXA;  //Restore A
+//  end;
+////  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
+////    SetROBResultExpres_byte(Opt);
+////    _ANDi(value1L);      //Deja en A
+////  end;
+//  stVariab_Const: begin
+//    SetROBResultExpres_word(Opt);
+//    _CLC;
+//    _LDA(byte1L);
+//    _ADCi(value2L);
+//    _TAX;  //Save
+//    _LDAi(0);
+//    _ADCi(value2H);
+//    _STA(H.addr);
+//    _TXA;  //Restore A
+//  end;
+//  stVariab_Variab:begin
+//    SetROBResultExpres_word(Opt);
+//    _CLC;
+//    _LDA(byte1L);
+//    _ADC(byte2L);
+//    _TAX;  //Save
+//    _LDA(0);
+//    _ADC(byte2H);
+//    _STA(H.addr);
+//    _TXA;  //Restore A
+//  end;
+//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
+//    SetROBResultExpres_word(Opt);
+//    _CLC;
+//    //_LDA(byte2L);
+//    _ADC(byte1L);
+//    _TAX;  //Save
+//    _LDA(0);
+//    _ADC(H.addr);
+//    _STA(H.addr);
+//    _TXA;  //Restore A
+//  end;
+////  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
+////    SetROBResultExpres_byte(Opt);
+////    _ANDi(value2L);
+////  end;
+////  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
+////    SetROBResultExpres_byte(Opt);
+////    _AND(byte2L);
+////  end;
+////  stExpres_Expres:begin
+////    SetROBResultExpres_byte(Opt);
+////    //p1 está salvado en pila y p2 en (A)
+////    p1^.SetAsVariab(GetVarWordFromStk);  //Convierte a variable
+////    //Luego el caso es similar a stVariab_Expres
+////    _AND(byte1);
+////    FreeStkRegisterWord;   //libera pila
+////  end;
+//  else
+//    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+//  end;
+end;
 procedure TGenCod.ROB_byte_sub_byte(Opt: TxpOperation; SetRes: boolean);
 begin
   case stoOperation of
@@ -1151,24 +1247,34 @@ begin
 end;
 procedure TGenCod.byte_mul_byte_16(fun: TxpEleFun);
 //Routine to multiply 8 bits X 8 bits
-//E * A -> [H:A]  Usa registros: A,H,E,U
-//Basado en código de Andrew Warren http://www.piclist.com
+//pasA * parB -> [H:A]  Usa registros: A,H,E,U
+//Basado en código de https://codebase64.org/doku.php?id=base:short_8bit_multiplication_16bit_product
+var
+  m0, m1: integer;
+  fac1,  fac2: TxpEleVar;
 begin
+    fac1 := fun.pars[0].pvar;
+    fac2 := fun.pars[1].pvar;
     typWord.DefineRegister;   //Ensure H register exists.
-//    _CLRF (H.offs);
-//    _CLRF (U.offs);
-//    _BSF  (U.offs,3);  //8->U
-//    _RRF  (E.offs,toF);
-//LOOP:=_PC;
-//    _BTFSC (_STATUS,0);
-//    _ADDWF (H.offs,toF);
-//    _RRF   (H.offs,toF);
-//    _RRF   (E.offs,toF);
-//    _DECFSZ(U.offs, toF);
-//    _JMP  (LOOP);
-//    //Realmente el algortimo es: E*A -> [H:E], pero lo convertimos a: E*A -> [H:A]
-//    _MOVF(E.offs, toW);
-//    _RTS;
+    //A*256 + X = FAC1 * FAC2
+    _ldai($00);
+    _ldxi($08);
+    _clc;
+_LABEL_pre(m0);
+    _BCC_post(m1);
+    _clc;
+    _adc(fac2.addr);
+_LABEL_post(m1);
+    _RORa;
+    _ror(fac1.addr);
+    _dex;
+    _BPL_pre(m0);
+//    _ldx(fac1.addr);
+    //Returns in H,A
+    _STA(H.addr);
+    _LDA(fac1.addr);
+//    _TXA;
+    _RTS();
 end;
 procedure TGenCod.ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
 begin
@@ -1176,31 +1282,43 @@ begin
   stConst_Const: begin
     SetROBResultConst_word(value1*value2);  //puede generar error
   end;
-//  stConst_Variab: begin
-//    if value1 = 0 then begin
-//      //Caso especial
-//      SetROBResultVariab(p2^.rVar);  //devuelve la misma variable
-//      exit;
-//    end else if value1 = 1 then begin
-//      //Caso especial
-//      SetROBResultExpres_byte(Opt);
-//      _INC(byte2);
-//      exit;
-//    end;
-//    SetROBResultExpres_byte(Opt);
-//    _CLC;
-//    _LDAi(value1);
-//    _ADC(byte2);
-//  end;
+  stConst_Variab: begin
+    if value1 = 0 then begin
+      //Caso especial
+      SetROBResultConst_word(0);  //devuelve la misma variable
+      exit;
+    end else if value1 = 1 then begin
+      //Caso especial
+      SetROBResultVariab(p2^.rVar);  //devuelve la misma variable
+      exit;
+    end else if value1 = 2 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);
+      _LDAi(0);
+      _STA(H.addr);
+      _LDA(byte2);
+      _ASLa;
+      _ROL(H.addr);
+      exit;
+    end;
+    //General case
+    SetROBResultExpres_word(Opt);
+    AddCallerTo(f_byte_mul_byte_16);  //Declare use
+    _LDAi(value1);
+    _STA(f_byte_mul_byte_16.pars[0].pvar.addr);
+    _LDA(byte2);
+    _STA(f_byte_mul_byte_16.pars[1].pvar.addr);
+    _JSR(f_byte_mul_byte_16.adrr);
+  end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);
 //    _CLC;
 //    _ADCi(value1);
 //  end;
-//  stVariab_Const: begin
-//    ExchangeP1_P2;
-//    ROB_byte_add_byte(Opt, true);
-//  end;
+  stVariab_Const: begin
+    ExchangeP1_P2;
+    ROB_byte_mul_byte(Opt, true);
+  end;
 //  stVariab_Variab:begin
 //    SetROBResultExpres_byte(Opt);
 //    _CLC;
@@ -2007,15 +2125,30 @@ begin
     _LDAi(value1L);
     _ADC(byte2L);
     _TAX;  //Save
-    _LDAi(0);
-    _ADC(byte2H);
+    _LDAi(value1H);
+    _ADCi(0);
     _STA(H.addr);
-    _TXA;
+    _TXA; //We could activate a Flag to indicate we have obteined MSB from X to optimize
+    //Form 2: (Very similar)
+//    _LDA(byte2H);  //byte2->H
+//    _STA(H.addr);
+//    _CLC;
+//    _LDAi(value1L);
+//    _ADC(byte2L);
+//    _BCC_post(L2);
+//    _INC(H.addr);
+//_LABEL_post(L2);
   end;
-//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
-//    SetROBResultExpres_byte(Opt);
-//    _ANDi(value1L);      //Deja en A
-//  end;
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
+    SetROBResultExpres_word(Opt);
+    _CLC;
+    _ADCi(value1L);
+    _TAX;  //Save
+    _LDAi(value1H);
+    _ADCi(0);
+    _STA(H.addr);
+    _TXA; //We could activate a Flag to indicate we have obteined MSB from X to optimize
+  end;
   stVariab_Const: begin
     SetROBResultExpres_word(Opt);
     _CLC;
@@ -2038,18 +2171,36 @@ begin
     _STA(H.addr);
     _TXA;
   end;
-//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
-//    SetROBResultExpres_byte(Opt);
-//    _AND(byte1);
-//  end;
-//  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
-//    SetROBResultExpres_byte(Opt);
-//    _ANDi(value2L);
-//  end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
-//    SetROBResultExpres_byte(Opt);
-//    _AND(byte2L);
-//  end;
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
+    SetROBResultExpres_word(Opt);
+    _CLC;
+    _ADC(byte1L);
+    _TAX;  //Save
+    _LDAi(byte1H);
+    _ADCi(0);
+    _STA(H.addr);
+    _TXA; //We could activate a Flag to indicate we have obteined MSB from X to optimize
+  end;
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
+    SetROBResultExpres_word(Opt);
+    _CLC;
+    _ADCi(value2L);
+    _TAX;  //Save
+    _LDA(H.addr);
+    _ADCi(0);
+    _STA(H.addr);
+    _TXA;
+  end;
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
+    SetROBResultExpres_word(Opt);
+    _CLC;
+    _ADCi(byte2L);
+    _TAX;  //Save
+    _LDA(H.addr);
+    _ADCi(0);
+    _STA(H.addr);
+    _TXA;
+  end;
 //  stExpres_Expres:begin
 //    SetROBResultExpres_byte(Opt);
 //    //p1 está salvado en pila y p2 en (A)
@@ -2080,10 +2231,16 @@ begin
     _STA(H.addr);
     _TXA;  //Restore A
   end;
-//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
-//    SetROBResultExpres_byte(Opt);
-//    _ANDi(value1L);      //Deja en A
-//  end;
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
+    SetROBResultExpres_word(Opt);
+    _CLC;
+    _ADCi(value1L);
+    _TAX;  //Save
+    _LDAi(value1H);
+    _ADC(H.addr);
+    _STA(H.addr);
+    _TXA;  //Restore A
+  end;
   stVariab_Const: begin
     SetROBResultExpres_word(Opt);
     _CLC;
@@ -2096,6 +2253,7 @@ begin
     _TXA;  //Restore A
   end;
   stVariab_Variab:begin
+    SetROBResultExpres_word(Opt);
     _CLC;
     _LDA(byte1L);
     _ADC(byte2L);
@@ -2105,18 +2263,36 @@ begin
     _STA(H.addr);
     _TXA;  //Restore A
   end;
-//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
-//    SetROBResultExpres_byte(Opt);
-//    _AND(byte1);
-//  end;
-//  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
-//    SetROBResultExpres_byte(Opt);
-//    _ANDi(value2L);
-//  end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
-//    SetROBResultExpres_byte(Opt);
-//    _AND(byte2L);
-//  end;
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
+    SetROBResultExpres_word(Opt);
+    _CLC;
+    _ADC(byte1L);
+    _TAX;  //Save
+    _LDA(byte1H);
+    _ADC(H.addr);
+    _STA(H.addr);
+    _TXA;  //Restore A
+  end;
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
+    SetROBResultExpres_word(Opt);
+    _CLC;
+    _ADCi(value2L);
+    _TAX;  //Save
+    _LDA(H.addr);
+    _ADCi(value2H);
+    _STA(H.addr);
+    _TXA;  //Restore A
+  end;
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
+    SetROBResultExpres_word(Opt);
+    _CLC;
+    _ADC(byte2L);
+    _TAX;  //Save
+    _LDA(H.addr);
+    _ADC(byte2H);
+    _STA(H.addr);
+    _TXA;  //Restore A
+  end;
 //  stExpres_Expres:begin
 //    SetROBResultExpres_byte(Opt);
 //    //p1 está salvado en pila y p2 en (A)
@@ -2316,15 +2492,21 @@ _LABEL_post(L2);
       end;
     end;
     stVariab: begin
-      _LDA(byte1);
       _CLC;
+      _LDA(byte1L);
       _ADC(byte2);
-      _STA(byte1);
+      _STA(byte1L);
+      _BCC_post(L2);
+      _INC(byte1H);
+_LABEL_post(L2);
     end;
     stExpres: begin  //ya está en A
       _CLC;
-      _ADC(byte1);
-      _STA(byte1);
+      _ADC(byte1L);
+      _STA(byte1L);
+      _BCC_post(L2);
+      _INC(byte1H);
+_LABEL_post(L2);
     end;
     else
       GenError(MSG_UNSUPPORTED); exit;
@@ -2573,14 +2755,14 @@ begin
     SetROBResultExpres_byte(Opt);
     _AND(byte2L);
   end;
-  stExpres_Expres:begin
-    SetROBResultExpres_byte(Opt);
-    //p1 está salvado en pila y p2 en (A)
-    p1^.SetAsVariab(GetVarWordFromStk);  //Convierte a variable
-    //Luego el caso es similar a stVariab_Expres
-    _AND(byte1);
-    FreeStkRegisterWord;   //libera pila
-  end;
+//  stExpres_Expres:begin
+//    SetROBResultExpres_byte(Opt);
+//    //p1 está salvado en pila y p2 en (A)
+//    p1^.SetAsVariab(GetVarWordFromStk);  //Convierte a variable
+//    //Luego el caso es similar a stVariab_Expres
+//    _AND(byte1);
+//    FreeStkRegisterWord;   //libera pila
+//  end;
   else
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
@@ -2820,7 +3002,7 @@ var
 begin
   //La explicación es la misma que para la rutina ROB_pointer_add_byte
   ptrType := p1^.Typ;
-  ROB_word_sub_byte(Opt, SetRes);
+  ROB_word_sub_word(Opt, SetRes);
   case res.Sto of
   stConst: res.SetAsConst(ptrType);
   stExpres: res.SetAsExpres(ptrType);
@@ -2837,7 +3019,7 @@ begin
     //Caso especial. Cuando se tenga algo como: TPunteroAByte($FF)^
     //Se asume que devuelve una variable de tipo Byte.
     tmpVar := CreateTmpVar('', typByte);
-    tmpVar.addr0 := value1;  //Fija dirección de constante
+    tmpVar.addr := value1;  //Fija dirección de constante
     SetROUResultVariab(tmpVar);
   end;
   stVariab: begin
@@ -2888,7 +3070,6 @@ begin
   StartCodeSub(fun);  //inicia codificación
 //  PutLabel('__delay_ms');
   PutTopComm('    ;delay routine.');
-  typWord.DefineRegister;   //Se asegura de que se exista y lo marca como "usado".
   //aux := GetAuxRegisterByte;  //Pide un registro libre
   if HayError then exit;
   {Esta rutina recibe los milisegundos en los registros en (H,A) o en (A)
@@ -3016,15 +3197,15 @@ begin
   end;
   stVariab: begin
     if (res.Typ = typByte) or (res.Typ = typChar) then begin
-      _INC(res.rVar.addr0);
+      _INC(res.rVar.addr);
     end else if res.Typ = typWord then begin
-      _INC(res.rVar.addr0);
+      _INC(res.rVar.addr);
       _BNE_post(LABEL1);  //label
-      _INC(res.rVar.addr0+1);
+      _INC(res.rVar.addr+1);
 _LABEL_post(LABEL1);
     end else if res.Typ.catType = tctPointer then begin
       //Es puntero corto
-      _INC(res.rVar.addr0);
+      _INC(res.rVar.addr);
     end else begin
       GenError(MSG_INVAL_PARTYP, [res.Typ.name]);
       exit;
@@ -3076,16 +3257,16 @@ begin
   end;
   stVariab: begin
     if (res.Typ = typByte) or (res.Typ = typChar) then begin
-      _DEC(res.rVar.addr0);
+      _DEC(res.rVar.addr);
     end else if res.Typ = typWord then begin
-      _LDA(res.rVar.addr0);
+      _LDA(res.rVar.addr);
       _BNE_post(lbl1);
-      _DEC(res.rVar.addr0+1);
+      _DEC(res.rVar.addr+1);
 _LABEL_post(lbl1);
-      _DEC(res.rVar.addr0);
+      _DEC(res.rVar.addr);
     end else if res.Typ.catType = tctPointer then begin
       //Es puntero corto
-      _DEC(res.rVar.addr0);
+      _DEC(res.rVar.addr);
     end else begin
       GenError(MSG_INVAL_PARTYP, [res.Typ.name]);
       exit;
@@ -3139,7 +3320,7 @@ begin
     if res.Typ = typChar then begin
       //Sigue siendo variable
       tmpVar := CreateTmpVar('', typByte);   //crea variable temporal Byte
-      tmpVar.addr0 := res.rVar.addr0; //apunta al mismo byte
+      tmpVar.addr := res.rVar.addr; //apunta al mismo byte
       SetResultVariab(tmpVar);  //Actualiza "res"
     end else begin
       GenError('Cannot convert to ordinal.'); exit;
@@ -3178,7 +3359,7 @@ begin
     if res.Typ = typByte then begin
       //Sigue siendo variable
       tmpVar := CreateTmpVar('', typChar);   //crea variable temporal
-      tmpVar.addr0 := res.rVar.addr0; //apunta al mismo byte
+      tmpVar.addr := res.rVar.addr; //apunta al mismo byte
       SetResultVariab(tmpVar);
     end else begin
       GenError('Cannot convert to char.'); exit;
@@ -3221,14 +3402,14 @@ begin
     if res.Typ = typChar then begin
       //Crea varaible que apunte al byte bajo
       tmpVar := CreateTmpVar('', typByte);   //crea variable temporal Byte
-      tmpVar.addr0 := res.rVar.addr0;  //apunta al mismo byte
+      tmpVar.addr := res.rVar.addr;  //apunta al mismo byte
       SetResultVariab(tmpVar);
     end else if res.Typ = typByte then begin
       //Es lo mismo
     end else if res.Typ = typWord then begin
       //Crea varaible que apunte al byte bajo
       tmpVar := CreateTmpVar('', typByte);   //crea variable temporal Byte
-      tmpVar.addr0 := res.rVar.addr0;  //apunta al mismo byte
+      tmpVar.addr := res.rVar.addr;  //apunta al mismo byte
       SetResultVariab(tmpVar);
     end else begin
       GenError('Cannot convert to byte.'); exit;
@@ -3276,12 +3457,12 @@ begin
       SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
       _LDAi(0);
       _STA(H.addr);
-      _LDA(res.rVar.addr0);
+      _LDA(res.rVar.addr);
     end else if res.Typ = typChar then begin
       SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
       _LDAi(0);
       _STA(H.addr);
-      _LDA(res.rVar.addr0);
+      _LDA(res.rVar.addr);
     end else if res.Typ = typWord then begin
       //ya es Word
     end else begin
@@ -3315,7 +3496,7 @@ procedure TGenCod.fun_Addr(fun: TxpEleFunBase; out AddrUndef: boolean);
 {Resturn de addres of a datatype.}
 var
   xtyp: TxpEleType;
-  ptrTypeName: String;
+  typName: String;
   xvar: TxpEleVar;
   srcPos: TSrcPos;
 begin
@@ -3335,10 +3516,9 @@ begin
     if not TreeElems.ExistsPointerType(xvar.typ, xtyp) then begin
       {Genera nombre del tipo. Este nombre es compatible con el que se genera en
       TCompiler_PIC16.CompileVarDeclar().}
-      ptrTypeName := GenPointerTypeName(xvar.typ.name);
+      typName := GenPointerTypeName(xvar.typ.name);
       //There is not a similar type. We create a new type.
-      xtyp := CreateEleTypePtr(ptrTypeName, srcPos, xvar.typ);
-      if HayError then exit;
+      xtyp := CreateEleTypePtr(typName, srcPos, xvar.typ);
       //Add to the syntax tree
       xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
       if TreeElems.curNode.idClass = eltBody then begin
@@ -3352,7 +3532,7 @@ begin
     end;
     //Define resultado
     SetResultConst(xtyp);  //Una variable tiene dirección fija
-    res.valInt := xvar.addr0;
+    res.valInt := xvar.addr;
   end;
   stExpres: begin  //se asume que ya está en (A)
     genError('Cannot obtain address of an expression.');
@@ -3442,7 +3622,7 @@ begin
       if nBytes < 5 then begin
         //Just a little bytes
         tmpvar := CreateTmpVar('', itType);
-        tmpVar.addr0 := p1^.rVar.addr0;
+        tmpVar.addr := p1^.rVar.addr;
         values := p2^.Value.items;
         for i:=1 to nItems do begin
           p1^.SetAsVariab(tmpvar);
@@ -3454,7 +3634,7 @@ begin
           end;
           Oper(p1^, opr1, p2^);   //Compile operations
           //Prepare next assigment
-          tmpVar.addr0 += itSize;
+          tmpVar.addr += itSize;
         end;
       end else if nBytes< 256 then begin
         //Several ítems, we first write Op2 in RAM.
@@ -3463,7 +3643,7 @@ begin
         _LDXi(nBytes);
 _LABEL_pre(j2);
         pic.codAsm(i_LDA, aAbsolutX, (startAddr-1) and $FFFF);  //Fix address to fit the index loop
-        pic.codAsm(i_STA, aAbsolutX, (p1^.rVar.addr0-1) and $FFFF);  //Fix address to fit the index loop
+        pic.codAsm(i_STA, aAbsolutX, (p1^.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
         _DEX;
         _BNE_pre(j2);
       end else begin
@@ -3472,8 +3652,8 @@ _LABEL_pre(j2);
     end;
     stVariab: begin
       if nBytes < 5 then begin
-        des:=p1^.rVar.addr0;
-        for src:=p2^.rVar.addr0 to p2^.rVar.addr0+nBytes-1 do begin
+        des:=p1^.rVar.addr;
+        for src:=p2^.rVar.addr to p2^.rVar.addr+nBytes-1 do begin
           _LDA(src);
           _STA(des);
           inc(des);
@@ -3483,8 +3663,8 @@ _LABEL_pre(j2);
         //Now we have the variable created in RAM. Lets move
         _LDXi(nBytes);
 _LABEL_pre(j2);
-        pic.codAsm(i_LDA, aAbsolutX, (p2^.rVar.addr0-1) and $FFFF);  //Fix address to fit the index loop
-        pic.codAsm(i_STA, aAbsolutX, (p1^.rVar.addr0-1) and $FFFF);  //Fix address to fit the index loop
+        pic.codAsm(i_LDA, aAbsolutX, (p2^.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
+        pic.codAsm(i_STA, aAbsolutX, (p1^.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
         _DEX;
         _BNE_pre(j2);
       end else begin
@@ -3546,7 +3726,7 @@ begin
     case idx.Sto of
     stConst: begin  //ïndice constante
       tmpVar := CreateTmpVar('', itemType);  //VAriable del mismo tipo
-      tmpVar.addr0 := arrVar.addr0 + idx.valInt * itemType.size;
+      tmpVar.addr := arrVar.addr + idx.valInt * itemType.size;
       SetResultVariab(tmpVar);
     end;
     stVariab: begin  //Indexado por variable
@@ -3555,16 +3735,16 @@ begin
           //Index is byte-size variable
           if itemType.IsByteSize then begin
             //And item is byte size, so it's easy to index in 6502
-            _LDX(idx.rVar.addr0);
-            if arrVar.addr0<256 then begin
-              pic.codAsm(i_LDA, aZeroPagX, arrVar.addr0);
+            _LDX(idx.rVar.addr);
+            if arrVar.addr<256 then begin
+              pic.codAsm(i_LDA, aZeroPagX, arrVar.addr);
             end else begin
-              pic.codAsm(i_LDA, aAbsolutX, arrVar.addr0);
+              pic.codAsm(i_LDA, aAbsolutX, arrVar.addr);
             end;
           end else if itemType.IsWordSize then begin
             //Item is word size. We need to multiply index by 2 and load indexed.
             //WARNING this is "Auto-modifiying" code.
-            _LDA(idx.rVar.addr0);  //Load index
+            _LDA(idx.rVar.addr);  //Load index
             pic.codAsm(i_STA, aAbsolute, _PC + 15); //Store forward
             _LDAi(0);  //Load virtual MSB index
             pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
@@ -3580,25 +3760,29 @@ begin
           //Index is word-size variable
           if itemType.IsByteSize then begin
             //Item is byte size. We need to index with a word.
-            if idx.rVar.addr0<256 then begin
+            if idx.rVar.addr<256 then begin
               //Index in zero page
               _LDYi(0);
-              pic.codAsm(i_LDA, aIndirecY, idx.rVar.addr0);
+              pic.codAsm(i_LDA, aIndirecY, idx.rVar.addr);
             end else begin
               //Index is out of zero page
               //WARNING this is "Auto-modifiying" code.
-              _LDA(idx.rVar.addr0);  //Load index
-              pic.codAsm(i_STA, aAbsolute, _PC + 10); //Store forward
-              _LDA(idx.rVar.addr0+1);  //Load MSB index
+              _CLC;
+              _LDA(idx.rVar.addr);  //Load index
+              _ADCi(arrVar.addr and $FF);
+              pic.codAsm(i_STA, aAbsolute, _PC + 12); //Store forward
+              _LDA(idx.rVar.addr+1);  //Load MSB index
+              _ADCi( arrVar.addr >> 8 );
               pic.codAsm(i_STA, aAbsolute, _PC + 5); //Store forward
+              //Modifiying instruction
               pic.codAsm(i_LDA, aAbsolute, 0);
             end;
           end else if itemType.IsWordSize then begin
             //Item is word size. We need to multiply index by 2 and load indexed.
             //WARNING this is "Auto-modifiying" code.
-            _LDA(idx.rVar.addr0);  //Load index
+            _LDA(idx.rVar.addr);  //Load index
             pic.codAsm(i_STA, aAbsolute, _PC + 16); //Store forward
-            _LDA(idx.rVar.addr0+1);  //Load virtual MSB index
+            _LDA(idx.rVar.addr+1);  //Load virtual MSB index
             pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
             pic.codAsm(i_ASL, aAbsolute, _PC + 7);  //Shift operand of LDA
             PIC.codAsm(i_ROL, aAbsolute, _pc + 5);  //Shift operand of LDA
@@ -3612,12 +3796,71 @@ begin
         end;
     end;
 //    stExpres: begin
-//        SetResultExpres(arrVar.typ.refType, false);  //Es array de bytes, o Char, devuelve Byte o Char
-//        LoadToRT(idx);   //Lo deja en A
-//        _ADDLW(arrVar.addr0);   //agrega OFFSET
-//        _MOVWF(04);     //direcciona con FSR
-//        _MOVF(0, toW);  //lee indexado en A
+//      SetResultExpres(itemType, true);  //Devuelve el mismo tipo
+//      if idx.Typ.IsByteSize then begin
+//        //Index is byte-size variable
+//        if itemType.IsByteSize then begin
+//          //And item is byte size, so it's easy to index in 6502
+//          _LDX(idx.rVar.addr);
+//          if arrVar.addr<256 then begin
+//            pic.codAsm(i_LDA, aZeroPagX, arrVar.addr);
+//          end else begin
+//            pic.codAsm(i_LDA, aAbsolutX, arrVar.addr);
+//          end;
+//        end else if itemType.IsWordSize then begin
+//          //Item is word size. We need to multiply index by 2 and load indexed.
+//          //WARNING this is "Auto-modifiying" code.
+//          _LDA(idx.rVar.addr);  //Load index
+//          pic.codAsm(i_STA, aAbsolute, _PC + 15); //Store forward
+//          _LDAi(0);  //Load virtual MSB index
+//          pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
+//          pic.codAsm(i_ASL, aAbsolute, _PC + 7);  //Shift operand of LDA
+//          PIC.codAsm(i_ROL, aAbsolute, _PC + 5);  //Shift operand of LDA
+//          pic.codAsm(i_LDA, aAbsolute, 0); //Store forward (DANGER)
+//          //Could be optimized getting a Zero page index
+//        end else begin
+//          //Here we need to multiply the index by the item size.
+//          GenError('Too complex item.');
+//        end;
+//      end else if idx.Typ.IsWordSize then begin
+//        //Index is word-size variable
+//        if itemType.IsByteSize then begin
+//          //Item is byte size. We need to index with a word.
+//          if idx.rVar.addr<256 then begin
+//            //Index in zero page
+//            _LDYi(0);
+//            pic.codAsm(i_LDA, aIndirecY, idx.rVar.addr);
+//          end else begin
+//            //Index is out of zero page
+//            //WARNING this is "Auto-modifiying" code.
+//            _CLC;
+//            _LDA(idx.rVar.addr);  //Load index
+//            _ADCi(arrVar.addr and $FF);
+//            pic.codAsm(i_STA, aAbsolute, _PC + 12); //Store forward
+//            _LDA(idx.rVar.addr+1);  //Load MSB index
+//            _ADCi( arrVar.addr >> 8 );
+//            pic.codAsm(i_STA, aAbsolute, _PC + 5); //Store forward
+//            //Modifiying instruction
+//            pic.codAsm(i_LDA, aAbsolute, 0);
+//          end;
+//        end else if itemType.IsWordSize then begin
+//          //Item is word size. We need to multiply index by 2 and load indexed.
+//          //WARNING this is "Auto-modifiying" code.
+//          _LDA(idx.rVar.addr);  //Load index
+//          pic.codAsm(i_STA, aAbsolute, _PC + 16); //Store forward
+//          _LDA(idx.rVar.addr+1);  //Load virtual MSB index
+//          pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
+//          pic.codAsm(i_ASL, aAbsolute, _PC + 7);  //Shift operand of LDA
+//          PIC.codAsm(i_ROL, aAbsolute, _pc + 5);  //Shift operand of LDA
+//          pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
+//        end else begin
+//          //Here we need to multiply the index by the item size.
+//          GenError('Too complex item.');
+//        end;
+//      end else begin
+//        GenError('Not supported this index.');
 //      end;
+//    end;
     else
       GenError('Not supported this index.');
     end;
@@ -3649,9 +3892,9 @@ begin
     itemType := arrVar.typ.itmType; //Reference to the item type
     //Generate code according to the index storage.
     case idx.Sto of
-    stConst: begin  //ïndice constante
+    stConst: begin  //Constant index
         tmpVar := CreateTmpVar('', itemType);  //VAriable del mismo tipo
-        tmpVar.addr0 := arrVar.addr0 + idx.valInt * itemType.size;
+        tmpVar.addr := arrVar.addr + idx.valInt * itemType.size;
         SetResultVariab(tmpVar);
       end;
     stVariab: begin  //Indexed by variable
@@ -3659,12 +3902,27 @@ begin
         //Index is byte-size variable
         if itemType.IsByteSize then begin
           //This is important because we know the variable can direct the current position
-          SetResultVarConRef(idx.rVar, arrVar.addr0, itemType);  //Devuelve el mismo tipo
+          SetResultVarConRef(idx.rVar, arrVar.addr, itemType);  //Devuelve el mismo tipo
 //        end else if itemType.IsWordSize then begin
 //          SetResultExpRef(itemType, false);  //We don't need to check RT here in setter.
 //          //Item is word size. We need to multiply index by 2 and load indexed.
-//          //WARNING this is "Auto-modifiying" code.
-//          _LDA(idx.rVar.addr0);  //Load index
+//          //WARNING this is "Self-modifiying" code.
+//          _LDA(idx.rVar.addr);  //Load index
+//          _
+        end else begin
+          //We need to calculate the final address accoridng to the item size
+          GenError('Not supported this item size to assigment.');
+        end;
+      end else if idx.Typ.IsWordSize then begin
+        //Index is words-size variable
+        if itemType.IsByteSize then begin
+          //This is important because we know the variable can direct the current position
+          SetResultVarConRef(idx.rVar, arrVar.addr, itemType);  //Devuelve el mismo tipo
+//        end else if itemType.IsWordSize then begin
+//          SetResultExpRef(itemType, false);  //We don't need to check RT here in setter.
+//          //Item is word size. We need to multiply index by 2 and load indexed.
+//          //WARNING this is "Self-modifiying" code.
+//          _LDA(idx.rVar.addr);  //Load index
 //          _
         end else begin
           //We need to calculate the final address accoridng to the item size
@@ -3674,13 +3932,42 @@ begin
         GenError('Not supported this index.');
       end;
     end;
-//    stExpres: begin
-//        SetResultExpres(arrVar.typ.refType, false);  //Es array de bytes, o Char, devuelve Byte o Char
-//        LoadToRT(idx);   //Lo deja en A
-//        _ADDLW(arrVar.addr0);   //agrega OFFSET
-//        _MOVWF(04);     //direcciona con FSR
-//        _MOVF(0, toW);  //lee indexado en A
-//      end;
+    stExpres: begin  //Indexed by expression
+      //stExpres must return the address in IX register
+      if idx.Typ.IsByteSize then begin
+        //Index is byte-size expresión (Loaded in A).
+        if itemType.IsByteSize then begin
+          SetResultExpRef(itemType, False);
+          AddCallerTo(IX);  //We declare using IX
+          //We add A to base address of array -> IX
+          _CLC;
+          _ADCi(arrVar.addrL);
+          _STA(IX.addr);  //Save
+          _LDAi(arrVar.addrH);
+          _ADCi(0);
+          _STA(IX.addr+1);
+        end else begin
+          GenError('Not supported this item size.');
+        end;
+      end else if idx.Typ.IsWordSize then begin
+        //Index is word-size expresión (Loaded in H,A).
+        if itemType.IsByteSize then begin
+          SetResultExpRef(itemType, False);
+          AddCallerTo(IX);  //We declare using IX
+          //We add H,A to base address of array -> IX
+          _CLC;
+          _ADCi(arrVar.addrL);
+          _STA(IX.addr);  //Save
+          _LDAi(arrVar.addrH);
+          _ADC(H.addr);
+          _STA(IX.addr+1);
+        end else begin
+          GenError('Not supported item size.');
+        end;
+      end else begin
+        GenError('Not supported this index.');
+      end;
+    end
     else
       GenError('Not supported this index.');
     end;
@@ -3712,28 +3999,28 @@ begin
     if n > 0 then begin
       if n = 1 then begin   //Just one byte
         _LDAi(0);
-        _STA(xvar.addr0);
+        _STA(xvar.addr);
       end else if n = 2 then begin  //Es de 2 bytes
         _LDAi(0);
-        _STA(xvar.addr0);
-        _STA(xvar.addr0+1);
+        _STA(xvar.addr);
+        _STA(xvar.addr+1);
       end else if n = 3 then begin  //Es de 3 bytes
         _LDAi(0);
-        _STA(xvar.addr0);
-        _STA(xvar.addr0+1);
-        _STA(xvar.addr0+2);
+        _STA(xvar.addr);
+        _STA(xvar.addr+1);
+        _STA(xvar.addr+2);
       end else if n = 4 then begin  //Es de 4 bytes
         _LDAi(0);
-        _STA(xvar.addr0);
-        _STA(xvar.addr0+1);
-        _STA(xvar.addr0+2);
-        _STA(xvar.addr0+3);
+        _STA(xvar.addr);
+        _STA(xvar.addr+1);
+        _STA(xvar.addr+2);
+        _STA(xvar.addr+3);
       end else if n <=256 then begin  //Tamaño pequeño
         _LDAi(0);
         _LDXi(n and $FF);
 LABEL1 := _PC;
-        if xVar.addr0 <256 then pic.codAsm(i_STA, aZeroPagX, xVar.addr0)  //STA has not aZeroPagY
-        else pic.codAsm(i_STA, aAbsolutX, xVar.addr0-1);
+        if xVar.addr <256 then pic.codAsm(i_STA, aZeroPagX, xVar.addr)  //STA has not aZeroPagY
+        else pic.codAsm(i_STA, aAbsolutX, xVar.addr-1);
         _DEX;
         _BNE(LABEL1 - _PC - 2);
       end else begin  //Tamaño mayor
@@ -3791,6 +4078,7 @@ begin
   opr.CreateOperation(typByte, @ROB_pointer_add_byte);
   opr:=etyp.CreateBinaryOperator('-',4,'add');  //resta
   opr.CreateOperation(typWord, @ROB_pointer_sub_word);
+  opr.CreateOperation(typByte, @ROB_pointer_sub_byte);
 
   etyp.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address); //defined in all types
   etyp.CreateUnaryPostOperator('^',6, 'deref', @ROU_derefPointer);  //dereferencia
@@ -3987,9 +4275,10 @@ begin
 
   opr:=typByte.CreateBinaryOperator('+',4,'add');  //add
   opr.CreateOperation(typByte,@ROB_byte_add_byte);
+  opr.CreateOperation(typWord,@ROB_byte_add_word);
   opr:=typByte.CreateBinaryOperator('-',4,'subs');  //sub
   opr.CreateOperation(typByte,@ROB_byte_sub_byte);
-  opr:=typByte.CreateBinaryOperator('*',4,'subs');  //sub
+  opr:=typByte.CreateBinaryOperator('*',5,'subs');  //sub
   opr.CreateOperation(typByte,@ROB_byte_mul_byte);
 
   opr:=typByte.CreateBinaryOperator('AND',5,'and');
@@ -4139,14 +4428,6 @@ begin
   f := CreateSysFunction('Byte'     , @FunctParam, @fun_Byte);
   f := CreateSysFunction('Word'     , @FunctParam, @fun_Word);
   f := CreateSysFunction('addr'     , @FunctParam, @fun_Addr);
-  //Funciones de sistema para operaciones aritméticas/lógicas complejas
-  //Multiplicación byte por byte a word
-  f_byte_mul_byte_16 := CreateSysFunction('byte_mul_byte_16', nil, nil);
-  f_byte_mul_byte_16.adrr:=$0;
-  f_byte_mul_byte_16.compile := @byte_mul_byte_16;
-  //Multiplicación word por word a word
-  f_word_mul_word_16 := CreateSysFunction('word_mul_word_16', nil, nil);
-  f_word_mul_word_16.adrr:=$0;
   //Implement calls to Code Generator
   callDefineArray  := @DefineArray;
   callDefinePointer:= @DefinePointer;
@@ -4165,10 +4446,42 @@ begin
   srcPos.fil := '';
   srcPos.row := 1;
   srcPos.col := 1;
+  {Create variables for aditional Working register. Note that this variables are
+  accesible (and usable) from the code, because the name assigned is a common variable.}
+  //Create register H as variable
+  H := AddVariable('__H', typByte, srcPos);
+  H.adicPar.hasAdic := decNone;
+  H.adicPar.hasInit := false;
+  H.location := locInterface;  //make visible
+  //Create register E as variable
+  E := AddVariable('__E', typByte, srcPos);
+  E.adicPar.hasAdic := decNone;
+  E.adicPar.hasInit := false;
+  E.location := locInterface;  //make visible
+  //Create register U as variable
+  U := AddVariable('__U', typByte, srcPos);
+  U.adicPar.hasAdic := decNone;
+  U.adicPar.hasInit := false;
+  U.location := locInterface;  //make visible
+  //Create register IX as variable
+  IX := AddVariable('__IX', typWord, srcPos);
+  IX.adicPar.hasAdic := decNone;
+  IX.adicPar.hasInit := false;
+  IX.location := locInterface;  //make visible
+
   //Create system function "delay_ms"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'ms', srcPos, typWord, decRegis);  //Add parameter
-  CreateSystemFunction('delay_ms', typNull, srcPos,  pars, @codif_delay_ms);
+  f := CreateSystemFunction('delay_ms', typNull, srcPos,  pars, @codif_delay_ms);
+  AddCallerTo(H, f.BodyNode); {Adds this dependency because, like this is a system function,
+                           won`t be compiled in the First pass, that is when references are created}
+
+  //Multiply system function
+  setlength(pars, 0);  //Reset parameters
+  AddParam(pars, 'A', srcPos, typByte, decNone);  //Add parameter
+  AddParam(pars, 'B', srcPos, typByte, decNone);  //Add parameter
+  f_byte_mul_byte_16 := CreateSystemFunction('byte_mul_byte_16', typWord, srcPos, pars, @byte_mul_byte_16);
+  AddCallerTo(H, f_byte_mul_byte_16.BodyNode);  //We'll neede to return result.
 
   TreeElems.CloseElement; //Close Unit
 end;

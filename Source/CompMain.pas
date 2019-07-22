@@ -13,6 +13,7 @@ type
     procedure CompileLastEnd;
     procedure AssignRAMtoVar(xvar: TxpEleVar; shared: boolean = false);
     procedure CreateLocalVarsAndPars;
+    procedure CreateGlobalVars;
   protected  //Elements processing
     procedure GetAdicVarDeclar(xType: TxpEleType; out aditVar: TAdicVarDec);
     procedure ReadProcHeader(out procName: String; out retType: TxpEleType; out
@@ -60,7 +61,8 @@ var
   ER_IDEN_EXPECT, ER_NOT_IMPLEM_, ER_SEM_COM_EXP, ER_INV_ARR_SIZ, ER_ARR_SIZ_BIG,
   ER_IDE_TYP_EXP, ER_IDE_CON_EXP, ER_EQU_COM_EXP, ER_DUPLIC_IDEN,
   ER_BOOL_EXPECT, ER_EOF_END_EXP, ER_ELS_UNEXPEC, ER_END_EXPECTE, ER_NOT_AFT_END,
-  ER_INST_NEV_EXE,ER_UNKN_STRUCT, ER_DUPLIC_FUNC_, ER_FIL_NOFOUND, ER_PROG_NAM_EX
+  ER_INST_NEV_EXE,ER_UNKN_STRUCT, ER_DUPLIC_FUNC_, ER_FIL_NOFOUND, ER_PROG_NAM_EX,
+  WA_UNUSED_VAR_
   : string;
 procedure SetLanguage;
 begin
@@ -159,7 +161,7 @@ begin
       end;
     end else if cIn.tokType = tnIdentif then begin
       //Puede ser variable
-      GetOperandIdent(Op, true); //
+      GetOperandIdent(Op, opmGetter); //
       if HayError then exit;
       if Op.Sto <> stVariab then begin
         GenError(ER_EXP_VAR_IDE);
@@ -179,7 +181,7 @@ begin
         aditVar.absVar := Op.rVarBase;  //Guarda referencia
       end;
       //Ya tiene la variable en "xvar".
-      aditVar.absAddr := xvar.addr0;  //debe ser absoluta
+      aditVar.absAddr := xvar.addr;  //debe ser absoluta
       if aditVar.absAddr = ADRR_ERROR then begin
         //No se puede obtener la dirección.
         GenError('Cannot locate variable at: %s', [xvar.name]);
@@ -1776,7 +1778,7 @@ begin
   decNone: begin
     //Variable normal. Necesita ser asiganda en RAM
     callCreateVarInRAM(xVar, shared);  //Crea la variable
-    xvar.typ.DefineRegister;  //Asegura que se dispondrá de los RT necesarios
+    //xvar.typ.DefineRegister;  //Asegura que se dispondrá de los RT necesarios
     //Puede salir con error
   end;
   end;
@@ -1819,7 +1821,28 @@ begin
     end;
   end;
 end;
-
+procedure TCompMain.CreateGlobalVars;
+var
+  xvar   : TxpEleVar;
+begin
+  //Reserva espacio para las variables (Que no son de funciones).
+  for xvar in TreeElems.AllVars do begin
+    if xvar.Parent.idClass = eltFunc then continue;  //Las variables de funciones ya se crearon
+    //if xvar.Parent.idClass = eltUnit then continue;
+    if xvar.nCalled>0 then begin
+      //Asigna una dirección válida para esta variable
+      AssignRAMtoVar(xvar);
+      if HayError then exit;
+    end else begin
+      //Variable no usada
+      xvar.ResetAddress;
+      if xvar.Parent = TreeElems.main then begin
+        //Genera mensaje solo para variables del programa principal.
+        GenWarnPos(WA_UNUSED_VAR_, [xVar.name], xvar.srcDec);
+      end;
+    end;
+  end;
+end;
 //Compilación de secciones
 procedure TCompMain.CompileUnit(uni: TxpElement);
 {Realiza la compilación de una unidad}
@@ -2106,7 +2129,7 @@ begin
       exit;
     end;
   end;
-  //procesa cuerpo
+  //Procesa cuerpo
   callResetRAM;  {No es tan necesario, pero para seguir un orden y tener limpio
                      también, la flash y memoria, después de algún posible procedimiento.}
   if cIn.tokL <> 'begin' then begin

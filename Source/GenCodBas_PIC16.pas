@@ -41,12 +41,11 @@ type
   protected
     //Work register (RT)
     A      : TPicRegister;     //Registro Interno.
-//    Z      : TPicRegisterBit;  //Registro Interno.
-//    C      : TPicRegisterBit;  //Registro Interno.
-    H      : TPicRegister;     //Registros de trabajo. Se crean siempre.
-    E      : TPicRegister;     //Registros de trabajo. Se crean siempre.
-    U      : TPicRegister;     //Registros de trabajo. Se crean siempre.
-    INDF   : TPicRegister;     //Registro Interno.
+    //System variables used as registers
+    H   : TxpEleVar;  //To load the high byte of words.
+    E      : TxpEleVar;  //To load the high word of dwords.
+    U      : TxpEleVar;  //To load the high word of dwords.
+    IX     : TxpEleVar;  //To index operands
     procedure PutLabel(lbl: string); inline;
     procedure PutTopComm(cmt: string; replace: boolean = true); inline;
     procedure PutComm(cmt: string); inline;
@@ -73,15 +72,7 @@ type
      almacenarse, asumiendo que no importe crear variables dinámicas.}
     function NewTmpVarWord(rL, rH: TPicRegister): TxpEleVar;
   protected  //Rutinas de gestión de memoria para registros
-    varStkByte: TxpEleVar;   //variable byte. Usada para trabajar con la pila
-    varStkWord: TxpEleVar;   //variable word. Usada para trabajar con la pila
     function GetAuxRegisterByte: TPicRegister;
-    //Gestión de la pila
-    function GetStkRegisterByte: TPicRegister;
-    function GetVarWordFromStk: TxpEleVar;
-    function FreeStkRegisterByte: boolean;
-    function FreeStkRegisterWord: boolean;
-    function FreeStkRegisterDWord: boolean;
   protected  //Memory manage routines for variables
     procedure AssignRAM(out addr: word; regName: string; shared: boolean);  //Asigna a una dirección física
     function CreateRegisterByte(RegType: TPicRegType): TPicRegister;
@@ -147,6 +138,11 @@ type
     procedure _BCC_post(out ibranch: integer);
     procedure _BCS(const ad: ShortInt);
     procedure _BCS_post(out ibranch: integer);
+
+    procedure _BPL(const ad: ShortInt);
+    procedure _BPL_pre(curAddr: integer);
+    procedure _BPL_post(out ibranch: integer);
+
     procedure _CLC;
     procedure _CMPi(const k: word);  //immidiate
     procedure _CMP(const addr: integer);  //Absolute/Zeropage
@@ -172,7 +168,8 @@ type
     procedure _PLA; inline;
     procedure _PLP; inline;
     procedure _ROL(const addr: integer);
-    procedure _ROR(const addr: integer);
+    procedure _RORa;  //Acumulator
+    procedure _ROR(const addr: integer);  //Absolute/Zeropage
     procedure _RTS;
     procedure _RTI;
     procedure _SEC;
@@ -189,10 +186,6 @@ type
     procedure IF_TRUE(OpRes: TOperandPtr; out info: TIfInfo);
     procedure IF_FALSE(OpRes: TOperandPtr; out info: TIfInfo);
     procedure IF_END(const info: TIfInfo);
-  public     //Acceso a registro de trabajo
-    property H_register: TPicRegister read H;
-    property E_register: TPicRegister read E;
-    property U_register: TPicRegister read U;
   protected  //Funciones de tipos
     //////////////// Tipo Byte /////////////
     procedure byte_LoadToRT(const OpPtr: pointer);
@@ -245,7 +238,7 @@ var
 begin
   if Op.Sto = stVariab then begin
     tmpVar := CreateTmpVar('?', typ);   //Create temporal variable
-    tmpVar.addr0 := Op.addr + offs;  //Set Address
+    tmpVar.addr := Op.addr + offs;  //Set Address
     res.SetAsVariab(tmpVar);
     exit(true);
   end else begin
@@ -362,7 +355,7 @@ devuelve la referencia. La variable se crea sin asignación de memoria.}
 begin
   Result := TxpEleVar.Create;
   Result.typ := typWord;
-  Result.addr0 := rL.addr;  //asigna direcciones
+  Result.addr := rL.addr;  //asigna direcciones
 end;
 //Variables temporales
 //Rutinas de Gestión de memoria
@@ -393,96 +386,6 @@ begin
   reg.assigned := true;  //Tiene memoria asiganda
   reg.used := true;  //marca como usado
   Result := reg;   //Devuelve la referencia
-end;
-function TGenCodBas.GetStkRegisterByte: TPicRegister;
-{Pone un registro de un byte, en la pila, de modo que se pueda luego acceder con
-FreeStkRegisterByte(). Si hay un error, devuelve NIL.
-Notar que esta no es una pila de memoria en el PIC, sino una emulación de pila
-en el compilador.}
-var
-  reg0: TPicRegister;
-  regName: String;
-begin
-  //Validación
-  if stackTop>MAX_REGS_STACK_BYTE then begin
-    //Se asume que se desbordó la memoria evaluando a alguna expresión
-    GenError(MSG_VER_CMP_EXP);
-    exit(nil);
-  end;
-  if stackTop>listRegStk.Count-1 then begin
-    //Apunta a una posición vacía. hay qie agregar
-    //Agrega un nuevo objeto TPicRegister a la lista;
-    reg0 := TPicRegister.Create;  //Crea objeto
-    reg0.typ := prtStkReg;   //asigna tipo
-    listRegStk.Add(reg0);    //agrega a lista
-    regName := 'stk'+IntToSTr(listRegStk.Count);
-    AssignRAM(reg0.addr, regName, false);   //Asigna memoria. Puede generar error.
-    if HayError then exit(nil);
-  end;
-  Result := listRegStk[stackTop];  //toma registro
-  Result.assigned := true;
-  Result.used := true;   //lo marca
-  inc(stackTop);  //actualiza
-end;
-//function TGenCodBas.GetVarByteFromStk: TxpEleVar;
-//{Devuelve la referencia a una variable byte, que representa al último byte agregado en
-//la pila. Se usa como un medio de trabajar con los datos de la pila.}
-//var
-//  topreg: TPicRegister;
-//begin
-//  topreg := listRegStk[stackTop-1];  //toma referencia de registro de la pila
-//  //Usamos la variable "varStkByte" que existe siempre, para devolver la referencia.
-//  //Primero la hacemos apuntar a la dirección física de la pila
-//  varStkByte.addr0 := topReg.addr;
-//  //Ahora que tenemos ya la variable configurada, devolvemos la referecnia
-//  Result := varStkByte;
-//end;
-function TGenCodBas.GetVarWordFromStk: TxpEleVar;
-{Devuelve la referencia a una variable word, que representa al último word agregado en
-la pila. Se usa como un medio de trabajar con los datos de la pila.}
-var
-  topreg: TPicRegister;
-begin
-  //Usamos la variable "varStkWord" que existe siempre, para devolver la referencia.
-  //Primero la hacemos apuntar a la dirección física de la pila
-  topreg := listRegStk[stackTop-1];  //toma referencia de registro de la pila
-  //varStkWord.addr1 := topreg.addr;
-  topreg := listRegStk[stackTop-2];  //toma referencia de registro de la pila
-  varStkWord.addr0 := topreg.addr;
-  //Ahora que tenemos ya la variable configurada, devolvemos la referencia
-  Result := varStkWord;
-end;
-function TGenCodBas.FreeStkRegisterByte: boolean;
-{Libera el último byte, que se pidió a la RAM. Devuelve en "reg", la dirección del último
- byte pedido. Si hubo error, devuelve FALSE.
- Liberarlos significa que estarán disponibles, para la siguiente vez que se pidan}
-begin
-   if stackTop=0 then begin  //Ya está abajo
-     GenError(MSG_STACK_OVERF);
-     exit(false);
-   end;
-   dec(stackTop);   //Baja puntero
-   exit(true);
-end;
-function TGenCodBas.FreeStkRegisterWord: boolean;
-{Libera el último word, que se pidió a la RAM. Si hubo error, devuelve FALSE.}
-begin
-   if stackTop<=1 then begin  //Ya está abajo
-     GenError(MSG_STACK_OVERF);
-     exit(false);
-   end;
-   dec(stackTop, 2);   //Baja puntero
-   exit(true);
-end;
-function TGenCodBas.FreeStkRegisterDWord: boolean;
-{Libera el último dword, que se pidió a la RAM. Si hubo error, devuelve FALSE.}
-begin
-   if stackTop<=3 then begin  //Ya está abajo
-     GenError(MSG_STACK_OVERF);
-     exit(false);
-   end;
-   dec(stackTop, 4);   //Baja puntero
-   exit(true);
 end;
 //Memory manage routines for variables
 function TGenCodBas.CreateRegisterByte(RegType: TPicRegType): TPicRegister;
@@ -566,6 +469,8 @@ begin
   varName := xVar.name;
   typ := xVar.typ;
   //Find the memory address where to place the variable
+//  pic.freeStart := pic.iRam;    //Start in the current RAM
+  pic.freeStart := self.GeneralORG;  //Find at the current program block.
   nbytes := typ.size;
   if xVar.adicPar.hasAdic = decAbsol then begin
     startAdd := xVar.adicPar.absAddr;
@@ -575,7 +480,11 @@ begin
       exit;
     end;
   end;
-  xVar.addr0:=startAdd;
+  xVar.addr:=startAdd;  //Set address
+//  if pic.dataAddr1=-1 then begin
+//    //The variable has been mapped in the current RAM
+//    inc(pic.iRam, nbytes);  //Move pointer.
+//  end;
   //Detect if variable location is out of the code block.
   if FirstPass then begin
     //In first pass, variables are located in a default position, so it's not secure
@@ -586,7 +495,8 @@ begin
     {The problem is in the *.PRG format we use for output, doesn't allow to specify
     separates blocks of memory to fill. For example if we have specified an address like
     $FFFF, and the program start at $0000, all the RAM must be included in *.PRG.}
-    outOfProgram := (xVar.adicPar.hasAdic = decAbsol);
+    outOfProgram := (xVar.adicPar.hasAdic = decAbsol) or
+                    (pic.dataAddr1<>-1);  //This means the variable has been placed in the primary data address.
   end;
   //Mark as used.
   if outOfProgram then begin
@@ -607,7 +517,6 @@ begin
       end;
     end;
   end;
-  inc(pic.iRam, nbytes);  //Move pointer.
   //Set name to that position
   pic.SetNameRAM(startAdd, xVar.name);   //Name at the first byte
   //Set initial value.
@@ -824,6 +733,7 @@ procedure TGenCodBas.SetROBResultExpres_word(Opt: TxpOperation);
 registros H,A, para devolver la salida.}
 begin
   GenerateROBdetComment;
+  typWord.DefineRegister;  //
   //Se van a usar los RT. Verificar si los RT están ocupadoa
   if (p1^.Sto = stExpres) or (p2^.Sto = stExpres) then begin
     //Alguno de los operandos de la operación actual, está usando algún RT
@@ -1039,7 +949,7 @@ begin
 end;
 procedure TGenCodBas._BNE_pre(curAddr: integer);
 begin
-  pic.codAsm(i_BNE, aRelative, (curAddr - pic.iRam-2) and $ff);  //1 en Offset indica que se completará con salto relativo
+  pic.codAsm(i_BNE, aRelative, (curAddr - pic.iRam-2) and $ff);
 end;
 procedure TGenCodBas._BCC(const ad: ShortInt);
 begin
@@ -1066,6 +976,23 @@ procedure TGenCodBas._BCS_post(out ibranch: integer);
 begin
   ibranch := pic.iRam+1;  //guarda posición del offset de salto
   pic.codAsm(i_BCS, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
+end;
+procedure TGenCodBas._BPL(const ad: ShortInt);
+begin
+  if ad>=0 then begin
+    pic.codAsm(i_BPL, aRelative, ad);
+  end else begin
+    pic.codAsm(i_BPL, aRelative, 256+ad);
+  end;
+end;
+procedure TGenCodBas._BPL_pre(curAddr: integer);
+begin
+  pic.codAsm(i_BPL, aRelative, (curAddr - pic.iRam-2) and $ff);
+end;
+procedure TGenCodBas._BPL_post(out ibranch: integer);
+begin
+  ibranch := pic.iRam+1;  //guarda posición del offset de salto
+  pic.codAsm(i_BPL, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
 end;
 procedure TGenCodBas._CLC;
 begin
@@ -1203,6 +1130,10 @@ begin
     pic.codAsm(i_ROL, aAbsolute, addr);
   end;
 end;
+procedure TGenCodBas._RORa;
+begin
+  pic.codAsm(i_ROR, aAcumulat, 0);
+end;
 procedure TGenCodBas._ROR(const addr: integer);
 begin
   if addr<256 then begin
@@ -1296,10 +1227,10 @@ begin
   if OpRes^.Sto = stVariab then begin
     //Result in variable
     if OpRes^.logic = logInverted then begin
-      _LDA(OpRes^.rVar.addr0);
+      _LDA(OpRes^.rVar.addr);
       _BNE_post(info.igoto);
     end else begin
-      _LDA(OpRes^.rVar.addr0);
+      _LDA(OpRes^.rVar.addr);
       _BEQ_post(info.igoto);
     end;
   end else if OpRes^.Sto = stExpres then begin
@@ -1373,7 +1304,7 @@ begin
     _LDAi(Op^.valInt);
   end;
   stVariab: begin
-    _LDA(Op^.rVar.addr0);
+    _LDA(Op^.rVar.addr);
   end;
   stExpres: begin  //ya está en A
   end;
@@ -1422,9 +1353,9 @@ begin
     _LDAi(Op^.LByte);
   end;
   stVariab: begin
-    _LDA(Op^.rVar.addr0+1);
+    _LDA(Op^.rVar.addr+1);
     _STA(H.addr);
-    _LDA(Op^.rVar.addr0);
+    _LDA(Op^.rVar.addr);
   end;
   stExpres: begin  //se asume que ya está en (H,A)
   end;
@@ -1458,12 +1389,8 @@ begin
 end;
 procedure TGenCodBas.word_DefineRegisters;
 begin
-  //Aparte de A, solo se requiere H
-  if not H.assigned then begin
-    AssignRAM(H.addr, '_H', false);
-    H.assigned := true;
-    H.used := false;
-  end;
+  //Changed from versión 0.7.1
+  AddCallerTo(H);
 end;
 procedure TGenCodBas.word_SaveToStk;
 begin
@@ -1487,7 +1414,7 @@ begin
     //Se devuelve una variable, byte
     //Crea una variable temporal que representará al campo
     tmpVar := CreateTmpVar(xvar.name+'.L', typByte);   //crea variable temporal
-    tmpVar.addr0 :=  xvar.addr0;  //byte bajo
+    tmpVar.addr :=  xvar.addr;  //byte bajo
     res.SetAsVariab(tmpVar);
   end;
   stConst: begin
@@ -1513,7 +1440,7 @@ begin
     //A byte type is returned
     //Temporal variable that will represent the field
     tmpVar := CreateTmpVar(xvar.name+'.H', typByte);
-    tmpVar.addr0 := xvar.addrH;  //byte alto
+    tmpVar.addr := xvar.addrH;  //byte alto
     res.SetAsVariab(tmpVar);
   end;
   stConst: begin
@@ -1548,13 +1475,8 @@ procedure TGenCodBas.StartRegs;
 {Inicia los registros de trabajo en la lista.}
 begin
   listRegAux.Clear;
-  listRegStk.Clear;   //limpia la pila
-  stackTop := 0;
   {Crea registros de trabajo adicionales H,E,U, para que estén definidos, pero aún no
   tienen asignados una posición en memoria.}
-  H := CreateRegisterByte(prtWorkReg);
-  E := CreateRegisterByte(prtWorkReg);
-  U := CreateRegisterByte(prtWorkReg);
   //Puede salir con error
 end;
 procedure TGenCodBas.GenCodLoadToA(Op: TOperand);
@@ -1565,7 +1487,7 @@ begin
       _LDAi(Op.valInt and $ff);
     end;
     stVariab: begin
-      _LDA(Op.rVar.addr0);
+      _LDA(Op.rVar.addr);
     end;
     stExpres: begin
       //Already in A
@@ -1585,7 +1507,7 @@ begin
       _LDXi(Op.valInt and $ff);
     end;
     stVariab: begin
-      _LDX(Op.rVar.addr0);
+      _LDX(Op.rVar.addr);
     end;
     stExpres: begin
       _TAX;
@@ -1605,7 +1527,7 @@ begin
       _LDYi(Op.valInt and $ff);
     end;
     stVariab: begin
-      _LDY(Op.rVar.addr0);
+      _LDY(Op.rVar.addr);
     end;
     stExpres: begin
       _TAY;
@@ -1822,7 +1744,7 @@ var
   opr1: TxpOperator;
   info: TIfInfo;
 begin
-  GetOperand(Op1, true);
+  GetOperand(Op1, opmSetter);
   if Op1.Sto <> stVariab then begin
     GenError(ER_VARIAB_EXPEC);
     exit;
@@ -1873,11 +1795,11 @@ begin
     if not VerifyEND then exit;
     //Incrementa variable cursor
     if Op1.Typ = typByte then begin
-      _INC(Op1.rVar.addr0);
+      _INC(Op1.rVar.addr);
     end else if Op1.Typ = typWord then begin
-      _INC(Op1.rVar.addr0);
+      _INC(Op1.rVar.addr);
       _BNE_post(LABEL1);  //label
-      _INC(Op1.rVar.addr0+1);
+      _INC(Op1.rVar.addr+1);
 _LABEL_post(LABEL1);
     end;
     _JMP(l1);  //repite el lazo
@@ -1923,12 +1845,19 @@ begin
 end;
 
 procedure TGenCodBas.ResetRAM;
-{Reinicia el dispositivo, para empezar a escribir en la posición $000 de la FLASH, y
-en la posición inicial de la RAM.}
+{Reset the device RAM memory, and set the pointer iRam to start writing at the
+beggining of the RAM.}
 begin
   pic.iRam := 0;  //Ubica puntero al inicio.
   pic.ClearMemRAM;  //Pone las celdas como no usadas y elimina nombres.
   StartRegs;        //Limpia registros de trabajo, auxiliares, y de pila.
+  if pic.hasDataAdrr = -1 then begin
+    //No primary data address has been specified
+    pic.dataAddr1 := pic.hasDataAdrr;  //Set start address
+  end else begin
+    //Has been specified a primary Data Address
+    pic.dataAddr1 := pic.hasDataAdrr;  //Set start address
+  end;
 end;
 constructor TGenCodBas.Create;
 begin
@@ -1939,17 +1868,10 @@ begin
   OnReqStopCodeGen:=@GenCodPicReqStopCodeGen;
   pic := TP6502.Create;
   picCore := pic;   //Referencia picCore
-  //Crea variables de trabajo
-  varStkByte   := TxpEleVar.Create;
-  varStkByte.typ := typByte;
-  varStkWord   := TxpEleVar.Create;
-  varStkWord.typ := typWord;
   //Crea lista de variables temporales
   varFields    := TxpEleVars.Create(true);
   //Inicializa contenedores
   listRegAux   := TPicRegister_list.Create(true);
-  listRegStk   := TPicRegister_list.Create(true);
-  stackTop     := 0;  //Apunta a la siguiente posición libre
   {Crea registro de trabajo A. El registro A, es el registro interno del PIC, y no
   necesita un mapeo en RAM. Solo se le crea aquí, para poder usar su propiedad "used"}
   A := TPicRegister.Create;
@@ -1957,10 +1879,6 @@ begin
 
 
 
-  //Crea registro interno INDF
-  INDF := TPicRegister.Create;
-  INDF.addr := $00;
-  INDF.assigned := true;   //ya está asignado desde el principio
   //Implement calls to Code Generator
   callCurrRAM         := @GenCodBasCallCurrRAM;
   callResetRAM        := @ResetRAM;
@@ -1986,13 +1904,9 @@ begin
 end;
 destructor TGenCodBas.Destroy;
 begin
-  INDF.Destroy;
   A.Destroy;
-  listRegStk.Destroy;
   listRegAux.Destroy;
   varFields.Destroy;
-  varStkByte.Destroy;
-  varStkWord.Destroy;
   pic.Destroy;
   inherited Destroy;
 end;

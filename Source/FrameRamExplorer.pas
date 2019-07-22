@@ -275,7 +275,7 @@ begin
   for i:=0 to high(blockSta) do begin
     //Crea etiqueta
     case blockSta[i].blkType of
-    cs_implemen: begin
+    cs_impleGPR: begin
 //      cv.Brush.Color := clWhite;
       cv.Brush.Color := clNone;
       lbl := 'RAM';

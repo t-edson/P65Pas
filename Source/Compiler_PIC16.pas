@@ -37,7 +37,7 @@ var
   ER_ERR_IN_NUMB, ER_UNDEF_TYPE_, ER_EXP_VAR_IDE, ER_BIT_VAR_REF: String;
   ER_UNKNOWN_ID_, ER_DUPLIC_FUNC_, ER_IDE_TYP_EXP : String;
   ER_COMPIL_PROC, ER_CON_EXP_EXP: String;
-  ER_FIL_NOFOUND, WA_UNUSED_CON_, WA_UNUSED_VAR_,WA_UNUSED_PRO_: String;
+  ER_FIL_NOFOUND, WA_UNUSED_CON_, WA_UNUSED_PRO_: String;
   MSG_RAM_USED, MSG_FLS_USED: String;
 //Funciones básicas
 procedure SetLanguage;
@@ -60,10 +60,9 @@ Esto es lo más cercano a un enlazador, que hay en PicPas.}
 var
   elem   : TxpElement;
   bod    : TxpEleBody;
-  xvar   : TxpEleVar;
   fun    : TxpEleFun;
   iniMain, i: integer;
-  add: Word;
+  add, addr: Word;
 begin
   ExprLevel := 0;
   ResetRAM;
@@ -107,26 +106,17 @@ begin
   UpdateFunLstCalled;   //Actualiza lista "lstCalled" de las funciones usadas
   if HayError then exit;
   SeparateUsedFunctions;
-  //Asigna memoria, primero a las variables locales (y parámetros) de las funciones
-  CreateLocalVarsAndPars;
-  ///////////////////////////////////////////////////////////////////////////////
-  //Reserva espacio para las variables (Que no son de funciones).
-  for xvar in TreeElems.AllVars do begin
-    if xvar.Parent.idClass = eltFunc then continue;  //Las variables de funciones ya se crearon
-    if xvar.nCalled>0 then begin
-      //Asigna una dirección válida para esta variable
-      AssignRAMtoVar(xvar);
-      if HayError then exit;
-    end else begin
-      //Variable no usada
-      xvar.ResetAddress;
-      if xvar.Parent = TreeElems.main then begin
-        //Genera mensaje solo para variables del programa principal.
-        GenWarnPos(WA_UNUSED_VAR_, [xVar.name], xvar.srcDec);
-      end;
-    end;
-  end;
-  //Codifica la función INTERRUPT, si existe (Must be optimizaed)
+  //Asigna memoria para las variables, buscando memoria libre a partir de "GeneralORG".
+  CreateLocalVarsAndPars;  //Primero a las variables locales (y parámetros) de las funciones
+  CreateGlobalVars;        //Luego para variables globales (Que no son de funciones).
+  //Find the next free RAM location, to write functions.
+  pic.freeStart := GeneralORG;  //Start of program block
+  pic.hasDataAdrr := -1;  {Disable. It has been already used for allocatig variables, but
+                          now we just want to find a free RAM location in the program block}
+  pic.dataAddr1   := -1;
+  pic.GetFreeByte(addr);
+  pic.iRam := addr;
+  //Codifica la función INTERRUPT, si existe
   if interruptFunct<>nil then begin;
     fun := interruptFunct;
     //Compila la función en la dirección 0x04
@@ -144,7 +134,7 @@ begin
   //Codifica las subrutinas usadas
   for fun in usedFuncs do begin
     if fun.IsInterrupt then continue;
-debugln('---Función usada: ' + fun.name);
+//debugln('---Función usada: ' + fun.name);
     {According the method we use to add callers (See TCompilerBase.AddCallerTo() ),
     condition "fun.nCalled>0" ensure we have here the first ocurrence of a function. So
     it can be:
@@ -152,7 +142,7 @@ debugln('---Función usada: ' + fun.name);
       - A INTERFACE function.
       - A private IMPLEMENTATION function (without previous declaration).
     }
-    //Compila la función en la dirección actual
+    //Compile used function in the current address.
     fun.adrr := pic.iRam;     //Actualiza la dirección final
     fun.typ.DefineRegister;   //Asegura que se dispondrá de los RT necesarios
     PutLabel('__'+fun.name);
@@ -286,7 +276,7 @@ begin
         CompileLinkProgram;
         consoleTickCount('** Second Pass.');
         //Genera archivo hexa, en la misma ruta del programa
-        pic.GenHex(hexFile);  //CONFIG_NULL;
+        pic.GenHex(hexFile, GeneralORG);
       end;
     end;
     {-------------------------------------------------}
@@ -314,7 +304,7 @@ begin
       if ExcUnused and (v.nCalled = 0) then continue;
       if v.nCalled = 0 then subUsed := '; <Unused>' else subUsed := '';
       if v.typ.IsByteSize then begin
-        lins.Add(v.name + ' EQU ' +  AdrStr(v.addr0)+ subUsed);
+        lins.Add(v.name + ' EQU ' +  AdrStr(v.addr)+ subUsed);
       end else if v.typ.IsWordSize then begin
         lins.Add(v.name+'@0' + ' EQU ' +  AdrStr(v.addrL)+ subUsed);
         lins.Add(v.name+'@1' + ' EQU ' +  AdrStr(v.addrH)+ subUsed);
@@ -324,7 +314,7 @@ begin
         lins.Add(v.name+'@2' + ' EQU ' +  AdrStr(v.addrE)+ subUsed);
         lins.Add(v.name+'@3' + ' EQU ' +  AdrStr(v.addrU)+ subUsed);
       end else begin
-        lins.Add('"' + v.name + '"->' +  AdrStr(v.addr0) + subUsed);
+        lins.Add('"' + v.name + '"->' +  AdrStr(v.addr) + subUsed);
       end;
   end;
   //Reporte de registros de trabajo, auxiliares y de pila
@@ -332,14 +322,6 @@ begin
     lins.Add(';------ Work and Aux. Registers ------');
     for reg in listRegAux do begin
       if not reg.assigned then continue;  //puede haber registros de trabajo no asignados
-      nam := pic.NameRAM(reg.addr); //debería tener nombre
-      adStr := '0x' + IntToHex(reg.addr, 3);
-      lins.Add(nam + ' EQU ' +  adStr);
-    end;
-  end;
-  if (listRegStk.Count>0) then begin
-    lins.Add(';------ Stack Registers ------');
-    for reg in listRegStk do begin
       nam := pic.NameRAM(reg.addr); //debería tener nombre
       adStr := '0x' + IntToHex(reg.addr, 3);
       lins.Add(nam + ' EQU ' +  adStr);

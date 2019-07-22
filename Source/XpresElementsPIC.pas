@@ -368,7 +368,7 @@ type //Elements class
      Las direcciones addr0, addr1, addr2 y addr3 son normalmente consecutivas, pero
      hay excepciones.
     }
-    addr0: word;   //Base address
+    addr: word;   //Base address
     function addrL: word;   //Devuelve la dirección absoluta de la variable (LOW)
     function addrH: word;   //Devuelve la dirección absoluta de la variable (HIGH)
     function addrE: word;   //Devuelve la dirección absoluta de la variable (HIGH)
@@ -1092,7 +1092,11 @@ end;
 { TxpEleVar }
 function TxpEleVar.Gettyp: TxpEleType;
 begin
-  if ftyp.copyOf<>nil then Result := ftyp.copyOf else Result := ftyp;
+  if ftyp.copyOf<>nil then begin
+    Result := ftyp.copyOf
+  end else begin
+    Result := ftyp;
+  end;
 end;
 procedure TxpEleVar.Settyp(AValue: TxpEleType);
 begin
@@ -1102,37 +1106,37 @@ end;
 function TxpEleVar.addrL: word;
 {Dirección absoluta de la variable de menor pero, cuando es de tipo WORD.}
 begin
-  Result := addr0;
+  Result := addr;
 end;
 function TxpEleVar.addrH: word;
 {Dirección absoluta de la variable de mayor pero, cuando es de tipo WORD.}
 begin
-  Result := addr0 + 1;
+  Result := addr + 1;
 end;
 function TxpEleVar.addrE: word;
 begin
-  Result := addr0 + 2;
+  Result := addr + 2;
 end;
 function TxpEleVar.addrU: word;
 begin
-  Result := addr0 + 3;
+  Result := addr + 3;
 end;
 function TxpEleVar.AddrString: string;
 {Devuelve una cadena, que representa a la dirección física.}
 begin
   if typ.IsByteSize then begin
-    Result := '$' + IntToHex(addr0, 3);
+    Result := '$' + IntToHex(addr, 3);
   end else if typ.IsWordSize then begin
-    Result := '$' + IntToHex(addr0, 3);
+    Result := '$' + IntToHex(addr, 3);
   end else if typ.IsDWordSize then begin
-    Result := '$' + IntToHex(addr0, 3);
+    Result := '$' + IntToHex(addr, 3);
   end else begin
     Result := '';   //Error
   end;
 end;
 procedure TxpEleVar.ResetAddress;
 begin
-  addr0 := 0;
+  addr := 0;
 end;
 constructor TxpEleVar.Create;
 begin

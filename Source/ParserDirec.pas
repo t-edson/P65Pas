@@ -96,6 +96,7 @@ type
     function ScanIFDEF(out tok: string): boolean;
     procedure ProcCLEAR_STATE_RAM;
     procedure ProcSET_STATE_RAM;
+    procedure ProcSET_DATA_ADDR;
     procedure ProcERROR;
     procedure ProcINFO;
     procedure ProcWARNING;
@@ -1099,6 +1100,16 @@ begin
   picCore.SetStatRAMCom(txtMsg);
   if picCore.MsjError<>'' then GenErrorDir(picCore.MsjError);
 end;
+procedure TParserDirecBase.ProcSET_DATA_ADDR;
+var
+  txtMsg: String;
+begin
+  lexDir.Next;  //pasa al siguiente
+  txtMsg := CogExpresion(0).valStr;
+  if HayError then exit;
+  picCore.SetDataAddr(txtMsg);
+  if picCore.MsjError<>'' then GenErrorDir(picCore.MsjError);
+end;
 procedure TParserDirecBase.ProcCLEAR_STATE_RAM;
 {Limpia el estado de la memoria RAM}
 begin
@@ -1436,27 +1447,28 @@ begin
   end;
   //sigue identificador
   case UpperCase(lexDir.GetToken) of
-  'FREQUENCY' : ProcFREQUENCY;
-  'ORG'       : ProcORG;
-  'INCLUDE'   : ProcINCLUDE(lin, ctxChanged);
-  'OUTPUTHEX' : ProcOUTPUTHEX(lin);
-  'DEFINE'    : ProcDEFINE(lin);
-  'IFDEF'     : ProcIFDEF(lin, false);
-  'IFNDEF'    : ProcIFDEF(lin, true);
-  'IF'        : ProcIF(lin, false);
-  'IFNOT'     : ProcIF(lin, true);
-  'ELSE'      : ProcELSE;
-  'ENDIF'     : ProcENDIF;
-  'MODE'      : ProcMODE;
-  'MSGBOX'    : ProcMSGBOX;
-  'MSGERR'    : ProcMSGERR;
-  'MSGWAR'    : ProcMSGWAR;
-  'INFO'      : ProcINFO;
-  'WARNING'   : ProcWARNING;
-  'ERROR'     : ProcERROR;
-  'SET'       : ProcSET;
-  'CLEAR_STATE_RAM': ProcCLEAR_STATE_RAM;
-  'SET_STATE_RAM'  : ProcSET_STATE_RAM;
+  'FREQUENCY'   : ProcFREQUENCY;
+  'ORG'         : ProcORG;
+  'INCLUDE'     : ProcINCLUDE(lin, ctxChanged);
+  'OUTPUTHEX'   : ProcOUTPUTHEX(lin);
+  'DEFINE'      : ProcDEFINE(lin);
+  'IFDEF'       : ProcIFDEF(lin, false);
+  'IFNDEF'      : ProcIFDEF(lin, true);
+  'IF'          : ProcIF(lin, false);
+  'IFNOT'       : ProcIF(lin, true);
+  'ELSE'        : ProcELSE;
+  'ENDIF'       : ProcENDIF;
+  'MODE'        : ProcMODE;
+  'MSGBOX'      : ProcMSGBOX;
+  'MSGERR'      : ProcMSGERR;
+  'MSGWAR'      : ProcMSGWAR;
+  'INFO'        : ProcINFO;
+  'WARNING'     : ProcWARNING;
+  'ERROR'       : ProcERROR;
+  'SET'         : ProcSET;
+  'CLEAR_STATE_RAM':ProcCLEAR_STATE_RAM;
+  'SET_STATE_RAM': ProcSET_STATE_RAM;
+  'SET_DATA_ADDR': ProcSET_DATA_ADDR;
   else
     //Puede ser una instrucción, macro o variable
     if DefinedInstruc(lexDir.GetToken, dins) then begin

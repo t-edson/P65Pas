@@ -163,10 +163,11 @@ protected //ROP and expressions
   procedure OperPre(var Op1: TOperand; opr: TxpOperator);
   procedure OperPost(var Op1: TOperand; opr: TxpOperator);
   //Expresions manage
-  procedure GetOperandIdent(out Op: TOperand; ToSet: boolean);
-  procedure GetOperand(out Op: Toperand; ToSet: boolean = false); virtual;
+  procedure GetOperandIdent(out Op: TOperand; opMode: TOpReadMode);
+  procedure GetOperand(out Op: Toperand; opMode: TOpReadMode); virtual;
   function GetOperator(const Op: Toperand): TxpOperator;
-  function GetExpression(const prec: Integer): TOperand;
+  function GetExpression(const prec: Integer; opMode: TOpReadMode=opmGetter
+    ): TOperand;
   procedure GetExpressionE(posExpres: TPosExpres);
 public    //Types to implement
   typBool : TxpEleType;
@@ -198,8 +199,6 @@ protected //Files
   function ExpandRelPathTo(BaseFile, FileName: string): string;
 protected //Container lists for registers
   listRegAux : TPicRegister_list;  //lista de registros de trabajo y auxiliares
-  listRegStk : TPicRegister_list;  //lista de registros de pila
-  stackTop   : integer;   //índice al límite superior de la pila
 public    //Access to CPU hardware
   picCore    : TCPUCore;   //Objeto PIC Core. This is an abstraction. Real CPU is not yet specified.
   devicesPath: string;     //path to untis for this device
@@ -222,7 +221,7 @@ protected  //Miscellaneous
   function GenerateUniqName(base: string): string;
   procedure getListOfIdent(out itemList: TStringDynArray; out
     srcPosArray: TSrcPosArray);
-  procedure IdentifyField(xOperand: TOperand; ToSet: boolean);
+  procedure IdentifyField(xOperand: TOperand; opMode: TOpReadMode);
   procedure LogExpLevel(txt: string);
   function IsTheSameVar(var1, var2: TxpEleVar): boolean; inline;
   function AddCallerTo(elem: TxpElement): TxpEleCaller;
@@ -1036,7 +1035,7 @@ begin
   setlength(itemList   , n+1);
   setlength(srcPosArray, n+1);
 end;
-procedure TCompilerBase.IdentifyField(xOperand: TOperand; ToSet: boolean);
+procedure TCompilerBase.IdentifyField(xOperand: TOperand; opMode: TOpReadMode);
 {Identifica el campo de una variable. Si encuentra algún problema genera error.
 Notar que el parámetro es por valor, es decir, se crea una copia, por seguridad.
 Puede generar código de evaluación. Devuelve el resultado en "res". }
@@ -1044,7 +1043,7 @@ Puede generar código de evaluación. Devuelve el resultado en "res". }
   {Call the Getter or Setter, of the field acordding to "ToSet". If gives error
   return FALSE}
   begin
-    if ToSet then begin
+    if opMode = opmSetter then begin
       //Mode Setter
       if field.procSet= nil then begin
         GenError('Cannot assign to this operand.');
@@ -1052,7 +1051,7 @@ Puede generar código de evaluación. Devuelve el resultado en "res". }
       end;
       field.procSet(@xOperand)
     end else begin
-      //Mode Setter
+      //Mode Getter
       if field.procGet= nil then begin
         GenError('Cannot read this operand.');
         exit(false);
@@ -1075,7 +1074,7 @@ begin
         if cIn.tok = '.' then begin
           //Aún hay más campos, seguimos procesando
           //Como "IdentifyField", crea una copia del parámetro, no hay cruce con el resultado
-          IdentifyField(res, ToSet);
+          IdentifyField(res, opMode);
         end;
         exit;
       end;
@@ -1100,7 +1099,7 @@ begin
       if cIn.tok = '.' then begin
         //Aún hay más campos, seguimos procesando
         //Como "IdentifyField", crea una copia del parámetro, no hay cruce con el resultado
-        IdentifyField(res, ToSet);
+        IdentifyField(res, opMode);
       end;
       exit;
     end;
@@ -1114,7 +1113,7 @@ begin
       if cIn.tok = '.' then begin
         //Aún hay más campos, seguimos procesando
         //Como "IdentifyField", crea una copia del parámetro, no hay cruce con el resultado
-        IdentifyField(res, ToSet);
+        IdentifyField(res, opMode);
       end;
       exit;
     end;
@@ -1132,7 +1131,7 @@ function TCompilerBase.IsTheSameVar(var1, var2: TxpEleVar): boolean; inline;
 {Indica si dos variables bit son la misma, es decir que apuntan, a la misma dirección
 física}
 begin
-  Result := (var1.addr0 = var2.addr0);
+  Result := (var1.addr = var2.addr);
 end;
 function TCompilerBase.AddCallerTo(elem: TxpElement): TxpEleCaller;
 {Agregar una llamada a un elemento de la sintaxis.
@@ -1276,7 +1275,7 @@ begin
    {$ENDIF}
 end;
 
-procedure TCompilerBase.GetOperandIdent(out Op: TOperand; ToSet: boolean);
+procedure TCompilerBase.GetOperandIdent(out Op: TOperand; opMode: TOpReadMode);
 {Read an operand spcified by one identifier. Return in "Op". This routine was part of
 GetOperand(), but it was splitted because:
 * This is a big code and could grow more.
@@ -1329,7 +1328,7 @@ begin
       {$IFDEF LogExpres} Op.txt:= xvar.name; {$ENDIF}   //Take the text
       //Verify if has reference to fields with "."
       if (cIn.tok = '.') or (cIn.tok = '[') then begin
-        IdentifyField(Op, ToSet);
+        IdentifyField(Op, opMode);
         Op := res;  //notar que se usa "res".
         if HayError then exit;
         {Como este operando es de tipo <variable>.<algo>... , actualizamos el campo
@@ -1350,7 +1349,7 @@ begin
     {$IFDEF LogExpres} Op.txt:= xcon.name; {$ENDIF}   //toma el texto
     //Verifica si tiene referencia a campos con "."
     if (cIn.tok = '.') or (cIn.tok = '[') then begin
-      IdentifyField(Op, ToSet );
+      IdentifyField(Op, opMode);
       Op := res;  //notar que se usa "res".
       if HayError then exit;;
     end;
@@ -1474,7 +1473,7 @@ begin
     exit;
   end;
 end;
-procedure TCompilerBase.GetOperand(out Op: Toperand; ToSet: boolean);
+procedure TCompilerBase.GetOperand(out Op: Toperand; opMode: TOpReadMode);
 {This is part of the Expression analyzer function. Read and, optionally, can generate
 code to read an operand. The operand is returned in the parameter "Op", by reference, to
 avoid using a local copy (like "Result").
@@ -1517,15 +1516,21 @@ begin
     Op.valInt := cod;
     cIn.Next;    //Pasa al siguiente
   end else if cIn.tokType = tnString then begin  //constante cadena
+    srcpos := cIn.ReadSrcPos;
     nElem := length(cIn.tok) - 2;  //Don't consider quotes
     str := copy(cIn.tok, 2, nElem);
     cIn.Next;    //Pasa al siguiente
-    if cIn.tokType = tnChar then  begin  //like #255
+    while cIn.tokType = tnChar do begin  //like #255
       //Concat the next char to simulate concat, considering there is not a
       //string type.
-      ascCode := StrToInt(Copy(cIn.tok,2,3));
-      str += chr(ascCode and $FF);
-      cIn.Next;    //Pasa al siguiente
+      if TryStrToInt(Copy(cIn.tok,2,3), ascCode) then begin
+        str += chr(ascCode and $FF);
+        cIn.Next;    //Pasa al siguiente
+        inc(nElem);
+      end else begin
+        GenError(ER_IN_CHARACTER);   //Casi seguro que es el caracter "#" solo.
+        exit;
+      end;
     end;
     {$IFDEF LogExpres} Op.txt:= cIn.tok; {$ENDIF}   //toma el texto
     if length(str) = 1 then begin
@@ -1538,6 +1543,16 @@ begin
         //There is not a similar type. We create a new type.
         typName := GenArrayTypeName('char', nElem); //Op.nItems won't work
         xtyp := CreateEleTypeArray(typName, srcPos, typChar, nElem);
+        //Add to the syntax tree
+        xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
+        if TreeElems.curNode.idClass = eltBody then begin
+          //This should be the normal position where we espect to have a lieral string
+          //We prefer to declare the type in the parent (procedure or main)
+          TreeElems.AddElementParent(xtyp, true);  //Add at the beginning
+        end else begin
+          //This shouldn't appear here.
+          TreeElems.AddElement(xtyp);
+        end;
       end;
       Op.SetAsConst(xtyp);
       Op.StringToArrayOfChar( str );
@@ -1572,7 +1587,7 @@ begin
     end;
     GenError(ER_NOT_IMPLEM_);
   end else if cIn.tokType = tnIdentif then begin  //puede ser variable, constante, función
-    GetOperandIdent(Op, ToSet);
+    GetOperandIdent(Op, opMode);
     //Puede salir con error.
   end else if cIn.tokType = tnBoolean then begin  //true o false
     {$IFDEF LogExpres} Op.txt:= cIn.tok; {$ENDIF}   //toma el texto
@@ -1588,7 +1603,7 @@ begin
     If cIn.tok = ')' Then begin
        cIn.Next;  //lo toma
         if (cIn.tok = '.') or (cIn.tok = '[') then begin
-         IdentifyField(Op, ToSet);
+         IdentifyField(Op, opMode);
          Op := res;  //notar que se usa "res".
          if HayError then exit;;
        end;
@@ -1673,7 +1688,7 @@ begin
     posAct := cIn.PosAct;   //Esto puede ser pesado en términos de CPU
     oprTxt := cIn.tok;   //guarda el operador
     cIn.Next; //pasa al siguiente
-    GetOperand(Op1, ToSet);   //Takes the operand.
+    GetOperand(Op1, opMode);   //Takes the operand.
     if HayError then exit;
     //Ahora ya tenemos el tipo. Hay que ver si corresponde el operador
     opr := Op1.Typ.FindUnaryPreOperator(oprTxt);
@@ -1705,7 +1720,7 @@ begin
   end;
   cIn.Next;   //toma el token
 end;
-function TCompilerBase.GetExpression(const prec: Integer): TOperand; //inline;
+function TCompilerBase.GetExpression(const prec: Integer; opMode: TOpReadMode = opmGetter): TOperand; //inline;
 {Expression analyzer. This is probably, the most important function of the compiler
  It process an expression in the current input context, and call events in order to
  the expression be compiled (or interpreted if we implement an interpreter).
@@ -1720,7 +1735,7 @@ var
 begin
   nOpern := 0;  //Clear counter for operands
   //----------------Get first operand------------------
-  GetOperand(Op1, false);
+  GetOperand(Op1, opMode);
   if HayError then exit;
   //Verifica si termina la expresion
   cIn.SkipWhites;
@@ -1754,7 +1769,7 @@ begin
       cIn.SkipWhites;
       //Verificación
       if (cIn.tok = '.') or (cIn.tok = '[') then begin
-        IdentifyField(Op1, False);
+        IdentifyField(Op1, opMode);
         if HayError then exit;;
         Op1 := res;  //notar que se usa "res".
         cIn.SkipWhites;
@@ -1804,9 +1819,11 @@ begin
     or a setter:
       a := b;
     }
-    //First operand compiled always as setter, because it's supposed to be
-    //de first part of an assigment.
-    GetOperand(Op1, true);  //Compile as setter.
+    {First operand compiled always as setter, because it's supposed to be
+    de first part of an assigment. We use GetExpression() (instead of GetOperand() because
+    we want to consider expressions like p^.something to be conisedered as a whole operand.}
+    //Compile as setter until an operator of precedence of ":=" (2).
+    Op1 := GetExpression(2, opmSetter);
     if HayError then exit;
     ProcComments;
     opr1 := GetOperator(Op1); //We can validate assigment
