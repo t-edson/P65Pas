@@ -1248,7 +1248,7 @@ end;
 procedure TGenCod.byte_mul_byte_16(fun: TxpEleFun);
 //Routine to multiply 8 bits X 8 bits
 //pasA * parB -> [H:A]  Usa registros: A,H,E,U
-//Basado en código de https://codebase64.org/doku.php?id=base:short_8bit_multiplication_16bit_product
+//Based on https://codebase64.org/doku.php?id=base:short_8bit_multiplication_16bit_product
 var
   m0, m1: integer;
   fac1,  fac2: TxpEleVar;
@@ -1277,6 +1277,8 @@ _LABEL_post(m1);
     _RTS();
 end;
 procedure TGenCod.ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
+var
+  AddrUndef: boolean;
 begin
   case stoOperation of
   stConst_Const: begin
@@ -1303,12 +1305,15 @@ begin
     end;
     //General case
     SetROBResultExpres_word(Opt);
-    AddCallerTo(f_byte_mul_byte_16);  //Declare use
     _LDAi(value1);
     _STA(f_byte_mul_byte_16.pars[0].pvar.addr);
     _LDA(byte2);
     _STA(f_byte_mul_byte_16.pars[1].pvar.addr);
-    _JSR(f_byte_mul_byte_16.adrr);
+    AddCallerTo(f_byte_mul_byte_16);  //Declare use
+    AddCallerTo(f_byte_mul_byte_16.pars[0].pvar);  //Declare use
+    AddCallerTo(f_byte_mul_byte_16.pars[1].pvar);  //Declare use
+    //_JSR(f_byte_mul_byte_16.adrr);
+    f_byte_mul_byte_16.procCall(f_byte_mul_byte_16, AddrUndef);   //Code the "JSR"
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);

@@ -129,7 +129,7 @@
 	  "{$ERROR 'Hello'}"
 	  "{$CLEAR_STATE_RAM}"
 	  "{$SET_STATE_RAM '\_'}"
-	  "{$SET_STATE_RAM '000-00B:IMP'}"
+	  "{$SET_STATE_RAM '000-00B:GPR'}"
 	  "{$SET_DATA_ADDR '\_'}"
 	  "{$SET_DATA_ADDR '00F0-00FF'}"
 	  "{$RESET_PINS}"
