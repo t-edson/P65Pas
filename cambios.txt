@@ -14,13 +14,23 @@ Se crea el registro de índice IX.
 Se implementa la operación de multiplicación de bytes y se revisan las operaciones de
 suma.
 Se implementa la optimización para reusar variables para parámetros.
+Se revisan las operaciones de desplazamientos.
+Se corrigen las búsquedas de elementos con FindNext() en TCompilerBase.GetOperandIdent().
+Se corrige las búsquedas con TXpTreeElements.FindNextFuncName().
 
 Revisar el bug, cuando se ejecuta, con arreglos de bytes:
   a[0] := b[i] + c[i];
 Revisar el caso de las expresiones con  +=, -=, ...
 
-Las funciones INLINE se declaran de la sgte. forma:
+Una mejora en el diseño podría ser:
+Revisar las llamadas "Funciones del sistema", ya que con el actual método de llamada a 
+funciones del sistema, parecen innecesarios. Rutinas como inc() o dec() son realmente 
+funciones INLINE, que pueden llamar, si lo deciden, a funciones del sistema.
+Además pareciera que estas "funciones de sistema" están haceindo mal uso del campo "procCall"
+ya que en todos los casos (salvo en estas llamadas "funciones del sistema") aputan a la 
+rutina "callFunctCall", que es la única que debería ser usada para verdaderas funciones.
 
+Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
 inline func1(var x: byte; const y: word; expr z: char);
 begin
 

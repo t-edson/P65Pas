@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<Language name="PicPas Pascal" ext="pas">
+<Language name="P65Pas Pascal" ext="pas">
   <!-- Atributos a usar. No cambiar formato porque se modifica automáticamente-->
   <Attribute Name="Keyword"   ForeCol="#00A4F2" Bold="True"  Italic="False" Underline="False"/>
   <Attribute Name="Comment"   ForeCol="#8D8D8D" Bold="False" Italic="False" Underline="False"/>
@@ -33,7 +33,7 @@
 	<List Name="PlantillasSec" IconIndex='5'>
   "program ... begin ... end.|{Description of the program.}\nprogram nombre;\nbegin\n  \_\nend."
   "unit ... end.|{Description of the unit.}\nunit unitName;\ninterface\n  \_\nimplementation\n\nend."
-  "uses PIC16F84A;|uses PIC16F84A;\n"
+  "uses Commodore64;|uses Commodore64;\n"
   "var ... varName ... |var\n\u  \_varName: byte;"
   "const ... |const\n\u  \_consName = 0;"
   "type ... |type\n\u  \_typeName = byte;"
@@ -138,12 +138,6 @@
 	  "{$MAP_RAM_TO_PIN '\_'}"
 	  "{$MAP_RAM_TO_PIN '005:0-17,1-18,2-1,3-2,4-3'}"
 	  
-         "{$PROCESSOR PIC16C63}"
-         "{$PROCESSOR PIC16CR63}"
-         "{$PROCESSOR PIC16C65}"
-         "{$PROCESSOR PIC16C65A}"
-         "{$PROCESSOR PIC16CR65}"
-		 
 	</OpenOn>	
 	<!-- Completado en ASM-->
 	<OpenOn AfterPattern="Asm" FilterBy="LastIdentPart">

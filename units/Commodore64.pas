@@ -5,9 +5,11 @@ Based on information of: http://sta.c64.org/cbm64krnfunc.html
 }
 {$ORG $0801}
 {$COMMODORE64}
-//Define some bytes from Zero page
+//Set RAM for Commodore 64
+//{$CLEAR_STATE_RAM} If we clears, we'll need to define all RAM map
 {$SET_DATA_ADDR ''}
-{$SET_DATA_ADDR '00F7-00FE'} 
+{$SET_DATA_ADDR '00F7-00FE'}  //Some bytes from Zero page
+{$SET_STATE_RAM '0100-01FF:SFR'} //Stack
 unit Commodore64;
 interface
 type 
@@ -31,14 +33,18 @@ var
   //Write byte to default output. (If not screen, must call OPEN and CHKOUT beforehands.)
   procedure CHROUT(c: char register);
   //Read byte from default input. 
-  procedure GETIN;
+  procedure GETIN: byte;
   
   //////////// BASIC FUNCTIONS //////////
   //Output a word Number in ASCII Decimal Digits
   procedure LINPRT(n:word);
+  procedure LINPRT(n:byte);
   procedure STROUT(str: pointer);
   procedure RANDOM: byte;
-  
+
+  /////////// DIRECT ACCESS TO SCREEN ////////
+  procedure PutChar(x: byte; y: byte registerY; c: char): word;
+
 implementation
   procedure SCINIT;
   begin
@@ -80,7 +86,7 @@ implementation
     JSR $FFD2  ;argument already in A register
     end 
   end; 
-  procedure GETIN;
+  procedure GETIN: byte;
   {Read byte from default input. (If not keyboard, must call OPEN and CHKIN beforehands.)
   Input: <none>
   Output: A = Byte read.}
@@ -101,6 +107,17 @@ implementation
     JSR $BDCD 	 
     end 
   end; 
+  procedure LINPRT(n:byte);
+  {Print the byte number specified. 
+  This routine, first convert the number to Floating Point Notation,
+  so it's some slow.}
+  begin
+    asm
+    LDA #0
+    LDX n
+    JSR $BDCD 	 
+    end 
+  end; 
   procedure STROUT(str: pointer);
   {Prints a string delimited by NULL}
   begin
@@ -111,7 +128,7 @@ implementation
     end 
   end; 
   procedure RANDOM: byte;
-  {Returns a pseudo random byte.}
+  {Returns a pseudo-random byte.}
   begin
     asm 
 	    LDA #0  ;Use internal clcck
@@ -120,4 +137,44 @@ implementation
     end 
   end; 
 
+  procedure PutChar(x: byte; y: byte registerY; c: char): word;
+  begin
+    asm 
+       ;--- Load Y in (H,A)
+	     LDA #0
+       STA __H
+       TYA
+       ;--- Shift (H,A) 3 times 
+       ASL
+       ROL __H
+       ASL
+       ROL __H
+       ASL
+       ROL __H
+       ;--- Save in IX (IX <- Y * 8) 
+       STA __IX.low
+       LDY  __H
+       STY __IX.high
+       ;--- Shift (H,A) 2 times: (H,A) <- y*32 
+       ASL
+       ROL __H
+       ASL
+       ROL __H
+       ;--- Add (H,A) to IX: IX <- IX + y*32 + 400
+       CLC
+       ADC __IX.low  ;LSB
+       STA __IX.low
+       LDA __H      ;MSB
+       ADC __IX.high
+       CLC
+       ADC #$04
+       STA __IX.high
+       ;--- Here we have IX <- Y*40 + $400. 
+       LDY x
+       LDA c
+       CLC  ;Prepara Index Y address mode
+       STA (__IX), Y  ; Write in IX + X
+    end
+  end; 
+  
 end.

@@ -3,7 +3,7 @@
   <language Val="es - Español"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\tmp\P65Pas-0.7.1\temp\newfile-0.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\newfile-0.pas
 "/>
   <SplitterCol Val="2368548"/>
   <MessPanPan Val="2368548"/>
@@ -33,7 +33,7 @@
     <cFonEdi Val="2368548"/>
     <cLinAct Val="4210688"/>
     <Autoindent Val="True"/>
-    <MarLinAct Val="False"/>
+    <MarLinAct Val="True"/>
     <ResPalCur Val="True"/>
     <ResPalCFon Val="15780518"/>
     <ResPalCTxt Val="0"/>
@@ -44,11 +44,11 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\tmp\P65Pas-0.7.1\temp\NewFile1.pas
-D:\tmp\P65Pas-0.7.1\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\aPistas.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\newfile-0.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\newfile-0.pas
 D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\units\Commodore64.pas
+D:\tmp\P65Pas-0.7.1\units\Commodore64.pas
+D:\tmp\P65Pas-0.7.1\temp\aPistas.pas
+D:\tmp\P65Pas-0.7.1\temp\newfile-0.pas
 "/>
   </Edit>
   <IncDecVar Val="True"/>
