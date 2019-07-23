@@ -21,7 +21,8 @@ type
     end;
 
   TCPUCellState = (
-     cs_implemen,   //Implemented. Can be used.
+     cs_impleSFR,   //Implemented. Used by Oeprative System o Kernel
+     cs_impleGPR,   //Implemented. Can be used.
      cs_unimplem    //Not implemented.
   );
   TCPURamUsed = (
@@ -51,7 +52,8 @@ type //Models for RAM memory
     state  : TCPUCellState; //Status of the cell
     property value: byte read Getvalue write Setvalue;
     property dvalue: byte read Fvalue write Fvalue;   //Direct access to "Fvalue".
-    function Avail: boolean;
+    function Avail: boolean;  //RAM implemented to use in programs
+    function Free: boolean;   //RAM implemented and unused
   public  //Campos para deputación
     breakPnt  : boolean;  //Indicates if this cell have a Breakpoint
     {Be careful on the size of this record, because it's going to be multiplied by 64K}
@@ -75,8 +77,10 @@ type //Models for RAM memory
 type
 
   { TCPUCore }
-  {Abcestor of all 8 bits PIC cores}
+  {Abcestor of all 8 bits CPU cores}
   TCPUCore = class
+  private
+    function GetTokAddress(var str: string; delimiter: char): word;
   public //Limits
     {This variables are set just one time. So they work as constant.}
     CPUMAXRAM: dword;  //Max virtual RAM used by the CPU
@@ -90,7 +94,7 @@ type
     nClck   : Int64;    //Contador de ciclos de reloj
     CommStop: boolean;  //Bandera para detener la ejecución
     OnExecutionMsg: procedure(message: string) of object;  //Genera mensaje en ejecución
-  protected  //Generation of HEX files
+  protected  //Generation of PRG files
     minUsed  : dword;         //Dirección menor de la ROM usada
     maxUsed  : dword;         //Dirección mayor de la ROM usdas
     hexLines : TStringList;  //Uusado para crear archivo *.hex
@@ -100,15 +104,19 @@ type
     function DisassemblerAt(addr: word; out nBytesProc: byte; useVarName: boolean
       ): string; virtual; abstract; //Desensambla la instrucción actual
   public  //RAM memory functions
+    hasDataAdrr: integer; //Flag/index to indicate a Data block has defined.
+    dataAddr1: integer;   //Start address for Data variables (-1 if not used)
+    dataAddr2: integer;
     procedure ClearMemRAM;
     procedure DisableAllRAM;
     procedure SetStatRAM(i1, i2: word; status0: TCPUCellState);
     function SetStatRAMCom(strDef: string): boolean;
+    function SetDataAddr(strDef: string): boolean;
     function HaveConsecRAM(const i, n: word; maxRam: dword): boolean; //Indica si hay "n" bytes libres
     procedure UseConsecRAM(const i, n: word);  //Ocupa "n" bytes en la posición "i"
     procedure SetSharedUnused;
     procedure SetSharedUsed;
-  public  //ram memory functions
+  public  //RAM memory functions
     function UsedMemRAM: word;  //devuelve el total de memoria ram usada
   public  //RAM name managment
     function NameRAM(const addr: word): string;
@@ -126,6 +134,7 @@ type
     function ReadPC: dword; virtual; abstract;  //Defined DWORD to cover the 18F PC register
     procedure WritePC(AValue: dword); virtual; abstract;
   public  //Others
+
     procedure addTopLabel(lbl: string);  //Add a comment to the ASM code
     procedure addTopComm(comm: string; replace: boolean = true);  //Add a comment to the ASM code
     procedure addSideComm(comm: string; before: boolean); //Add lateral comment to the ASM code
@@ -147,29 +156,70 @@ begin
   Fvalue := AValue;
 end;
 function TCPURamCell.Avail: boolean;
-{Indica si el registro es una dirección disponible en la memoria RAM.}
+{Indicates if the RAM cell is available for programmer.}
 begin
-  Result := (state = cs_implemen);
+  Result := (state = cs_impleGPR);
+end;
+function TCPURamCell.Free: boolean;
+begin
+  Result := (state = cs_impleGPR) and (used = ruUnused);
+end;
+function TCPUCore.GetTokAddress(var str: string; delimiter: char): word;
+{Extract a number (address) from a string and delete until de delimiter.
+If delimiter is #0, it's consider all the text.
+If fail update the variable "MsjError".}
+var
+  p: SizeInt;
+  n: Longint;
+begin
+  if delimiter=#0 then begin
+    //Until the end of line
+    p := length(str) + 1;
+  end else begin
+    //Until delimiter
+    p := pos(delimiter, str);
+    if p = 0 then begin
+      MsjError := 'Expected "'+delimiter+'".';
+      exit(0);
+    end;
+  end;
+  //Have delimiter. Get number
+  if not TryStrToInt('$'+copy(str,1,p-1), n) then begin
+    MsjError := 'Wrong address.';
+    exit(0);
+  end;
+  delete(str, 1, p);  //delete number and delimiter
+  if n<0 then begin
+    MsjError := 'Address cannot be negative.';
+    exit(0);
+  end;
+  if n>$FFFF then begin
+    MsjError := 'Address cannot be greater than $FFFF.';
+    exit(0);
+  end;
+  exit(n);
 end;
 
 { TCPUCore }
 //RAM memory functions
 procedure TCPUCore.ClearMemRAM;
-{Limpia el contenido de la memoria}
+{Clear content of RAM. Doesn't change the state.}
 var
   i: Integer;
 begin
   for i:=0 to high(ram) do begin
-    ram[i].dvalue := $00;
-    ram[i].used := ruUnused;
-    ram[i].name:='';
-    ram[i].shared := false;
-    ram[i].breakPnt := false;
-    ram[i].topLabel   := '';
+    ram[i].dvalue    := $00;
+    ram[i].used      := ruUnused;
+    ram[i].name      :='';
+    ram[i].shared    := false;
+    ram[i].breakPnt  := false;
+    ram[i].topLabel  := '';
     ram[i].sideComment:= '';
-    ram[i].topComment := '';
-    ram[i].idFile   := -1;  //Indica no inicializado
-//    ram[i].state := cs_unimplem;  //por defecto se considera no implementado
+    ram[i].topComment:= '';
+    ram[i].idFile    := -1;           //Not initialized.
+    {Don't change the implementation. Because "state" must be defined just once at the
+    First Pass when processing $CLEAR_STATE_RAM and $SET_STATE_RAM }
+//    ram[i].state     := cs_impleGPR;
   end;
 end;
 procedure TCPUCore.DisableAllRAM;
@@ -194,20 +244,20 @@ begin
   end;
 end;
 function TCPUCore.SetStatRAMCom(strDef: string): boolean;
-{Define el estado de la memoria RAM, usando una cadena de definición.
-La cadena de definición, tiene el formato:
-<comando 1>, <comando 2>, ...
-Cada comando, tiene el formato:
-<dirIni>-<dirFin>:<estado de memoria>
-Un ejemplo de cadena de definición, es:
-   '000-01F:IMP, 020-07F:NIM'
-Si hay error, devuelve FALSE, y el mensaje de error en MsjError.
+{Define the RAM state using a Definitions string.
+Definitions string have the format:
+<command 1>, <command 2>, ...
+Each command have the format:
+<addStart>-<addEnd>:<memory state>
+One example for Definitions string, is:
+   '0000-01FF:SFR, 8000-FFFF:NIM'
+If error ocurrs, return FALSE, and the error messaje in MsjError.
 }
 var
   coms: TStringList;
   add1, add2: longint;
   state: TCPUCellState;
-  staMem, com, str: String;
+  com, str: String;
 begin
   Result := true;
   coms:= TStringList.Create;
@@ -217,33 +267,24 @@ begin
     for str in coms do begin
       com := UpCase(trim(str));
       if com='' then continue;
-      if length(com)<>11 then begin
-        MsjError := 'Memory definition syntax error: Bad string size.';
+      //Find Address1
+      add1 := GetTokAddress(com, '-');
+      if MsjError<>'' then begin
+        MsjError := 'Memory definition syntax error: ' + MsjError;
         exit(false);
       end;
-      if com[4] <> '-' then begin
-        MsjError := 'Memory definition syntax error: Expected "-".';
+      //Find Address1
+      add2 := GetTokAddress(com, ':');
+      if MsjError<>'' then begin
+        MsjError := 'Memory definition syntax error: ' + MsjError;
         exit(false);
       end;
-      if com[8] <> ':' then begin
-        MsjError := 'Memory definition syntax error: Expected ":".';
-        exit(false);
-      end;
-      //Debe tener el formato pedido
-      if not TryStrToInt('$'+copy(com,1,3), add1) then begin
-        MsjError := 'Memory definition syntax error: Wrong address.';
-        exit(false);
-      end;
-      if not TryStrToInt('$'+copy(com,5,3), add2) then begin
-        MsjError := 'Memory definition syntax error: Wrong address.';
-        exit(false);
-      end;
-      staMem := copy(com, 9, 3);
-      case staMem of
-      'IMP': state := cs_implemen;
+      case copy(com,1,3) of
+      'SFR': state := cs_impleSFR;
+      'GPR': state := cs_impleGPR;
       'NIM': state := cs_unimplem;
       else
-        MsjError := 'Memory definition syntax error: Expected SFR or GPR';
+        MsjError := 'Memory definition syntax error: Expected SFR, GPR or NIM';
         exit(false);
       end;
       //Ya se tienen los parámetros, para definir la memoria
@@ -252,6 +293,44 @@ begin
   finally
     coms.Destroy;
   end;
+end;
+function TCPUCore.SetDataAddr(strDef: string): boolean;
+{Define primary address to be used for allocating variables.
+Definitions string have the format:
+<command 1>, <command 2>, ...
+Each command have the format:
+<addStart>-<addEnd>:<memory state>
+One example for Definitions string, is:
+   '00F0-00FF'
+If error ocurrs, return FALSE, and the error message in MsjError.
+}
+var
+  add1, add2: longint;
+  com: String;
+begin
+  Result := true;
+
+  com := UpCase(trim(strDef));
+  if com='' then begin
+    hasDataAdrr := -1; //Disable
+    exit;
+  end;
+  //Find Address1
+  add1 := GetTokAddress(com, '-');
+  if MsjError<>'' then begin
+    MsjError := 'Memory definition syntax error: ' + MsjError;
+    exit(false);
+  end;
+  //Find Address1
+  add2 := GetTokAddress(com, #0);
+  if MsjError<>'' then begin
+    MsjError := 'Memory definition syntax error: ' + MsjError;
+    exit(false);
+  end;
+  //Ya se tienen los parámetros, para definir la memoria
+  hasDataAdrr := add1;  //Set flag
+  dataAddr1 := add1;    //Save
+  dataAddr2 := add2;    //Save end
 end;
 function TCPUCore.HaveConsecRAM(const i, n: word; maxRam: dword): boolean;
 {Indica si hay "n" bytes consecutivos libres en la posicióm "i", en RAM.
@@ -264,7 +343,7 @@ begin
   c := 0;
   j := i;
   while (j<=maxRam) and (c<n) do begin
-    if (ram[j].state <> cs_implemen) or (ram[j].used<>ruUnused) then exit;
+    if not ram[j].Free then exit;
     inc(c);      //verifica siguiente
     inc(j);
   end;
@@ -288,7 +367,7 @@ var
   i: Integer;
 begin
   for i:=0 to high(ram) do begin
-    if (ram[i].shared) and (ram[i].state = cs_implemen) then begin
+    if (ram[i].shared) and (ram[i].state = cs_impleGPR) then begin
       ram[i].used := ruUnused;
     end;
   end;
@@ -299,7 +378,7 @@ var
   i: Integer;
 begin
   for i:=0 to high(ram) do begin
-    if (ram[i].shared) and (ram[i].state = cs_implemen) then begin
+    if (ram[i].shared) and (ram[i].state = cs_impleGPR) then begin
       ram[i].used := ruData;  //Set as used for variables
     end;
   end;
@@ -387,6 +466,7 @@ end;
 //Initialization
 constructor TCPUCore.Create;
 begin
+  hasDataAdrr := -1;  //Disable
   hexLines := TStringList.Create;
   frequen := 1000000;    //4MHz
 end;

@@ -190,6 +190,7 @@ type
     function DisassemblerAt(addr: word; out nBytesProc: byte; useVarName: boolean
       ): string; override;
   public  //RAM memory functions
+    freeStart: word;  //Start address where Free RAM will be searched.
     function GetFreeByte(out addr: word): boolean;
     function GetFreeBytes(const size: integer; out addr: word): boolean;  //obtiene una dirección libre
     function TotalMemRAM: integer; //devuelve el total de memoria RAM
@@ -206,7 +207,7 @@ type
   public  //Aditional methods
     function FindOpcode(Op: string): TP6502Inst;  //Find Opcode
     function IsRelJump(idInst: TP6502Inst): boolean;  //Idnetify realtive jumps Opcodes
-    procedure GenHex(hexFile: string);  //genera un archivo hex
+    procedure GenHex(hexFile: string; startAddr: integer = - 1);  //genera un archivo hex
     procedure DumpCodeAsm(lOut: TStrings; incAdrr, incValues, incCom,
       incVarNam: boolean);
   public  //Initialization
@@ -538,7 +539,8 @@ Global variables used: "idIns", "modIns".
 }
 var
   nemo: String;
-  opCode, par1, par2: Byte;
+  opCode, par1: Byte;
+  par2: word;
 begin
   if addr>CPUMAXRAM-1 then exit('');
   opCode := ram[addr].value;
@@ -563,11 +565,19 @@ begin
   aAbsolute: begin
     nBytesProc := 3;
     if addr+2>CPUMAXRAM-1 then exit('');
-    par2   := ram[addr+2].value;
-    Result := nemo + '$'+IntToHex(par1 + par2*256, 4);
+    par2 := ram[addr+2].value<<8 + par1;
+    if useVarName and (ram[par2].name<>'') then begin
+      Result := nemo + ram[par2].name;
+    end else begin
+      Result := nemo + '$'+IntToHex(par2, 4);
+    end;
   end;
   aZeroPage: begin
-    Result := nemo + '$'+IntToHex(par1, 2);
+    if useVarName and (ram[par1].name<>'') then begin
+      Result := nemo + ram[par1].name;
+    end else begin
+      Result := nemo + '$'+IntToHex(par1, 2);
+    end;
     nBytesProc := 2;
   end;
   aRelative: begin
@@ -1151,18 +1161,28 @@ var
 begin
   Result := false;   //valor inicial
   maxRam := CPUMAXRAM;  //posición máxima
-  //Realmente debería explorar solo hasta la dirección implementada, por eficiencia
-  for i:=iRam to maxRam-1 do begin
-    if (ram[i].state = cs_implemen) and (ram[i].used = ruUnused) then begin
+  //Verifica si hay zona de varaibles
+  if dataAddr1<>-1 then begin
+    //Busca en zona especial
+    for i:=dataAddr1 to dataAddr2 do begin
+      if (ram[i].state = cs_impleGPR) and (ram[i].used = ruUnused) then begin
+        //Esta dirección está libre
+        addr := i;
+        //Notar que la posición de memoria puede estar mapeada.
+        exit(true);  //indica que encontró espacio
+      end;
+    end;
+    //No found. No more space available.
+    dataAddr1 := -1;  //Deactivate
+    //Continue in the normal RAM
+  end;
+  //Busca en la zona normal
+  for i:=freeStart to maxRam-1 do begin
+    if (ram[i].state = cs_impleGPR) and (ram[i].used = ruUnused) then begin
       //Esta dirección está libre
-//      ram[i].used := ruData;   //marca como usado para variable
-//      if shared then begin
-//        ram[i].shared := true;  //Marca como compartido
-//      end;
       addr := i;
       //Notar que la posición de memoria puede estar mapeada.
-      Result := true;  //indica que encontró espacio
-      exit;
+      exit(true);  //indica que encontró espacio
     end;
   end;
 end;
@@ -1179,10 +1199,24 @@ begin
     exit(true);
   end;
   maxRam := CPUMAXRAM;
-  for i:=iRam to maxRam-1 do begin  //verifica 1 a 1, por seguridad
+  //Verifica si hay zona de varaibles
+  if dataAddr1<>-1 then begin
+    //Busca en zona especial
+    for i:=dataAddr1 to dataAddr2 do begin
+      if HaveConsecRAM(i, size, maxRam) then begin
+        //Encontró del tamaño buscado
+        addr := i;
+        exit(true);
+      end;
+    end;
+    //No found. No more space available.
+    dataAddr1 := -1;  //Deactivate
+    //Continue in the normal RAM
+  end;
+  //Busca en la zona normal
+  for i:=freeStart to maxRam-1 do begin  //verifica 1 a 1, por seguridad
     if HaveConsecRAM(i, size, maxRam) then begin
-      //encontró del tamaño buscado
-      //UseConsecRAM(i, size);  //marca como usado
+      //Encontró del tamaño buscado
       addr := i;
       exit(true);
     end;
@@ -1304,22 +1338,34 @@ begin
     i := i + nBytes;   //Incrementa a siguiente instrucción
   end;
 end;
-procedure TP6502.GenHex(hexFile: string);
+procedure TP6502.GenHex(hexFile: string; startAddr: integer = -1);
 {Genera el archivo *.hex, a partir de los datos almacenados en la memoria RAM.
 Actualiza los campos, minUsed y maxUsed.}
 var
   i: Integer;
   f: file of byte;
 begin
-  hexLines.Clear;      //Se usará la lista hexLines
-  //Prepara extracción de datos
-  minUsed := CPUMAXRAM;
-  maxUsed := 0;
-  //Busca dirección de inicio usada
-  for i := 0 to CPUMAXRAM-1 do begin
-    if ram[i].used in [ruCode, ruData] then begin
-      if i<minUsed then minUsed := i;
-      if i>maxUsed then maxUsed := i;
+  hexLines.Clear;      //Clear list
+  if startAddr = -1 then begin
+    //Find first and last byte used
+    minUsed := CPUMAXRAM;
+    maxUsed := 0;
+    for i := 0 to CPUMAXRAM-1 do begin
+      //if ram[i].used in [ruCode, ruData] then begin //Changed in versión 0.7.1
+      if ram[i].used in [ruCode] then begin
+        if i<minUsed then minUsed := i;
+        if i>maxUsed then maxUsed := i;
+      end;
+    end;
+  end else begin
+    //Find only last byte used
+    minUsed := startAddr;
+    maxUsed := 0;
+    for i := minUsed to CPUMAXRAM-1 do begin
+      //if ram[i].used in [ruCode, ruData] then begin //Changed in versión 0.7.1
+      if ram[i].used in [ruCode] then begin
+        if i>maxUsed then maxUsed := i;
+      end;
     end;
   end;
   //Genera archivo PRG
@@ -1341,7 +1387,7 @@ begin
   SetLength(ram, CPUMAXRAM);
   //inicia una configuración común
   ClearMemRAM;
-  SetStatRAM($020, $04F, cs_implemen);
+  SetStatRAM($0000, $FFFF, cs_impleGPR);
 
   //Estado inicial
   iRam := 0;   //posición de inicio
