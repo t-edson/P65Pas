@@ -1086,7 +1086,7 @@ begin
     end;
     exit;
   end else begin
-    GenErrorDir(ER_ERIN_NUMBER_, [Ident]);
+    GenErrorDir(ER_ERIN_NUMBER_, [lexDir.GetToken]);
     exit;
   end;
 end;

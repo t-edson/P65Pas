@@ -542,10 +542,18 @@ type //Elements class
   end;
 
   { TxpEleDIREC }
-  //Representa a una directiva. Diseñado para representar a los nodos {$IFDEF}
+  //Represents a directive. Designed to represemt to nodes {$IFDEF}
   TxpEleDIREC = class(TxpElement)
-    ifDefResult  : boolean;   //valor booleano, de la expresión $IFDEF
+    ifDefResult  : boolean;   //Boolean value of expression $IFDEF
     constructor Create; override;
+  end;
+
+  {Represent the state of a search with FindFirst-FindNext}
+  TxpFindState = object
+    Name  : string;
+    Node  : TxpElement;
+    Idx   : integer;
+    inUnit: boolean;
   end;
 
   { TXpTreeElements }
@@ -555,11 +563,6 @@ type //Elements class
   Este árbol se usa también como para resolver nombres de elementos, en una estructura
   en arbol.}
   TXpTreeElements = class
-  private  //State varaibles for searching with FindFirst() - FindNext()
-    curFindName: string;
-    curFindNode: TxpElement;
-    curFindIdx : integer;
-    inUnit     : boolean;
   public   //Tree definition/events
     main     : TxpEleMain;  //Root node
     curNode  : TxpElement;  //Reference to current node
@@ -580,10 +583,11 @@ type //Elements class
     procedure AddElementParent(elem: TxpElement; AtBegin: boolean);
     procedure OpenElement(elem: TxpElement);
     procedure CloseElement;
-  public  //Element resolution
+  public  //Element resolution (FindFirst() - FindNext())
+    curFind: TxpFindState; //State variables for searching
     function FindFirst(const name: string): TxpElement;
     function FindNext: TxpElement;
-    function FindNextFuncName: TxpEleFun;
+    function FindNextFuncName: TxpEleFunBase;
     function FindFirstType: TxpEleType;
     function FindNextType: TxpEleType;
     function FindVar(varName: string): TxpEleVar;
@@ -1776,43 +1780,43 @@ var
 begin
 //  debugln(' Explorando nivel: [%s] en pos: %d', [curFindNode.name, curFindIdx - 1]);
   repeat
-    curFindIdx := curFindIdx - 1;  //Siempre salta a la posición anterior
-    if curFindIdx<0 then begin
+    curFind.Idx := curFind.Idx - 1;  //Siempre salta a la posición anterior
+    if curFind.Idx<0 then begin
       //No encontró, en ese nivel. Hay que ir más atrás. Pero esto se resuelve aquí.
-      if curFindNode.Parent = nil then begin
+      if curFind.Node.Parent = nil then begin
         //No hay nodo padre. Este es el nodo Main
         Result := nil;
         exit;  //aquí termina la búsqueda
       end;
       //Busca en el espacio padre
-      curFindIdx := curFindNode.Index;  //posición actual
-      curFindNode := curFindNode.Parent;  //apunta al padre
-      if inUnit then inUnit := false;   //Sale de una unidad
+      curFind.Idx := curFind.Node.Index;  //posición actual
+      curFind.Node := curFind.Node.Parent;  //apunta al padre
+      if curFind.inUnit then curFind.inUnit := false;   //Sale de una unidad
       Result := FindNext();  //Recursividad IMPORTANTE: Usar paréntesis.
 //      Result := nil;
       exit;
     end;
     //Verifica ahora este elemento
-    elem := curFindNode.elements[curFindIdx];
-    if inUnit and (elem.location = locImplement) then begin
+    elem := curFind.Node.elements[curFind.Idx];
+    if curFind.inUnit and (elem.location = locImplement) then begin
       //No debería ser accesible
       continue;
     end;
     //Genera evento para indicar que está buscando.
     if OnFindElement<>nil then OnFindElement(elem);
     //Compara
-    if (curFindName = '') or (elem.uname = curFindName) then begin
-      //Encontró en "curFindIdx"
+    if (curFind.Name = '') or (elem.uname = curFind.Name) then begin
+      //Encontró en "findSt.curFindIdx"
       Result := elem;
-      //La siguiente búsqueda empezará en "curFindIdx-1".
+      //La siguiente búsqueda empezará en "findSt.curFindIdx-1".
       exit;
     end else begin
       //No tiene el mismo nombre, a lo mejor es una unidad
-      if (elem.idClass = eltUnit) and not inUnit then begin   //Si es el priemr nodo de unidad
+      if (elem.idClass = eltUnit) and not curFind.inUnit then begin   //Si es el priemr nodo de unidad
         //¡Diablos es una unidad! Ahora tenemos que implementar la búsqueda.
-        inUnit := true;   //Marca, para que solo busque en un nivel
-        curFindIdx := elem.elements.Count;  //para que busque desde el último
-        curFindNode := elem;  //apunta a la unidad
+        curFind.inUnit := true;   //Marca, para que solo busque en un nivel
+        curFind.Idx := elem.elements.Count;  //para que busque desde el último
+        curFind.Node := elem;  //apunta a la unidad
         Result := FindNext();  //Recursividad IMPORTANTE: Usar paréntesis.
         if Result <> nil then begin  //¿Ya encontró?
           exit;  //Sí. No hay más que hacer aquí
@@ -1829,13 +1833,13 @@ If found returns the reference to the element otherwise returns NIL.
 If "name" is empty string, all the elements, of the Syntax Tree, will be scanned.}
 begin
   //Busca recursivamente, a partir del espacio actual
-  curFindName := UpCase(name);     //This value won't change in all the search
-  inUnit := false;     //Inicia bandera
+  curFind.Name := UpCase(name);     //This value won't change in all the search
+  curFind.inUnit := false;     //Inicia bandera
   if curNode.idClass = eltBody then begin
     {Para los cuerpos de procemientos o de programa, se debe explorar hacia atrás a
     partir de la posición del nodo actual.}
-    curFindIdx := curNode.Index;  //Ubica posición
-    curFindNode := curNode.Parent;  //Actualiza nodo actual de búsqueda
+    curFind.Idx := curNode.Index;  //Ubica posición
+    curFind.Node := curNode.Parent;  //Actualiza nodo actual de búsqueda
     Result := FindNext;
   end else begin
     {La otras forma de resolución, debe ser:
@@ -1843,29 +1847,30 @@ begin
     2. Declaración de variables, cuando se definen como ABSOLUTE <variable>
     3. Declaración de variables, cuando se definen de un tipo definido en TYPES.
     }
-    curFindNode := curNode;  //Actualiza nodo actual de búsqueda
+    curFind.Node := curNode;  //Actualiza nodo actual de búsqueda
     {Formalmente debería apuntar a la posición del elemento actual, pero se deja
     apuntando a la posición final, sin peligro, porque, la resolución de nombres para
     constantes y variables, se hace solo en la primera pasada (con el árbol de sintaxis
     llenándose.)}
-    curFindIdx := curNode.elements.Count;
+    curFind.Idx := curNode.elements.Count;
     //Busca
     Result := FindNext;
   end;
 end;
-function TXpTreeElements.FindNextFuncName: TxpEleFun;
-{Scan recursively toward root, in the syntax tree, until find a function element with
+function TXpTreeElements.FindNextFuncName: TxpEleFunBase;
+{Scans recursively toward root, in the syntax tree, until find a function element with
 the same name provided in a previous call to FindFirst.
-Must be called after calling FindFirst(). If not found, returns NIL.}
+Must be called after calling FindFirst() with the name of the function.
+If not found, returns NIL.}
 var
   ele: TxpElement;
 begin
   repeat
     ele := FindNext;
-  until (ele=nil) or (ele.idClass = eltFunc);
+  until (ele=nil) or (ele.idClass in [eltFunc, eltFuncDec]);
   //Puede que haya encontrado la función o no
   if ele = nil then exit(nil);  //No encontró
-  Result := TxpEleFun(ele);   //devuelve como función
+  Result := TxpEleFunBase(ele);   //devuelve como función
 end;
 function TXpTreeElements.FindFirstType: TxpEleType;
 {Starts the search for a element type in the syntax Tree.}

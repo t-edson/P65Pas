@@ -46,4 +46,6 @@ ER_FIL_NOFOUND := trans('File not found: %s'         , 'Archivo no encontrado: %
                         'Datei nicht gefunden: "%s"' , 'Файл не знайдено: %s','Файл не найден: %s', 'Fichier non trouvé: %s');
 ER_PROG_NAM_EX := trans('Program name expected.'      , 'Se esperaba nombre de programa.','',
                         'Name des Programms erwartet.','Очікується імʼя програми.','Ожидается имя программы.', 'Nom de programme attendu.');
+WA_UNUSED_VAR_ := trans('Unused variable: %s', 'Variable sin usar: %s', '',
+                        'Unbenutzte Variable:%s','Невикористана змінна: %s','Неиспользованная переменная: %s', 'Variable non utilisée : %s');
 

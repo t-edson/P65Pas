@@ -59,7 +59,8 @@ type
     TGenCod = class(TGenCodBas)
     private
 //      f_byteXbyte_byte: TxpEleFun;  //índice para función
-      f_byte_mul_byte_16: TxpEleFun;  //índice para función
+      f_byte_mul_byte_16: TxpEleFun;
+      f_word_shift_l: TxpEleFun;
       procedure arrayHigh(const OpPtr: pointer);
       procedure arrayLength(const OpPtr: pointer);
       procedure arrayLow(const OpPtr: pointer);
@@ -98,6 +99,7 @@ type
       procedure ROU_address(Opr: TxpOperator; SetRes: boolean);
 
       procedure ROB_word_and_byte(Opt: TxpOperation; SetRes: boolean);
+      procedure word_shift_l(fun: TxpEleFun);
     protected //Boolean oeprations
       procedure ROB_bool_asig_bool(Opt: TxpOperation; SetRes: boolean);
 
@@ -1279,7 +1281,9 @@ end;
 procedure TGenCod.ROB_byte_mul_byte(Opt: TxpOperation; SetRes: boolean);
 var
   AddrUndef: boolean;
+  fmul: TxpEleFun;
 begin
+  fmul := f_byte_mul_byte_16;
   case stoOperation of
   stConst_Const: begin
     SetROBResultConst_word(value1*value2);  //puede generar error
@@ -1296,55 +1300,177 @@ begin
     end else if value1 = 2 then begin
       //Caso especial
       SetROBResultExpres_word(Opt);
-      _LDAi(0);
-      _STA(H.addr);
+      _LDYi(0);
+      _STY(H.addr);
       _LDA(byte2);
       _ASLa;
       _ROL(H.addr);
+      exit;
+    end else if value1 = 4 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);
+      _LDYi(0);
+      _STY(H.addr);
+      _LDA(byte2);
+      _ASLa;
+      _ROL(H.addr);
+      _ASLa;
+      _ROL(H.addr);
+      exit;
+    end else if value1 = 8 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);
+      _LDYi(0);
+      _STY(H.addr);  //Load high byte
+      _LDA(byte2);
+      //Loop
+      _LDXi(3);  //Counter
+      AddCallerTo(f_word_shift_l);  //Declare use
+      f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+      exit;
+    end else if value1 = 16 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);
+      _LDYi(0);
+      _STY(H.addr);  //Load high byte
+      _LDA(byte2);
+      //Loop
+      _LDXi(4);  //Counter
+      AddCallerTo(f_word_shift_l);  //Declare use
+      f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+      exit;
+    end else if value1 = 32 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);
+      _LDYi(0);
+      _STY(H.addr);  //Load high byte
+      _LDA(byte2);
+      //Loop
+      _LDXi(5);  //Counter
+      AddCallerTo(f_word_shift_l);  //Declare use
+      f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
       exit;
     end;
     //General case
     SetROBResultExpres_word(Opt);
     _LDAi(value1);
-    _STA(f_byte_mul_byte_16.pars[0].pvar.addr);
+    _STA(fmul.pars[0].pvar.addr);
     _LDA(byte2);
-    _STA(f_byte_mul_byte_16.pars[1].pvar.addr);
-    AddCallerTo(f_byte_mul_byte_16);  //Declare use
-    AddCallerTo(f_byte_mul_byte_16.pars[0].pvar);  //Declare use
-    AddCallerTo(f_byte_mul_byte_16.pars[1].pvar);  //Declare use
-    //_JSR(f_byte_mul_byte_16.adrr);
-    f_byte_mul_byte_16.procCall(f_byte_mul_byte_16, AddrUndef);   //Code the "JSR"
+    _STA(fmul.pars[1].pvar.addr);
+    AddCallerTo(fmul);  //Declare use
+    AddCallerTo(fmul.pars[0].pvar);  //Declare use
+    AddCallerTo(fmul.pars[1].pvar);  //Declare use
+    fmul.procCall(fmul, AddrUndef);   //Code the "JSR"
   end;
-//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
-//    SetROBResultExpres_byte(Opt);
-//    _CLC;
-//    _ADCi(value1);
-//  end;
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
+    //Es casi el mismo código de stConst_Variab
+    if value1 = 0 then begin
+      //Caso especial
+      SetROBResultConst_word(0);  //devuelve la misma variable
+      exit;
+    end else if value1 = 1 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);  //devuelve la misma variable
+      exit;
+    end else if value1 = 2 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);
+      _LDYi(0);
+      _STY(H.addr);
+      //_LDA(byte2);
+      _ASLa;
+      _ROL(H.addr);
+      exit;
+    end else if value1 = 4 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);
+      _LDYi(0);
+      _STY(H.addr);
+      //_LDA(byte2);
+      _ASLa;
+      _ROL(H.addr);
+      _ASLa;
+      _ROL(H.addr);
+      exit;
+    end else if value1 = 8 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);
+      _LDYi(0);
+      _STY(H.addr);  //Load high byte
+      //_LDA(byte2);
+      //Loop
+      _LDXi(3);  //Counter
+      AddCallerTo(f_word_shift_l);  //Declare use
+      f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+      exit;
+    end else if value1 = 16 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);
+      _LDYi(0);
+      _STY(H.addr);  //Load high byte
+      //_LDA(byte2);
+      //Loop
+      _LDXi(4);  //Counter
+      AddCallerTo(f_word_shift_l);  //Declare use
+      f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+      exit;
+    end else if value1 = 32 then begin
+      //Caso especial
+      SetROBResultExpres_word(Opt);
+      _LDYi(0);
+      _STY(H.addr);  //Load high byte
+      //_LDA(byte2);
+      //Loop
+      _LDXi(5);  //Counter
+      AddCallerTo(f_word_shift_l);  //Declare use
+      f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+      exit;
+    end;
+    //General case
+    SetROBResultExpres_word(Opt);
+    //_LDAi(value1);
+    _STA(fmul.pars[0].pvar.addr);
+    _LDA(value1);
+    _STA(fmul.pars[1].pvar.addr);
+    AddCallerTo(fmul);  //Declare use
+    AddCallerTo(fmul.pars[0].pvar);  //Declare use
+    AddCallerTo(fmul.pars[1].pvar);  //Declare use
+    fmul.procCall(fmul, AddrUndef);   //Code the "JSR"
+  end;
   stVariab_Const: begin
     ExchangeP1_P2;
     ROB_byte_mul_byte(Opt, true);
   end;
-//  stVariab_Variab:begin
-//    SetROBResultExpres_byte(Opt);
-//    _CLC;
-//    _LDA(byte1);
-//    _ADC(byte2);
-//  end;
-//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
-//    SetROBResultExpres_byte(Opt);
-//    _CLC;
-//    _ADC(byte1);
-//  end;
-//  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
-//    SetROBResultExpres_byte(Opt);
-//    _CLC;
-//    _ADCi(value2);
-//  end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
-//    SetROBResultExpres_byte(Opt);
-//    _CLC;
-//    _ADC(byte2);
-//  end;
+  stVariab_Variab:begin
+    SetROBResultExpres_word(Opt);
+    _LDA(byte1);
+    _STA(fmul.pars[0].pvar.addr);
+    _LDA(byte2);
+    _STA(fmul.pars[1].pvar.addr);
+    AddCallerTo(fmul);  //Declare use
+    AddCallerTo(fmul.pars[0].pvar);  //Declare use
+    AddCallerTo(fmul.pars[1].pvar);  //Declare use
+    fmul.procCall(fmul, AddrUndef);   //Code the "JSR"
+  end;
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
+    SetROBResultExpres_word(Opt);
+    //_LDA(byte1);
+    _STA(fmul.pars[0].pvar.addr);
+    _LDA(byte1);
+    _STA(fmul.pars[1].pvar.addr);
+    AddCallerTo(fmul);  //Declare use
+    AddCallerTo(fmul.pars[0].pvar);  //Declare use
+    AddCallerTo(fmul.pars[1].pvar);  //Declare use
+    fmul.procCall(fmul, AddrUndef);   //Code the "JSR"
+  end;
+  stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
+    ExchangeP1_P2;
+    ROB_byte_mul_byte(Opt, true);
+  end;
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
+    ExchangeP1_P2;
+    ROB_byte_mul_byte(Opt, true);
+  end;
 //  stExpres_Expres:begin
 //    SetROBResultExpres_byte(Opt);
 //    //La expresión p1 debe estar salvada y p2 en el acumulador
@@ -1472,15 +1598,35 @@ begin
   res.Invert;
 end;
 procedure TGenCod.ROB_byte_shr_byte(Opt: TxpOperation; SetRes: boolean);  //Desplaza a la derecha
+var
+  L2, L1: integer;
 begin
   case stoOperation of
   stConst_Const: begin  //compara constantes. Caso especial
     SetROBResultConst_byte(value1 >> value2);
   end;
-//  stConst_Variab: begin
-//  end;
-//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
-//  end;
+  stConst_Variab: begin
+    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+    _LDAi(value1);
+    _LDX(byte2);
+    _BEQ_post(L2);
+_LABEL_pre(L1);
+    _LSRa;
+    _DEX;
+    _BNE_pre(L1);  //loop1
+_LABEL_post(L2);
+  end;
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
+    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+    _TAX;
+    _BEQ_post(L2);
+    _LDAi(value1);
+_LABEL_pre(L1);
+    _LSRa;
+    _DEX;
+    _BNE_pre(L1);  //loop1
+_LABEL_post(L2);
+  end;
   stVariab_Const: begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
@@ -1508,23 +1654,34 @@ begin
       //Caso general
       _LDA(byte1);
       _LDXi(value2);
-//loop1:
+_LABEL_pre(L1);
       _LSRa;
       _DEX;
-      _BNE(-4);  //loop1
+      _BNE_pre(L1);  //loop1
     end;
   end;
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     _LDA(byte1);
     _LDX(byte2);
-//loop1:
+    _BEQ_post(L2);
+_LABEL_pre(L1);
     _LSRa;
     _DEX;
-    _BNE(-4);  //loop1
+    _BNE_pre(L1);  //loop1
+_LABEL_post(L2);
   end;
-//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
-//  end;
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
+    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+    _TAX;
+    _BEQ_post(L2);
+    _LDA(byte1);
+_LABEL_pre(L1);
+    _LSRa;
+    _DEX;
+    _BNE_pre(L1);  //loop1
+_LABEL_post(L2);
+  end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
@@ -1546,14 +1703,21 @@ begin
       _LSRa;
     end else begin
       _LDXi(value2);
-  //loop1:
+_LABEL_pre(L1);
       _LSRa;
       _DEX;
-      _BNE(-4);  //loop1
+      _BNE_pre(L1);  //loop1
     end;
   end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
-//  end;
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
+    _LDX(byte2);
+    _BEQ_post(L2);
+_LABEL_pre(L1);
+    _LSRa;
+    _DEX;
+    _BNE_pre(L1);  //loop1
+_LABEL_post(L2);
+  end;
 //  stExpres_Expres:begin
 //  end;
   else
@@ -1561,15 +1725,35 @@ begin
   end;
 end;
 procedure TGenCod.ROB_byte_shl_byte(Opt: TxpOperation; SetRes: boolean);   //Desplaza a la izquierda
+var
+  L1, L2: integer;
 begin
   case stoOperation of
   stConst_Const: begin  //compara constantes. Caso especial
     SetROBResultConst_byte(value1 << value2);
   end;
-//  stConst_Variab: begin
-//  end;
-//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
-//  end;
+  stConst_Variab: begin
+    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+    _LDAi(value1);
+    _LDX(byte2);
+    _BEQ_post(L2);
+_LABEL_pre(L1);
+    _ASLa;
+    _DEX;
+    _BNE_pre(L1);  //loop1
+_LABEL_post(L2);
+  end;
+  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
+    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+    _TAX;
+    _BEQ_post(L2);
+    _LDAi(value1);
+_LABEL_pre(L1);
+    _ASLa;
+    _DEX;
+    _BNE_pre(L1);  //loop1
+_LABEL_post(L2);
+  end;
   stVariab_Const: begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
@@ -1597,23 +1781,34 @@ begin
       //Caso general
       _LDA(byte1);
       _LDXi(value2);
-//loop1:
+_LABEL_pre(L1);
       _ASLa;
       _DEX;
-      _BNE(-4);  //loop1
+      _BNE_pre(L1);  //loop1
     end;
   end;
   stVariab_Variab:begin
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     _LDA(byte1);
     _LDX(byte2);
-//loop1:
+    _BEQ_post(L2);
+_LABEL_pre(L1);
     _ASLa;
     _DEX;
-    _BNE(-4);  //loop1
+    _BNE_pre(L1);  //loop1
+_LABEL_post(L2);
   end;
-//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
-//  end;
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
+    SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
+    _TAX;
+    _BEQ_post(L2);
+    _LDA(byte1);
+_LABEL_pre(L1);
+    _ASLa;
+    _DEX;
+    _BNE_pre(L1);  //loop1
+_LABEL_post(L2);
+  end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);   //Se pide Z para el resultado
     //Verifica casos simples
@@ -1635,14 +1830,21 @@ begin
       _ASLa;
     end else begin
       _LDXi(value2);
-  //loop1:
+_LABEL_pre(L1);
       _ASLa;
       _DEX;
-      _BNE(-4);  //loop1
+      _BNE_pre(L1);  //loop1
     end;
   end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
-//  end;
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
+    _LDX(byte2);
+    _BEQ_post(L2);
+_LABEL_pre(L1);
+    _ASLa;
+    _DEX;
+    _BNE_pre(L1);  //loop1
+_LABEL_post(L2);
+  end;
 //  stExpres_Expres:begin
 //  end;
   else
@@ -1990,6 +2192,8 @@ begin
   end;
 end;
 procedure TGenCod.ROB_word_asig_byte(Opt: TxpOperation; SetRes: boolean);
+var
+  idxVar: TxpEleVar;
 begin
   if p1^.Sto = stVariab then begin
     case p2^.Sto of
@@ -2018,6 +2222,53 @@ begin
       _STA(byte1L);
       _LDAi(0);
       _STA(byte1H);
+    end;
+    else
+      GenError(MSG_UNSUPPORTED); exit;
+    end;
+  end else if p1^.Sto in [stVarRef, stExpRef] then begin
+    //Asignación a una variable referenciada por variable (o IX)
+    case p2^.Sto of
+    stConst, stVariab, stExpres: begin
+      if p1^.Sto =stVarRef then
+        idxVar := p1^.rVar
+      else
+        idxVar := IX;
+      if idxVar.typ.IsByteSize then begin
+        //Index is byte-size. It's easy.
+        case p2^.Sto of //Operand2 to assign
+        stConst:  _LDAi(value2);
+        stVariab: _LDA(byte2);
+        stExpres: ;  //Already in A
+        end;
+        _LDX(idxVar.addr);
+        pic.codAsm(i_STA, aZeroPagX, 0);
+        pic.codAsm(i_STA, aZeroPagX, 1);
+      end else if idxvar.typ.IsWordSize then begin
+        //Index is word-size
+        //If it's in zero-page will be wonderful
+        if (idxvar.addr<256) then begin
+          _LDYi(0);
+          case p2^.Sto of //Operand2 to assign
+          stConst : _LDAi(value2);
+          stVariab: _LDA(byte2);
+          stExpres: ;  //Already in A
+          end;
+          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
+          _LDAi(0);
+          _INY;
+          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
+//        end else begin
+//          {We can create self-modifying code o some weird code to implement this, but
+//          it's complex code. It's better using IX or the Var-index in Zero page}
+        end else begin
+          //Index could be dword or other type
+          GenError(MSG_UNSUPPORTED); exit;
+        end;
+      end else begin
+        //Index could be dword or other type
+        GenError(MSG_UNSUPPORTED); exit;
+      end;
     end;
     else
       GenError(MSG_UNSUPPORTED); exit;
@@ -2181,7 +2432,7 @@ begin
     _CLC;
     _ADC(byte1L);
     _TAX;  //Save
-    _LDAi(byte1H);
+    _LDA(byte1H);
     _ADCi(0);
     _STA(H.addr);
     _TXA; //We could activate a Flag to indicate we have obteined MSB from X to optimize
@@ -2199,7 +2450,7 @@ begin
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
     SetROBResultExpres_word(Opt);
     _CLC;
-    _ADCi(byte2L);
+    _ADC(byte2L);
     _TAX;  //Save
     _LDA(H.addr);
     _ADCi(0);
@@ -2772,24 +3023,52 @@ begin
     genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
   end;
 end;
+procedure TGenCod.word_shift_l(fun: TxpEleFun);
+{Routine to left shift.
+Input:
+  (H,A) -> Value to be shifted
+  register X -> Number of shift. Must be greater than zero.
+Output:
+  (H,A) -> Result}
+var
+  lbl1: integer;
+begin
+_LABEL_pre(lbl1);
+  _ASLa;
+  _ROL(H.addr);
+  _DEX;
+  _BNE_pre(lbl1);
+  _RTS;
+end;
 procedure TGenCod.ROB_word_shl_byte(Opt: TxpOperation; SetRes: boolean);
 var
-  i: Integer;
+  i, L1, L2: Integer;
+  AddrUndef: boolean;
+  fInLine: boolean;
 begin
+  fInLine := false;
   case stoOperation of
   stConst_Const: begin
     //Optimiza
     SetROBResultConst_byte(value1 << value2);
   end;
-//  stConst_Variab: begin
-//    SetROBResultExpres_byte(Opt);
-//    _LDAi(value1);
-//    _AND(byte2L);
-//  end;
-//  stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
-//    SetROBResultExpres_byte(Opt);
-//    _ANDi(value1L);      //Deja en A
-//  end;
+  stConst_Variab: begin
+    SetROBResultExpres_word(Opt);
+    _LDA(value1H);
+    _STA(H.addr);  //Load high byte
+    _LDA(value1L);
+    //Loop
+    _LDX(byte2);
+    _BEQ_post(L2);  //Protección to zero
+//_LABEL_pre(L1);
+//      _ASLa;
+//      _ROL(H.addr);
+//      _DEX;
+//    _BNE_pre(L1);
+    AddCallerTo(f_word_shift_l);  //Declare use
+    f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+_LABEL_post(L2);
+  end;
   stVariab_Const: begin
     SetROBResultExpres_word(Opt);
     if value2 < 4 then begin
@@ -2801,13 +3080,63 @@ begin
         _ROL(H.addr);
       end;
     end else begin
-      genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+      _LDA(byte1H);
+      _STA(H.addr);  //Load high byte
+      _LDA(byte1L);
+      //Loop
+      _LDXi(value2);
+      if fInLine then begin
+_LABEL_pre(L1);
+        _ASLa;
+        _ROL(H.addr);
+        _DEX;
+        _BNE_pre(L1);
+      end else begin
+        AddCallerTo(f_word_shift_l);  //Declare use
+        f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+      end;
     end;
   end;
-//  stVariab_Variab:begin
-//  end;
-//  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
-//  end;
+  stVariab_Variab:begin
+    SetROBResultExpres_word(Opt);
+    _LDA(byte1H);
+    _STA(H.addr);  //Load high byte
+    _LDA(byte1L);
+    //Loop
+    _LDX(byte2);
+    _BEQ_post(L2);  //Protección to zero
+    if fInLine then begin
+_LABEL_pre(L1);
+      _ASLa;
+      _ROL(H.addr);
+      _DEX;
+      _BNE_pre(L1);
+    end else begin
+      AddCallerTo(f_word_shift_l);  //Declare use
+      f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+    end;
+_LABEL_post(L2);
+  end;
+  stVariab_Expres:begin   //la expresión p2 se evaluó y esta A
+    SetROBResultExpres_word(Opt);
+    _TAX;  //Counter
+    _BEQ_post(L2);  //Protección to zero
+
+    _LDA(byte1H);
+    _STA(H.addr);  //Load high byte
+    _LDA(byte1L);
+    if fInLine then begin
+_LABEL_pre(L1);
+      _ASLa;
+      _ROL(H.addr);
+      _DEX;
+      _BNE_pre(L1);
+    end else begin
+      AddCallerTo(f_word_shift_l);  //Declare use
+      f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+    end;
+_LABEL_post(L2);
+  end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
     SetROBResultExpres_word(Opt);
     if value2 < 4 then begin
@@ -2816,11 +3145,32 @@ begin
         _ROL(H.addr);
       end;
     end else begin
-      genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
+      _LDXi(value2);
+      if fInLine then begin
+  _LABEL_pre(L1);
+        _ASLa;
+        _ROL(H.addr);
+        _DEX;
+        _BNE_pre(L1);
+      end else begin
+        AddCallerTo(f_word_shift_l);  //Declare use
+        f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+      end;
     end;
   end;
-//  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
-//  end;
+  stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
+    _LDXi(byte2);
+    if fInLine then begin
+_LABEL_pre(L1);
+      _ASLa;
+      _ROL(H.addr);
+      _DEX;
+      _BNE_pre(L1);
+    end else begin
+      AddCallerTo(f_word_shift_l);  //Declare use
+      f_word_shift_l.procCall(f_word_shift_l, AddrUndef);  //Use
+    end;
+  end;
 //  stExpres_Expres:begin
 //  end;
   else
@@ -3908,12 +4258,16 @@ begin
         if itemType.IsByteSize then begin
           //This is important because we know the variable can direct the current position
           SetResultVarConRef(idx.rVar, arrVar.addr, itemType);  //Devuelve el mismo tipo
-//        end else if itemType.IsWordSize then begin
-//          SetResultExpRef(itemType, false);  //We don't need to check RT here in setter.
-//          //Item is word size. We need to multiply index by 2 and load indexed.
-//          //WARNING this is "Self-modifiying" code.
-//          _LDA(idx.rVar.addr);  //Load index
-//          _
+        end else if itemType.IsWordSize then begin
+          SetResultExpRef(itemType, false);  //We don't need to check RT here in setter.
+          AddCallerTo(IX);  //We declare using IX
+          //Item is word size. We need to multiply index by 2 and load indexed.
+          _LDXi(0);
+          _STX(IX.addr+1);      //High(IX) <- 0
+          _LDA(idx.rVar.addr);  //Load LSB index
+          _ASLa;
+          _STA(IX.addr);
+          _ROL(IX.addr+1);
         end else begin
           //We need to calculate the final address accoridng to the item size
           GenError('Not supported this item size to assigment.');
@@ -3925,6 +4279,7 @@ begin
           SetResultVarConRef(idx.rVar, arrVar.addr, itemType);  //Devuelve el mismo tipo
 //        end else if itemType.IsWordSize then begin
 //          SetResultExpRef(itemType, false);  //We don't need to check RT here in setter.
+//          AddCallerTo(IX);  //We declare using IX
 //          //Item is word size. We need to multiply index by 2 and load indexed.
 //          //WARNING this is "Self-modifiying" code.
 //          _LDA(idx.rVar.addr);  //Load index
@@ -3946,9 +4301,9 @@ begin
           AddCallerTo(IX);  //We declare using IX
           //We add A to base address of array -> IX
           _CLC;
-          _ADCi(arrVar.addrL);
+          _ADCi(arrVar.addr and $FF);
           _STA(IX.addr);  //Save
-          _LDAi(arrVar.addrH);
+          _LDAi(arrVar.addr >> 8);
           _ADCi(0);
           _STA(IX.addr+1);
         end else begin
@@ -3961,9 +4316,9 @@ begin
           AddCallerTo(IX);  //We declare using IX
           //We add H,A to base address of array -> IX
           _CLC;
-          _ADCi(arrVar.addrL);
+          _ADCi(arrVar.addr and $FF);
           _STA(IX.addr);  //Save
-          _LDAi(arrVar.addrH);
+          _LDAi(arrVar.addr >> 8);
           _ADC(H.addr);
           _STA(IX.addr+1);
         end else begin
@@ -4479,7 +4834,8 @@ begin
   AddParam(pars, 'ms', srcPos, typWord, decRegis);  //Add parameter
   f := CreateSystemFunction('delay_ms', typNull, srcPos,  pars, @codif_delay_ms);
   AddCallerTo(H, f.BodyNode); {Adds this dependency because, like this is a system function,
-                           won`t be compiled in the First pass, that is when references are created}
+                           won`t be compiled in the First pass, that is when references are created.
+                           As we need to use W. We declare a call.}
 
   //Multiply system function
   setlength(pars, 0);  //Reset parameters
@@ -4487,6 +4843,12 @@ begin
   AddParam(pars, 'B', srcPos, typByte, decNone);  //Add parameter
   f_byte_mul_byte_16 := CreateSystemFunction('byte_mul_byte_16', typWord, srcPos, pars, @byte_mul_byte_16);
   AddCallerTo(H, f_byte_mul_byte_16.BodyNode);  //We'll neede to return result.
+
+  //Word shift left
+  setlength(pars, 0);  //Reset parameters
+  AddParam(pars, 'n', srcPos, typByte, decRegisX);   //Parameter counter shift
+  f_word_shift_l := CreateSystemFunction('word_shift_l', typWord, srcPos, pars, @word_shift_l);
+  AddCallerTo(H, f_word_shift_l.BodyNode);  //We'll neede to return result.
 
   TreeElems.CloseElement; //Close Unit
 end;

@@ -30,8 +30,6 @@ ER_FIL_NOFOUND := trans('File not found: %s'         , 'Archivo no encontrado: %
                         'Datei nicht gefunden: "%s"' , 'Файл не знайдено: %s','Файл не найден: %s', 'Fichier non trouvé: %s');
 WA_UNUSED_CON_ := trans('Unused constant: %s', 'Constante sin usar: %s', '',
                         'Unbenutzte Konstante: %s','Невикористана константа: %s','Неиспользованная константа: %s', 'Constante non utilisée : %s');
-WA_UNUSED_VAR_ := trans('Unused variable: %s', 'Variable sin usar: %s', '',
-                        'Unbenutzte Variable:%s','Невикористана змінна: %s','Неиспользованная переменная: %s', 'Variable non utilisée : %s');
 WA_UNUSED_PRO_ := trans('Unused procedure: %s', 'Procedimiento sin usar: %s', '',
                         'Unbenutztes Prozedur:%s','Невикористана процедура: %s','Неиспользованная процедура: %s', 'Procédure non utilisée : %s');
 

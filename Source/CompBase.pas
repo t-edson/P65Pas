@@ -1290,10 +1290,12 @@ var
   xfun    : TxpEleFunBase;
   Found   , AddrUndef: Boolean;
   pars    : TxpParFuncArray;   //Para almacenar parámetros
+  findState: TxpFindState;
 begin
 //cIn.ShowCurContInformat;
 //debugln(' ++CurNode:' + TreeElems.curNode.Path);
-  ele := TreeElems.FindFirst(cIn.tok);  //identifica elemento
+  ele := TreeElems.FindFirst(cIn.tok);  //Identify element
+  findState := TreeElems.curFind;  //Save because can be aletered with CaptureParams()
   if ele = nil then begin
     //No identifica a este elemento
     GenError(ER_UNKNOWN_IDE_, [cIn.tok]);
@@ -1374,6 +1376,7 @@ begin
       Found := true;
     end else begin
       //No es, es una pena. Ahora tenemos que seguir buscando en el árbol de sintaxis.
+      TreeElems.curFind := findState;  //Restore previous Finding
       repeat
         //Usar FindNextFunc, es la forma es eficiente, porque retoma la búsqueda anterior.
         xfun := TreeElems.FindNextFuncName;
