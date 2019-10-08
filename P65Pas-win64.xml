@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <language Val="es - Español"/>
+  <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\newfile-0.pas
+  <filesClosed Val="D:\tmp\P65Pas-0.7.2\temp\newfile-1.pas
+D:\tmp\P65Pas-0.7.2\testcode65\Simul_1\Test2_Boolean.pas
 "/>
   <SplitterCol Val="2368548"/>
   <MessPanPan Val="2368548"/>
@@ -11,9 +12,9 @@
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="212"/>
+  <SynTreeWidth Val="255"/>
   <ViewPanAssem Val="True"/>
-  <viewMode Val="1"/>
+  <viewMode Val="2"/>
   <MessPanBack Val="2368548"/>
   <MessPanText Val="16777215"/>
   <MessPanErr Val="5855743"/>
@@ -44,14 +45,14 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.1\units\Commodore64.pas
-D:\tmp\P65Pas-0.7.1\units\Commodore64.pas
-D:\tmp\P65Pas-0.7.1\temp\aPistas.pas
-D:\tmp\P65Pas-0.7.1\temp\newfile-0.pas
+    <recient Val="D:\tmp\P65Pas-0.7.2\samples\HelloWorld.pas
+D:\tmp\P65Pas-0.7.2\testcode65\Simul_1\Test2_Boolean.pas
+D:\tmp\P65Pas-0.7.2\temp\newfile-1.pas
+D:\tmp\P65Pas-0.7.2\testcode65\Simul_1\Test1_Vars.pas
+D:\tmp\P65Pas-0.7.2\testcode65\Simul_1\Test2_Bit.pas
 "/>
   </Edit>
-  <IncDecVar Val="True"/>
+  <IncDecVar Val="False"/>
   <VarDecType Val="0"/>
   <IncAddress Val="True"/>
   <IncComment Val="True"/>

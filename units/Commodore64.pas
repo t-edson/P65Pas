@@ -138,6 +138,8 @@ implementation
   end; 
 
   procedure PutChar(x: byte; y: byte registerY; c: char): word;
+  {Write a char directly to the screen of the Commodore 64 in the specified 
+  coordinates.}
   begin
     asm 
        ;--- Load Y in (H,A)
