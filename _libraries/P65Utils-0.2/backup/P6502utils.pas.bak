@@ -539,7 +539,8 @@ Global variables used: "idIns", "modIns".
 }
 var
   nemo: String;
-  opCode, par1, par2: Byte;
+  opCode, par1: Byte;
+  par2: word;
 begin
   if addr>CPUMAXRAM-1 then exit('');
   opCode := ram[addr].value;
@@ -641,8 +642,10 @@ Falta implementar las operaciones, cuando acceden al registro INDF, el Watchdog 
 los contadores, las interrupciones}
 var
   opc: byte;
-  nCycles, nBytes, tmp: byte;
+  nCycles, nBytes, tmp, off: byte;
   target , addr: word;
+  C_tmp: Boolean;
+  tmpRes: integer;
 begin
   //Decodifica instrucción
   aPC := PC.W;
@@ -669,35 +672,212 @@ begin
   end;
   //Execute
   case idIns of
-  i_ADC:;  //add with carry
-  i_AND:;  //and (with accumulator)
+  i_ADC: begin  //add with carry
+    if STATUS_C then begin
+      tmpRes := W + ram[addr].value + 1;
+    end else begin
+      tmpRes := W + ram[addr].value;
+    end;
+    W := tmpRes and $FF;
+    STATUS_Z := W = 0;
+    STATUS_N := W > 127;
+    STATUS_C := tmpRes>255;
+  end;
+  i_AND: begin  //and (with accumulator)
+    W := W and ram[addr].value;
+    STATUS_Z := W = 0;
+    STATUS_N := W > 127;
+  end;
   i_ASL:;  //arithmetic shift left
-  i_BCC:;  //branch on carry clear
-  i_BCS:;  //branch on carry set
-  i_BEQ:;  //branch on equal (zero set)
-  i_BIT:;  //bit test
-  i_BMI:;  //branch on minus (negative set)
-  i_BNE: begin
-
-    end;  //branch on not equal (zero clear)
-  i_BPL:;  //branch on plus (negative clear)
+  i_BCC: begin  //branch on carry clear
+    if not STATUS_C then begin
+      off := ram[aPC+1].value;
+      Inc(PC.W, nBytes);  //Normal Increase PC
+      if off>127 then begin
+        PC.W := (PC.W + off - 256) and $FFFF;
+      end else begin
+        PC.W := (PC.W + off) and $FFFF;
+      end;
+      //Inc(PC.W, nBytes);  //No apply
+      Inc(nClck, nCycles);
+      exit;
+    end;
+  end;
+  i_BCS: begin  //branch on carry set
+    if STATUS_C then begin
+      off := ram[aPC+1].value;
+      Inc(PC.W, nBytes);  //Normal Increase PC
+      if off>127 then begin
+        PC.w := (PC.W + off - 256) and $FFFF;
+      end else begin
+        PC.W := (PC.W + off) and $FFFF;
+      end;
+      //Inc(PC.W, nBytes);  //No apply
+      Inc(nClck, nCycles);
+      exit;
+    end;
+  end;
+  i_BNE: begin //branch on not equal (zero clear)
+    if not STATUS_Z then begin
+      off := ram[aPC+1].value;
+      Inc(PC.W, nBytes);  //Normal Increase PC
+      if off>127 then begin
+        PC.W := (PC.W + off - 256) and $FFFF;
+      end else begin
+        PC.W := (PC.W + off) and $FFFF;
+      end;
+      //Inc(PC.W, nBytes);  //No apply
+      Inc(nClck, nCycles);
+      exit;
+    end;
+  end;
+  i_BEQ: begin  //branch on equal (zero set)
+    if STATUS_Z then begin
+      off := ram[aPC+1].value;
+      Inc(PC.W, nBytes);  //Normal Increase PC
+      if off>127 then begin
+        PC.w := (PC.W + off - 256) and $FFFF;
+      end else begin
+        PC.W := (PC.W + off) and $FFFF;
+      end;
+      //Inc(PC.W, nBytes);  //No apply
+      Inc(nClck, nCycles);
+      exit;
+    end;
+  end;
+  i_BIT: begin  //bit test
+    STATUS_N := (ram[addr].value AND $80) <> 0;
+    STATUS_V := (ram[addr].value AND $40) <> 0;
+    STATUS_Z := (W and ram[addr].value) <> 0;
+  end;
+  i_BPL: begin  //branch on plus (negative clear)
+    if not STATUS_N then begin
+      off := ram[aPC+1].value;
+      Inc(PC.W, nBytes);  //Normal Increase PC
+      if off>127 then begin
+        PC.W := (PC.W + off - 256) and $FFFF;
+      end else begin
+        PC.W := (PC.W + off) and $FFFF;
+      end;
+      //Inc(PC.W, nBytes);  //No apply
+      Inc(nClck, nCycles);
+      exit;
+    end;
+  end;
+  i_BMI: begin  //branch on minus (negative set)
+    if STATUS_N then begin
+      off := ram[aPC+1].value;
+      Inc(PC.W, nBytes);  //Normal Increase PC
+      if off>127 then begin
+        PC.w := (PC.W + off - 256) and $FFFF;
+      end else begin
+        PC.W := (PC.W + off) and $FFFF;
+      end;
+      //Inc(PC.W, nBytes);  //No apply
+      Inc(nClck, nCycles);
+      exit;
+    end;
+  end;
   i_BRK:;  //break / interrupt
-  i_BVC:;  //branch on overflow clear
-  i_BVS:;  //branch on overflow set
+  i_BVC: begin  //branch on overflow clear
+    if not STATUS_V then begin
+      off := ram[aPC+1].value;
+      Inc(PC.W, nBytes);  //Normal Increase PC
+      if off>127 then begin
+        PC.W := (PC.W + off - 256) and $FFFF;
+      end else begin
+        PC.W := (PC.W + off) and $FFFF;
+      end;
+      //Inc(PC.W, nBytes);  //No apply
+      Inc(nClck, nCycles);
+      exit;
+    end;
+  end;
+  i_BVS: begin  //branch on overflow set
+    if STATUS_V then begin
+      off := ram[aPC+1].value;
+      Inc(PC.W, nBytes);  //Normal Increase PC
+      if off>127 then begin
+        PC.w := (PC.W + off - 256) and $FFFF;
+      end else begin
+        PC.W := (PC.W + off) and $FFFF;
+      end;
+      //Inc(PC.W, nBytes);  //No apply
+      Inc(nClck, nCycles);
+      exit;
+    end;
+  end;
   i_CLC:  STATUS_C := false;  //clear carry
   i_CLD:  STATUS_D := false;  //clear decimal
   i_CLI:  STATUS_I := false;  //clear interrupt disable
   i_CLV:  STATUS_V := false;  //clear overflow
-  i_CMP:;  //compare (with accumulator)
-  i_CPX:;  //compare with X
-  i_CPY:;  //compare with Y
-  i_DEC:;  //decrement
-  i_DEX:;  //decrement X
-  i_DEY:;  //decrement Y
-  i_EOR:;  //exclusive or (with accumulator)
-  i_INC:;  //increment
-  i_INX:;  //increment X
-  i_INY:;  //increment Y
+  i_CMP: begin     //Compare (with accumulator)
+    tmp := ram[addr].value;
+    STATUS_Z := W = tmp;
+    STATUS_C := W >= tmp;
+    if W = tmp then begin
+      STATUS_N := false;
+    end else begin
+      STATUS_N := ((W-tmp) and $80) <> 0;  //Copy bit 7
+    end;
+  end;
+  i_CPX: begin;  //compare with X
+    tmp := ram[addr].value;
+    STATUS_Z := X = tmp;
+    STATUS_C := X >= tmp;
+    if X = tmp then begin
+      STATUS_N := false;
+    end else begin
+      STATUS_N := ((X-tmp) and $80) <> 0;  //Copy bit 7
+    end;
+  end;
+  i_CPY: begin  //compare with Y
+    tmp := ram[addr].value;
+    STATUS_Z := Y = tmp;
+    STATUS_C := Y >= tmp;
+    if Y = tmp then begin
+      STATUS_N := false;
+    end else begin
+      STATUS_N := ((Y-tmp) and $80) <> 0;  //Copy bit 7
+    end;
+  end;
+  i_DEC: begin  //decrement
+    tmp := (ram[addr].value - 1) and $FF;
+    ram[addr].value := tmp;
+    STATUS_Z := tmp = 0;
+    STATUS_N := tmp > 127;
+  end;
+  i_DEX: begin  //decrement X
+    X := (X - 1) and $FF;
+    STATUS_Z := X = 0;
+    STATUS_N := X > 127;
+  end;
+  i_DEY: begin  //decrement Y
+    Y := (Y - 1) and $FF;
+    STATUS_Z := Y = 0;
+    STATUS_N := Y > 127;
+  end;
+  i_EOR: begin  //exclusive or (with accumulator)
+    W := W xor ram[addr].value;
+    STATUS_Z := W = 0;
+    STATUS_N := W > 127;
+  end;
+  i_INC: begin  //increment
+    tmp := (ram[addr].value + 1) and $FF;
+    ram[addr].value := tmp;
+    STATUS_Z := tmp = 0;
+    STATUS_N := tmp > 127;
+  end;
+  i_INX: begin  //increment X
+    X := (X + 1) and $FF;
+    STATUS_Z := X = 0;
+    STATUS_N := X > 127;
+  end;
+  i_INY: begin  //increment Y
+    Y := (Y + 1) and $FF;
+    STATUS_Z := Y = 0;
+    STATUS_N := Y > 127;
+  end;
   i_JMP: begin    //jump
     case modIns of
     aAbsolute : begin
@@ -742,21 +922,70 @@ begin
     STATUS_Z := Y = 0;
     STATUS_N := Y > 127;
   end;
-  i_LSR:;  //logical shift right
-  i_NOP:;  //no operation
-  i_ORA:;  //or with accumulator
+  i_LSR: begin
+    STATUS_N := false;
+    if modIns = aAcumulat then  tmp := W
+    else tmp := ram[addr].value;
+
+    STATUS_C := (tmp and $01) <> 0;
+    tmp := tmp >> 1;
+    STATUS_Z := tmp = 0;
+
+    if modIns = aAcumulat then  W := tmp
+    else ram[addr].value := tmp;
+  end;  //logical shift right
+  i_NOP: ;  //no operation
+  i_ORA: begin  //or with accumulator
+    W := W or ram[addr].value;
+    STATUS_Z := W = 0;
+    STATUS_N := W > 127;
+  end;
   i_PHA: begin //push accumulator
     ram[$100 + SP].value := W;
     if SP = $00 then SP := $FF else dec(SP);
   end;
-  i_PHP:;  //push processor status (SR)
+  i_PHP: begin  //push processor status (SR)
+    ram[$100 + SP].value := STATUS;
+    if SP = $00 then SP := $FF else dec(SP);
+  end;
   i_PLA: begin  //pull accumulator
     if SP = $FF then SP := $00 else inc(SP);
     W := ram[$100 + SP].value;
   end;
-  i_PLP:;  //pull processor status (SR)
-  i_ROL:;  //rotate left
-  i_ROR:;  //rotate right
+  i_PLP: begin  //pull processor status (SR)
+    if SP = $FF then SP := $00 else inc(SP);
+    SR := ram[$100 + SP].value;
+  end;
+  i_ROL: begin  //rotate left
+    STATUS_N := false;
+    if modIns = aAcumulat then tmp := W
+    else tmp := ram[addr].value;
+
+    C_tmp := STATUS_C;
+    STATUS_C := (tmp and $07) <> 0;  //Get bit 7
+    tmp := tmp << 1;
+    if C_tmp then tmp := tmp or $01;  //Insert bit 0
+    STATUS_Z := tmp = 0;
+    STATUS_N := tmp > 127;
+
+    if modIns = aAcumulat then W := tmp
+    else ram[addr].value := tmp;
+  end;
+  i_ROR: begin  //rotate right
+    STATUS_N := false;
+    if modIns = aAcumulat then  tmp := W
+    else tmp := ram[addr].value;
+
+    C_tmp := STATUS_C;          //Save previos C
+    STATUS_C := (tmp and $01) <> 0;   //Get bit 0
+    tmp := tmp >> 1;
+    if C_tmp then tmp := tmp or $80;  //Insert bit 7
+    STATUS_Z := tmp = 0;
+    STATUS_N := tmp > 127;
+
+    if modIns = aAcumulat then  W := tmp
+    else ram[addr].value := tmp;
+  end;
   i_RTI:;  //return from interrupt
   i_RTS: begin  //return from subroutine
     if SP = $FF then SP := $00 else inc(SP);
@@ -767,7 +996,17 @@ begin
     Inc(nClck, nCycles);
     exit;
   end;
-  i_SBC:;  //subtract with carry
+  i_SBC: begin  //subtract with carry
+    if STATUS_C then begin
+      tmpRes := W - ram[addr].value - 1;
+    end else begin
+      tmpRes := W - ram[addr].value;
+    end;
+    W := tmpRes and $FF;
+    STATUS_Z := W = 0;
+    STATUS_N := W > 127;
+    STATUS_C := tmpRes<0;
+  end;
   i_SEC: STATUS_C := true;  //set carry
   i_SED: STATUS_D := true;  //set decimal
   i_SEI: STATUS_I := true;  //set interrupt disable
@@ -795,260 +1034,23 @@ begin
     STATUS_Z := X = 0;
     STATUS_N := X > 127;
   end;
-  i_TXA:;  //transfer X to accumulator
-  i_TXS:;  //transfer X to stack pointer
-  i_TYA:;  //transfer Y to accumulator
+  i_TXA: begin  //transfer X to accumulator
+    W := X;
+    STATUS_Z := W = 0;
+    STATUS_N := W > 127;
+  end;
+  i_TXS: begin  //transfer X to stack pointer
+    SP := X;
+  end;
+  i_TYA: begin  //transfer Y to accumulator
+    W := Y;
+    STATUS_Z := W = 0;
+    STATUS_N := W > 127;
+  end;
   i_Inval: begin
       MsjError := 'Invalid Opcode';
     end;
   end;
-
-{  i_ADDWF: begin
-    resByte := FRAM;
-    resWord := W + resByte;
-    resNib := (W and $0F) + (resByte and $0F);
-    if modIns = toF then begin
-      FRAM := resWord and $FF;
-    end else begin  //toW
-      w := resWord and $FF;
-    end;
-    STATUS_Z := (resWord and $ff) = 0;
-    STATUS_C := (resWord > 255);
-    STATUS_N := (resNib > 15);
-  end;
-  i_ANDWF: begin
-    resByte := W and FRAM;
-    if modIns = toF then begin
-      FRAM := resByte;
-    end else begin  //toW
-      w := resByte;
-    end;
-    STATUS_Z := resByte = 0;
-  end;
-  i_CLRF: begin
-    FRAM := 0;
-    STATUS_Z := true;
-  end;
-  i_CLRW: begin
-    W := 0;
-    STATUS_Z := true;
-  end;
-  i_COMF : begin
-    resByte := not FRAM;
-    if modIns = toF then begin
-      FRAM := resByte;
-    end else begin  //toW
-      w := resByte;
-    end;
-    STATUS_Z := resByte = 0;
-  end;
-  i_DECF : begin
-    resByte := FRAM;
-    if resByte = 0 then resByte := $FF else dec(resByte);
-    if modIns = toF then begin
-      FRAM := resByte;
-    end else begin  //toW
-      w := resByte;
-    end;
-    STATUS_Z := resByte = 0;
-  end;
-  i_DECFSZ: begin
-    resByte := FRAM;
-    if resByte = 0 then resByte := $FF else dec(resByte);
-    if modIns = toF then begin
-      FRAM := resByte;
-    end else begin  //toW
-      w := resByte;
-    end;
-    STATUS_Z := resByte = 0;
-    if STATUS_Z then begin
-      Inc(PC.W);    //Jump one instrucción
-      Inc(nClck);   //In this case it takes one more cicle
-    end;
-  end;
-  i_INCF: begin
-    resByte := FRAM;
-    if resByte = 255 then resByte := 0 else inc(resByte);
-    if modIns = toF then begin
-      FRAM := resByte;
-    end else begin  //toW
-      w := resByte;
-    end;
-    STATUS_Z := resByte = 0;
-  end;
-  i_INCFSZ: begin
-    resByte := FRAM;
-    if resByte = 255 then resByte := 0 else inc(resByte);
-    if modIns = toF then begin
-      FRAM := resByte;
-    end else begin  //toW
-      w := resByte;
-    end;
-    STATUS_Z := resByte = 0;
-    if STATUS_Z then begin
-      Inc(PC.W);    //Jump one instrucción
-      Inc(nClck);   //In this case it takes one more cicle
-    end;
-  end;
-  i_IORWF: begin
-    resByte := W or FRAM;
-    if modIns = toF then begin
-      FRAM := resByte;
-    end else begin  //toW
-      w := resByte;
-    end;
-    STATUS_Z := resByte <> 0;
-  end;
-  i_MOVF: begin
-    resByte := FRAM;
-    if modIns = toF then begin
-      //no mueve, solo verifica
-      STATUS_Z := (resByte = 0);
-    end else begin  //toW
-      w := resByte;
-      STATUS_Z := (resByte = 0);
-    end;
-  end;
-  i_MOVWF: begin
-    FRAM := W;   //escribe a donde esté mapeado, (si está mapeado)
-    if parIns = $02 then begin //Es el PCL
-      PC.H := PCLATH;  //Cuando se escribe en PCL, se carga PCH con PCLATH
-    end;
-  end;
-  i_NOP: begin
-  end;
-  i_RLF: begin
-    resByte := FRAM;
-    bit7 := resByte and $80; //guarda bit 7
-    resByte := (resByte << 1) and $ff;  //desplaza
-    //pone C en bit bajo
-    if STATUS_C then begin  //C era 1
-      resByte := resByte or $01;  //pone a 1 el bit 0
-    end else begin          //C era 0
-      //no es necesario agregarlo, porque por defecto se agrega 0
-    end;
-    //Actualiza C
-    if bit7 = 0 then STATUS_C := false
-                else STATUS_C := true;
-    if modIns = toF then begin
-      FRAM := resByte;
-    end else begin  //toW
-      w := resByte;
-    end;
-  end;
-  i_RRF: begin
-    resByte := FRAM;
-    bit0 := resByte and $01; //guarda bit 0
-    resByte := resByte >> 1;  //desplaza
-    //pone C en bit alto
-    if STATUS_C then begin  //C era 1
-      resByte := resByte or $80;  //pone a 1 el bit 0
-    end else begin          //C era 0
-      //no es necesario agregarlo, porque por defecto se agrega 0
-    end;
-    //Actualiza C
-    if bit0 = 0 then STATUS_C := false
-                else STATUS_C := true;
-    if modIns = toF then begin
-      FRAM := resByte;
-    end else begin  //toW
-      w := resByte;
-    end;
-  end;
-  i_SUBWF: begin
-    resByte := FRAM;
-    resInt := resByte - W;
-    if modIns = toF then begin
-      FRAM :=  resInt and $FF;
-    end else begin  //toW
-      w := resInt and $FF;
-    end;
-    STATUS_Z := (resInt = 0);
-    if resInt < 0 then STATUS_C := false   //negativo
-    else STATUS_C := true;
-    resInt := (resByte and $0F) - (W and $0F);
-    if resInt < 0 then STATUS_N := false   //negativo
-    else STATUS_N := true;
-  end;
-  i_SWAPF: begin
-    resByte := FRAM;
-    FRAM := (resByte >> 4) or (resByte << 4);
-  end;
-  i_XORWF: begin
-    resByte := W xor FRAM;
-    if modIns = toF then begin
-      FRAM := resByte;
-    end else begin  //toW
-      w := resByte;
-    end;
-    STATUS_Z := resByte <> 0;
-  end;
-  //BIT-ORIENTED FILE REGISTER OPERATIONS
-  i_BCF: begin
-    msk := $1 << b_;
-    msk := not msk;
-    FRAM := FRAM and msk;
-  end;
-  i_BSF: begin
-    msk := $1 << b_;
-    FRAM := FRAM or msk;// b_
-  end;
-  i_BTFSC: begin
-    msk := $1 << b_;
-    if (FRAM and msk) = 0 then begin
-      Inc(PC.W);    //Jump one instrucción
-      Inc(nClck);   //In this case it takes one more cicle
-    end;
-  end;
-  i_BTFSS: begin
-    msk := $1 << b_;
-    if (FRAM and msk) <> 0 then begin
-      Inc(PC.W);    //Jump one instrucción
-      Inc(nClck);   //In this case it takes one more cicle
-    end;
-  end;
-  //LITERAL AND CONTROL OPERATIONS
-  i_ADDLW: begin
-    resWord := W + k_;
-    resNib := (W and $0F) + (k_ and $0F);
-    w := resWord and $FF;
-    STATUS_Z := (resWord and $ff) = 0;
-    STATUS_C := (resWord > 255);
-    STATUS_N := (resNib > 15);
-  end;
-  i_ANDLW: begin
-    resByte := W and K_;
-    w := resByte;
-    STATUS_Z := resByte = 0;
-  end;
-  i_IORLW: begin
-    resByte := W or k_;
-    w := resByte;
-    STATUS_Z := resByte <> 0;
-  end;
-  i_MOVLW: begin
-      W := k_;
-  end;
-  i_SUBLW: begin
-    resInt := k_ - W;
-    w := resInt and $FF;
-    STATUS_Z := (resInt = 0);
-    if resInt < 0 then STATUS_C := false   //negativo
-    else STATUS_C := true;
-    resInt := (k_ and $0F) - (W and $0F);
-    if resInt < 0 then STATUS_N := false   //negativo
-    else STATUS_N := true;
-  end;
-  i_XORLW: begin
-    resByte := W xor k_;
-    w := resByte;
-    STATUS_Z := resByte <> 0;
-  end;
-  i_Inval: begin
-    MsjError := 'Invalid Opcode';
-  end;
-  end;
-}
   //Increase counters
   Inc(PC.W, nBytes);
   Inc(nClck, nCycles);

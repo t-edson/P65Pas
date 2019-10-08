@@ -52,7 +52,8 @@ type //Models for RAM memory
     state  : TCPUCellState; //Status of the cell
     property value: byte read Getvalue write Setvalue;
     property dvalue: byte read Fvalue write Fvalue;   //Direct access to "Fvalue".
-    function Avail: boolean;
+    function Avail: boolean;  //RAM implemented to use in programs
+    function Free: boolean;   //RAM implemented and unused
   public  //Campos para deputación
     breakPnt  : boolean;  //Indicates if this cell have a Breakpoint
     {Be careful on the size of this record, because it's going to be multiplied by 64K}
@@ -115,7 +116,7 @@ type
     procedure UseConsecRAM(const i, n: word);  //Ocupa "n" bytes en la posición "i"
     procedure SetSharedUnused;
     procedure SetSharedUsed;
-  public  //ram memory functions
+  public  //RAM memory functions
     function UsedMemRAM: word;  //devuelve el total de memoria ram usada
   public  //RAM name managment
     function NameRAM(const addr: word): string;
@@ -155,11 +156,14 @@ begin
   Fvalue := AValue;
 end;
 function TCPURamCell.Avail: boolean;
-{Indica si el registro es una dirección disponible en la memoria RAM.}
+{Indicates if the RAM cell is available for programmer.}
 begin
   Result := (state = cs_impleGPR);
 end;
-
+function TCPURamCell.Free: boolean;
+begin
+  Result := (state = cs_impleGPR) and (used = ruUnused);
+end;
 function TCPUCore.GetTokAddress(var str: string; delimiter: char): word;
 {Extract a number (address) from a string and delete until de delimiter.
 If delimiter is #0, it's consider all the text.
@@ -339,7 +343,7 @@ begin
   c := 0;
   j := i;
   while (j<=maxRam) and (c<n) do begin
-    if (ram[j].state <> cs_impleGPR) or (ram[j].used<>ruUnused) then exit;
+    if not ram[j].Free then exit;
     inc(c);      //verifica siguiente
     inc(j);
   end;

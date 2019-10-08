@@ -129,7 +129,7 @@ type
     procedure Exec; virtual; abstract; //Ejecuta instrucción actual
     procedure ExecTo(endAdd: word); virtual; abstract; //Ejecuta hasta cierta dirección
     procedure ExecStep; virtual; abstract; //Execute one instruction considering CALL as one instruction
-    procedure ExecNCycles(nCyc: integer; out stopped: boolean); virtual; abstract; //Ejecuta hasta cierta dirección
+    procedure ExecNCycles(nCyc: integer; out stopped: boolean); virtual; abstract; //Execute "n" cycles
     procedure Reset(hard: boolean); virtual; abstract;
     function ReadPC: dword; virtual; abstract;  //Defined DWORD to cover the 18F PC register
     procedure WritePC(AValue: dword); virtual; abstract;
