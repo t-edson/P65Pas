@@ -42,8 +42,9 @@ protected  //Flags for boolean type.
                           was obtained, in the last expression, using the bit Z and moved
                           to A. Used for code optimization.}
   AcumStatInZ: boolean;  {Indicates the Z flag contains the status of the value in A
-                          register. For example if A = 0, Z wil be 1.
-                          }
+                          register. For example if A = 0, Z wil be 1.}
+  LastIsTXA  : boolean;  {Last instruction of RO or expresion is TXA, and it's used only
+                          to move result from X to acumulator.}
 protected  //Elements creation
   procedure ClearSystemTypes;
   function CreateSysType(nom0: string; cat0: TTypeGroup; siz0: smallint
@@ -81,6 +82,7 @@ protected
   ExprLevel  : Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
   RTstate    : TxpEleType;    {Estado de los RT. Si es NIL, indica que los RT, no tienen
                          ningún dato cargado, sino indican el tipo cargado en los RT.}
+  OperMode   : TOpReadMode;  //Mode for read Operand
   function CaptureDelExpres: boolean;
   procedure ProcCommentsNoExec;
   procedure ProcComments;
@@ -122,7 +124,7 @@ protected //Compiler events
   OnReqStartCodeGen: procedure of object;  //Required start the Code Generation
 protected //Calls to Assembler Module (ParserAsm.pas)
   callProcASMlime  : procedure(const AsmLin: string) of object;
-protected //Call to Directive Module (ParserDirec.pas)
+protected //Calls to Directive Module (ParserDirec.pas)
   callProcDIRline  : procedure(const AsmLin: string; out ctxChanged: boolean) of object;
 protected //Calls to Code Generator (GenCodBas)
   callCurrRAM      : function(): integer of object;
@@ -163,11 +165,10 @@ protected //ROP and expressions
   procedure OperPre(var Op1: TOperand; opr: TxpOperator);
   procedure OperPost(var Op1: TOperand; opr: TxpOperator);
   //Expresions manage
-  procedure GetOperandIdent(out Op: TOperand; opMode: TOpReadMode);
-  procedure GetOperand(out Op: Toperand; opMode: TOpReadMode); virtual;
+  procedure GetOperandIdent(out Op: TOperand);
+  procedure GetOperand(out Op: Toperand); virtual;
   function GetOperator(const Op: Toperand): TxpOperator;
-  function GetExpression(const prec: Integer; opMode: TOpReadMode=opmGetter
-    ): TOperand;
+  function GetExpression(const prec: Integer): TOperand;
   procedure GetExpressionE(posExpres: TPosExpres);
 public    //Types to implement
   typBool : TxpEleType;
@@ -221,7 +222,7 @@ protected  //Miscellaneous
   function GenerateUniqName(base: string): string;
   procedure getListOfIdent(out itemList: TStringDynArray; out
     srcPosArray: TSrcPosArray);
-  procedure IdentifyField(xOperand: TOperand; opMode: TOpReadMode);
+  procedure IdentifyField(xOperand: TOperand);
   procedure LogExpLevel(txt: string);
   function IsTheSameVar(var1, var2: TxpEleVar): boolean; inline;
   function AddCallerTo(elem: TxpElement): TxpEleCaller;
@@ -909,6 +910,7 @@ begin
       AddCallerTo(par.pvar);    //Agrega la llamada
       op := Op1.Typ.operAsign;
       Oper(Op1, op, Op2);       //Codifica la asignación
+      //Can generate error
     end else begin
       GenError('Not implemented.');
       exit;
@@ -1035,7 +1037,7 @@ begin
   setlength(itemList   , n+1);
   setlength(srcPosArray, n+1);
 end;
-procedure TCompilerBase.IdentifyField(xOperand: TOperand; opMode: TOpReadMode);
+procedure TCompilerBase.IdentifyField(xOperand: TOperand);
 {Identifica el campo de una variable. Si encuentra algún problema genera error.
 Notar que el parámetro es por valor, es decir, se crea una copia, por seguridad.
 Puede generar código de evaluación. Devuelve el resultado en "res". }
@@ -1043,7 +1045,7 @@ Puede generar código de evaluación. Devuelve el resultado en "res". }
   {Call the Getter or Setter, of the field acordding to "ToSet". If gives error
   return FALSE}
   begin
-    if opMode = opmSetter then begin
+    if operMode = opmSetter then begin
       //Mode Setter
       if field.procSet= nil then begin
         GenError('Cannot assign to this operand.');
@@ -1074,7 +1076,7 @@ begin
         if cIn.tok = '.' then begin
           //Aún hay más campos, seguimos procesando
           //Como "IdentifyField", crea una copia del parámetro, no hay cruce con el resultado
-          IdentifyField(res, opMode);
+          IdentifyField(res);
         end;
         exit;
       end;
@@ -1099,7 +1101,7 @@ begin
       if cIn.tok = '.' then begin
         //Aún hay más campos, seguimos procesando
         //Como "IdentifyField", crea una copia del parámetro, no hay cruce con el resultado
-        IdentifyField(res, opMode);
+        IdentifyField(res);
       end;
       exit;
     end;
@@ -1113,7 +1115,7 @@ begin
       if cIn.tok = '.' then begin
         //Aún hay más campos, seguimos procesando
         //Como "IdentifyField", crea una copia del parámetro, no hay cruce con el resultado
-        IdentifyField(res, opMode);
+        IdentifyField(res);
       end;
       exit;
     end;
@@ -1275,7 +1277,7 @@ begin
    {$ENDIF}
 end;
 
-procedure TCompilerBase.GetOperandIdent(out Op: TOperand; opMode: TOpReadMode);
+procedure TCompilerBase.GetOperandIdent(out Op: TOperand);
 {Read an operand spcified by one identifier. Return in "Op". This routine was part of
 GetOperand(), but it was splitted because:
 * This is a big code and could grow more.
@@ -1330,7 +1332,7 @@ begin
       {$IFDEF LogExpres} Op.txt:= xvar.name; {$ENDIF}   //Take the text
       //Verify if has reference to fields with "."
       if (cIn.tok = '.') or (cIn.tok = '[') then begin
-        IdentifyField(Op, opMode);
+        IdentifyField(Op);
         Op := res;  //notar que se usa "res".
         if HayError then exit;
         {Como este operando es de tipo <variable>.<algo>... , actualizamos el campo
@@ -1351,7 +1353,7 @@ begin
     {$IFDEF LogExpres} Op.txt:= xcon.name; {$ENDIF}   //toma el texto
     //Verifica si tiene referencia a campos con "."
     if (cIn.tok = '.') or (cIn.tok = '[') then begin
-      IdentifyField(Op, opMode);
+      IdentifyField(Op);
       Op := res;  //notar que se usa "res".
       if HayError then exit;;
     end;
@@ -1476,7 +1478,7 @@ begin
     exit;
   end;
 end;
-procedure TCompilerBase.GetOperand(out Op: Toperand; opMode: TOpReadMode);
+procedure TCompilerBase.GetOperand(out Op: Toperand);
 {This is part of the Expression analyzer function. Read and, optionally, can generate
 code to read an operand. The operand is returned in the parameter "Op", by reference, to
 avoid using a local copy (like "Result").
@@ -1590,7 +1592,7 @@ begin
     end;
     GenError(ER_NOT_IMPLEM_);
   end else if cIn.tokType = tnIdentif then begin  //puede ser variable, constante, función
-    GetOperandIdent(Op, opMode);
+    GetOperandIdent(Op);
     //Puede salir con error.
   end else if cIn.tokType = tnBoolean then begin  //true o false
     {$IFDEF LogExpres} Op.txt:= cIn.tok; {$ENDIF}   //toma el texto
@@ -1606,7 +1608,7 @@ begin
     If cIn.tok = ')' Then begin
        cIn.Next;  //lo toma
         if (cIn.tok = '.') or (cIn.tok = '[') then begin
-         IdentifyField(Op, opMode);
+         IdentifyField(Op);
          Op := res;  //notar que se usa "res".
          if HayError then exit;;
        end;
@@ -1691,7 +1693,7 @@ begin
     posAct := cIn.PosAct;   //Esto puede ser pesado en términos de CPU
     oprTxt := cIn.tok;   //guarda el operador
     cIn.Next; //pasa al siguiente
-    GetOperand(Op1, opMode);   //Takes the operand.
+    GetOperand(Op1);   //Takes the operand.
     if HayError then exit;
     //Ahora ya tenemos el tipo. Hay que ver si corresponde el operador
     opr := Op1.Typ.FindUnaryPreOperator(oprTxt);
@@ -1723,7 +1725,7 @@ begin
   end;
   cIn.Next;   //toma el token
 end;
-function TCompilerBase.GetExpression(const prec: Integer; opMode: TOpReadMode = opmGetter): TOperand; //inline;
+function TCompilerBase.GetExpression(const prec: Integer): TOperand; //inline;
 {Expression analyzer. This is probably, the most important function of the compiler
  It process an expression in the current input context, and call events in order to
  the expression be compiled (or interpreted if we implement an interpreter).
@@ -1738,7 +1740,7 @@ var
 begin
   nOpern := 0;  //Clear counter for operands
   //----------------Get first operand------------------
-  GetOperand(Op1, opMode);
+  GetOperand(Op1);
   if HayError then exit;
   //Verifica si termina la expresion
   cIn.SkipWhites;
@@ -1772,7 +1774,7 @@ begin
       cIn.SkipWhites;
       //Verificación
       if (cIn.tok = '.') or (cIn.tok = '[') then begin
-        IdentifyField(Op1, opMode);
+        IdentifyField(Op1);
         if HayError then exit;;
         Op1 := res;  //notar que se usa "res".
         cIn.SkipWhites;
@@ -1814,6 +1816,7 @@ var
   opr1: TxpOperator;
 begin
   Inc(ExprLevel);  //Count the nesting
+  OperMode := opmSetter;  //First part of assigment must be in Setter mode
   {$IFDEF LogExpres} LogExpLevel('>Inic.expr'); {$ENDIF}
   OnExprStart;  //Call event
   try
@@ -1826,7 +1829,7 @@ begin
     de first part of an assigment. We use GetExpression() (instead of GetOperand() because
     we want to consider expressions like p^.something to be conisedered as a whole operand.}
     //Compile as setter until an operator of precedence of ":=" (2).
-    Op1 := GetExpression(2, opmSetter);
+    Op1 := GetExpression(2);
     if HayError then exit;
     ProcComments;
     opr1 := GetOperator(Op1); //We can validate assigment
@@ -1844,6 +1847,7 @@ begin
         GenError('Expected ":=", "+=" or "-=".');
         exit;
       end;
+      OperMode := opmGetter;  //Left side of assigment must be read in Getter mode
       Op2 := GetExpression(Opr1.prec); //Value to assign
       if HayError then exit;
       //Call de operation

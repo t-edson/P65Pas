@@ -1,19 +1,19 @@
 object frmDebugger: TfrmDebugger
-  Left = 424
-  Height = 690
-  Top = 98
+  Left = 343
+  Height = 671
+  Top = 13
   Width = 803
   Caption = 'Debugger'
-  ClientHeight = 690
+  ClientHeight = 671
   ClientWidth = 803
   OnClose = FormClose
   OnCreate = FormCreate
   OnKeyDown = FormKeyDown
-  LCLVersion = '1.8.0.6'
+  LCLVersion = '1.8.4.0'
   object StatusBar1: TStatusBar
     Left = 0
     Height = 23
-    Top = 667
+    Top = 648
     Width = 803
     Panels = <    
       item
@@ -33,7 +33,7 @@ object frmDebugger: TfrmDebugger
   end
   object PanASM: TPanel
     Left = 144
-    Height = 625
+    Height = 606
     Top = 42
     Width = 277
     Align = alLeft
@@ -48,7 +48,7 @@ object frmDebugger: TfrmDebugger
   end
   object panRAM: TPanel
     Left = 0
-    Height = 625
+    Height = 606
     Top = 42
     Width = 139
     Align = alLeft
@@ -56,17 +56,17 @@ object frmDebugger: TfrmDebugger
   end
   object Panel3: TPanel
     Left = 426
-    Height = 625
+    Height = 606
     Top = 42
     Width = 377
     Align = alClient
-    ClientHeight = 625
+    ClientHeight = 606
     ClientWidth = 377
     TabOrder = 2
     object Panel4: TPanel
       Left = 1
       Height = 65
-      Top = 559
+      Top = 540
       Width = 375
       Align = alBottom
       ClientHeight = 65
@@ -86,14 +86,14 @@ object frmDebugger: TfrmDebugger
       Cursor = crVSplit
       Left = 1
       Height = 5
-      Top = 554
+      Top = 535
       Width = 375
       Align = alBottom
       ResizeAnchor = akBottom
     end
     object PanWatcher: TPanel
       Left = 1
-      Height = 200
+      Height = 223
       Top = 1
       Width = 375
       Align = alTop
@@ -148,13 +148,13 @@ object frmDebugger: TfrmDebugger
   end
   object Splitter1: TSplitter
     Left = 139
-    Height = 625
+    Height = 606
     Top = 42
     Width = 5
   end
   object Splitter2: TSplitter
     Left = 421
-    Height = 625
+    Height = 606
     Top = 42
     Width = 5
   end

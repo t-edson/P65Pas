@@ -96,7 +96,7 @@ object fraPicRegisters: TfraPicRegisters
   object Label3: TLabel
     Left = 16
     Height = 16
-    Top = 96
+    Top = 232
     Width = 86
     Caption = 'STATUS register'
     Font.CharSet = ANSI_CHARSET
@@ -112,7 +112,7 @@ object fraPicRegisters: TfraPicRegisters
   object StringGrid2: TStringGrid
     Left = 16
     Height = 46
-    Top = 112
+    Top = 248
     Width = 227
     ColCount = 10
     FixedCols = 2
@@ -142,28 +142,174 @@ object fraPicRegisters: TfraPicRegisters
       'Hex.'
       2
       0
-      'C'
+      'N'
       3
       0
-      'Z'
+      'V'
       4
       0
-      'I'
+      '-'
       5
       0
-      'D'
+      'B'
       6
       0
-      'B'
+      'D'
       7
       0
-      '-'
+      'I'
       8
       0
-      'V'
+      'Z'
       9
       0
-      'N'
+      'C'
+    )
+  end
+  object Label4: TLabel
+    Left = 16
+    Height = 16
+    Top = 88
+    Width = 50
+    Caption = 'X register'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clBlue
+    Font.Height = -13
+    Font.Name = 'Arial Narrow'
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object StringGrid3: TStringGrid
+    Left = 16
+    Height = 46
+    Top = 104
+    Width = 216
+    ColCount = 10
+    FixedCols = 2
+    Options = [goFixedVertLine, goFixedHorzLine, goHorzLine, goRangeSelect, goSmoothScroll]
+    RowCount = 2
+    ScrollBars = ssNone
+    TabOrder = 2
+    ColWidths = (
+      29
+      26
+      20
+      20
+      19
+      20
+      20
+      21
+      20
+      18
+    )
+    Cells = (
+      10
+      0
+      0
+      'Dec.'
+      1
+      0
+      'Hex.'
+      2
+      0
+      'b7'
+      3
+      0
+      'b6'
+      4
+      0
+      'b5'
+      5
+      0
+      'b4'
+      6
+      0
+      'b3'
+      7
+      0
+      'b2'
+      8
+      0
+      'b1'
+      9
+      0
+      'b0'
+    )
+  end
+  object Label5: TLabel
+    Left = 16
+    Height = 16
+    Top = 152
+    Width = 50
+    Caption = 'Y register'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clBlue
+    Font.Height = -13
+    Font.Name = 'Arial Narrow'
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object StringGrid4: TStringGrid
+    Left = 16
+    Height = 46
+    Top = 168
+    Width = 216
+    ColCount = 10
+    FixedCols = 2
+    Options = [goFixedVertLine, goFixedHorzLine, goHorzLine, goRangeSelect, goSmoothScroll]
+    RowCount = 2
+    ScrollBars = ssNone
+    TabOrder = 3
+    ColWidths = (
+      29
+      26
+      20
+      20
+      19
+      20
+      20
+      21
+      20
+      18
+    )
+    Cells = (
+      10
+      0
+      0
+      'Dec.'
+      1
+      0
+      'Hex.'
+      2
+      0
+      'b7'
+      3
+      0
+      'b6'
+      4
+      0
+      'b5'
+      5
+      0
+      'b4'
+      6
+      0
+      'b3'
+      7
+      0
+      'b2'
+      8
+      0
+      'b1'
+      9
+      0
+      'b0'
     )
   end
 end

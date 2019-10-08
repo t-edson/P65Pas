@@ -97,7 +97,6 @@ type  //TxpElement and prvious classes
 
   TxpEleBody = class;
 
-
   { TxpEleCaller }
   //Information about the call to one element from other element.
   TxpEleCaller = class
@@ -179,6 +178,7 @@ type  //TxpElement and prvious classes
     lstCallers: TxpListCallers;
     function nCalled: integer; virtual; //número de llamadas
     function IsCalledBy(callElem: TxpElement): boolean; //Identifica a un llamador
+    function IsCalledByChildOf(callElem: TxpElement): boolean; //Identifica a un llamador
     function IsCalledAt(callPos: TSrcPos): boolean;
     function IsDeclaredAt(decPos: TSrcPos): boolean;
     function FindCalling(callElem: TxpElement): TxpEleCaller; //Identifica a un llamada
@@ -758,6 +758,19 @@ begin
   end;
   exit(false);
 end;
+
+function TxpElement.IsCalledByChildOf(callElem: TxpElement): boolean;
+{Indica si el elemento es llamado por algún elemento hijo de "callElem".
+Puede haber varias llamadas desde "callElem", pero basta que haya una para devolver TRUE.}
+var
+  cal : TxpEleCaller;
+begin
+  for cal in lstCallers do begin
+    if cal.caller.Parent = callElem then exit(true);
+  end;
+  exit(false);
+end;
+
 function TxpElement.IsCalledAt(callPos: TSrcPos): boolean;
 {Indica si el elemento es llamado, desde la posición indicada.}
 var

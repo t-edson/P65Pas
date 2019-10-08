@@ -34,7 +34,7 @@ type
     procedure Tree_AddElement(elem: TxpElement);
     function OpenContextFrom(filePath: string): boolean;
     function CompileStructBody(GenCode: boolean): boolean;
-    function CompileConditionalBody: boolean;
+    function CompileConditionalBody(out blkSize: word): boolean;
     function CompileNoConditionBody(GenCode: boolean): boolean;
     procedure CompileInstruction;
     procedure CompileInstructionDummy;
@@ -161,7 +161,7 @@ begin
       end;
     end else if cIn.tokType = tnIdentif then begin
       //Puede ser variable
-      GetOperandIdent(Op, opmGetter); //
+      GetOperandIdent(Op); //
       if HayError then exit;
       if Op.Sto <> stVariab then begin
         GenError(ER_EXP_VAR_IDE);
@@ -1583,13 +1583,16 @@ begin
   //Salió sin errores
   exit(true);
 end;
-function TCompMain.CompileConditionalBody: boolean;
+function TCompMain.CompileConditionalBody(out blkSize: word): boolean;
 {Versión de CompileStructBody(), para bloques condicionales.
-Se usa para bloque que se ejecutarán de forma condicional, es decir, que no se
-garantiza que se ejecute siempre. "FinalBank" indica el banco en el que debería
-terminar el bloque.}
+Se usa para bloques que se ejecutarán de forma condicional, es decir, que no se
+garantiza que se ejecute siempre. "blkSize" indica el tamaño del bloque compilado.}
+var
+  start: integer;
 begin
+  start := callCurrRAM();
   Result := CompileStructBody(true);  //siempre genera código
+  blkSize := (callCurrRAM() - start) and $FFFF;
 end;
 function TCompMain.CompileNoConditionBody(GenCode: boolean): boolean;
 {Versión de CompileStructBody(), para bloques no condicionales.

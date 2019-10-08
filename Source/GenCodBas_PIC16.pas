@@ -26,7 +26,7 @@ type
     procedure ClearDeviceError;
     procedure CompileProcBody(fun: TxpEleFun);
     function DeviceError: string;
-    function GenCodBasCallCurrRAM(): integer;
+    function CurrRAM(): integer;
     procedure GenCodLoadToA(Op: TOperand);
     procedure GenCodLoadToX(Op: TOperand);
     procedure GenCodLoadToY(Op: TOperand);
@@ -67,10 +67,9 @@ type
      como varbyte.bit o varword.low. Se almacenan en "varFields" y se eliminan al final}
     varFields: TxpEleVars;  //Contenedor
     function CreateTmpVar(nam: string; eleTyp: TxpEleType): TxpEleVar;
-    {Estas variables se usan para operaciones en el generador de código.
-     No se almacenan en "varFields". Así se definió al principio, pero podrían también
-     almacenarse, asumiendo que no importe crear variables dinámicas.}
-    function NewTmpVarWord(rL, rH: TPicRegister): TxpEleVar;
+    {The following methods, create variables at specific address.
+     They are not storage in "varFields". Must be destroyed manually}
+    function NewTmpVarWord(addr: word): TxpEleVar;
   protected  //Rutinas de gestión de memoria para registros
     function GetAuxRegisterByte: TPicRegister;
   protected  //Memory manage routines for variables
@@ -107,6 +106,7 @@ type
     procedure SetROUResultConst_byte(valByte: integer);
     procedure SetROUResultVariab(rVar: TxpEleVar; logic: TLogicType = logNormal);
     procedure SetROUResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
+    procedure SetROUResultExpres(typ: TxpEleType);
     procedure SetROUResultExpres_bool(logic: TLogicType);
     procedure SetROUResultExpres_byte;
     procedure SetROUResultExpRef(typ: TxpEleType);
@@ -138,6 +138,9 @@ type
     procedure _BCC_post(out ibranch: integer);
     procedure _BCS(const ad: ShortInt);
     procedure _BCS_post(out ibranch: integer);
+    //Alias for BCC and BCS
+    procedure _BLT_post(out ibranch: integer);  //Less than
+    procedure _BGE_post(out ibranch: integer);  //Greater or equal to
 
     procedure _BPL(const ad: ShortInt);
     procedure _BPL_pre(curAddr: integer);
@@ -349,13 +352,15 @@ begin
   varFields.Add(tmpVar);  //Agrega
   Result := tmpVar;
 end;
-function TGenCodBas.NewTmpVarWord(rL, rH: TPicRegister): TxpEleVar;
+function TGenCodBas.NewTmpVarWord(addr: word): TxpEleVar;
 {Crea una variable temporal Word, con las direcciones de los registros indicados, y
 devuelve la referencia. La variable se crea sin asignación de memoria.}
 begin
   Result := TxpEleVar.Create;
   Result.typ := typWord;
-  Result.addr := rL.addr;  //asigna direcciones
+  Result.adicPar.hasAdic := decNone;
+  Result.adicPar.hasInit := false;
+  Result.addr := addr;  //Set address
 end;
 //Variables temporales
 //Rutinas de Gestión de memoria
@@ -518,7 +523,12 @@ begin
     end;
   end;
   //Set name to that position
-  pic.SetNameRAM(startAdd, xVar.name);   //Name at the first byte
+  if typ.IsByteSize then begin
+    pic.SetNameRAM(startAdd, xVar.name);
+  end else begin
+    pic.SetNameRAM(startAdd, xVar.name + '@0');
+    pic.SetNameRAM(startAdd+1, xVar.name + '@1');
+  end;
   //Set initial value.
   if xVar.adicPar.hasInit then begin
     if outOfProgram then begin  //Only allowed in the program block
@@ -555,6 +565,7 @@ begin
   res.SetAsNull;
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
+  LastIsTXA:= false;
   AcumStatInZ := true;
   res.logic := logNormal;
 end;
@@ -565,6 +576,7 @@ begin
   res.SetAsConst(typ);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
+  LastIsTXA := false;
   AcumStatInZ := true;
   {Se asume que no se necesita invertir la lógica, en una constante (booleana o bit), ya
   que en este caso, tenemos control pleno de su valor}
@@ -577,6 +589,7 @@ begin
   res.SetAsVariab(rVar);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
+  LastIsTXA := false;
   AcumStatInZ := true;
   //"Inverted" solo tiene sentido, para los tipos bit y boolean
   res.logic := logic;
@@ -600,6 +613,7 @@ begin
   //Limpia el estado. Esto es útil que se haga antes de generar el código para una operación
   BooleanFromC:=0;
   BooleanFromZ:=0;
+  LastIsTXA := false;
   AcumStatInZ := true;
   //Actualiza el estado de los registros de trabajo.
   RTstate := typ;
@@ -609,6 +623,7 @@ begin
   res.SetAsVarRef(rVarBase, xtyp);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
+  LastIsTXA := false;
   AcumStatInZ := true;
   //No se usa "Inverted" en este almacenamiento
   res.logic := logNormal;
@@ -618,6 +633,7 @@ procedure TGenCodBas.SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer;
 begin
   res.SetAsVarConRef(rVarBase, consAddr, xtyp);
   BooleanFromC:=0;   //para limpiar el estado
+  LastIsTXA := false;
   BooleanFromZ:=0;
   AcumStatInZ := true;
   //No se usa "Inverted" en este almacenamiento
@@ -637,6 +653,7 @@ begin
   res.SetAsExpRef(typ);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
+  LastIsTXA := false;
   AcumStatInZ := true;
   //No se usa "Inverted" en este almacenamiento
   res.logic := logNormal;
@@ -772,6 +789,20 @@ begin
   GenerateROUdetComment;
   SetResultVarRef(rVarBase, xtyp);
 end;
+procedure TGenCodBas.SetROUResultExpres(typ: TxpEleType);
+{Set the result operand as stExpres}
+begin
+  GenerateROUdetComment;
+  //Se van a usar los RT. Verificar si los RT están ocupadoa
+  if (p1^.Sto = stExpres) then begin
+    //Alguno de los operandos de la operación actual, está usando algún RT
+    SetResultExpres(typ, false);  //actualiza "RTstate"
+  end else begin
+    {Los RT no están siendo usados, por la operación actual.
+     Pero pueden estar ocupados por la operación anterior (Ver doc. técnica).}
+    SetResultExpres(typ);  //actualiza "RTstate"
+  end;
+end;
 procedure TGenCodBas.SetROUResultExpres_bool(logic: TLogicType);
 begin
   GenerateROUdetComment;
@@ -834,7 +865,9 @@ begin
   Result := pic.frequen;
 end;
 procedure TGenCodBas._LABEL_post(igot: integer);
-{Finish a previous JMP_lbl, BNE_post, BEQ_post, or BCC_post instruction.}
+{Finish a previous JMP_lbl, BNE_post, BEQ_post, ... instructions.}
+var
+  offset: integer;
 begin
   if pic.ram[igot].value = 0 then begin
     //Es salto absoluto
@@ -844,15 +877,25 @@ begin
     //Es salto relativo
     if _PC > igot then begin
       //Salto hacia adelante
-      pic.ram[igot].value := _PC - igot-1;
+      offset := _PC - igot-1;
+      if offset>127 then begin
+        GenError('Block to long.');
+        exit;
+      end;
+      pic.ram[igot].value := offset;
     end else begin
-      //Salto hacia atrás
-      pic.ram[igot].value := 256 + (_PC - igot);
+      //Backward jump. Does this really happens?
+      offset := _PC - igot;  //negative
+      if offset<-128 then begin
+        GenError('Block to long.');
+        exit;
+      end;
+      pic.ram[igot].value := 256 + offset;
     end;
   end;
 end;
 procedure TGenCodBas._LABEL_pre(out curAddr: integer);
-{Set a label for a later jump BNE_pre, BEQ_pre or BCC_pre instruction.}
+{Set a label for a later jump BNE_pre, BEQ_pre, BCC_pre ... instructions.}
 begin
   curAddr := pic.iRam;
 end;
@@ -973,6 +1016,16 @@ begin
   end;
 end;
 procedure TGenCodBas._BCS_post(out ibranch: integer);
+begin
+  ibranch := pic.iRam+1;  //guarda posición del offset de salto
+  pic.codAsm(i_BCS, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
+end;
+procedure TGenCodBas._BLT_post(out ibranch: integer);
+begin
+  ibranch := pic.iRam+1;  //guarda posición del offset de salto
+  pic.codAsm(i_BCC, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
+end;
+procedure TGenCodBas._BGE_post(out ibranch: integer);
 begin
   ibranch := pic.iRam+1;  //guarda posición del offset de salto
   pic.codAsm(i_BCS, aRelative, 1);  //1 en Offset indica que se completará con salto relativo
@@ -1216,60 +1269,56 @@ the following block. The syntax is:
 
 IF_TRUE(@OpRes, info)
 <block of code>
-IF_TRUE_END(info)
+IF_END(info)
 
-This instruction require to call to IF_TRUE_END() to define the End of the block.
+This instruction require to call to IF_END() to define the End of the block.
 
-The block of code can be one or more instructions. The instructions used in the jump
-must be optimized, according to the length of the block.
+The block of code can be one or more instructions.
 }
+  procedure JumpIfZero(Invert: boolean);
+  {Jump using the Z flag}
+  begin
+    if Invert then begin
+      _BNE_post(info.igoto);
+    end else begin
+      _BEQ_post(info.igoto);
+    end;
+  end;
+  procedure JumpIfZeroC(Invert: boolean);
+  {Jump using the C flag}
+  begin
+    if Invert then begin
+      _BCC_post(info.igoto);
+    end else begin
+      _BCS_post(info.igoto);
+    end;
+  end;
 begin
   if OpRes^.Sto = stVariab then begin
     //Result in variable
-    if OpRes^.logic = logInverted then begin
-      _LDA(OpRes^.rVar.addr);
-      _BNE_post(info.igoto);
-    end else begin
-      _LDA(OpRes^.rVar.addr);
-      _BEQ_post(info.igoto);
-    end;
+    _LDA(OpRes^.rVar.addr);
+    JumpIfZero(OpRes^.logic = logInverted);
   end else if OpRes^.Sto = stExpres then begin
     {We first evaluate the case when it could be done an optimization}
     if BooleanFromC<>0 then begin
       //Expression result has been copied from C to A
       pic.iRam := BooleanFromC;   //Delete last instructions
       //Check C flag
-      if OpRes^.logic = logInverted then begin
-        _BCS_post(info.igoto);
-      end else begin
-        _BCC_post(info.igoto);
-      end;
+      JumpIfZeroC(OpRes^.logic <> logInverted);
     end else if BooleanFromZ<>0 then begin
       //Expression result has been copied from Z to A
       pic.iRam := BooleanFromZ;   //Delete last instructions
       //Check Z flag
-      if OpRes^.logic = logInverted then begin
-        _BEQ_post(info.igoto);
-      end else begin
-        _BNE_post(info.igoto);
-      end;
+      JumpIfZero(OpRes^.logic <> logInverted);  //Logic is inverted wheb checking Z directly
     end else begin
       {Cannot be (or should be) optimized }
       if AcumStatInZ then begin
         //Still we can use the optimizaction of testing Z flag
-        if OpRes^.logic = logInverted then begin
-          _BNE_post(info.igoto);
-        end else begin
-          _BEQ_post(info.igoto);
-        end;
+        JumpIfZero(OpRes^.logic = logInverted);
       end else begin
         //Operand value in A but not always in Z
         _TAX;  //To update Z
-        if OpRes^.logic = logInverted then begin
-          _BNE_post(info.igoto);
-        end else begin
-          _BEQ_post(info.igoto);
-        end;
+        JumpIfZero(OpRes^.logic = logInverted);
       end;
     end;
   end else begin
@@ -1294,9 +1343,12 @@ begin
 end;
 //////////////// Tipo Byte /////////////
 procedure TGenCodBas.byte_LoadToRT(const OpPtr: pointer);
-{Carga operando a registros de trabajo.}
+{Load operand to RT. It's, convert storage to stExpres }
 var
   Op: ^TOperand;
+  idx: TxpEleVar;
+  addrNextOp1, addrNextOp2: Integer;
+  off: word;
 begin
   Op := OpPtr;
   case Op^.Sto of  //el parámetro debe estar en "res"
@@ -1306,24 +1358,80 @@ begin
   stVariab: begin
     _LDA(Op^.rVar.addr);
   end;
-  stExpres: begin  //ya está en A
+  stExpres: begin  //Already in RT
   end;
-  stVarRef: begin
-    ////Se tiene una variable puntero dereferenciada: x^
-    //varPtr := Op^.rVar;  //Guarda referencia a la variable puntero
-    ////Mueve a A
-    //kMOVF(varPtr.adrByte0, toW);
-    //kMOVWF(FSR);  //direcciona
-    //kMOVF(INDF, toW);  //deje en A
+  stVarRef, stExpRef: begin
+    if Op^.Sto = stExpRef then begin
+      idx := IX;  //Index variable
+    end else begin
+      idx := Op^.rVar;  //Index variable
+    end;
+    if idx.typ.IsByteSize then begin
+      //Indexed in zero page is simple
+      _LDX(idx.addr);
+      pic.codAsm(i_LDA, aZeroPagX, 0);
+    end else if idx.typ.IsWordSize then begin
+      if idx.addr<256 then begin
+        //Index in zero page. It's simple
+        _LDYi(0);
+        pic.codAsm(i_LDA, aIndirecY, idx.addr);
+      end else begin
+        //Index is word and not in zero page
+        //WARNING this is "Self-modifiying" code.
+        _LDA(idx.addr);  //Load LSB index
+addrNextOp1 := pic.iRam + 1;  //Address next instruction
+        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
+        _LDA(idx.addr+1);  //Load virtual MSB index
+addrNextOp2 := pic.iRam + 1;  //Address next instruction
+        PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
+        //Modified LDA instruction
+        pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
+        //Complete address
+        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
+        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
+        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
+        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
+      end;
+    end else begin
+      //refVar can only be byte or word size.
+      GenError('Not supported this index.');
+    end;
   end;
-  stExpRef: begin
-//    //Es una expresión derefernciada (x+a)^.
-//    {Se asume que el operando tiene su resultado en los RT. Si estuvieran en la pila
-//    no se aplicaría.}
-//    //Mueve a A
-//    _MOVWF(FSR.addr);  //direcciona
-//    _MOVF(0, toW);  //deje en A
-  end;
+  stVarConRef: begin
+    idx := Op^.rVar;  //Index variable
+    off := Op^.valInt and $FFFF;
+    if idx.typ.IsByteSize then begin
+      //Indexed in zero page
+      _LDX(idx.addr);
+      if off<256 then begin
+        pic.codAsm(i_LDA, aZeroPagX, off);
+      end else begin
+        pic.codAsm(i_LDA, aAbsolutX, off);
+      end;
+    end else if idx.typ.IsWordSize then begin
+      //Index is word and not in zero page
+      //WARNING this is "Self-modifiying" code.
+      _CLC;
+      _LDA(idx.addr);  //Load LSB index
+      _ADCi(lo(off));
+addrNextOp1 := pic.iRam + 1;  //Address next instruction
+      pic.codAsm(i_STA, aAbsolute, 0); //Store forward
+      _LDA(idx.addr+1);  //Load virtual MSB index
+      _ADCi(hi(off));
+addrNextOp2 := pic.iRam + 1;  //Address next instruction
+      PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
+      //Modified LDA instruction
+      pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
+      //Complete address
+      pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
+      pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
+      pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
+      pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
+    end else begin
+      //refVar can only be byte or word size.
+      GenError('Not supported this index.');
+    end;
+  end
   else
     //Almacenamiento no implementado
     GenError(MSG_NOT_IMPLEM);
@@ -1342,6 +1450,8 @@ procedure TGenCodBas.word_LoadToRT(const OpPtr: pointer);
 {Carga el valor de una expresión a los registros de trabajo.}
 var
   Op: ^TOperand;
+  idx: TxpEleVar;
+  addrNextOp1, addrNextOp2: Integer;
 begin
   Op := OpPtr;
   case Op^.Sto of  //el parámetro debe estar en "Op^"
@@ -1357,30 +1467,70 @@ begin
     _STA(H.addr);
     _LDA(Op^.rVar.addr);
   end;
-  stExpres: begin  //se asume que ya está en (H,A)
+  stExpres: begin  //Already in (H,A)
   end;
-  stVarRef: begin
-    ////Se tiene una variable puntero dereferenciada: x^
-    //varPtr := Op^.rVar;  //Guarda referencia a la variable puntero
-    ////Mueve a A
-    //kINCF(varPtr.adrByte0, toW);  //varPtr.addr+1 -> A  (byte alto)
-    //_MOVWF(FSR.addr);  //direcciona byte alto
-    //_MOVF(0, toW);  //deje en A
-    //_MOVWF(H.addr);  //Guarda byte alto
-    //_DECF(FSR.addr,toF);
-    //_MOVF(0, toW);  //deje en A byte bajo
-  end;
-  stExpRef: begin
-//    //Es una expresión desrefernciada (x+a)^.
-//    {Se asume que el operando tiene su resultado en los RT. Si estuvieran en la pila
-//    no se aplicaría.}
-//    //Mueve a A
-//    _MOVWF(FSR.addr);  //direcciona byte bajo
-//    _INCF(FSR.addr,toF);  //apunta a byte alto
-//    _MOVF(0, toW);  //deje en A
-//    _MOVWF(H.addr);  //Guarda byte alto
-//    _DECF(FSR.addr,toF);
-//    _MOVF(0, toW);  //deje en A byte bajo
+  stVarRef, stExpRef: begin
+    if Op^.Sto = stExpRef then begin
+      idx := IX;  //Index variable
+    end else begin
+      idx := Op^.rVar;  //Index variable
+    end;
+    if idx.typ.IsByteSize then begin
+      //Indexed in zero page is simple
+      _LDX(idx.addr);
+      _INX;  //Fail in cross-page
+      pic.codAsm(i_LDA, aZeroPagX, 0);  //MSB
+      _STA(H.addr);
+      _DEX;
+      pic.codAsm(i_LDA, aZeroPagX, 0);  //LSB
+    end else if idx.typ.IsWordSize then begin
+      if idx.addr<256 then begin
+        //Index in zero page. It's simple
+        _LDYi(1);
+        pic.codAsm(i_LDA, aIndirecY, idx.addr);  //MSB
+        _STA(H.addr);
+        _DEY;
+        pic.codAsm(i_LDA, aIndirecY, idx.addr);  //LSB
+      end else begin
+        //Index is word and not in zero page
+        //WARNING this is "Self-modifiying" code.
+        //---------- MSB ------------
+        _CLC;   //Prepare adding 1
+        _LDA(idx.addr);  //Load LSB index
+        _ADCi(1);
+addrNextOp1 := pic.iRam + 1;  //Address next instruction
+        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
+        _LDA(idx.addr+1);  //Load virtual MSB index
+        _ADCi(0);   //Just to add the carry
+addrNextOp2 := pic.iRam + 1;  //Address next instruction
+        PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
+        //Modified LDA instruction
+        pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
+        //Complete address
+        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
+        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
+        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
+        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
+        _STA(H.addr);  //Store MSB in H
+        //---------- LSB ------------
+        _LDA(idx.addr);  //Load LSB index
+addrNextOp1 := pic.iRam + 1;  //Address next instruction
+        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
+        _LDA(idx.addr+1);  //Load virtual MSB index
+addrNextOp2 := pic.iRam + 1;  //Address next instruction
+        PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
+        //Modified LDA instruction
+        pic.codAsm(i_LDA, aAbsolute, 0); //LSB
+        //Complete address
+        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
+        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
+        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
+        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
+      end;
+    end else begin
+      //refVar can only be byte or word size.
+      GenError('Not supported this index.');
+    end;
   end;
   else
     //Almacenamiento no implementado
@@ -1466,7 +1616,7 @@ function TGenCodBas.DeviceError: string;
 begin
   exit (pic.MsjError);
 end;
-function TGenCodBas.GenCodBasCallCurrRAM(): integer;
+function TGenCodBas.CurrRAM(): integer;
 begin
   exit(pic.iRam);
 end;
@@ -1598,6 +1748,7 @@ procedure TGenCodBas.CompileIF;
 var
   jEND_TRUE: integer;
   lbl1: TIfInfo;
+  blkSize: word;
 begin
   if not GetExpressionBool then exit;
   if not CaptureStr('then') then exit; //toma "then"
@@ -1644,17 +1795,15 @@ begin
   end;
   stVariab, stExpres:begin
     IF_TRUE(@res, lbl1);
-//    Cod_JumpIfTrue;
-//    _JMP_post(jFALSE);  //salto pendiente
     //Compila la parte THEN
-    if not CompileConditionalBody then exit;
+    if not CompileConditionalBody(blkSize) then exit;
     //Verifica si sigue el ELSE
     if cIn.tokL = 'else' then begin
       //Es: IF ... THEN ... ELSE ... END
       cIn.Next;   //toma "else"
       _JMP_post(jEND_TRUE);  //llega por aquí si es TRUE
       IF_END( lbl1);
-      if not CompileConditionalBody then exit;
+      if not CompileConditionalBody(blkSize) then exit;
       _LABEL_post(jEND_TRUE);   //termina de codificar el salto
       VerifyEND;   //puede salir con error
     end else if cIn.tokL = 'elsif' then begin
@@ -1706,7 +1855,7 @@ end;
 procedure TGenCodBas.CompileWHILE;
 {Compila una extructura WHILE}
 var
-  l1: Word;
+  l1, blkSize: Word;
   info: TIfInfo;
 begin
   l1 := _PC;        //guarda dirección de inicio
@@ -1728,7 +1877,7 @@ begin
   end;
   stVariab, stExpres: begin
     IF_TRUE(@res, info);
-    if not CompileConditionalBody then exit;
+    if not CompileConditionalBody(blkSize) then exit;
     _JMP(l1);
     IF_END(info);
     if not VerifyEND then exit;
@@ -1738,13 +1887,13 @@ end;
 procedure TGenCodBas.CompileFOR;
 {Compila uan extructura FOR}
 var
-  l1: Word;
+  l1, blkSize: Word;
   LABEL1: Integer;
   Op1, Op2: TOperand;
   opr1: TxpOperator;
   info: TIfInfo;
 begin
-  GetOperand(Op1, opmSetter);
+  GetOperand(Op1);
   if Op1.Sto <> stVariab then begin
     GenError(ER_VARIAB_EXPEC);
     exit;
@@ -1791,7 +1940,7 @@ begin
     Oper(Op1, opr1, Op2);   //verifica resultado
     IF_TRUE(@res, info);
     OnExprEnd(pexSTRUC);  //Close expresión
-    if not CompileConditionalBody then exit;
+    if not CompileConditionalBody(blkSize) then exit;
     if not VerifyEND then exit;
     //Incrementa variable cursor
     if Op1.Typ = typByte then begin
@@ -1838,12 +1987,10 @@ begin
   //Calcula tamaño
   fun.srcSize := pic.iRam - fun.adrr;
 end;
-
 procedure TGenCodBas.ClearDeviceError;
 begin
   pic.MsjError := '';
 end;
-
 procedure TGenCodBas.ResetRAM;
 {Reset the device RAM memory, and set the pointer iRam to start writing at the
 beggining of the RAM.}
@@ -1880,7 +2027,7 @@ begin
 
 
   //Implement calls to Code Generator
-  callCurrRAM         := @GenCodBasCallCurrRAM;
+  callCurrRAM         := @CurrRAM;
   callResetRAM        := @ResetRAM;
   callCreateVarInRAM  := @CreateVarInRAM;
   callSetSharedUnused := @SetSharedUnused;

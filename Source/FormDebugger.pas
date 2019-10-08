@@ -214,6 +214,8 @@ begin
 end;
 ////////////////////// Acciones ////////////////////
 procedure TfrmDebugger.acGenResetExecute(Sender: TObject);
+var
+  pc: Integer;
 begin
   //pic.Reset;   //No hace reset para no perder el programa
   pic.Reset(false);
@@ -222,9 +224,16 @@ begin
   Timer2.Enabled := false;
   acGenRun.Enabled := true;
   acGenPause.Enabled := false;
-  RefreshScreen;
+//  RefreshScreen;
   lstMessages.Clear;
   lstMessages.AddItem('Restarting.', nil);
+  //Start at the begin of code
+  pc := cxp.GeneralORG;
+  while (pc < high(pic.ram)) and (pic.ram[pc].used <> ruCode) do begin
+    pc := pc + 1;  //Incrementa
+  end;
+  pic.WritePC(pc);
+  RefreshScreen;
 end;
 procedure TfrmDebugger.acGenRunExecute(Sender: TObject);
 {Ejecuta el programa, desde la posición actual}

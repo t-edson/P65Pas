@@ -13,12 +13,18 @@ type
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
+    Label4: TLabel;
+    Label5: TLabel;
     StringGrid1: TStringGrid;
     StringGrid2: TStringGrid;
+    StringGrid3: TStringGrid;
+    StringGrid4: TStringGrid;
   private
     cxp: TCompilerBase;
     //Acceso a los registros importantes
     WREGptr: ^byte;
+    XREGptr: ^byte;
+    YREGptr: ^byte;
     STATptr: ^byte;
     procedure ShowRegister(reg: byte; gri: TStringGrid);
   public
@@ -60,6 +66,8 @@ begin
   STATptr := nil;
   //Obtiene referencias a los registros importantes
   WREGptr := @(TP6502(pic).W);
+  XREGptr := @(TP6502(pic).X);
+  YREGptr := @(TP6502(pic).Y);
 //  StringGrid2.Cells[2,0] := 'IRP';
 //  StringGrid2.Cells[3,0] := 'RP1';
 //  StringGrid2.Cells[4,0] := 'RP0';
@@ -69,6 +77,8 @@ procedure TfraPicRegisters.Refrescar;
 {Refresca valores de los registros}
 begin
   ShowRegister(WREGptr^, StringGrid1);
+  ShowRegister(XREGptr^, StringGrid3);
+  ShowRegister(YREGptr^, StringGrid4);
   ShowRegister(STATptr^, StringGrid2);
 end;
 constructor TfraPicRegisters.Create(AOwner: TComponent);

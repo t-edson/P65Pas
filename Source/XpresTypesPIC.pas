@@ -181,7 +181,7 @@ type
   TPicRegister = class
   public
     addr    : word;      //Dirección absoluta: $000 a $FFFF
-    assigned: boolean;  //indica si tiene una dirección física asignada
+    assigned: boolean;   //indica si tiene una dirección física asignada
     used    : boolean;   //Indica si está usado.
     typ     : TPicRegType; //Tipo de registro
   public

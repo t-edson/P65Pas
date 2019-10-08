@@ -303,8 +303,10 @@ begin
       if v.typ.IsByteSize then begin
         AddWatch(v.name);
       end else if v.typ.IsWordSize then begin
-        AddWatch(v.name+'@1');
-        AddWatch(v.name+'@0');
+//        AddWatch(v.name+'@1');
+//        AddWatch(v.name+'@0');
+        AddWatch(v.addr);
+        AddWatch(v.addr+1);
       end else if v.typ.IsDWordSize then begin
         AddWatch(v.name+'@3');
         AddWatch(v.name+'@2');
