@@ -18,9 +18,9 @@ type
 
   //Datos de una instrucción de salto, indefinido.
   TPicUJump = class
-    txt: string;   //nombre de la etiqueta
-    add: integer;  //dirección
-    idInst: TP6502Inst;
+    txt: string;        //Nombre de la etiqueta
+    add: integer;       //Dirección donde inicia el salto
+    idInst: TP6502Inst; //Instrucción
   end;
   TPicUJump_list = specialize TFPGObjectList<TPicUJump>;
 
@@ -519,11 +519,12 @@ begin
   if uJumps.Count>0 then begin
     for jmp in uJumps do begin
       if IsLabel(jmp.txt, loc) then begin
-        //Si existe la etiqueta
-        if jmp.idInst in [i_JMP, i_JSR] then
-          pic.cod_JMP_at(jmp.add, loc)
-        else  //Deberían ser BEQ, BNE, ...
-          pic.cod_REL_JMP_at(jmp.add, loc-jmp.add-2);
+        //Sí existe la etiqueta
+        if jmp.idInst in [i_BPL, i_BMI, i_BVC, i_BVS, i_BCC, i_BCS, i_BNE, i_BEQ] then
+          //Salto relativo
+          pic.cod_REL_JMP_at(jmp.add, loc-jmp.add-2)
+        else  //Deberían ser JMP, JSR, LDA, STA ...
+          pic.cod_JMP_at(jmp.add, loc);
       end else begin
         //No se enuentra
         GenErrorAsm(ER_UNDEF_LABEL_, [jmp.txt]);

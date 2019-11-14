@@ -1,3 +1,8 @@
+P65PAS 0.7.3
+===========
+Se corrige, en la unidad ParserAsm_PIC16, el ensamblado de las instrucciones que hacen 
+alusión a una etiqueta del bloque ensamblador.
+
 P65PAS 0.7.2
 ===========
 Se corrige y mejora el Frame de registros para la ventana de depuración.

@@ -1048,14 +1048,14 @@ Puede generar código de evaluación. Devuelve el resultado en "res". }
     if operMode = opmSetter then begin
       //Mode Setter
       if field.procSet= nil then begin
-        GenError('Cannot assign to this operand.');
+        GenError('Cannot assign to this operand: %s', [field.Name]);
         exit(false);
       end;
       field.procSet(@xOperand)
     end else begin
       //Mode Getter
       if field.procGet= nil then begin
-        GenError('Cannot read this operand.');
+        GenError('Cannot read this operand: %s', [field.Name]);
         exit(false);
       end;
       field.procGet(@xOperand);  //Devuelve resultado en "res"

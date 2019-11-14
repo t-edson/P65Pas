@@ -3,24 +3,25 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\tmp\P65Pas-0.7.2\temp\newfile-1.pas
-D:\tmp\P65Pas-0.7.2\testcode65\Simul_1\Test2_Boolean.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\newfile-1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\NewFile2.pas
 "/>
-  <SplitterCol Val="2368548"/>
-  <MessPanPan Val="2368548"/>
+  <SplitterCol Val="536870912"/>
+  <MessPanPan Val="536870912"/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="255"/>
+  <SynTreeWidth Val="194"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="2"/>
-  <MessPanBack Val="2368548"/>
-  <MessPanText Val="16777215"/>
-  <MessPanErr Val="5855743"/>
-  <MessPanSel Val="-2147483629"/>
-  <CodExplBack Val="2434341"/>
-  <CodExplText Val="12632256"/>
+  <MessPanBack Val="-2147483643"/>
+  <MessPanText Val="536870912"/>
+  <MessPanErr Val="255"/>
+  <MessPanSel Val="-2147483633"/>
+  <CodExplBack Val="-2147483643"/>
+  <CodExplText Val="536870912"/>
   <grpFiltypes Val="0"/>
   <TamLet Val="10"/>
   <TipLet Val="Courier New"/>
@@ -30,9 +31,9 @@ D:\tmp\P65Pas-0.7.2\testcode65\Simul_1\Test2_Boolean.pas
   <AutSynChk Val="True"/>
   <AutCompile Val="True"/>
   <Edit>
-    <cTxtNor Val="16777215"/>
-    <cFonEdi Val="2368548"/>
-    <cLinAct Val="4210688"/>
+    <cTxtNor Val="0"/>
+    <cFonEdi Val="16777215"/>
+    <cLinAct Val="65535"/>
     <Autoindent Val="True"/>
     <MarLinAct Val="True"/>
     <ResPalCur Val="True"/>
@@ -43,13 +44,13 @@ D:\tmp\P65Pas-0.7.2\testcode65\Simul_1\Test2_Boolean.pas
     <VerPanVer Val="True"/>
     <VerNumLin Val="True"/>
     <VerMarPle Val="True"/>
-    <cFonPan Val="2105376"/>
-    <cTxtPan Val="12632256"/>
-    <recient Val="D:\tmp\P65Pas-0.7.2\samples\HelloWorld.pas
-D:\tmp\P65Pas-0.7.2\testcode65\Simul_1\Test2_Boolean.pas
-D:\tmp\P65Pas-0.7.2\temp\newfile-1.pas
-D:\tmp\P65Pas-0.7.2\testcode65\Simul_1\Test1_Vars.pas
-D:\tmp\P65Pas-0.7.2\testcode65\Simul_1\Test2_Bit.pas
+    <cFonPan Val="16777215"/>
+    <cTxtPan Val="0"/>
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\NewFile2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\newfile-1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\HolaMundo.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\SpritesTeclado.pas
 "/>
   </Edit>
   <IncDecVar Val="False"/>

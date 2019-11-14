@@ -2,7 +2,7 @@
 <CONFIG>
   <ProjectSession>
     <PathDelim Value="\"/>
-    <Version Value="10"/>
+    <Version Value="11"/>
     <BuildModes Active="Debug"/>
     <Units Count="36">
       <Unit0>
@@ -48,7 +48,7 @@
         <Filename Value="GenCod_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="1823"/>
+        <TopLine Value="1822"/>
         <CursorPos X="5" Y="1863"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
@@ -67,9 +67,9 @@
       <Unit4>
         <Filename Value="GenCodBas_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="6"/>
-        <TopLine Value="1005"/>
-        <CursorPos Y="1023"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="1256"/>
+        <CursorPos X="29" Y="1276"/>
         <ExtraEditorCount Value="2"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -96,9 +96,11 @@
       <Unit5>
         <Filename Value="CompBase.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="8"/>
-        <TopLine Value="105"/>
-        <CursorPos X="3" Y="130"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="6"/>
+        <TopLine Value="938"/>
+        <CursorPos Y="1040"/>
+        <FoldState Value=" TL00801A276 p0tK036141247]Eub01513212B[E4N025111B24 TMp00S012O]jC1[w41010]v1A[+4]KF[L4R8201]q4]4O241j]LyT]u T4C03 T7XG}e T8Y0C7 pjDjX07C T3md035 pk0kB0E9 pigjO096]ZekD0I4]9Wig2L[94flH07[94K]-{45]kYkJ073]9aj60}X1 pmHr40D2 pk7kN097 pj8j10q2[u4iF2s[R45kA0j2[;4]RB T0nNJ28]YEj6BJB]PXmNP3A]9ckWJ3A[}C5VQ3H]IZkaD7[R4fiDgAC]9elXE38[a4iBL27 pjFjKB36]RYiCs38[j54XD[a4Li6kR[s4ciUR59 pibk9y3[I4Xk8V8C[I4ifg3B piaiWg33 piebpF2 T6ng01Y piY)802AN"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -130,16 +132,16 @@
       <Unit8>
         <Filename Value="XpresElementsPIC.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="7"/>
-        <TopLine Value="979"/>
-        <CursorPos Y="998"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="27" Y="16"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
-          <CursorPos X="27" Y="16"/>
+          <TopLine Value="1123"/>
+          <CursorPos X="30" Y="1603"/>
+          <FoldState Value=" TL00A2225112121922111[4438 p0u02412[Q4[442]T3]83]Qsd0106[i44413]P]V]NtG01]L433]S581[J47021 T4E0]6MjM250c]Nya0S231M1[m4G]HwN210c]a7dH55 piglJJJ4 pjOl2F54]IZjRF75 T8i822B]HXm024D]9ckS27G]9dkg2G]=CkSG82 T3vU078]PajE06[q4fjK051 pj0C2C3]8Pk6089[{E5C05E]9XjF0C8]R2jO0I[R4Y]r38[9570EA]9cjN0KC]9djY0A6]jEjX0U9]96k40B4 pjAiL2K[945j00R3 T0vWK1I[Z4nCb4H piZkEV2V piXsYB2F pian1-3E pj0lQXCC pigj9X9C T6w201qA"/>
         </ExtraEditor1>
         <UsageCount Value="211"/>
-        <Loaded Value="True"/>
       </Unit8>
       <Unit9>
         <Filename Value="FormConfig.pas"/>
@@ -237,10 +239,12 @@
       <Unit18>
         <Filename Value="ParserAsm_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="289"/>
-        <CursorPos X="49" Y="345"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="28"/>
+        <CursorPos X="15" Y="57"/>
+        <FoldState Value=" TL0020412141 p0zc21 T4602 TMx841071C1B]K7CE3 T8S2Q01]F3iS04632 pjZm30Q23]+nFt40{D]e6ib01C T0jaJ402E]dWjSM4D piaiHI3B]I1j0O2612]KZdigG]J2i4Z233148]D9jUc78]Ubi1X25]9YJM[w5fi8h39[H4Wt27]HROj3A[G4i7B3A]HAiMf3823:"/>
         <UsageCount Value="200"/>
+        <Loaded Value="True"/>
       </Unit18>
       <Unit19>
         <Filename Value="ParserDirec_PIC16.pas"/>
@@ -267,10 +271,9 @@
         <ComponentName Value="frmDebugger"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="-1"/>
         <CursorPos X="3" Y="8"/>
         <UsageCount Value="202"/>
-        <Loaded Value="True"/>
       </Unit21>
       <Unit22>
         <Filename Value="FrameRamExplorer.pas"/>
@@ -339,18 +342,18 @@
       <Unit28>
         <Filename Value="CompOperands.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="-1"/>
-        <WindowIndex Value="1"/>
-        <TopLine Value="308"/>
-        <CursorPos X="40" Y="322"/>
+        <EditorIndex Value="7"/>
+        <TopLine Value="614"/>
+        <CursorPos Y="632"/>
         <UsageCount Value="209"/>
+        <Loaded Value="True"/>
       </Unit28>
       <Unit29>
         <Filename Value="CompMain.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="9"/>
-        <TopLine Value="1568"/>
-        <CursorPos X="20" Y="1586"/>
+        <EditorIndex Value="5"/>
+        <TopLine Value="1847"/>
+        <CursorPos Y="1856"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -372,28 +375,26 @@
       </Unit30>
       <Unit31>
         <Filename Value="XpresTypesPIC.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="98"/>
-        <CursorPos X="5" Y="115"/>
+        <EditorIndex Value="8"/>
+        <TopLine Value="168"/>
+        <CursorPos Y="204"/>
         <UsageCount Value="101"/>
+        <Loaded Value="True"/>
       </Unit31>
       <Unit32>
         <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="4"/>
-        <TopLine Value="817"/>
-        <CursorPos X="29" Y="831"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="187"/>
+        <CursorPos X="15" Y="204"/>
         <FoldState Value=" T0wT9A0233131]42[44[A42121282C-"/>
         <UsageCount Value="92"/>
-        <Loaded Value="True"/>
       </Unit32>
       <Unit33>
         <Filename Value="..\_libraries\P65Utils-0.2\CPUCore.pas"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="114"/>
         <CursorPos X="26" Y="132"/>
         <UsageCount Value="25"/>
-        <Loaded Value="True"/>
       </Unit33>
       <Unit34>
         <Filename Value="C:\lazarus\lcl\grids.pas"/>
@@ -411,126 +412,156 @@
         <UsageCount Value="14"/>
       </Unit35>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="28">
+    <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1314" TopLine="1302"/>
       </Position1>
       <Position2>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="7" Column="27"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1315" TopLine="1302"/>
       </Position2>
       <Position3>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="184" Column="17" TopLine="151"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1331" TopLine="1311"/>
       </Position3>
       <Position4>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="967" Column="5" TopLine="936"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1334" TopLine="1311"/>
       </Position4>
       <Position5>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="180" Column="15" TopLine="164"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1335" TopLine="1311"/>
       </Position5>
       <Position6>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="716" Column="27" TopLine="702"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="826" TopLine="808"/>
       </Position6>
       <Position7>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="717" TopLine="702"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1335" TopLine="1317"/>
       </Position7>
       <Position8>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="718" TopLine="702"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1069" TopLine="1057"/>
       </Position8>
       <Position9>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="721" TopLine="702"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1070" TopLine="1057"/>
       </Position9>
       <Position10>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="724" Column="20" TopLine="711"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1088" TopLine="1071"/>
       </Position10>
       <Position11>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="716" Column="27" TopLine="710"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1089" TopLine="1074"/>
       </Position11>
       <Position12>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="919" TopLine="907"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1095" TopLine="1083"/>
       </Position12>
       <Position13>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="716" TopLine="704"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1097" TopLine="1083"/>
       </Position13>
       <Position14>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="717" TopLine="704"/>
+        <Filename Value="XpresTypesPIC.pas"/>
+        <Caret Line="204" TopLine="168"/>
       </Position14>
       <Position15>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="718" TopLine="704"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1098" TopLine="1083"/>
       </Position15>
       <Position16>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="716" TopLine="704"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1100" Column="18" TopLine="1098"/>
       </Position16>
       <Position17>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="717" TopLine="704"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="826" TopLine="808"/>
       </Position17>
       <Position18>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="718" TopLine="704"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1335" TopLine="1317"/>
       </Position18>
       <Position19>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="721" TopLine="704"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1069" TopLine="1051"/>
       </Position19>
       <Position20>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="718" Column="47" TopLine="703"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1070" TopLine="1051"/>
       </Position20>
       <Position21>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="716" TopLine="703"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1088" TopLine="1070"/>
       </Position21>
       <Position22>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="717" TopLine="703"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1089" TopLine="1070"/>
       </Position22>
       <Position23>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="718" TopLine="703"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1100" TopLine="1088"/>
       </Position23>
       <Position24>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="721" Column="13" TopLine="703"/>
+        <Filename Value="CompOperands.pas"/>
+        <Caret Line="632" TopLine="614"/>
       </Position24>
       <Position25>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="674" Column="5" TopLine="661"/>
+        <Filename Value="CompOperands.pas"/>
+        <Caret Line="633" TopLine="614"/>
       </Position25>
       <Position26>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="676" Column="12" TopLine="662"/>
+        <Filename Value="CompOperands.pas"/>
+        <Caret Line="636" TopLine="614"/>
       </Position26>
       <Position27>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="975" Column="12" TopLine="957"/>
+        <Filename Value="CompOperands.pas"/>
+        <Caret Line="632" TopLine="614"/>
       </Position27>
       <Position28>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="981" Column="16" TopLine="961"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="826" TopLine="808"/>
       </Position28>
       <Position29>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="1000" Column="7" TopLine="937"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1335" TopLine="1317"/>
       </Position29>
       <Position30>
-        <Filename Value="..\_libraries\P65Utils-0.2\P6502utils.pas"/>
-        <Caret Line="645" Column="20" TopLine="633"/>
+        <Filename Value="CompBase.pas"/>
+        <Caret Line="1100" Column="18" TopLine="1082"/>
       </Position30>
     </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes Count="0" ActiveMode="default"/>
+    </RunParams>
   </ProjectSession>
+  <Debugging>
+    <BreakPoints Count="3">
+      <Item1>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="CompBase.pas"/>
+        <Line Value="826"/>
+      </Item1>
+      <Item2>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="CompBase.pas"/>
+        <Line Value="1335"/>
+      </Item2>
+      <Item3>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="CompBase.pas"/>
+        <Line Value="1100"/>
+      </Item3>
+    </BreakPoints>
+  </Debugging>
 </CONFIG>
