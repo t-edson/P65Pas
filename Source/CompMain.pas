@@ -1894,6 +1894,7 @@ begin
     GenError('Expected "var", "type" or "const".');
     exit;
   end;
+  curLocation := locInterface;  //Restore right location
   ProcComments;
 //  Cod_StartProgram;  //Se pone antes de codificar procedimientos y funciones
   if HayError then exit;

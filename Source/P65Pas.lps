@@ -33,8 +33,9 @@
         <Filename Value="Compiler_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="300"/>
-        <CursorPos X="18" Y="324"/>
+        <TopLine Value="236"/>
+        <CursorPos X="12" Y="256"/>
+        <FoldState Value=" TL00101322 T4504 T7CKH T8D213 TMm121 T3g0421]T0i7S26 pjAjDT2A2D T6iG056l"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -85,22 +86,20 @@
           <CursorPos Y="1410"/>
         </ExtraEditor2>
         <UsageCount Value="200"/>
-        <Bookmarks Count="4">
+        <Bookmarks Count="3">
           <Item0 Y="1745" ID="4"/>
           <Item1 X="15" Y="1456" ID="5"/>
-          <Item2 X="12" Y="1799" ID="1"/>
-          <Item3 Y="1281" ID="2"/>
+          <Item2 Y="1281" ID="2"/>
         </Bookmarks>
         <Loaded Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="CompBase.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="6"/>
-        <TopLine Value="938"/>
-        <CursorPos Y="1040"/>
-        <FoldState Value=" TL00801A276 p0tK036141247]Eub01513212B[E4N025111B24 TMp00S012O]jC1[w41010]v1A[+4]KF[L4R8201]q4]4O241j]LyT]u T4C03 T7XG}e T8Y0C7 pjDjX07C T3md035 pk0kB0E9 pigjO096]ZekD0I4]9Wig2L[94flH07[94K]-{45]kYkJ073]9aj60}X1 pmHr40D2 pk7kN097 pj8j10q2[u4iF2s[R45kA0j2[;4]RB T0nNJ28]YEj6BJB]PXmNP3A]9ckWJ3A[}C5VQ3H]IZkaD7[R4fiDgAC]9elXE38[a4iBL27 pjFjKB36]RYiCs38[j54XD[a4Li6kR[s4ciUR59 pibk9y3[I4Xk8V8C[I4ifg3B piaiWg33 piebpF2 T6ng01Y piY)802AN"/>
+        <TopLine Value="1083"/>
+        <CursorPos X="34" Y="1100"/>
+        <FoldState Value=" T4C03 TMp00S012O141C1 T8Y0C7 pjDjX0701B T3md035 pk0kB0E9 pigjO096]bekD0I4]9Wig2L114 T0nNJ28]JEj6BJB]kXmNP3A]9ckWJ341D T6ng01Y]JY)802A!"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -108,6 +107,9 @@
           <CursorPos X="12" Y="65"/>
         </ExtraEditor1>
         <UsageCount Value="200"/>
+        <Bookmarks Count="1">
+          <Item0 X="9" Y="1823" ID="1"/>
+        </Bookmarks>
         <Loaded Value="True"/>
       </Unit5>
       <Unit6>
@@ -242,7 +244,6 @@
         <EditorIndex Value="4"/>
         <TopLine Value="28"/>
         <CursorPos X="15" Y="57"/>
-        <FoldState Value=" TL0020412141 p0zc21 T4602 TMx841071C1B]K7CE3 T8S2Q01]F3iS04632 pjZm30Q23]+nFt40{D]e6ib01C T0jaJ402E]dWjSM4D piaiHI3B]I1j0O2612]KZdigG]J2i4Z233148]D9jUc78]Ubi1X25]9YJM[w5fi8h39[H4Wt27]HROj3A[G4i7B3A]HAiMf3823:"/>
         <UsageCount Value="200"/>
         <Loaded Value="True"/>
       </Unit18>
@@ -351,9 +352,11 @@
       <Unit29>
         <Filename Value="CompMain.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="5"/>
-        <TopLine Value="1847"/>
-        <CursorPos Y="1856"/>
+        <TopLine Value="1857"/>
+        <CursorPos X="24" Y="1897"/>
+        <FoldState Value=" T0ihBSC024111]3C"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -414,124 +417,124 @@
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1314" TopLine="1302"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1861" TopLine="1847"/>
       </Position1>
       <Position2>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1315" TopLine="1302"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1862" TopLine="1847"/>
       </Position2>
       <Position3>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1331" TopLine="1311"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1857" TopLine="1847"/>
       </Position3>
       <Position4>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1334" TopLine="1311"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1886" TopLine="1847"/>
       </Position4>
       <Position5>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1335" TopLine="1311"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1892" Column="26" TopLine="1857"/>
       </Position5>
       <Position6>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="826" TopLine="808"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1893" TopLine="1857"/>
       </Position6>
       <Position7>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1335" TopLine="1317"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1897" Column="10" TopLine="1857"/>
       </Position7>
       <Position8>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1069" TopLine="1057"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1899" TopLine="1857"/>
       </Position8>
       <Position9>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1070" TopLine="1057"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1901" TopLine="1890"/>
       </Position9>
       <Position10>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1088" TopLine="1071"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1902" TopLine="1890"/>
       </Position10>
       <Position11>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1089" TopLine="1074"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1908" TopLine="1890"/>
       </Position11>
       <Position12>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1095" TopLine="1083"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1914" TopLine="1890"/>
       </Position12>
       <Position13>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1097" TopLine="1083"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1920" TopLine="1899"/>
       </Position13>
       <Position14>
-        <Filename Value="XpresTypesPIC.pas"/>
-        <Caret Line="204" TopLine="168"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1921" TopLine="1899"/>
       </Position14>
       <Position15>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1098" TopLine="1083"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1922" TopLine="1899"/>
       </Position15>
       <Position16>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1100" Column="18" TopLine="1098"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1923" TopLine="1899"/>
       </Position16>
       <Position17>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="826" TopLine="808"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1922" Column="18" TopLine="1893"/>
       </Position17>
       <Position18>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1335" TopLine="1317"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1885" TopLine="1860"/>
       </Position18>
       <Position19>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1069" TopLine="1051"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1922" TopLine="1860"/>
       </Position19>
       <Position20>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1070" TopLine="1051"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1885" TopLine="1860"/>
       </Position20>
       <Position21>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1088" TopLine="1070"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1922" TopLine="1860"/>
       </Position21>
       <Position22>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1089" TopLine="1070"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1885" TopLine="1860"/>
       </Position22>
       <Position23>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1100" TopLine="1088"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1922" TopLine="1860"/>
       </Position23>
       <Position24>
-        <Filename Value="CompOperands.pas"/>
-        <Caret Line="632" TopLine="614"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1885" TopLine="1860"/>
       </Position24>
       <Position25>
-        <Filename Value="CompOperands.pas"/>
-        <Caret Line="633" TopLine="614"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1922" TopLine="1860"/>
       </Position25>
       <Position26>
-        <Filename Value="CompOperands.pas"/>
-        <Caret Line="636" TopLine="614"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1885" Column="31" TopLine="1860"/>
       </Position26>
       <Position27>
-        <Filename Value="CompOperands.pas"/>
-        <Caret Line="632" TopLine="614"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1886" TopLine="1860"/>
       </Position27>
       <Position28>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="826" TopLine="808"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1890" TopLine="1860"/>
       </Position28>
       <Position29>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1335" TopLine="1317"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1892" TopLine="1860"/>
       </Position29>
       <Position30>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1100" Column="18" TopLine="1082"/>
+        <Filename Value="CompMain.pas"/>
+        <Caret Line="1885" TopLine="1857"/>
       </Position30>
     </JumpHistory>
     <RunParams>
@@ -540,28 +543,14 @@
     </RunParams>
   </ProjectSession>
   <Debugging>
-    <BreakPoints Count="3">
+    <BreakPoints Count="1">
       <Item1>
         <Kind Value="bpkSource"/>
         <WatchScope Value="wpsLocal"/>
         <WatchKind Value="wpkWrite"/>
-        <Source Value="CompBase.pas"/>
-        <Line Value="826"/>
+        <Source Value="CompMain.pas"/>
+        <Line Value="1923"/>
       </Item1>
-      <Item2>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="CompBase.pas"/>
-        <Line Value="1335"/>
-      </Item2>
-      <Item3>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="CompBase.pas"/>
-        <Line Value="1100"/>
-      </Item3>
     </BreakPoints>
   </Debugging>
 </CONFIG>
