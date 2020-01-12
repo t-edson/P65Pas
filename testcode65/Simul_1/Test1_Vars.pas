@@ -33,9 +33,8 @@ const
   consWord = word($0A00); 
 begin
 
-  ///////////////////////////////////////////////////
-  ///// Var declration
-  ///////////////////////////////////////////////////
+  STROUT(@'=== VAR DECLAR ==='#13#0);
+  
   //Basic assigment
   vbool := false;
 	if vbool then mal else bien end;
@@ -90,7 +89,7 @@ begin
   aword := $2010;
 	if vword = $2010 then bien else mal end;
   
-//  //Access to bytes of dword
+  //Access to bytes of dword
 //  vdword := $01020304;
 //  if vdword.low = 4 then bien else mal end;
 //  if vdword.high = 3 then bien else mal end;
