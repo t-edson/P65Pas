@@ -1064,7 +1064,6 @@ begin
 end;
 procedure TParserDirecBase.ProcORG;
 var
-  Ident: String;
   valOrg: Longint;
 begin
   lexDir.Next;  //pasa al siguiente

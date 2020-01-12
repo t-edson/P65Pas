@@ -82,7 +82,7 @@ type
     //Métodos básicos
     procedure SetResultNull;
     procedure SetResultConst(typ: TxpEleType);
-    procedure SetResultVariab(rVar: TxpEleVar; logic: TLogicType = logNormal);
+    procedure SetResultVariab(rVar: TxpEleVar);
     procedure SetResultExpres(typ: TxpEleType; ChkRTState: boolean = true);
     procedure SetResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
     procedure SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer; xtyp: TxpEleType);
@@ -93,7 +93,7 @@ type
     procedure SetROBResultConst_char(valByte: integer);
     procedure SetROBResultConst_word(valWord: integer);
     //Fija el resultado de ROB como variable
-    procedure SetROBResultVariab(rVar: TxpEleVar; logic: TLogicType = logNormal);
+    procedure SetROBResultVariab(rVar: TxpEleVar);
     //Fija el resultado de ROB como expresión
     {El parámetro "Opt", es más que nada para asegurar que solo se use con Operaciones
      binarias.}
@@ -104,7 +104,7 @@ type
     //Fija el resultado de ROU
     procedure SetROUResultConst_bool(valBool: boolean);
     procedure SetROUResultConst_byte(valByte: integer);
-    procedure SetROUResultVariab(rVar: TxpEleVar; logic: TLogicType = logNormal);
+    procedure SetROUResultVariab(rVar: TxpEleVar);
     procedure SetROUResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
     procedure SetROUResultExpres(typ: TxpEleType);
     procedure SetROUResultExpres_bool(logic: TLogicType);
@@ -190,6 +190,8 @@ type
     procedure IF_FALSE(OpRes: TOperandPtr; out info: TIfInfo);
     procedure IF_END(const info: TIfInfo);
   protected  //Funciones de tipos
+    //////////////// Tipo Boolean /////////////
+    procedure bool_LoadToRT(const OpPtr: pointer);
     //////////////// Tipo Byte /////////////
     procedure byte_LoadToRT(const OpPtr: pointer);
     procedure byte_DefineRegisters;
@@ -582,7 +584,7 @@ begin
   que en este caso, tenemos control pleno de su valor}
   res.logic := logNormal;
 end;
-procedure TGenCodBas.SetResultVariab(rVar: TxpEleVar; logic: TLogicType);
+procedure TGenCodBas.SetResultVariab(rVar: TxpEleVar);
 {Fija los parámetros del resultado de una subexpresion. Este método se debe ejcutar,
 siempre antes de evaluar cada subexpresión.}
 begin
@@ -590,9 +592,9 @@ begin
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
   LastIsTXA := false;
-  AcumStatInZ := true;
-  //"Inverted" solo tiene sentido, para los tipos bit y boolean
-  res.logic := logic;
+  AcumStatInZ := true;   //Default TRUE is explained in Documentation.
+  //"logic" is not used in this storage.
+  res.logic := logNormal;
 end;
 procedure TGenCodBas.SetResultExpres(typ: TxpEleType; ChkRTState: boolean = true);
 {Fija los parámetros del resultado de una subexpresion (en "res"). Este método se debe
@@ -625,7 +627,7 @@ begin
   BooleanFromZ:=0;
   LastIsTXA := false;
   AcumStatInZ := true;
-  //No se usa "Inverted" en este almacenamiento
+  //No se usa "logic" en este almacenamiento
   res.logic := logNormal;
 end;
 procedure TGenCodBas.SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer;
@@ -636,7 +638,7 @@ begin
   LastIsTXA := false;
   BooleanFromZ:=0;
   AcumStatInZ := true;
-  //No se usa "Inverted" en este almacenamiento
+  //No se usa "logic" en este almacenamiento
   res.logic := logNormal;
 end;
 procedure TGenCodBas.SetResultExpRef(typ: TxpEleType; ChkRTState: boolean = true);
@@ -655,7 +657,7 @@ begin
   BooleanFromZ:=0;
   LastIsTXA := false;
   AcumStatInZ := true;
-  //No se usa "Inverted" en este almacenamiento
+  //No se usa "logic" en este almacenamiento
   res.logic := logNormal;
 end;
 //Fija el resultado de ROP como constante
@@ -688,10 +690,10 @@ begin
   res.valInt := valWord;
 end;
 //Fija el resultado de ROP como variable
-procedure TGenCodBas.SetROBResultVariab(rVar: TxpEleVar; logic: TLogicType);
+procedure TGenCodBas.SetROBResultVariab(rVar: TxpEleVar);
 begin
   GenerateROBdetComment;
-  SetResultVariab(rVar, logic);
+  SetResultVariab(rVar);
 end;
 //Fija el resultado de ROP como expresión
 procedure TGenCodBas.SetROBResultExpres_bool(Opt: TxpOperation;
@@ -778,10 +780,10 @@ begin
   SetResultConst(typByte);
   res.valInt := valByte;
 end;
-procedure TGenCodBas.SetROUResultVariab(rVar: TxpEleVar; logic: TLogicType);
+procedure TGenCodBas.SetROUResultVariab(rVar: TxpEleVar);
 begin
   GenerateROUdetComment;
-  SetResultVariab(rVar, logic);
+  SetResultVariab(rVar);
 end;
 procedure TGenCodBas.SetROUResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
 {Fija el resultado como una referencia de tipo stVarRef}
@@ -1336,6 +1338,29 @@ procedure TGenCodBas.IF_END(const info: TIfInfo);
 {Define the End of the block, created with IF_TRUE().}
 begin
   _LABEL_post(info.igoto);  //termina de codificar el salto
+end;
+//////////////// Tipo Boolean /////////////
+procedure TGenCodBas.bool_LoadToRT(const OpPtr: pointer);
+var
+  Op: ^TOperand;
+begin
+  Op := OpPtr;
+  case Op^.Sto of  //el parámetro debe estar en "res"
+  stConst : begin
+    if Op^.valBool then _LDAi(2) else _LDAi(0);
+  end;
+  stVariab: begin
+    _LDA(Op^.rVar.addr);  //values $00 or $02
+  end;
+  stExpres: begin  //Already in RT
+  end;
+  //stVarRef, stExpRef, stVarConRef: begin
+  // Must be similar to byte type
+  //end
+  else
+    //Almacenamiento no implementado
+    GenError(MSG_NOT_IMPLEM);
+  end;
 end;
 function TGenCodBas.PICName: string;
 begin

@@ -6,8 +6,8 @@ unit FormConfig;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs,
-  Buttons, StdCtrls, ExtCtrls, ComCtrls, ColorBox, LCLType, Spin,
+  Classes, SysUtils, FileUtil, LazFileUtils, SynEdit, Forms, Controls, Graphics,
+  Dialogs, Buttons, StdCtrls, ExtCtrls, ComCtrls, ColorBox, LCLType, Spin,
   FrameCfgSynEdit, Globales, FrameCfgSyntax, FrameCfgExtTool, MiConfigXML,
   MiConfigBasic, MisUtils;
 type

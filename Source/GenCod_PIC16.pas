@@ -176,21 +176,23 @@ begin
   {$I ..\language\tra_GenCod.pas}
 end;
 procedure TGenCod.Copy_Z_to_A;
-{Copy the logic value of Z flag to A register.}
+{Copy the logic value of Z flag to A register (as boolean expression).}
 begin
   //Result in Z. Move to A.
   BooleanFromZ := _PC;  //Activates flag, and get current address.
   _PHP;
   _PLA;
-  _ANDi($02);   //If true get not 1 but 2
+  _ANDi($02);   //If true get $02
 end;
 procedure TGenCod.Copy_C_to_A;
+{Copy the logic value of C flag to A register (as boolean expression).}
 begin
   //Result in C. Move to A.
   BooleanFromC := _PC;  //Activates flag, and get current address.
   _PHP;
   _PLA;
   _ANDi($01);
+  _ASLa;  //Leaves in bit 1.
 end;
 ////////////rutinas obligatorias
 procedure TGenCod.Cod_StartProgram;
@@ -1799,7 +1801,8 @@ begin
     case p2^.Sto of
     stConst : begin
       if p2^.valBool then begin
-        _LDAi(1);
+        _LDAi(2);
+        //Por facilidad se usa el bit 1
         _STA(byte1);
       end else begin
         _LDAi(0);
@@ -1859,8 +1862,9 @@ begin
     _BEQ_post(sale0);  //p1=0
     _LDX(byte2);
 _LABEL_post(sale0);
-    //Here: Z = 0 if p1<>0 and p2<>0
-    Copy_Z_to_A;  //Logic inverted
+    //Here  : Z = 0 if p1<>0 and p2<>0
+    //That's: Z = NOT (p1 and p2)
+    Copy_Z_to_A;  //Maintain the inverted logic
   end;
   stVariab_Expres:begin   //Expresion p2 evaluated in A
     //Algorith like in "stVariab_Variab"
@@ -1946,52 +1950,17 @@ begin
     end;
   end;
   stVariab_Variab: begin
-    if IsTheSameVar(p1^.rVar, p2^.rVar) then begin
-      SetROBResultConst_bool(true);
-      exit;
-    end;
-    SetROBResultExpres_bool(Opt);
-    typWord.DefineRegister;  //To use _H
-    _LDA(byte1);
-    _PHP;     //Save SR
-    _PLA;
-    _STA(H.addr);  //In H
-    _LDA(byte2);
-    _PHP;     //Save SR
-    _PLA;     //In A
-    _EOR(H.addr);  //0 if equals
-    _ANDi($02);//Mask position of bit Z. if equals -> Z = 1
-    Copy_Z_to_A;  //Logic inverted
-    {//Alternative version (not tested)
-    SetROBResultExpres_bool(Opt);
-    _LDA(byte1);  //if FALSE, Z=1
-    _BEQ(false0); //Jump if FALSE
-    //It's TRUE
-    _LDA(byte2);  //if FALSE (different), Z=1
-    //Invert Z
-    _PHP;
-    _PLA;
-    _ANDi($02);  //if Z was 1, set Z to 0, if Z was 0, set Z to 1
-    _JMP_post(exit0);  //exit with result in Z
-_LABEL_post(false0):
-    _LDA(byte2);  //if equal, Z=1
-_LABEL_post(exit0):
-    Copy_Z_to_A;
-  end; }
+    SetROBResultExpres_bool(Opt, logInverted);
+    _LDA(byte2);  //p2 in A.1
+    _EOR(byte1);  //Compare Oper1.1 with Oper2.1. Result in A, inverted.
   end;
   stVariab_Expres:begin   //Expresion p2 evaluated in A
-    SetROBResultExpres_bool(Opt);
-    typWord.DefineRegister;  //To use _H
-    if not AcumStatInZ then _TAX;   //Update Z, if needed.
-    _PHP;     //Save SR
-    _PLA;
-    _STA(H.addr);  //In H
-    _LDA(byte1);
-    _PHP;     //Save SR
-    _PLA;     //In A
-    _EOR(H.addr);  //0 if equals
-    _ANDi($02);//Mask position of bit Z. if equals -> Z = 1
-    Copy_Z_to_A;  //Logic inverted
+    if p2^.logic = logNormal then SetROBResultExpres_bool(Opt, logInverted)
+    else SetROBResultExpres_bool(Opt, logNormal);
+    //p2 in A.1
+    _EOR(byte1);  //Compare Oper1.1 with Oper2.1
+    {Can be demonstrated the bit Z returns the operation "=" inverted. But if p2 is
+    inverted, the result will have the correct logic.}
   end;
   stExpres_Const: begin   //Expresion p1 evaluated in A
     if p2^.valBool = false then begin  //Special case.
@@ -2007,18 +1976,12 @@ _LABEL_post(exit0):
     end;
   end;
   stExpres_Variab:begin  //Expresion p1 evaluated in A
-    SetROBResultExpres_bool(Opt);
-    typWord.DefineRegister;  //To use _H
-    if not AcumStatInZ then _TAX;   //Update Z, if needed.
-    _PHP;     //Save SR
-    _PLA;
-    _STA(H.addr);  //In H
-    _LDA(byte2);
-    _PHP;     //Save SR
-    _PLA;     //In A
-    _EOR(H.addr);  //0 if equals
-    _ANDi($02);//Mask position of bit Z. if equals -> Z = 1
-    Copy_Z_to_A;  //Logic inverted
+    if p1^.logic = logNormal then SetROBResultExpres_bool(Opt, logInverted)
+    else SetROBResultExpres_bool(Opt, logNormal);
+    //p1 in A.1
+    _EOR(byte2);  //Compare Oper1.1 with Oper2.1
+    {Can be demonstrated the bit Z returns the operation "=" inverted. But if p1 is
+    inverted, the result will have the correct logic.}
   end;
 //  stExpres_Expres:begin
 //    SetROBResultExpres_byte(Opt);
@@ -3827,7 +3790,7 @@ begin
         GenError('Expected a "%s" expression.', [curFunTyp.name]);
         exit;
       end;
-      LoadToRT(res);  //Carga expresión en RT y genera i_RETURN o i_RETLW
+      LoadToRT(res);  //Carga expresión en RT y genera RTS
       _RTS;
     end;
   end else begin
@@ -4801,7 +4764,7 @@ begin
   ClearSystemTypes;
   //////////////// Boolean type /////////////
   typBool := CreateSysType('boolean',t_uinteger,1);   //de 1 byte
-  typBool.OnLoadToRT   := @byte_LoadToRT;
+  typBool.OnLoadToRT   := @bool_LoadToRT;
   typBool.OnDefRegister:= @byte_DefineRegisters;
   typBool.OnSaveToStk  := @byte_SaveToStk;
   //typBool.OnReadFromStk :=

@@ -1293,6 +1293,7 @@ var
   Found   , AddrUndef: Boolean;
   pars    : TxpParFuncArray;   //Para almacenar parámetros
   findState: TxpFindState;
+  operMode0: TOpReadMode;
 begin
 //cIn.ShowCurContInformat;
 //debugln(' ++CurNode:' + TreeElems.curNode.Path);
@@ -1366,6 +1367,8 @@ begin
     posPar := cIn.PosAct;   //Guarda porque va a pasar otra vez por aquí
     OnReqStopCodeGen();     //Para que no se genere el código(Por ejemplo cuando se leen parámetros de tipo expresión.)
     RTstate0 := RTstate;    //Guarda porque se va a alterar con CaptureParams().
+    operMode0 := OperMode;  //Save because we're to set in getter when reading parameters
+    operMode := opmGetter;  //Paremeters are reading as getter. Set before reading.
     CaptureParams(pars);    //Primero lee parámetros en "pars".
     if HayError then begin
       exit;
@@ -1414,6 +1417,7 @@ begin
       GenError(ER_TYP_PARM_ER_, [ele.name + '()']);
       exit;
     end;
+    operMode := OperMode0;  //Restore the mode
   end else if ele.idClass = eltInLin then begin  //es función INLINE
 //    {Se sabe que es función, pero no se tiene la función exacta porque puede haber
 //     versiones, sobrecargadas de la misma función.}
