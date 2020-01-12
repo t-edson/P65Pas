@@ -4,7 +4,7 @@
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
   <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\helloworld.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\libscreen.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test3_Procedure.pas
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -14,7 +14,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\libscreen.pas
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="238"/>
   <ViewPanAssem Val="True"/>
-  <viewMode Val="1"/>
+  <viewMode Val="2"/>
   <MessPanBack Val="-2147483643"/>
   <MessPanText Val="536870912"/>
   <MessPanErr Val="255"/>
@@ -45,11 +45,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\libscreen.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\SpritesPucp.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\sprite1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\HolaMundo.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test3_Procedure.pas
 D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\helloworld.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test2_Boolean.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test1_Vars.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\units\Commodore64.pas
 "/>
   </Edit>
   <IncDecVar Val="False"/>
@@ -67,6 +67,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\NewFile1.pas
   <ReuProcVar Val="True"/>
   <OptRetProc Val="True"/>
   <ExternTool>
-    <extern_tools Val=""/>
+    <extern_tools Val="SImulate	                        	C:\Program Files (x86)\Computerbrains C.C.S\CCS64 V3.9.1\CCS64.exe	$(hexFile)	F	V					
+"/>
   </ExternTool>
 </CONFIG>

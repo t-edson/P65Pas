@@ -1,22 +1,21 @@
-P65PAS 0.7.3
+P65PAS 0.7.4
 ===========
-Se corrige, en la unidad ParserAsm_PIC16, el ensamblado de las instrucciones que hacen 
-alusión a una etiqueta del bloque ensamblador.
+- Se define que las variables booleanas se cargen con el valor $02 para el valor TRUE y $00
+para el valor FALSE, para facilidad de las operaciones.
+- Se quita el parámetro "logic" para los métodos SetResultVariab(), SetROBResultVariab() y 
+- SetROUResultVariab(), porque se está definiendo que esta bandera solo se aplique a expresiones. 
+Se podría trabajar como PicPas y manejar "logic" también en variables, pero esto complicaría las 
+RO, considerando que el 6502 no tiene instrucciones de acceso a bit, como si lo tienen los PIC.
+- Se revisa y completa, un poco más, la documentación.
+- Se corrige y optimiza TGenCod.ROB_bool_equal_bool().
+- Se crea la rutina TGenCodBas.bool_LoadToRT() para corregir un error al compilar funciones.
+- Se corrige un error con la lectura de parámetros, cuando se llamaba a métodos. 
 
-P65PAS 0.7.2
-===========
-Se corrige y mejora el Frame de registros para la ventana de depuración.
-Se implementan nuevas instrucciones en el depurador/simulador, y se corrigen algunas 
-funcionalidades.
-Se revisan y completan nuevas operaciones con el tipo word (suma, autosuma, y and).
-Se implementa el operador += para los punteros.
-Se revisa la implementación de los métodos GetItem y SetItem de arreglos.
-Se crea el método TGenCod.LoadIXmult() para ayudar en el cálculo de índices para arreglos 
-o punteros.
-Se completan las implementaciones de TGenCodBas.byte_LoadToRT() y TGenCodBas.word_LoadToRT() 
-para más casos de almacenamiento.
-Se implementa el operador ^ para punteros en modo "getter".
-Se modulariza el método TGenCodBas.IF_TRUE().
+Pendientes
+==========
+Generar bloques IF (o de otro tipo), de más de 128 bytes.
+
+Revisar y adaptar los programas de prueba para el compilador.
 
 Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
 implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
@@ -63,6 +62,30 @@ octeto = object
     
     end;
   end;
+
+
+
+P65PAS 0.7.3
+===========
+Se corrige, en la unidad ParserAsm_PIC16, el ensamblado de las instrucciones que hacen 
+alusión a una etiqueta del bloque ensamblador.
+Se corrige un problema relativo al uso de unidades dentro de unidades.
+
+
+P65PAS 0.7.2
+===========
+Se corrige y mejora el Frame de registros para la ventana de depuración.
+Se implementan nuevas instrucciones en el depurador/simulador, y se corrigen algunas 
+funcionalidades.
+Se revisan y completan nuevas operaciones con el tipo word (suma, autosuma, y and).
+Se implementa el operador += para los punteros.
+Se revisa la implementación de los métodos GetItem y SetItem de arreglos.
+Se crea el método TGenCod.LoadIXmult() para ayudar en el cálculo de índices para arreglos 
+o punteros.
+Se completan las implementaciones de TGenCodBas.byte_LoadToRT() y TGenCodBas.word_LoadToRT() 
+para más casos de almacenamiento.
+Se implementa el operador ^ para punteros en modo "getter".
+Se modulariza el método TGenCodBas.IF_TRUE().
 
 
 
