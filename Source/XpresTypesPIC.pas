@@ -165,40 +165,21 @@ type
   );
 
 type
-  {Estos tipos están relacionados con el hardware, y tal vez deberían estar declarados
-  en otra unidad. Pero se ponen aquí porque son pocos.
+  {Este tipos está relacionados con el hardware, y tal vez debería estar declarado
+  en otra unidad, pero se pone aquí porque es solo un tipo.
   La idea es que sean simples contenedores de direcciones físicas. En un inicio se pensó
   declararlos como RECORD por velocidad (para no usar memoria dinámica), pero dado que no
-  se tienen requerimientos altos de velocidad en PicPas, se declaran como clases. }
-  //Tipo de registro
-  TPicRegType = (prtWorkReg,   //de trabajo
-                 prtAuxReg,    //auxiliar
-                 prtStkReg     //registro de pila
-  );
+  se tienen requerimientos altos de velocidad, se declara como clase. }
+
   { TPicRegister }
-  {Objeto que sirve para modelar a un registro del PIC (una dirección de memoria, usada
-   para un fin particular)}
-  TPicRegister = class
-  public
-    addr    : word;      //Dirección absoluta: $000 a $FFFF
-    assigned: boolean;   //indica si tiene una dirección física asignada
+  {Used to modelate an internal CPU register}
+  TPicRegister = object
     used    : boolean;   //Indica si está usado.
-    typ     : TPicRegType; //Tipo de registro
-  public
-    procedure Assign(srcReg: TPicRegister);
+    //typ     : TPicRegType; //Tipo de registro
   end;
-  TPicRegister_list = specialize TFPGObjectList<TPicRegister>; //lista de registros
 
 implementation
 
-{ TPicRegister }
-procedure TPicRegister.Assign(srcReg: TPicRegister);
-begin
-  addr    := srcReg.addr;
-  assigned:= srcReg.assigned;
-  used    := srcReg.used;
-  typ     := srcReg.typ;
-end;
 
 end.
 

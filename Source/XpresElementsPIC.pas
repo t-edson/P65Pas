@@ -358,8 +358,6 @@ type //Elements class
     {Indica si la variables es temporal, es decir que se ha creado solo para acceder a
     una parte de otra variable, que si tiene almacenamiento físico.}
     IsTmp      : boolean;
-  private //Campos para devolver direcciones como TPicRegister
-    adrByteTmp : TPicRegister;    //Dirección física, cuando es de tipo Byte/Char/Word/DWord
   public  //Campos para guardar las direcciones físicas asignadas en RAM.
     {Direcciones base. La dirección de inicio de la variable debe ser siempre addr0.
      Se usan addr0 y bit0 para almacenar tipos de 1 bit
@@ -1159,11 +1157,9 @@ constructor TxpEleVar.Create;
 begin
   inherited;
   idClass:=eltVar;
-  adrByteTmp := TPicRegister.Create;
 end;
 destructor TxpEleVar.Destroy;
 begin
-  adrByteTmp.Destroy;
   inherited Destroy;
 end;
 

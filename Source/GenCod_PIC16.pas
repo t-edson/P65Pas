@@ -1140,7 +1140,7 @@ begin
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
     SetROBResultExpres_byte(Opt);
-    typWord.DefineRegister;   //Asegura que exista H
+    AddCallerTo(H);  //Declare using register
     _STA(H.addr);
     _SEC;
     _LDAi(value1);
@@ -1199,7 +1199,7 @@ var
 begin
     fac1 := fun.pars[0].pvar;
     fac2 := fun.pars[1].pvar;
-    typWord.DefineRegister;   //Ensure H register exists.
+    AddCallerTo(H);  //Declare using register
     //A*256 + X = FAC1 * FAC2
     _ldai($00);
     _ldxi($08);
@@ -2555,7 +2555,7 @@ begin
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);
-//    typWord.DefineRegister;   //Asegura que exista H
+//      AddCallerTo(H);  //Declare using register
 //    _STA(H);
 //    _SEC;
 //    _LDA(value1);
@@ -2637,7 +2637,7 @@ begin
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
 //    SetROBResultExpres_byte(Opt);
-//    typWord.DefineRegister;   //Asegura que exista H
+//      AddCallerTo(H);  //Declare using register
 //    _STA(H);
 //    _SEC;
 //    _LDA(value1);
@@ -4073,7 +4073,7 @@ begin
     end;
   end;
   stVariab: begin
-    typWord.DefineRegister;
+    AddCallerTo(H);  //Declare using register
     if res.Typ = typByte then begin
       SetResultExpres(typWord);  //No podemos devolver variable. Pero sí expresión
       _LDAi(0);
@@ -4098,7 +4098,7 @@ begin
     end;
   end;
   stExpres: begin  //se asume que ya está en (A)
-    typWord.DefineRegister;
+    AddCallerTo(H);  //Declare using register
     if res.Typ = typByte then begin
       res.SetAsExpres(typWord);
       //Ya está en A el byte bajo

@@ -295,10 +295,8 @@ end;
 procedure TCompiler_PIC16.RAMusage(lins: TStrings; ExcUnused: boolean);
 {Devuelve una cadena con información sobre el uso de la memoria.}
 var
-  adStr: String;
   v: TxpEleVar;
-  nam, subUsed: string;
-  reg: TPicRegister;
+  subUsed: string;
 begin
   for v in TreeElems.AllVars do begin   //Se supone que "AllVars" ya se actualizó.
       if ExcUnused and (v.nCalled = 0) then continue;
@@ -317,16 +315,9 @@ begin
         lins.Add('"' + v.name + '"->' +  AdrStr(v.addr) + subUsed);
       end;
   end;
-  //Reporte de registros de trabajo, auxiliares y de pila
-  if (listRegAux.Count>0) then begin
-    lins.Add(';------ Work and Aux. Registers ------');
-    for reg in listRegAux do begin
-      if not reg.assigned then continue;  //puede haber registros de trabajo no asignados
-      nam := pic.NameRAM(reg.addr); //debería tener nombre
-      adStr := '0x' + IntToHex(reg.addr, 3);
-      lins.Add(nam + ' EQU ' +  adStr);
-    end;
-  end;
+  //Reporte de registros de trabajo, auxiliares
+  {***** En el nuevo esquema de trabajo, no se maenjan registros auxiliares y
+  los registros se manejan como simples varaibles.}
 //  lins.Add(';-------------------------');
 end;
 procedure TCompiler_PIC16.DumpCode(lins: TSTrings; AsmMode, IncVarDec,

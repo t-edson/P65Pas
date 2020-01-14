@@ -3,8 +3,9 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\helloworld.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test3_Procedure.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test2_Boolean.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test1_Vars.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\helloworld.pas
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -45,14 +46,14 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test3_Procedure.pa
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test3_Procedure.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\helloworld.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test1_Vars.pas
 D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test2_Boolean.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test1_Vars.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\temp\helloworld.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\testcode65\Simul_1\Test3_Procedure.pas
 D:\Proyectos_Software\Lazarus\P65Pas-0.7.2\units\Commodore64.pas
 "/>
   </Edit>
-  <IncDecVar Val="False"/>
+  <IncDecVar Val="True"/>
   <VarDecType Val="0"/>
   <IncAddress Val="True"/>
   <IncComment Val="True"/>

@@ -198,8 +198,6 @@ protected //Files
   mainFile    : string;    //Archivo inicial que se compila
   hexFile     : string;    //Nombre de archivo de salida
   function ExpandRelPathTo(BaseFile, FileName: string): string;
-protected //Container lists for registers
-  listRegAux : TPicRegister_list;  //lista de registros de trabajo y auxiliares
 public    //Access to CPU hardware
   picCore    : TCPUCore;   //Objeto PIC Core. This is an abstraction. Real CPU is not yet specified.
   devicesPath: string;     //path to untis for this device
@@ -215,7 +213,6 @@ public    //Information and memory access.
   procedure DumpCode(lins: TSTrings; asmMode, IncVarDec, ExcUnused: boolean;
                      incAdrr, incCom, incVarNam: boolean); virtual; abstract;
   procedure GenerateListReport(lins: TStrings); virtual; abstract;
-  property ProplistRegAux: TPicRegister_list read listRegAux;
 private
   elemCnt: integer;  //Count for
 protected  //Miscellaneous
@@ -1731,11 +1728,12 @@ begin
 end;
 function TCompilerBase.GetExpression(const prec: Integer): TOperand; //inline;
 {Expression analyzer. This is probably, the most important function of the compiler
- It process an expression in the current input context, and call events in order to
- the expression be compiled (or interpreted if we implement an interpreter).
+ It processes an expression in the current input context, and call events in order
+ to the expression be compiled (or interpreted if we implement an interpreter).
  Returns an operand containing information about the result of the expression.
  Expression evaluation stops when no more operators founds or found an operator
- with precedence smaller than parameter "prec".}
+ with precedence smaller than parameter "prec".
+}
 var
   Op1, Op2  : TOperand;   //Operandos
   opr1: TxpOperator;  //Operadores

@@ -42,7 +42,7 @@ type
     //Work register (RT)
     A      : TPicRegister;     //Registro Interno.
     //System variables used as registers
-    H   : TxpEleVar;  //To load the high byte of words.
+    H      : TxpEleVar;  //To load the high byte of words.
     E      : TxpEleVar;  //To load the high word of dwords.
     U      : TxpEleVar;  //To load the high word of dwords.
     IX     : TxpEleVar;  //To index operands
@@ -70,11 +70,8 @@ type
     {The following methods, create variables at specific address.
      They are not storage in "varFields". Must be destroyed manually}
     function NewTmpVarWord(addr: word): TxpEleVar;
-  protected  //Rutinas de gestión de memoria para registros
-    function GetAuxRegisterByte: TPicRegister;
-  protected  //Memory manage routines for variables
+  protected  //Memory managing routines for variables
     procedure AssignRAM(out addr: word; regName: string; shared: boolean);  //Asigna a una dirección física
-    function CreateRegisterByte(RegType: TPicRegType): TPicRegister;
     procedure WriteVaLueToRAM(add: word; typ: TxpEleType; const value: TConsValue);
     procedure CreateVarInRAM(xVar: TxpEleVar; shared: boolean = false);
     procedure CreateValueInCode(typ: TxpEleType; const value: TConsValue; out startAddr: integer);
@@ -207,7 +204,6 @@ type
     function RAMmax: integer; override;
   public     //Inicialización
     pic        : TP6502;       //Objeto PIC de la serie 16.
-    procedure StartRegs;
     function CompilerName: string; override;
     procedure CompileIF;
     procedure CompileWHILE;
@@ -338,6 +334,7 @@ begin
   end;
 end;
 //Rutinas de gestión de memoria de bajo nivel
+//Temporal variables.
 function TGenCodBas.CreateTmpVar(nam: string; eleTyp: TxpEleType): TxpEleVar;
 {Crea una variable temporal agregándola al contenedor varFields, que es
 limpiado al iniciar la compilación. Notar que la variable temporal creada, no tiene
@@ -364,55 +361,7 @@ begin
   Result.adicPar.hasInit := false;
   Result.addr := addr;  //Set address
 end;
-//Variables temporales
-//Rutinas de Gestión de memoria
-function TGenCodBas.GetAuxRegisterByte: TPicRegister;
-{Devuelve la dirección de un registro de trabajo libre. Si no encuentra alguno, lo crea.
- Si hay algún error, llama a GenError() y devuelve NIL}
-var
-  reg: TPicRegister;
-  regName: String;
-begin
-  //Busca en los registros creados
-  {Notar que no se incluye en la búsqueda a los registros de trabajo. Esto es por un
-  tema de orden, si bien podría ser factible, permitir usar algún registro de trabajo no
-  usado, como registro auxiliar.}
-  for reg in listRegAux do begin
-    //Se supone que todos los registros auxiliares, estarán siempre asignados
-    if (reg.typ = prtAuxReg) and not reg.used then begin
-      reg.used := true;
-      exit(reg);
-    end;
-  end;
-  //No encontró ninguno libre, crea uno en memoria
-  reg := CreateRegisterByte(prtAuxReg);
-  if reg = nil then exit(nil);  //hubo error
-  regName := 'aux'+IntToSTr(listRegAux.Count);
-  AssignRAM(reg.addr, regName, false);   //Asigna memoria. Puede generar error.
-  if HayError then exit;
-  reg.assigned := true;  //Tiene memoria asiganda
-  reg.used := true;  //marca como usado
-  Result := reg;   //Devuelve la referencia
-end;
-//Memory manage routines for variables
-function TGenCodBas.CreateRegisterByte(RegType: TPicRegType): TPicRegister;
-{Crea una nueva entrada para registro en listRegAux[], pero no le asigna memoria.
- Si encuentra error, devuelve NIL. Este debería ser el único punto de entrada
-para agregar un nuevo registro a listRegAux.}
-var
-  reg: TPicRegister;
-begin
-  //Agrega un nuevo objeto TPicRegister a la lista;
-  reg := TPicRegister.Create;  //Crea objeto
-  reg.typ := RegType;    //asigna tipo
-  listRegAux.Add(reg);   //agrega a lista
-  if listRegAux.Count > MAX_REGS_AUX_BYTE then begin
-    //Se asume que se desbordó la memoria evaluando a alguna expresión
-    GenError(MSG_VER_CMP_EXP);
-    exit(nil);
-  end;
-  Result := reg;   //devuelve referencia
-end;
+//Memory managing routines for variables.
 procedure TGenCodBas.AssignRAM(out addr: word; regName: string; shared: boolean);
 //Asocia a una dirección física de la memoria para ser usada como variable.
 //Si encuentra error, devuelve el mensaje de error en "MsjError"
@@ -1646,14 +1595,6 @@ begin
   exit(pic.iRam);
 end;
 //Inicialización
-procedure TGenCodBas.StartRegs;
-{Inicia los registros de trabajo en la lista.}
-begin
-  listRegAux.Clear;
-  {Crea registros de trabajo adicionales H,E,U, para que estén definidos, pero aún no
-  tienen asignados una posición en memoria.}
-  //Puede salir con error
-end;
 procedure TGenCodBas.GenCodLoadToA(Op: TOperand);
 begin
   if Op.Typ.IsByteSize then begin
@@ -2022,7 +1963,6 @@ beggining of the RAM.}
 begin
   pic.iRam := 0;  //Ubica puntero al inicio.
   pic.ClearMemRAM;  //Pone las celdas como no usadas y elimina nombres.
-  StartRegs;        //Limpia registros de trabajo, auxiliares, y de pila.
   if pic.hasDataAdrr = -1 then begin
     //No primary data address has been specified
     pic.dataAddr1 := pic.hasDataAdrr;  //Set start address
@@ -2042,14 +1982,6 @@ begin
   picCore := pic;   //Referencia picCore
   //Crea lista de variables temporales
   varFields    := TxpEleVars.Create(true);
-  //Inicializa contenedores
-  listRegAux   := TPicRegister_list.Create(true);
-  {Crea registro de trabajo A. El registro A, es el registro interno del PIC, y no
-  necesita un mapeo en RAM. Solo se le crea aquí, para poder usar su propiedad "used"}
-  A := TPicRegister.Create;
-  A.assigned := false;   //se le marca así, para que no se intente usar
-
-
 
   //Implement calls to Code Generator
   callCurrRAM         := @CurrRAM;
@@ -2076,8 +2008,6 @@ begin
 end;
 destructor TGenCodBas.Destroy;
 begin
-  A.Destroy;
-  listRegAux.Destroy;
   varFields.Destroy;
   pic.Destroy;
   inherited Destroy;

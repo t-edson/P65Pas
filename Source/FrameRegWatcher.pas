@@ -333,21 +333,21 @@ begin
 end;
 procedure TfraRegWatcher.mnAddRTClick(Sender: TObject);
 {Agrega los registros de trabajo}
-var
-  reg: TPicRegister;
-  nam: String;
 begin
-  for reg in cxp.ProplistRegAux do begin
-    if not reg.assigned then continue;  //puede haber registros de trabajo no asignados
-    nam := pic.ram[reg.addr].name; //debería tener nombre
-    AddWatch(nam);
-  end;
+/////// No se necesita ahora, estarutina por cuanto, los registros se manejan como
+/////// simples variables.
+
+//  for reg in cxp.ProplistRegAux do begin
+//    if not reg.assigned then continue;  //puede haber registros de trabajo no asignados
+//    nam := pic.ram[reg.addr].name; //debería tener nombre
+//    AddWatch(nam);
+//  end;
 //  for rbit in cxp.ProplistRegAuxBit do begin
 //    nam := pic.NameRAMbit(rbit.offs, rbit.bank, rbit.bit); //debería tener nombre
 //    adStr := '0x' + IntToHex(rbit.AbsAdrr, 3);
 //    lins.Add('#define' + nam + ' ' +  adStr + ',' + IntToStr(rbit.bit));
 //  end;
-  Refrescar;
+//  Refrescar;
 end;
 procedure TfraRegWatcher.mnClearAllClick(Sender: TObject);
 begin

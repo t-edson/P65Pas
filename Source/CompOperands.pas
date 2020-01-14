@@ -27,9 +27,9 @@ type
   TOperand = object
   private
     FSto   : TStoOperand; //Operand storage.
-    FTyp   : TxpEleType;  //Tipo del operando, cuando no es stVariab
-    FVar   : TxpEleVar;   //Referencia a variable, cuando es stVariab o stVarRef.
-    FValue : TConsValue;  //Valores constantes, cuando el operando es constante
+    FTyp   : TxpEleType;  //Operand type, when is not stVariab
+    FVar   : TxpEleVar;   //Reference to variable, when is stVariab o stVarRef.
+    FConst : TConsValue;  //Constant value, when storage is stConst.
     function GetTyp: TxpEleType;
     procedure SetvalFloat(AValue: extended);
     procedure SetvalInt(AValue: Int64);
@@ -73,11 +73,11 @@ type
     function addrE: TVarOffs; inline; //dirección del byte alto
     function addrU: TVarOffs; inline; //dirección del byte alto
   public  //Campos de acceso a los valores constantes
-    property Value   : TConsValue read FValue;
-    property valInt  : Int64 read FValue.ValInt write SetvalInt;
-    property valFloat: extended read FValue.ValFloat write SetvalFloat;
-    property valBool : boolean read FValue.ValBool write FValue.ValBool;
-    property valStr  : string read FValue.ValStr write FValue.ValStr;
+    property Value   : TConsValue read FConst;
+    property valInt  : Int64 read FConst.ValInt write SetvalInt;
+    property valFloat: extended read FConst.ValFloat write SetvalFloat;
+    property valBool : boolean read FConst.ValBool write FConst.ValBool;
+    property valStr  : string read FConst.ValStr write FConst.ValStr;
     //Funciones de ayuda para adaptar los tipos numéricos
     function aWord: word; inline;  //devuelve el valor en Word
     function LByte: byte; inline;  //devuelve byte bajo de valor entero
@@ -257,13 +257,13 @@ begin
 end;
 procedure TOperand.CopyConsValTo(var c: TxpEleCon);
 begin
-  c.val := FValue;
+  c.val := FConst;
 end;
 procedure TOperand.GetConsValFrom(const c: TxpEleCon);
 {Copia valores constante desde una constante. Primero TOperand, debería tener inicializado
  correctamente su campo "catTyp". }
 begin
-  FValue := c.val;
+  FConst := c.val;
 end;
 function TOperand.GetNItems: integer;
 {Returns the number of items when operand is a static array.}
@@ -272,7 +272,7 @@ begin
     //It's a variable
     exit(rVar.typ.nItems)
   end else if Sto = stConst then begin
-    exit(FValue.nItems);
+    exit(FConst.nItems);
   end else begin
       exit(0);
   end;
@@ -281,32 +281,32 @@ end;
 const CONS_ITEM_BLOCK = 3;
 procedure TOperand.InitItems;
 begin
-  FValue.nItems := 0;
+  FConst.nItems := 0;
   curSize := CONS_ITEM_BLOCK;   //Block size
-  setlength(FValue.items, curSize);  //initial size
+  setlength(FConst.items, curSize);  //initial size
 end;
 procedure TOperand.AddConsItem(const c: TConsValue);
 begin
-  FValue.items[FValue.nItems] := c;
-  inc(FValue.nItems);
-  if FValue.nItems >= curSize then begin
+  FConst.items[FConst.nItems] := c;
+  inc(FConst.nItems);
+  if FConst.nItems >= curSize then begin
     curSize += CONS_ITEM_BLOCK;   //Increase size by block
-    setlength(FValue.items, curSize);  //make space
+    setlength(FConst.items, curSize);  //make space
   end;
 end;
 procedure TOperand.CloseItems;
 begin
-  setlength(FValue.items, FValue.nItems);
+  setlength(FConst.items, FConst.nItems);
 end;
 procedure TOperand.StringToArrayOfChar(str: string);
 {Init the constant value as array of char from a string.}
 var
   i: Integer;
 begin
-  FValue.nItems := length(str);
-  setlength(FValue.items, FValue.nItems);
-  for i:=0 to FValue.nItems-1 do begin
-    FValue.items[i].ValInt := ord(str[i+1]);
+  FConst.nItems := length(str);
+  setlength(FConst.items, FConst.nItems);
+  for i:=0 to FConst.nItems-1 do begin
+    FConst.items[i].ValInt := ord(str[i+1]);
   end;
 end;
 
@@ -331,12 +331,12 @@ end;
 procedure TOperand.SetvalFloat(AValue: extended);
 begin
 //  if FvalFloat=AValue then Exit;
-  FValue.ValFloat:=AValue;
+  FConst.ValFloat:=AValue;
 end;
 procedure TOperand.SetvalInt(AValue: Int64);
 begin
 //  if FvalInt=AValue then Exit;
-  FValue.ValInt:=AValue;
+  FConst.ValInt:=AValue;
 end;
 procedure TOperand.SetAs(Op: TOperand);
 //Set Operand the same as other operand.
@@ -346,7 +346,7 @@ begin
   FVar := Op.rVar;
   if Op.Sto = stConst then begin
     //Only copy if really matter, because could be slow
-    FValue := Op.Value;
+    FConst := Op.Value;
   end;
   logic := Op.logic;
   rVarBase := Op.rVarBase;
@@ -364,7 +364,7 @@ begin
   FSto := stConst;
   FTyp := xtyp;
   rVarBase := nil;  //Inicia a este valor
-  FValue := iniVal;
+  FConst := iniVal;
 end;
 procedure TOperand.SetAsVariab(xvar: TxpEleVar);
 {Set the operand storage to stVariab}
@@ -413,7 +413,7 @@ procedure TOperand.SetAsVarConRef(VarBase: TxpEleVar; ValOff: integer;
 begin
   FSto := stVarConRef;
   FVar := VarBase;
-  FValue.ValInt := ValOff;
+  FConst.ValInt := ValOff;
   FTyp := xtyp;
   rVarBase := nil;  //Inicia a este valor
 end;

@@ -1,3 +1,95 @@
+P65PAS 0.7.5
+============
+- Se organiza y revisa la documentación técnica. Se eliminan algunas referencias a los tipos bit 
+y se quitan también las referencias a registros auxiliares y de pila que ya no se usan en el 
+compilador. También se actualiza la sección que describe a los registros. 
+
+- Se cambia de nombre a TOperand.FValue por TOperand.FConst para hacerlo más consistente con 
+la documentación.
+- Se elimina el valor prtStkReg del enumerado TPicRegType, porque no se necesita manejar pila
+personalizada.
+- Se elimina el método TGenCodBas.GetAuxRegisterByte() porque no se usa. 
+- Se elimina el método TGenCodBas.CreateRegisterByte() porque no se usa. 
+- Se elimina TCompilerBase.ProplistRegAux, porque ya no se usa.
+- Se elimina TCompilerBase.listRegAux, porque ya no se usa.
+- Se eliminan el manejo de registros auxiliares y de pila dentro del compilador.
+- Se elimina TGenCodBas.StartRegs().
+- Se simplifica la clase TPicRegister proque ahora solo se usa para modelar a registros internos
+de la CPU. Definiendo a los otros registros, como simples variables.
+- Se elimina el tipo TPicRegType de la unidad XpresTypesPIC.
+- Se elimina el tipo TPicRegister_list.
+- Se pasa a manejar el tipo TPicRegister como "object" en lugar de clase.
+- Se elimina TxpEleVar.adrByteTmp.
+- Se reemplaza typWord.DefineRegister por el método AddCallerTo(H), que es más específico en el 
+uso del registro.
+
+Pendientes
+==========
+- Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
+globales, locales) y los registros de trabajo.
+- Impleemntar una pila de expresiones para facilitar el acceso a expresiones y poder evitar el
+cao Expresion-Expresion.
+- Analizar si conviene desaparecer demasiados métodos: valInt, valFloat, ..., de TOperand, 
+e implementar esos accesos desde el gnerador de código, y que accedan a FConst.ValInt, ...
+-Pasar a usar más variables auxiliares en lugar de registros. Debe existir un mecanismo confiable 
+para que un procedimiento pueda pedir variables adicionales para cálculos intermedios. La idea es 
+simplificar las operaciones de tipo expresión-expresión, usando variables adicionales.
+- Implementar los casos expresión-expresión 
+- Eliminar las referencias a "bank" y "bancos", en la documentación.
+
+Generar bloques IF (o de otro tipo), de más de 128 bytes.
+
+Revisar y adaptar los programas de prueba para el compilador.
+
+Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
+implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
+hace realmente en Pascal.
+
+Una mejora en el diseño podría ser:
+Revisar las llamadas "Funciones del sistema", ya que con el actual método de llamada a 
+funciones del sistema, parecen innecesarios. Rutinas como inc() o dec() son realmente 
+funciones INLINE, que pueden llamar, si lo deciden, a funciones del sistema.
+
+Además pareciera que estas "funciones de sistema" están haciendo mal uso del campo "procCall"
+ya que en todos los casos (salvo en estas llamadas "funciones del sistema") apuntan a la 
+rutina "callFunctCall", que es la única que debería ser usada para verdaderas funciones.
+
+Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
+desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
+
+Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
+De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
+almacenar la lista de los posibles tipos creados.
+
+Queda pendiente implementar las operaciones de tipo Expres + Expres, usando variables 
+auxiliares.
+
+
+Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
+inline func1(var x: byte; const y: word; expr z: char);
+begin
+
+end;
+
+La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
+considerando el tipo de almacenamiento del operando.
+Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
+codificar operaciones sobre tipos objeto:
+
+octeto = object
+    value: byte;
+  public 
+    inline assign(var x: byte) operator ":="  precedence 5;
+    
+    end;
+    inline assign(x: byte) operator ":=";
+    
+    end;
+  end;
+
+
+
+
 P65PAS 0.7.4
 ===========
 - Se define que las variables booleanas se cargen con el valor $02 para el valor TRUE y $00
@@ -13,6 +105,8 @@ RO, considerando que el 6502 no tiene instrucciones de acceso a bit, como si lo 
 
 Pendientes
 ==========
+Encapsular los valores de constantes en un solo objeto de TOperand.
+
 Generar bloques IF (o de otro tipo), de más de 128 bytes.
 
 Revisar y adaptar los programas de prueba para el compilador.
