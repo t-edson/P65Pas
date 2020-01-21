@@ -524,7 +524,7 @@ type //Elements class
   TxpEleUnits = specialize TFPGObjectList<TxpEleUnit>; //lista de constantes
 
   { TxpEleBody }
-  //Clase para modelar al cuerpo principal del programa principal o de un procedimiento
+  //Class to modelate the body of the main program or the procedures.
   TxpEleBody = class(TxpElement)
     adrr   : integer;  //dirección física
     constructor Create; override;

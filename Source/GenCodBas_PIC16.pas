@@ -1963,13 +1963,6 @@ beggining of the RAM.}
 begin
   pic.iRam := 0;  //Ubica puntero al inicio.
   pic.ClearMemRAM;  //Pone las celdas como no usadas y elimina nombres.
-  if pic.hasDataAdrr = -1 then begin
-    //No primary data address has been specified
-    pic.dataAddr1 := pic.hasDataAdrr;  //Set start address
-  end else begin
-    //Has been specified a primary Data Address
-    pic.dataAddr1 := pic.hasDataAdrr;  //Set start address
-  end;
 end;
 constructor TGenCodBas.Create;
 begin

@@ -5,7 +5,7 @@ unit Compiler_PIC16;
 interface
 uses
   Classes, SysUtils, lclProc, SynEditHighlighter, MisUtils, XpresBas,
-  XpresTypesPIC, XpresElementsPIC, P6502utils, CPUCore, CompBase, ParserDirec,
+  XpresElementsPIC, P6502utils, CPUCore, CompBase, ParserDirec,
   GenCodBas_PIC16, GenCod_PIC16, ParserDirec_PIC16, Globales, FormConfig,
   CompOperands {Por diseño, FormConfig, no debería accederse desde aquí};
 type
@@ -111,9 +111,8 @@ begin
   CreateGlobalVars;        //Luego para variables globales (Que no son de funciones).
   //Find the next free RAM location, to write functions.
   pic.freeStart := GeneralORG;  //Start of program block
-  pic.hasDataAdrr := -1;  {Disable. It has been already used for allocatig variables, but
+  pic.dataAddr1   := -1; {Disable. It has been already used for allocatig variables, but
                           now we just want to find a free RAM location in the program block}
-  pic.dataAddr1   := -1;
   pic.GetFreeByte(addr);
   pic.iRam := addr;
   //Codifica la función INTERRUPT, si existe
@@ -247,6 +246,7 @@ begin
     //Inicia PIC
     ExprLevel := 0;  //inicia
     ResetRAM;  //Inicia la memoria RAM
+    pic.dataAddr1   := -1;  {Reset flag}
     //Compila el archivo actual como programa o como unidad
     if IsUnit then begin
       CompiledUnit := true;

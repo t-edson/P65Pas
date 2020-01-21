@@ -1356,8 +1356,8 @@ begin
       if HayError then exit;;
     end;
   end else if ele.idClass in [eltFunc, eltFuncDec] then begin  //es función
-    {Se sabe que es función, pero no se tiene la función exacta porque puede haber
-     versiones, sobrecargadas de la misma función.}
+    {Se sabe que es función (o procedimiento), pero no se tiene la función exacta porque puede
+    haber versiones, sobrecargadas de la misma función.}
     posCall := cIn.ReadSrcPos;   //guarda la posición de llamada.
     cIn.Next;               //Toma identificador
     cIn.SkipWhites;         //Quita posibles blancos

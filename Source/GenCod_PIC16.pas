@@ -554,7 +554,7 @@ begin
     if value2 = 0 then begin  //Caso especial
       SetROBResultConst_byte(0);  //puede generar error
       exit;
-    end else if value1 = 255 then begin  //Caso especial
+    end else if value2 = 255 then begin  //Caso especial
       SetROBResultVariab(p1^.rVar);  //puede generar error
       exit;
     end;
@@ -4121,7 +4121,7 @@ begin
   if not CaptureTok(')') then exit;
 end;
 procedure TGenCod.fun_Addr(fun: TxpEleFunBase; out AddrUndef: boolean);
-{Resturn de addres of a datatype.}
+{Returns the address of a datatype.}
 var
   xtyp: TxpEleType;
   typName: String;
@@ -4132,6 +4132,8 @@ begin
   if not CaptureTok('(') then exit;
   res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
   if HayError then exit;   //aborta
+//  if (res.nOpern = 1) and res.
+
   case res.Sto of  //el parámetro debe estar en "res"
   stConst : begin
     genError('Cannot obtain address of constant.');
