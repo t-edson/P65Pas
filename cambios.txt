@@ -1,3 +1,9 @@
+P65PAS 0.7.6
+============
+Se pasa a usar la versión 0.3 de P65Utils, para solucionar un problema con la inicialización en 
+la instrucción $SET_DATA_ADDR.
+Se corige un error en la operación TGenCod.ROB_byte_and_byte().
+
 P65PAS 0.7.5
 ============
 - Se organiza y revisa la documentación técnica. Se eliminan algunas referencias a los tipos bit 
@@ -14,7 +20,7 @@ personalizada.
 - Se elimina TCompilerBase.listRegAux, porque ya no se usa.
 - Se eliminan el manejo de registros auxiliares y de pila dentro del compilador.
 - Se elimina TGenCodBas.StartRegs().
-- Se simplifica la clase TPicRegister proque ahora solo se usa para modelar a registros internos
+- Se simplifica la clase TPicRegister porque ahora solo se usa para modelar a registros internos
 de la CPU. Definiendo a los otros registros, como simples variables.
 - Se elimina el tipo TPicRegType de la unidad XpresTypesPIC.
 - Se elimina el tipo TPicRegister_list.

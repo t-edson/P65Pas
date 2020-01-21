@@ -1,0 +1,12 @@
+=== Información completa sobre las instrucciones
+https://www.masswerk.at/6502/6502_instruction_set.html#BNE
+
+=== Rutinas de multiplicación
+http://nparker.llx.com/a2/mult.html
+
+https://www.tutorialspoint.com/compiler_design/compiler_design_code_generation.htm
+
+http://unusedino.de/ec64/technical/project64/mapping_c64.html
+
+=== Información completa sobre las comparaciones
+http://www.6502.org/tutorials/compare_beyond.html
