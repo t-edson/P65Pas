@@ -3,7 +3,7 @@
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=7LKYWG9LXNQ9C&lc=ES&item_name=Tito%20Hinostroza&item_number=2153&no_note=0&cn=Dar%20instrucciones%20especiales%20al%20vendedor%3a&no_shipping=2&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
 
 
-P65Pas 0.7.6
+P65Pas 0.7.7
 ============
 
 Cross-platform Pascal cross-compiler for 6502 CPU.
@@ -367,7 +367,7 @@ var
   p: ^byte;
 ```
 
-Then, the pointer can be used to address some byet variable:
+Then, the pointer can be used to address some byte variable:
 
 ```
   p := @somebytevar;

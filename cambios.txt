@@ -1,33 +1,8 @@
-P65PAS 0.7.6
+P65PAS 0.7.7
 ============
-Se pasa a usar la versión 0.3 de P65Utils, para solucionar un problema con la inicialización en 
-la instrucción $SET_DATA_ADDR.
-Se corige un error en la operación TGenCod.ROB_byte_and_byte().
-
-P65PAS 0.7.5
-============
-- Se organiza y revisa la documentación técnica. Se eliminan algunas referencias a los tipos bit 
-y se quitan también las referencias a registros auxiliares y de pila que ya no se usan en el 
-compilador. También se actualiza la sección que describe a los registros. 
-
-- Se cambia de nombre a TOperand.FValue por TOperand.FConst para hacerlo más consistente con 
-la documentación.
-- Se elimina el valor prtStkReg del enumerado TPicRegType, porque no se necesita manejar pila
-personalizada.
-- Se elimina el método TGenCodBas.GetAuxRegisterByte() porque no se usa. 
-- Se elimina el método TGenCodBas.CreateRegisterByte() porque no se usa. 
-- Se elimina TCompilerBase.ProplistRegAux, porque ya no se usa.
-- Se elimina TCompilerBase.listRegAux, porque ya no se usa.
-- Se eliminan el manejo de registros auxiliares y de pila dentro del compilador.
-- Se elimina TGenCodBas.StartRegs().
-- Se simplifica la clase TPicRegister porque ahora solo se usa para modelar a registros internos
-de la CPU. Definiendo a los otros registros, como simples variables.
-- Se elimina el tipo TPicRegType de la unidad XpresTypesPIC.
-- Se elimina el tipo TPicRegister_list.
-- Se pasa a manejar el tipo TPicRegister como "object" en lugar de clase.
-- Se elimina TxpEleVar.adrByteTmp.
-- Se reemplaza typWord.DefineRegister por el método AddCallerTo(H), que es más específico en el 
-uso del registro.
+Se cambia de nombre a TCompMain.CompileInstruction() por TCompMain.CompileSentence() para hacerlo
+más consistente con la definición del lenguaje Pascal.
+Se implementa la función addr() para que pueda obtener la dirección de procedimientos y funciones
 
 Pendientes
 ==========
@@ -94,6 +69,39 @@ octeto = object
   end;
 
 
+
+
+P65PAS 0.7.6
+============
+Se pasa a usar la versión 0.3 de P65Utils, para solucionar un problema con la inicialización en 
+la instrucción $SET_DATA_ADDR.
+Se corige un error en la operación TGenCod.ROB_byte_and_byte().
+
+
+P65PAS 0.7.5
+============
+- Se organiza y revisa la documentación técnica. Se eliminan algunas referencias a los tipos bit 
+y se quitan también las referencias a registros auxiliares y de pila que ya no se usan en el 
+compilador. También se actualiza la sección que describe a los registros. 
+
+- Se cambia de nombre a TOperand.FValue por TOperand.FConst para hacerlo más consistente con 
+la documentación.
+- Se elimina el valor prtStkReg del enumerado TPicRegType, porque no se necesita manejar pila
+personalizada.
+- Se elimina el método TGenCodBas.GetAuxRegisterByte() porque no se usa. 
+- Se elimina el método TGenCodBas.CreateRegisterByte() porque no se usa. 
+- Se elimina TCompilerBase.ProplistRegAux, porque ya no se usa.
+- Se elimina TCompilerBase.listRegAux, porque ya no se usa.
+- Se eliminan el manejo de registros auxiliares y de pila dentro del compilador.
+- Se elimina TGenCodBas.StartRegs().
+- Se simplifica la clase TPicRegister porque ahora solo se usa para modelar a registros internos
+de la CPU. Definiendo a los otros registros, como simples variables.
+- Se elimina el tipo TPicRegType de la unidad XpresTypesPIC.
+- Se elimina el tipo TPicRegister_list.
+- Se pasa a manejar el tipo TPicRegister como "object" en lugar de clase.
+- Se elimina TxpEleVar.adrByteTmp.
+- Se reemplaza typWord.DefineRegister por el método AddCallerTo(H), que es más específico en el 
+uso del registro.
 
 
 P65PAS 0.7.4
