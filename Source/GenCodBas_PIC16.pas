@@ -1929,7 +1929,7 @@ procedure TGenCodBas.CompileProcBody(fun: TxpEleFun);
 {Compila el cuerpo de un procedimiento}
 begin
   callStartCodeSub(fun);    //Inicia codificación de subrutina
-  CompileInstruction;
+  CompileSentence;
   if HayError then exit;
   if fun.IsInterrupt then begin
     //Las interrupciones terminan así

@@ -3,7 +3,7 @@ XpresElementsPIC
 ================
 Definitions for syntactic elements of the compiler: functions, constants, variables,
 types, ...
-All these elements are stored in a Tree structure, that represents the syntax Tree.
+All these elements are stored in a Tree structure, that represents the AST.
 This unit is based in the unit XpresElements from the framework Xpres, and is adapted
 to the 6502 CPU architecture and to the Pascal dialect used here.
 
@@ -553,7 +553,7 @@ type //Elements class
     Idx   : integer;
     inUnit: boolean;
   end;
-
+type  //Abstract Syntax Tree
   { TXpTreeElements }
   {Árbol de elementos. Se usa para el árbol de sintaxis y de directivas. Aquí es
   donde se guardará la referencia a todas los elementos (variables, constantes, ..)
@@ -1783,7 +1783,7 @@ function TXpTreeElements.FindNext: TxpElement;
 {Realiza una búsqueda recursiva en el nodo "curFindNode", a partir de la posición,
 "curFindIdx", hacia "atrás", el elemento con nombre "curFindName". También implementa
 la búsqueda en unidades.
-Esta rutina es quien define la resolución de nombres (alcance) en PicPas.}
+Esta rutina es quien define la resolución de nombres (alcance) en el lenguaje.}
 var
   elem: TxpElement;
 begin
@@ -1842,14 +1842,14 @@ If found returns the reference to the element otherwise returns NIL.
 If "name" is empty string, all the elements, of the Syntax Tree, will be scanned.}
 begin
   //Busca recursivamente, a partir del espacio actual
-  curFind.Name := UpCase(name);     //This value won't change in all the search
-  curFind.inUnit := false;     //Inicia bandera
+  curFind.Name := UpCase(name);  //This value won't change in all the search
+  curFind.inUnit := false;       //Set flag
   if curNode.idClass = eltBody then begin
-    {Para los cuerpos de procemientos o de programa, se debe explorar hacia atrás a
+    {Para los cuerpos de procedimientos o de programa, se debe explorar hacia atrás a
     partir de la posición del nodo actual.}
-    curFind.Idx := curNode.Index;  //Ubica posición
-    curFind.Node := curNode.Parent;  //Actualiza nodo actual de búsqueda
-    Result := FindNext;
+    curFind.Idx := curNode.Index;   //Set index for searching. Here is teh index of the body.
+    curFind.Node := curNode.Parent; //Set the parent node as the node to search.
+    Result := FindNext;             //Start search
   end else begin
     {La otras forma de resolución, debe ser:
     1. Declaración de constantes, cuando se definen como expresión con otras constantes

@@ -4127,21 +4127,29 @@ var
   typName: String;
   xvar: TxpEleVar;
   srcPos: TSrcPos;
+  ele: TxpElement;
+  xfun: TxpEleFun;
 begin
   srcPos := cIn.ReadSrcPos;
   if not CaptureTok('(') then exit;
-  res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
-  if HayError then exit;   //aborta
-//  if (res.nOpern = 1) and res.
+  //res := GetExpression(0);  //Captura parámetro. No usa GetExpressionE, para no cambiar RTstate
+  //if HayError then exit;   //aborta
 
-  case res.Sto of  //el parámetro debe estar en "res"
-  stConst : begin
-    genError('Cannot obtain address of constant.');
+  //By now, we restrict that operand must be an identifier
+  if cIn.tokType <> tnIdentif then begin
+    genError('Cannot obtain address of this operand.');
     exit;
   end;
-  stVariab: begin
+  //Can be variable, constant, or function.
+  ele := TreeElems.FindFirst(cIn.tok);  //Identify element
+  if ele = nil then begin  //Unknown element
+    GenError('Unknown identifier', [cIn.tok]);
+    exit;
+  end;
+  AddCallerTo(ele);  //Set this element to "used".
+  if ele.idClass = eltVar then begin
     //Es una variable simple. Debe devolver un puntero o (dirección)
-    xvar := res.rVar;
+    xvar := TxpEleVar(ele);
     //Crea un tipo puntero a la variable.
     if not TreeElems.ExistsPointerType(xvar.typ, xtyp) then begin
       {Genera nombre del tipo. Este nombre es compatible con el que se genera en
@@ -4163,14 +4171,31 @@ begin
     //Define resultado
     SetResultConst(xtyp);  //Una variable tiene dirección fija
     res.valInt := xvar.addr;
-  end;
-  stExpres: begin  //se asume que ya está en (A)
-    genError('Cannot obtain address of an expression.');
+  end else if ele.idClass = eltCons then begin
+    genError('Cannot obtain address of constant.');
     exit;
+  end else if ele.idClass in [eltFunc, eltFuncDec] then begin
+    {Notar que para el caso de una función, no se considera la sobecarga, solo se
+    está tomando la primera que se encuentre, como lo hace también Free Pascal.}
+    if ele.idClass = eltFunc then begin
+      xfun := TxpEleFun(ele);
+    end else begin
+      //Must be a declaration
+      xfun := TxpEleFunDec(ele).implem;
+    end;
+    SetResultConst(typWord);  //Lo más cercano al POINTER de Pascal o al ADDRESS de Modula-2
+    if xfun.linked then begin //We have a real address
+      res.valInt := xfun.adrr;
+    end else begin
+      //No tiene dirección. Debe ser forward (o declaración en INTERFACE).
+      if not FirstPass then begin
+        //Por ahora no se implementa. Debe ser algo como xfun.AddAddresPend(pic.iRam-2);
+        genError('Cannot obtain address this operand.');
+        exit;
+      end;
+    end;
   end;
-  else
-    genError('Cannot obtain address of this operand.');
-  end;
+  cIn.Next;
   if not CaptureTok(')') then exit;
 end;
 //Routines to implement arrays and pointers
@@ -4951,7 +4976,7 @@ procedure TGenCod.CreateSystemElements;
   function CreateSystemFunction(name: string; retType: TxpEleType; const srcPos: TSrcPos;
                                 const pars: TxpParFuncArray;
                                 compile: TProcExecFunction): TxpEleFun;
-  {Create a new system fucntion in the current element of the Syntax Tree.
+  {Create a new system function in the current element of the Syntax Tree.
    Returns the reference to the function created.}
   var
      fundec: TxpEleFunDec;
@@ -5007,8 +5032,8 @@ begin
   {Originally system functions were created in a special list and has a special treatment
   but it implied a lot of work for manage the memory, linking, use of variables, and
   optimization. Now we create a "system unit" like a real unit (more less) and we create
-  the system fucntion here, so we use the same code for linking, calling and optimization
-  that we use in common fucntions. Moreover, we can create private functions.}
+  the system function here, so we use the same code for linking, calling and optimization
+  that we use in common functions. Moreover, we can create private functions.}
   uni := CreateUnit('-');
   TreeElems.AddElementAndOpen(uni);  //Open Unit
   //Create a fictional position

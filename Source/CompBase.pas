@@ -1295,7 +1295,7 @@ begin
 //cIn.ShowCurContInformat;
 //debugln(' ++CurNode:' + TreeElems.curNode.Path);
   ele := TreeElems.FindFirst(cIn.tok);  //Identify element
-  findState := TreeElems.curFind;  //Save because can be aletered with CaptureParams()
+  findState := TreeElems.curFind;  //Save because can be altered with CaptureParams()
   if ele = nil then begin
     //No identifica a este elemento
     GenError(ER_UNKNOWN_IDE_, [cIn.tok]);

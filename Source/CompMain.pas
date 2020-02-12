@@ -36,7 +36,7 @@ type
     function CompileStructBody(GenCode: boolean): boolean;
     function CompileConditionalBody(out blkSize: word): boolean;
     function CompileNoConditionBody(GenCode: boolean): boolean;
-    procedure CompileInstruction;
+    procedure CompileSentence;
     procedure CompileInstructionDummy;
     procedure CompileCurBlock;
     procedure CompileCurBlockDummy;
@@ -1561,7 +1561,7 @@ begin
     //Este es el modo normal. Genera código.
     if mode = modPascal then begin
       //En modo Pascal se espera una instrucción
-      CompileInstruction;
+      CompileSentence;
     end else begin
       //En modo normal
       CompileCurBlock;
@@ -1603,13 +1603,17 @@ begin
   //"BankChanged" sigue su curso normal
   Result := CompileStructBody(GenCode);
 end;
-procedure TCompMain.CompileInstruction;
-{Compila una única instrucción o un bloque BEGIN ... END. Puede generar Error.
- Una instrucción se define como:
- 1. Un bloque BEGIN ... END
- 2. Una estrutura
- 3. Una expresión
- La instrucción, no incluye al delimitador.
+procedure TCompMain.CompileSentence;
+{Compile one Pascal sentence. One sentence can be:
+ 1. Assigment sentence.
+ 2. Procedure call.
+ 3. Function operand.
+ 4. BEGIN ... END block.
+ 5. IF sentence.
+ 6. LOOP instruction (WHILE, REPEAT, FOR)
+ 7. CASE sentence.
+ Sentence doesn't include delimiter.
+ Can generate Error.
  }
 var
   curCodCon: TxpEleCodeCont;
@@ -1621,7 +1625,11 @@ begin
   end;
   curCodCon := TreeElems.CurCodeContainer;
   ProcComments;
-  if cIn.tokL='begin' then begin
+  if cIn.tokType = tnIdentif then begin
+    //Could be Assigment sentence, Procedure call or Function operand.
+GetExpressionE(pexASIG);
+
+  end else if cIn.tokL='begin' then begin
     //Es bloque
     cIn.Next;  //toma "begin"
     CompileCurBlock;   //llamada recursiva
@@ -1629,42 +1637,36 @@ begin
     if not CaptureStr('end') then exit;
     ProcComments;
     //puede salir con error
+  end else if cIn.tokl = 'if' then begin
+      curCodCon.OpenBlock(sbiIF);
+      cIn.Next;         //pasa "if"
+      callCompileIF;
+      curCodCon.CloseBlock;
+  end else if cIn.tokl = 'while' then begin
+    curCodCon.OpenBlock(sbiWHILE);
+    cIn.Next;         //pasa "while"
+    callCompileWHILE;
+    curCodCon.CloseBlock;
+  end else if cIn.tokl = 'repeat' then begin
+    curCodCon.OpenBlock(sbiREPEAT);
+    cIn.Next;         //pasa "until"
+    callCompileREPEAT;
+    curCodCon.CloseBlock;
+  end else if cIn.tokl = 'for' then begin
+    curCodCon.OpenBlock(sbiFOR);
+    cIn.Next;         //pasa "until"
+    callCompileFOR;
+    curCodCon.CloseBlock;
   end else begin
-    //Es una instrucción
-    if cIn.tokType = tnStruct then begin
-      if cIn.tokl = 'if' then begin
-        curCodCon.OpenBlock(sbiIF);
-        cIn.Next;         //pasa "if"
-        callCompileIF;
-        curCodCon.CloseBlock;
-      end else if cIn.tokl = 'while' then begin
-        curCodCon.OpenBlock(sbiWHILE);
-        cIn.Next;         //pasa "while"
-        callCompileWHILE;
-        curCodCon.CloseBlock;
-      end else if cIn.tokl = 'repeat' then begin
-        curCodCon.OpenBlock(sbiREPEAT);
-        cIn.Next;         //pasa "until"
-        callCompileREPEAT;
-        curCodCon.CloseBlock;
-      end else if cIn.tokl = 'for' then begin
-        curCodCon.OpenBlock(sbiFOR);
-        cIn.Next;         //pasa "until"
-        callCompileFOR;
-        curCodCon.CloseBlock;
-      end else begin
-        GenError(ER_UNKN_STRUCT);
-        exit;
-      end;
-    end else begin
-      //Debe ser es una expresión de asignación o llamada a procedimiento.
-      GetExpressionE(pexASIG);
-    end;
-    if HayError then exit;
-    if callDeviceError()<>'' then begin
-      //El CPU también puede dar error
-      GenError(callDeviceError());
-    end;
+    //Cualquier otra cosa es error.
+    GenError('Syntax error.');
+//    //Debe ser es una expresión de asignación o llamada a procedimiento.
+//    GetExpressionE(pexASIG);
+  end;
+  if HayError then exit;
+  if callDeviceError()<>'' then begin
+    //El CPU también puede dar error
+    GenError(callDeviceError());
   end;
 end;
 procedure TCompMain.CompileInstructionDummy;
@@ -1679,7 +1681,7 @@ begin
   InvertedFromZ0 := BooleanFromZ; //Guarda estado
   AcumStatInZ0  := AcumStatInZ;
 
-  CompileInstruction;  //Compila solo para mantener la sintaxis
+  CompileSentence;  //Compila solo para mantener la sintaxis
 
   BooleanFromC := InvertedFromC0; //Restaura
   BooleanFromZ := InvertedFromZ0; //Restaura
@@ -1695,7 +1697,7 @@ begin
   ProcComments;
   while not cIn.Eof and (cIn.tokType<>tnBlkDelim) do begin
     //se espera una expresión o estructura
-    CompileInstruction;
+    CompileSentence;
     if HayError then exit;   //aborta
     //se espera delimitador
     if cIn.Eof then break;  //sale por fin de archivo
