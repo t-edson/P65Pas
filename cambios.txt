@@ -1,6 +1,8 @@
 P65PAS 0.7.8
 ============
 Se corrige el bug #24 reportado en GitHub.
+Se corrige el bug #25 reportado en GitHub.
+Se pasa a usar la librería actualizada de P65Utils.
 
 Pendientes
 ==========
