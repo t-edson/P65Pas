@@ -9,7 +9,7 @@ object frmDebugger: TfrmDebugger
   OnClose = FormClose
   OnCreate = FormCreate
   OnKeyDown = FormKeyDown
-  LCLVersion = '1.8.4.0'
+  LCLVersion = '2.0.4.0'
   object StatusBar1: TStatusBar
     Left = 0
     Height = 23
@@ -171,28 +171,33 @@ object frmDebugger: TfrmDebugger
     end
     object acGenStep: TAction
       Caption = 'Step Over'
+      Hint = 'Step'
       ImageIndex = 1
       OnExecute = acGenStepExecute
       ShortCut = 119
     end
     object acGenStepIn: TAction
       Caption = 'Step Into'
+      Hint = 'Step In'
       ImageIndex = 2
       OnExecute = acGenStepInExecute
       ShortCut = 118
     end
     object acGenSetPC: TAction
       Caption = 'Set PC here'
+      Hint = 'Set PC position'
       ImageIndex = 3
       OnExecute = acGenSetPCExecute
     end
     object acGenExecHer: TAction
       Caption = 'Exec until here'
+      Hint = 'Exec until here'
       ImageIndex = 4
       OnExecute = acGenExecHerExecute
     end
     object acGenSetBrkPnt: TAction
       Caption = 'Set Break Point'
+      Hint = 'Set Break Point'
       ImageIndex = 9
       OnExecute = acGenSetBrkPntExecute
       ShortCut = 116
@@ -212,10 +217,12 @@ object frmDebugger: TfrmDebugger
     end
     object acGenClearCC: TAction
       Caption = 'Reset Cycles Counter'
+      Hint = 'Reset Cycles Counter'
       OnExecute = acGenClearCCExecute
     end
     object acGenAddWatch: TAction
       Caption = 'Add &Watcher on ?'
+      Hint = 'Add Watcher on'
       OnExecute = acGenAddWatchExecute
     end
   end
