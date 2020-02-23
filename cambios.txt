@@ -1,8 +1,6 @@
-P65PAS 0.7.7
+P65PAS 0.7.8
 ============
-Se cambia de nombre a TCompMain.CompileInstruction() por TCompMain.CompileSentence() para hacerlo
-más consistente con la definición del lenguaje Pascal.
-Se implementa la función addr() para que pueda obtener la dirección de procedimientos y funciones
+Se corrige el bug #24 reportado en GitHub.
 
 Pendientes
 ==========
@@ -69,7 +67,11 @@ octeto = object
   end;
 
 
-
+P65PAS 0.7.7
+============
+Se cambia de nombre a TCompMain.CompileInstruction() por TCompMain.CompileSentence() para hacerlo
+más consistente con la definición del lenguaje Pascal.
+Se implementa la función addr() para que pueda obtener la dirección de procedimientos y funciones
 
 P65PAS 0.7.6
 ============
