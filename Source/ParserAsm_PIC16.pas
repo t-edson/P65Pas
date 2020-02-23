@@ -544,6 +544,7 @@ var
   ele: TxpElement;
   xvar: TxpEleVar;
   xfun: TxpEleFun;
+  addressModes: TP6502AddModes;
 begin
   tok := lexAsm.GetToken;
   //verifica directiva ORG
@@ -560,13 +561,15 @@ begin
     GenErrorAsm(ER_INV_ASMCODE, [tok]);
     exit;
   end;
-  //Es un código válido
+  //Is a valid Opcode
+  addressModes := PIC16InstName[idInst].addressModes;
+  //Capture oeprand
   lexAsm.Next;
   skipWhites;
   tok := lexAsm.GetToken;
   if tokType = lexAsm.tnEol then begin
     //Sin parámetros. Puede ser Implícito o Acumulador
-    if aImplicit in PIC16InstName[idInst].addressModes then begin
+    if aImplicit in addressModes then begin
       //Tiene modo implícito
       pic.codAsm(idInst, aImplicit, 0);
       if pic.MsjError<>'' then begin
@@ -700,28 +703,10 @@ begin
       GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
       exit;
     end;
-    if (ad>255) then begin
+    if (ad<256) and (addressModes * [aZeroPage, aZeroPagX, aZeroPagY] <> []) then begin
+      //Address is less than 256 and the Instruction supports a Zero-page address mode.
       skipWhites;
-      //Verifica si sigue ,X o ,Y
-      if lexAsm.GetToken = ',' then begin
-        lexAsm.Next;
-        skipWhites;
-        if Upcase(lexAsm.GetToken) = 'X' then begin
-          lexAsm.Next;
-          pic.codAsm(idInst, aAbsolutX, ad);
-        end else if Upcase(lexAsm.GetToken) = 'Y' then begin
-          lexAsm.Next;
-          pic.codAsm(idInst, aAbsolutY, ad);
-        end else begin
-          GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
-          exit;
-        end;
-      end else begin
-          pic.codAsm(idInst, aAbsolute, ad);
-      end;
-    end else begin  //<255
-      skipWhites;
-      //Verifica si sigue ,X o ,Y
+      //Verify is follows ,X o ,Y
       if lexAsm.GetToken = ',' then begin
         lexAsm.Next;
         skipWhites;
@@ -742,6 +727,25 @@ begin
         end else begin
           pic.codAsm(idInst, aZeroPage, ad);
         end;
+      end;
+    end else begin
+      skipWhites;
+      //Verify is follows ,X o ,Y
+      if lexAsm.GetToken = ',' then begin
+        lexAsm.Next;
+        skipWhites;
+        if Upcase(lexAsm.GetToken) = 'X' then begin
+          lexAsm.Next;
+          pic.codAsm(idInst, aAbsolutX, ad);
+        end else if Upcase(lexAsm.GetToken) = 'Y' then begin
+          lexAsm.Next;
+          pic.codAsm(idInst, aAbsolutY, ad);
+        end else begin
+          GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
+          exit;
+        end;
+      end else begin
+          pic.codAsm(idInst, aAbsolute, ad);
       end;
     end;
     if pic.MsjError<>'' then begin
