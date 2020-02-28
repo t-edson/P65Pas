@@ -7,7 +7,7 @@ var
 begin
   while true do
     inc(border);
-    delay_ms(100);
+    delay_ms(word(100));
   end;
 end.
 

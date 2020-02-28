@@ -1,9 +1,14 @@
 unit aaa;
 interface
-  procedure p;
-  
+  procedure LINPRT(n:word);
+  procedure LINPRT(n:byte);
+
 implementation
-  procedure p;
+
+  procedure LINPRT(n:word);
+  begin
+  end; 
+  procedure LINPRT(n:byte);
   begin
   end; 
   

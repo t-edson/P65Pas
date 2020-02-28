@@ -1,10 +1,10 @@
-program NewProgram;
-uses Commodore64;
 var
-  a: byte;
-  a: byte;
+  IRQ: ^char absolute $314;
+
+procedure IRQ_Handler: byte;
 begin
-  
-  //Code here
-  
+end;
+
+begin
+  IRQ := @IRQ_Handler;
 end.
