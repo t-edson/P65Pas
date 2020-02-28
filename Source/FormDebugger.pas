@@ -57,6 +57,7 @@ type
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure Panel3Click(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     procedure Timer2Timer(Sender: TObject);
   private
@@ -207,6 +208,12 @@ begin
     MsgBox('Hola');
   end;
 end;
+
+procedure TfrmDebugger.Panel3Click(Sender: TObject);
+begin
+
+end;
+
 procedure TfrmDebugger.FormClose(Sender: TObject; var CloseAction: TCloseAction
   );
 begin

@@ -63,6 +63,7 @@ object frmDebugger: TfrmDebugger
     ClientHeight = 606
     ClientWidth = 377
     TabOrder = 2
+    OnClick = Panel3Click
     object Panel4: TPanel
       Left = 1
       Height = 65

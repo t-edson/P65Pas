@@ -1,4 +1,4 @@
-{Frame que contiene a una vista para mostrar lso editores.}
+{Frame que contiene a una vista para mostrar los editores.}
 unit FrameEditView;
 {$mode objfpc}{$H+}
 interface

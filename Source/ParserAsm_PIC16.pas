@@ -703,7 +703,7 @@ begin
       GenErrorAsm(ER_SYNTAX_ERR_, [lexAsm.GetToken]);
       exit;
     end;
-    if (ad<256) and (addressModes * [aZeroPage, aZeroPagX, aZeroPagY] <> []) then begin
+    if (ad<256) and (addressModes * [aZeroPage, aZeroPagX, aZeroPagY, aRelative] <> []) then begin
       //Address is less than 256 and the Instruction supports a Zero-page address mode.
       skipWhites;
       //Verify is follows ,X o ,Y
