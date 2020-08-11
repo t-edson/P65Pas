@@ -961,6 +961,7 @@ begin
   {Actualizar la lista fun.lstCalledAll con la totalidad de llamadas a todas
    las funciones, sean de forma directa o indirectamente.}
   for fun in TreeElems.AllFuncs do begin
+    debugln('=== Analizando func. ' + fun.name);
     n := fun.UpdateCalledAll;
     if n<0 then begin
       GenErrorPos('Recursive call or circular recursion in %s', [fun.name], fun.srcDec);

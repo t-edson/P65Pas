@@ -849,7 +849,7 @@ function TxpElement.UpdateCalledAll: integer;
   function AddCalledAll(elem: TxpElement): boolean;
   {Add reference to lstCalledAll. That is, indicates some element is called from this
   element.
-  If reference already exists, retunr FALSE.}
+  If reference already exists, return FALSE.}
   begin
     //Solo agrega una vez el elemento
     if lstCalledAll.IndexOf(elem) = -1 then begin
@@ -871,7 +871,7 @@ function TxpElement.UpdateCalledAll: integer;
 
     if lstCalled0.Count = 0 then exit;
     for elem in lstCalled0 do begin
-//      debugln('Call to ' + elem.name + ' from ' + self.name);
+      //debugln('Call to ' + elem.name + ' from ' + self.name);
 //      if elem = self then begin
 //        {This is some way to detect circular references like:
 //        procedure proc2;
@@ -903,7 +903,7 @@ function TxpElement.UpdateCalledAll: integer;
       if not AddCalledAll(elem) then begin
         //This is better way to detect circle references, because lstCalled, doesn't
         //contain duplicated calls.
-        exit(-1);
+//        exit(-1);
       end;
       if curNesting > 100 then begin
         //This is a secure way (but less elegant) for checking recursion. (If curNesting
