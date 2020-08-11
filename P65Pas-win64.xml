@@ -3,8 +3,10 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.6\temp\NewFile1.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion3.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\temp\newfile-1.pas
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -12,7 +14,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.7.6\temp\NewFile1.pas
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="243"/>
+  <SynTreeWidth Val="275"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="2"/>
   <MessPanBack Val="-2147483643"/>
@@ -45,11 +47,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.7.6\temp\NewFile1.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.6\temp\NewFile1.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion3.pas
 D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.6\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.6\temp\NewFile2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion2-0.pas
 "/>
   </Edit>
   <IncDecVar Val="True"/>
