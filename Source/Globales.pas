@@ -5,7 +5,7 @@ unit Globales;
 {$mode objfpc}{$H+}
 interface
 uses  Classes, SysUtils, Forms, SynEdit, SynEditKeyCmds, MisUtils,
-      lclType, FileUtil, LazLogger, Menus ;
+      lclType, FileUtil, LazLogger, Menus, EpikTimer ;
 
 const
   NOM_PROG = 'P65Pas';   //nombre de programa
@@ -13,7 +13,7 @@ const
 
 var
    //Variables globales
-   MsjError    : String;    //Bandera - Mensaje de error
+//   MsjError    : String;    //Bandera - Mensaje de error
    //Rutas sin "/" final
    patApp     : string;     //ruta de la aplicación
    patSamples : string;     //ruta de la carpeta de scripts
@@ -31,15 +31,31 @@ var
 var
  curLanguage: string;  //identificador del lenguaje
 
+procedure StartCountElapsed;
+procedure EndCountElapsed(msg: string);
+
 function Trans(const strEn, strEs, strQu, strDe, strUk, strRu, strFr: string): string;
 //////////////////////////////////////////////////////
 function LeerParametros: boolean;
 function NombDifArc(nomBase: String): String;
 
 implementation
+var
+  ET : TEpikTimer;
 const
   WA_DIR_NOEXIST = 'Directory: %s no found. It will be created';
   ER_CANN_READDI = 'Cannot read or create directories.';
+
+procedure StartCountElapsed;
+begin
+  ET.Clear;
+  ET.Start;
+end;
+procedure EndCountElapsed(msg: string);
+begin
+  ET.Stop;
+  debugln(msg + IntToStr(round(ET.Elapsed*1000))+'ms');
+end;
 
 function Trans(const strEn, strEs, strQu, strDe, strUk, strRu, strFr: string): string;
   function ClearLangId(str: string): string;
@@ -202,7 +218,7 @@ initialization
   except
     msgErr(ER_CANN_READDI);
   end;
-
+  ET := TEpikTimer.Create(nil);  //Used for precision time measure
 finalization
   //Por algún motivo, la unidad HeapTrc indica que hay gotera de memoria si no se liberan
   //estas cadenas:
@@ -212,5 +228,6 @@ finalization
   patDevices16 := '';
   patTemp := '';
   patSyntax := '';
+  ET.Destroy;
 end.
 

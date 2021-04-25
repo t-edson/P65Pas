@@ -67,7 +67,7 @@ type
 
 implementation
 {$R *.lfm}
-{$I ..\language\tra_CfgExtTool.pas}
+{$I ..\_language\tra_CfgExtTool.pas}
 { TExternTool }
 procedure TExternTool.ReadFromString(const str: string);
 var

@@ -8,11 +8,11 @@ interface
 uses
   Classes, SysUtils, SynEdit, SynEditTypes, LazUTF8, Forms, Controls, Dialogs,
   Menus, ComCtrls, ActnList, StdActns, ExtCtrls, LCLIntf, LCLType, LCLProc,
-  StdCtrls, SynFacilHighlighter, SynFacilUtils, MisUtils, XpresBas, CompBase,  //Para tener acceso a TCompilerBase
+  StdCtrls, SynFacilHighlighter, SynFacilUtils, MisUtils, CompBase,  //Para tener acceso a TCompilerBase
   Compiler_PIC16,
   FrameSyntaxTree, FormConfig, Globales,
-  PicPasProject, FrameEditView, FrameMessagesWin, XpresElementsPIC, CodeTools,
-  FrameCfgExtTool, FormDebugger, FormRAMExplorer;
+  PicPasProject, FrameEditView, FrameMessagesWin, CodeTools,
+  FrameCfgExtTool, FormDebugger, FormRAMExplorer, ParserASM_6502, CompMain;
 type
   { TfrmPrincipal }
   TfrmPrincipal = class(TForm)
@@ -213,7 +213,7 @@ type
     procedure butSelCompilerClick(Sender: TObject);
   private
     Compiler16  : TCompiler_PIC16;
-    Compiler    : TCompilerBase;
+    Compiler    : TCompMain;
     tic         : integer;  //Contador para temporización
     ticSynCheck : integer;  //Contador para temporizar la verifiación ed sintaxis
     curProj     : TPicPasProject; //Proyecto actual
@@ -232,9 +232,9 @@ type
     procedure fraEdit_RequireSynEditConfig(ed: TsynEdit);
     procedure ChangeAppearance;
     procedure fraEdit_SelectEditor;
-    procedure fraMessagesDblClickMessage(const srcPos: TSrcPos);
+    procedure fraMessagesDblClickMessage(fileSrc: string; row, col: integer);
     procedure fraSynTreeOpenFile(filname: string);
-    procedure fraSynTreeSelectElemen(var elem: TxpElement);
+    procedure fraSynTreeSelectElemen(fileSrc: string; row, col: integer);
     procedure LoadAsmSyntaxEd;
     procedure MarcarError(ed: TSynEditor; nLin, nCol: integer);
     procedure MarkErrors;
@@ -274,16 +274,18 @@ begin
   fraMessages.SetLanguage;
   frmDebug.SetLanguage;
   Compiler_PIC16.SetLanguage;
+  ParserASM_6502.SetLanguage;
   //ParserAsm_PIC16.SetLanguage;
   //ParserDirec_PIC16.SetLanguage;
-  {$I ..\language\tra_FormPrincipal.pas}
+  {$I ..\_language\tra_FormPrincipal.pas}
   acToolSelPIC10.Caption := MSG_BASEL_COMP;
   acToolSelPIC16.Caption := MSG_MIDRAN_COMP;
   acToolSelPIC17.Caption := MSG_ENMIDR_COMP;
 end;
-procedure TfrmPrincipal.fraSynTreeSelectElemen(var elem: TxpElement);
+procedure TfrmPrincipal.fraSynTreeSelectElemen(fileSrc: string; row,
+  col: integer);
 begin
-  fraEditView1.SelectOrLoad(elem.srcDec, false);
+  fraEditView1.SelectOrLoad(fileSrc, row, col, false);
 end;
 procedure TfrmPrincipal.fraSynTreeOpenFile(filname: string);
 {El explorador de código, solicita abrir un archivo.}
@@ -470,7 +472,7 @@ begin
   Config.OnPropertiesChanges := @ChangeAppearance;
   Config.fraCfgExtTool.OnReplaceParams := @ConfigExtTool_RequirePar;
   CodeTool.SetCompiler(Compiler);
-  fraSynTree.Init(Compiler.TreeElems);
+  fraSynTree.Init(Compiler);
   //Termina configuración
   fraEditView1.InitMenuRecents(mnRecents, Config.fraCfgSynEdit.ArcRecientes);  //inicia el menú "Recientes"
   ChangeAppearance;   //primera actualización
@@ -626,9 +628,10 @@ begin
   //Pasa evento a COde Tool
   CodeTool.KeyDown(Sender, Key, Shift);
 end;
-procedure TfrmPrincipal.fraMessagesDblClickMessage(const srcPos: TSrcPos);
+procedure TfrmPrincipal.fraMessagesDblClickMessage(fileSrc: string; row,
+  col: integer);
 begin
-  fraEditView1.SelectOrLoad(srcPos, false);
+  fraEditView1.SelectOrLoad(fileSrc, row, col, false);
 end;
 procedure TfrmPrincipal.ChangeAppearance;
 //Se han cambiado las opciones de configuración.
@@ -1007,7 +1010,6 @@ begin
       exit;
     end;
   end;
-
   CompileFile(filName, true);
   //Genera código ensamblador
   edAsm.BeginUpdate(false);
@@ -1137,7 +1139,7 @@ begin
   CodeTool.SetCompiler(Compiler);
   fraEditView1.UpdateSynEditCompletion;
   //Inicia árbol de sintaxis
-  fraSynTree.Init(Compiler.TreeElems);
+  fraSynTree.Init(Compiler);
 end;
 procedure TfrmPrincipal.acToolExt1Execute(Sender: TObject);
 begin

@@ -3,7 +3,7 @@ unit FormRAMExplorer;
 interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, LCLType,
-  ExtCtrls, StdCtrls, FrameRamExplorer, CompBase;
+  ExtCtrls, StdCtrls, FrameRamExplorer, CompBase, CompMain;
 type
 
   { TfrmRAMExplorer }
@@ -23,7 +23,7 @@ type
   private
     fra: TfraRamExplorer;
   public
-    procedure Exec(cxp0: TCompilerBase);
+    procedure Exec(cxp0: TCompMain);
   end;
 
 var
@@ -58,7 +58,7 @@ begin
   end;
 end;
 
-procedure TfrmRAMExplorer.Exec(cxp0: TCompilerBase);
+procedure TfrmRAMExplorer.Exec(cxp0: TCompMain);
 begin
   fra.SetCompiler(cxp0);
   Caption := 'RAM Explorer. PICModel=' + cxp0.PICName;

@@ -4,8 +4,8 @@ unit FrameMessagesWin;
 interface
 uses
   Classes, SysUtils, FileUtil, LazFileUtils, Forms, Controls, Grids, Graphics,
-  ExtCtrls, StdCtrls, Menus, Clipbrd, CompBase, Globales, UtilsGrilla,
-  BasicGrilla, MisUtils, XpresBas;
+  ExtCtrls, StdCtrls, Menus, Clipbrd, EpikTimer, CompBase, Globales, LexPas,
+  UtilsGrilla, BasicGrilla, MisUtils;
 type
 
   { TUtilGrillaFil2 }
@@ -48,16 +48,16 @@ type
     procedure panStatisDblClick(Sender: TObject);
     procedure panStatisPaint(Sender: TObject);
   private
-    cxp: TCompilerBase;
+    cxp       : TCompilerBase;
     FBackColor: TColor;
     FBackSelColor: Tcolor;
     FPanelColor: TColor;
     FTextColor: TColor;
     FTextErrColor: TColor;
     UtilGrilla: TUtilGrillaFil2;
-    timeCnt: QWORD;
     nVis, nWar, nErr: Integer;
     usedRAM, usedROM, usedSTK: single;
+    eTimer    : TEpikTimer;  //Counter for mesaure compiling
     procedure CountMessages;
     procedure SetBackColor(AValue: TColor);
     procedure SetBackSelColor(AValue: Tcolor);
@@ -66,7 +66,7 @@ type
     procedure SetTextErrColor(AValue: TColor);
   public
     HaveErrors: boolean;
-    OnDblClickMessage: procedure(const srcPos: TSrcPos) of object;
+    OnDblClickMessage: procedure(fileSrc: string; row, col: integer) of object;
     OnStatisDBlClick: procedure of object;
     property BackColor: TColor read FBackColor write SetBackColor ;
     property TextColor: TColor read FTextColor write SetTextColor ;
@@ -81,9 +81,9 @@ type
     function IsErroridx(f: integer): boolean;
     procedure InitCompilation(cxp0: TCompilerBase; InitMsg: boolean);
     procedure EndCompilation;
-    procedure AddError(errTxt: string; fileName: string; row, col: integer);
+    procedure AddError(errTxt: string; const srcPos: TSrcPos);
     procedure AddInformation(infTxt: string);
-    procedure AddWarning(warTxt: string; fileName: string; row, col: integer);
+    procedure AddWarning(warTxt: string; const srcPos: TSrcPos);
   public //Inicialización
     constructor Create(AOwner: TComponent) ; override;
     destructor Destroy; override;
@@ -172,7 +172,7 @@ end;
 { TfraMessagesWin }
 procedure TfraMessagesWin.SetLanguage;
 begin
- {$I ..\language\tra_FrameMessagesWin.pas}
+ {$I ..\_language\tra_FrameMessagesWin.pas}
 end;
 procedure TfraMessagesWin.AddInformation(infTxt: string);
 var
@@ -190,11 +190,14 @@ begin
   UtilGrilla.FijColorFondo(f, FBackColor);  //Color de fondo de la fila
   UtilGrilla.FijColorTexto(f, FTextColor);
 end;
-procedure TfraMessagesWin.AddWarning(warTxt: string; fileName: string; row,
-  col: integer);
+procedure TfraMessagesWin.AddWarning(warTxt: string; const srcPos: TSrcPos);
 var
-  f: Integer;
+  f, row, col: Integer;
+  fileName: String;
 begin
+  fileName := cxp.ctxFile(srcPos);
+  row := srcPos.row;
+  col := srcPos.col;
   f := grilla.RowCount;
   grilla.RowCount := f + 1;
   grilla.Cells[GCOL_ICO, f] := ICO_WAR;  //ícono
@@ -208,11 +211,14 @@ begin
   UtilGrilla.FijColorFondo(f, FBackColor);  //Color de fondo de la fila
   UtilGrilla.FijColorTexto(f, FTextColor);
 end;
-procedure TfraMessagesWin.AddError(errTxt: string; fileName: string; row,
-  col: integer);
+procedure TfraMessagesWin.AddError(errTxt: string; const srcPos: TSrcPos);
 var
-  f: Integer;
+  f, row, col: Integer;
+  fileName: String;
 begin
+  fileName := cxp.ctxFile(srcPos);
+  row := srcPos.row;
+  col := srcPos.col;
   f := grilla.RowCount;
   grilla.RowCount := f + 1;
   grilla.Cells[GCOL_ICO, f] := ICO_ERR;  //ícono
@@ -243,17 +249,13 @@ procedure TfraMessagesWin.grillaDblClick(Sender: TObject);
 var
   row, col: Longint;
   arc: String;
-  srcPos: TSrcPos;
 begin
   if grilla.Row = -1 then exit;
   arc := grilla.Cells[GCOL_FILE, grilla.row];
   TryStrToInt(grilla.Cells[GCOL_ROW, grilla.row], row);
   TryStrToInt(grilla.Cells[GCOL_COL, grilla.row], col);
-  srcPos.fil := arc;
-  srcPos.row := row;
-  srcPos.col := col;
   if arc<>'' then begin
-    if OnDblClickMessage<>nil then OnDblClickMessage(srcPos);
+    if OnDblClickMessage<>nil then OnDblClickMessage(arc, row, col);
   end;
 end;
 procedure TfraMessagesWin.mnCopyRowClick(Sender: TObject);
@@ -361,7 +363,6 @@ function TfraMessagesWin.IsErroridx(f: integer): boolean;
 begin
   result := grilla.Cells[GCOL_ICO, f] = ICO_ERR;
 end;
-
 procedure TfraMessagesWin.FilterGrid;
 var
   f: integer;
@@ -402,7 +403,9 @@ begin
   cxp.OnWarning := @AddWarning;  //Inicia evento
   cxp.OnError := @AddError;
   cxp.OnInfo := @AddInformation;
-  timeCnt:=GetTickCount64;
+
+  eTimer.Clear;
+  eTimer.Start;   //Star counting time
   if InitMsg then AddInformation(cxp.CompilerName + ': ' + MSG_INICOMP);
   HaveErrors := false;  //limpia bandera
 end;
@@ -422,7 +425,8 @@ begin
   end else begin
     infErr := IntToStr(nErr) + ' ' + MSG_ERRORS;
   end;
-  AddInformation(MSG_COMPIL + IntToStr(GetTickCount64-timeCnt) + ' msec. <<' +
+  eTimer.Stop;  //Stop counter
+  AddInformation(MSG_COMPIL + IntToStr(round(eTimer.Elapsed*1000)) + ' msec. <<' +
                  infWar + ', ' + infErr + '>>');
   //Actualiza estadísticas de uso
   if nErr=0 then begin
@@ -531,9 +535,11 @@ begin
   UtilGrilla.ImageList := ImgMessages;  //Íconos a usar
   grilla.RowHeights[0] := 0;  //oculta envabezado
   grilla.Visible := false;
+  eTimer := TEpikTimer.Create(nil);  //Used for precision time measure
 end;
 destructor TfraMessagesWin.Destroy;
 begin
+  eTimer.Destroy;
   UtilGrilla.Destroy;
   inherited Destroy;
 end;

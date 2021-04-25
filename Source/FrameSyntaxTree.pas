@@ -4,8 +4,8 @@ interface
 uses
   Classes, SysUtils, FileUtil, TreeFilterEdit, Forms, Controls, StdCtrls,
   ComCtrls, Menus, ActnList, ExtCtrls, ComboEx, LCLProc, Graphics,
-  XpresElementsPIC, Globales, FormElemProperty, CompBase, FormConfig,
-  FrameArcExplor, MisUtils;
+  Globales, FormElemProperty, CompBase, FormConfig,
+  FrameArcExplor, XpresElemP65, XpresAST, LexPas, MisUtils;
 type
   { TfraSyntaxTree }
   TfraSyntaxTree = class(TFrame)
@@ -52,7 +52,8 @@ type
   private
     FBackColor: TColor;
     FTextColor: TColor;
-    syntaxTree: TXpTreeElements;
+    cpx       : TCompilerBase;   //Reference to lexer
+    syntaxTree: TXpTreeElements; //Reference to SyntaxTree
     function AddNodeTo(nodParent: TTreeNode; elem: TxpElement): TTreeNode;
     procedure frmArcExplor1DoubleClickFile(nod: TExplorNode);
     procedure frmArcExplor1MenuOpenFile(nod: TExplorNode);
@@ -68,7 +69,7 @@ type
       Node: TTreeNode; State: TCustomDrawState; Stage: TCustomDrawStage;
       var PaintImages, DefaultDraw: Boolean);
   public
-    OnSelectElemen: procedure(var elem: TxpElement) of object;
+    OnSelectElemen: procedure(fileSrc: string; row, col: integer) of object;
     OnOpenFile: procedure(filname: string) of object;
     OnSelecFileExplorer: procedure of object;
     //Se requiere información del archivo actual
@@ -78,7 +79,7 @@ type
     property BackColor: TColor read FBackColor write SetBackColor;
     property TextColor: TColor read FTextColor write SetTextColor;
     procedure LocateFile(filname: string);
-    procedure Init(syntaxTree0: TXpTreeElements);
+    procedure Init(Compiler: TCompilerBase);
     procedure Refresh;
     procedure SetLanguage;
   end;
@@ -97,7 +98,7 @@ var
 { TfraSyntaxTree }
 procedure TfraSyntaxTree.SetLanguage;
 begin
-  {$I ..\language\tra_FrameSyntaxTree.pas}
+  {$I ..\_language\tra_FrameSyntaxTree.pas}
   frmArcExplor1.SetLanguage;
   Refresh;
 end;
@@ -109,9 +110,10 @@ procedure TfraSyntaxTree.frmArcExplor1MenuOpenFile(nod: TExplorNode);
 begin
   if OnOpenFile<>nil then OnOpenFile(nod.Path);
 end;
-procedure TfraSyntaxTree.Init(syntaxTree0: TXpTreeElements);
+procedure TfraSyntaxTree.Init(Compiler    : TCompilerBase);
 begin
-  syntaxTree := syntaxTree0;
+  cpx        := Compiler;
+  syntaxTree := Compiler.TreeElems;
   TreeView1.ReadOnly := true;
   TreeView1.OnAdvancedCustomDrawItem := @TreeView1AdvancedCustomDrawItem;
   TreeView1.Options := TreeView1.Options - [tvoThemedDraw];
@@ -131,6 +133,7 @@ function TfraSyntaxTree.AddNodeTo(nodParent: TTreeNode; elem: TxpElement): TTree
 {Agrega un elemento a un noco.}
 var
   nod: TTreeNode;
+  eleExp: TEleExpress;
 begin
   if elem = nil then begin
     nod := TreeView1.Items.AddChild(nodParent, '???');
@@ -139,24 +142,43 @@ begin
     exit;
   end;
   nod := TreeView1.Items.AddChild(nodParent, elem.name);
-  if elem.idClass = eltCons then begin
+  if elem.idClass = eleConsDec then begin
     nod.ImageIndex := 4;
     nod.SelectedIndex := 4;
-  end else if elem.idClass = eltVar then begin
+  end else if elem.idClass = eleVarDec then begin
     nod.ImageIndex := 2;
     nod.SelectedIndex := 2;
-  end else if elem.idClass = eltType then begin
+  end else if elem.idClass = eleTypeDec then begin
     nod.ImageIndex := 15;
     nod.SelectedIndex := 15;
-  end else if elem.idClass = eltFunc then begin
+  end else if elem.idClass = eleFunc then begin
     nod.ImageIndex := 3;
     nod.SelectedIndex := 3;
-  end else if elem.idClass = eltUnit then begin
+  end else if elem.idClass = eleUnit then begin
     nod.ImageIndex := 6;
     nod.SelectedIndex := 6;
-  end else if elem.idClass = eltBody then begin
+  end else if elem.idClass = eleBody then begin
+    nod.ImageIndex := 5;
+    nod.SelectedIndex := 5;
+  end else if elem.idClass = eleSenten then begin
+    nod.Text := '<sentence>';
     nod.ImageIndex := 12;
     nod.SelectedIndex := 12;
+  end else if elem.idClass = eleExpress then begin
+    eleExp := TEleExpress(elem);
+    if eleExp.opType = otExpres then begin
+      nod.ImageIndex := 3;
+      nod.SelectedIndex := 3;
+    end else if eleExp.opType = otVariab then begin
+      nod.ImageIndex := 2;
+      nod.SelectedIndex := 2;
+    end else if eleExp.opType = otConst then begin
+      nod.ImageIndex := 4;
+      nod.SelectedIndex := 4;
+    end else begin
+      nod.ImageIndex := 17;
+      nod.SelectedIndex := 17;
+    end;
   end else begin
     nod.ImageIndex := 0;
     nod.SelectedIndex := 0;
@@ -182,7 +204,7 @@ begin
   nodOtr := nil;  //por defecto
   //Agrega elementos
   for elem in curEle.elements do begin
-    if elem.idClass = eltUnit then begin
+    if elem.idClass = eleUnit then begin
       if noduni = nil then begin
         nodUni := TreeView1.Items.AddChild(nodMain, TIT_UNIT);
         nodUni.ImageIndex := 0;
@@ -192,28 +214,28 @@ begin
       //Agrega los elementos de la unidad
       RefreshByDeclar(nodEleUni, elem);  //No agrupa
       nodEleUni.Expanded := false;
-    end else if elem.idClass = eltCons then begin  //constante
+    end else if elem.idClass = eleConsDec then begin  //constante
       if nodCte= nil then begin
         nodCte := TreeView1.Items.AddChild(nodMain, TIT_CONS);
         nodCte.ImageIndex := 0;
         nodCte.SelectedIndex := 0;
       end;
       AddNodeTo(nodCte, elem);
-    end else if elem.idClass = eltVar then begin  //variable
+    end else if elem.idClass = eleVarDec then begin  //variable
       if nodVar = nil then begin
         nodVar := TreeView1.Items.AddChild(nodMain, TIT_VARS);
         nodVar.ImageIndex := 0;
         nodVar.SelectedIndex := 0;
       end;
       AddNodeTo(nodVar, elem);
-    end else if elem.idClass = eltType then begin  //variable
+    end else if elem.idClass = eleTypeDec then begin  //variable
       if nodTyp = nil then begin
         nodTyp := TreeView1.Items.AddChild(nodMain, TIT_TYPE);
         nodTyp.ImageIndex := 0;
         nodTyp.SelectedIndex := 0;
       end;
       AddNodeTo(nodTyp, elem);
-    end else if elem.idClass = eltFunc then begin  //función
+    end else if elem.idClass = eleFunc then begin  //función
       if nodFun = nil then begin  //Si no se ha creado, lo crea
         nodFun := TreeView1.Items.AddChild(nodMain, TIT_FUNC);
         nodFun.ImageIndex := 0;
@@ -226,7 +248,7 @@ begin
           AddNodeTo(nodEleFun, elFun);
         end;
       end;
-    end else if elem.idClass = eltBody then begin  //cuerpo
+    end else if elem.idClass = eleBody then begin  //cuerpo
       AddNodeTo(nodMain, elem);
     end else begin
       if nodOtr = nil then begin  //Si no se ha creado, lo crea
@@ -247,22 +269,23 @@ begin
 end;
 procedure TfraSyntaxTree.RefreshByDeclar(nodMain: TTreeNode; curEle: TxpElement);
 var
-  elem, elem2: TxpElement;
+  elem: TxpElement;
   nodElem: TTreeNode;
 begin
   //Agrega elementos
+  if curEle.elements = nil then exit;
   for elem in curEle.elements do begin
       nodElem := AddNodeTo(nodMain, elem);
-      if elem.idClass = eltUnit then begin
-        //Es una unidad
+//      if elem.idClass = eleUnit then begin
+//        //Es una unidad
         RefreshByDeclar(nodElem, elem);  //Llamada recursiva
         nodElem.Expanded := false;
-      end else if elem.elements<>nil then begin
-        //Tiene sus propios elementos
-        for elem2 in elem.elements do begin
-          AddNodeTo(nodElem, elem2);
-        end;
-      end;
+//      end else if elem.elements<>nil then begin
+//        //Tiene sus propios elementos
+//        for elem2 in elem.elements do begin
+//          AddNodeTo(nodElem, elem2);
+//        end;
+//      end;
   end;
   nodMain.Expanded := true;
 end;
@@ -413,7 +436,9 @@ var
 begin
   //Quita la selección, si se pulsa en una zona vacía
   nod := TreeView1.GetNodeAt(X,Y);
-  if nod=nil then TreeView1.Selected := nil;
+  if nod=nil then begin
+    TreeView1.Selected := nil;
+  end;
   //Abre el menú que corresponda
   if button = mbRight then begin
     if SelectedIsElement then begin
@@ -436,7 +461,7 @@ begin
     exit;
   end;
   elem := TxpElement(TreeView1.Selected.Data);
-  frmElemProperty.Exec(elem);
+  frmElemProperty.Exec(cpx, elem);
 end;
 procedure TfraSyntaxTree.TreeView1DblClick(Sender: TObject);
 begin
@@ -464,10 +489,12 @@ end;
 procedure TfraSyntaxTree.acGenGoToExecute(Sender: TObject);
 var
   elem: TxpElement;
+  fileName: String;
 begin
   if SelectedIsElement then begin
     elem := TxpElement(TreeView1.Selected.Data);
-    if OnSelectElemen <> nil  then OnSelectElemen(elem);
+    fileName := cpx.ctxFile(elem.srcDec);
+    if OnSelectElemen <> nil  then OnSelectElemen(fileName, elem.srcDec.row, elem.srcDec.col);
   end;
 end;
 procedure TfraSyntaxTree.acGenExpAllExecute(Sender: TObject);
@@ -485,7 +512,7 @@ begin
   if TreeView1.Selected = nil then exit;
   if TreeView1.Selected.Data = nil then exit;
   elem := TxpElement(TreeView1.Selected.Data);
-  frmElemProperty.Exec(elem);
+  frmElemProperty.Exec(cpx, elem);
   frmElemProperty.Show;
 end;
 procedure TfraSyntaxTree.acGenViewGrExecute(Sender: TObject);
@@ -502,5 +529,4 @@ begin
 end;
 
 end.
-
 

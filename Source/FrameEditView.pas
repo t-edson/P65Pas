@@ -6,8 +6,9 @@ uses
   Classes, SysUtils, FileUtil, LazUTF8, LazFileUtils, Forms, Controls, Dialogs,
   ComCtrls, ExtCtrls, Graphics, LCLProc, Menus, LCLType, StdCtrls, strutils,
   fgl, Types, SynEdit, SynEditMiscClasses, SynEditKeyCmds, SynPluginMultiCaret,
-  SynEditMarkupHighAll, SynEditTypes, SynPluginSyncroEdit, Globales, SynFacilUtils,
-  SynFacilBasic, SynFacilCompletion, SynFacilHighlighter, MisUtils, XpresBas;
+  SynEditMarkupHighAll, SynEditTypes, SynPluginSyncroEdit, Globales,
+  SynFacilUtils, SynFacilBasic, SynFacilCompletion, SynFacilHighlighter,
+  MisUtils;
 type
   { TMarkup }
   {Marcador para resltar errores de sintaxis en SynEdit}
@@ -140,8 +141,6 @@ type
     OnChangeFileInform: procedure of object;
     OnSelectEditor: procedure of object;  //Cuando cambia la selección de editor
     OnRequireSynEditConfig: procedure(ed: TsynEdit) of object;
-    OnRequireFieldsComplet: procedure(ident: string; opEve: TFaOpenEvent;
-                                      tokPos: TSrcPos) of object;
     OnRequireSetCompletion: procedure(ed: TSynEditor) of object;
   public  //Administración de archivos
     tmpPath: string;  //ruta usada para crear archivos temporales para los editores
@@ -155,7 +154,8 @@ type
     procedure NewLstFile;
     function LoadFile(fileName: string): boolean;
     function SelectOrLoad(fileName: string): boolean;
-    function SelectOrLoad(const srcPos: TSrcPos; highlightLine: boolean): boolean;
+    function SelectOrLoad(fileName: string; row, col: integer;
+      highlightLine: boolean): boolean;
     procedure SaveFile;
     procedure SaveAll;
     function OpenDialog: boolean;
@@ -439,7 +439,7 @@ begin
 //  RecentFiles := TStringList.Create;
   MaxRecents := 1;   //Inicia con 1
   //guarda parámetros
-  nomDef := nomDef0;
+  namDef := nomDef0;
   extDef := extDef0;
   NewFile;   //Inicia editor con archivo vacío
   ///////////////////////////////////////////////////////////////
@@ -480,7 +480,7 @@ end;
 { TfraEditView }
 procedure TfraEditView.SetLanguage;
 begin
-  {$I ..\language\tra_FrameEditView.pas}
+  {$I ..\_language\tra_FrameEditView.pas}
 end;
 procedure TfraEditView.RefreshTabs;
 begin
@@ -1170,18 +1170,18 @@ begin
     Result := LoadFile(filename);
   end;
 end;
-function TfraEditView.SelectOrLoad(const srcPos: TSrcPos; highlightLine: boolean): boolean;
+function TfraEditView.SelectOrLoad(fileName: string; row, col: integer; highlightLine: boolean): boolean;
 //Versión de SelectOrLoad(), que además posiciona el cursor en la coordenada indicada
 begin
-  Result := SelectOrLoad(srcPos.fil);
+  Result := SelectOrLoad(fileName);
   if Result then begin
-    if (srcpos.row>=0) and (srcpos.col>=0)  then begin
+    if (row>=0) and (col>=0)  then begin
       //posiciona curosr
-      ActiveEditor.SynEdit.CaretY := srcPos.row;
-//      ActiveEditor.SynEdit.CaretX := srcPos.col;
-      ActiveEditor.SynEdit.LogicalCaretXY := Point(srcPos.col, srcPos.row);
+      ActiveEditor.SynEdit.CaretY := row;
+//      ActiveEditor.SynEdit.CaretX := col;
+      ActiveEditor.SynEdit.LogicalCaretXY := Point(col, row);
       //Define línea con error
-      if highlightLine then ActiveEditor.linErr := srcPos.row;
+      if highlightLine then ActiveEditor.linErr := row;
       ActiveEditor.SynEdit.Invalidate;  //refresca
       SetFocus;
     end;

@@ -167,7 +167,7 @@ implementation
 procedure TfrmArcExplor.SetLanguage;
 //Rutina de traducción
 begin
-  {$I ..\language\tra_FrameArcExplor.pas}
+  {$I ..\_language\tra_FrameArcExplor.pas}
   //Inicia propiedades
   NewFileName := NEW_FILE_NAME;
   NewFolderName := FOLDER_NAME;

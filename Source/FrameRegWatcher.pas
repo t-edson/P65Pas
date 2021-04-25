@@ -4,7 +4,8 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Grids, ExtCtrls, StdCtrls,
   Buttons, Graphics, LCLType, Menus, LCLProc, P6502utils, MisUtils, UtilsGrilla,
-  CibGrillas, XpresTypesPIC, XpresElementsPIC, CompBase, CPUCore, Globales;
+  CibGrillas, CompBase, CPUCore, Globales,
+  XpresElemP65, CompMain;
 type
 
   { TfraRegWatcher }
@@ -40,7 +41,7 @@ type
     TIT_VAL: string;
   private  //Índice de columnas
     pic: TCPUCore;
-    cxp: TCompilerBase;
+    cxp: TCompMain;
     //Columnas ocultas
     col_adr: word;  //Direción física
     col_bit: byte;  //Posición de bit
@@ -50,7 +51,7 @@ type
     COL_NAM: integer;  //Columna de nombre
     COL_VAL: integer;  //Columna de valor
   public
-    procedure SetCompiler(cxp0: TCompilerBase);
+    procedure SetCompiler(cxp0: TCompMain);
     procedure AddWatch(varName: string);
     procedure Refrescar;
     procedure SetLanguage;
@@ -63,7 +64,7 @@ implementation
 { TfraRegWatcher }
 procedure TfraRegWatcher.SetLanguage;
 begin
-  {$I ..\language\tra_RegWatcher.pas}
+  {$I ..\_language\tra_RegWatcher.pas}
   grilla.Cells[COL_ADD, 0] := TIT_ADD;
   grilla.Cells[COL_NAM, 0] := TIT_NAM;
   grilla.Cells[COL_VAL, 0] := TIT_VAL;
@@ -258,7 +259,7 @@ begin
   Result := clWhite;
 end;
 
-procedure TfraRegWatcher.SetCompiler(cxp0: TCompilerBase);
+procedure TfraRegWatcher.SetCompiler(cxp0: TCompMain);
 begin
   cxp := cxp0;
   pic := cxp0.picCore;
@@ -295,7 +296,7 @@ end;
 procedure TfraRegWatcher.mnAddVarsClick(Sender: TObject);
 {Agrega todas las variables usdas, del programa al inspector.}
 var
-  v: TxpEleVar;
+  v: TEleVarDec;
   i, maxBytes: Integer;
 begin
   for v in cxp.TreeElems.AllVars do begin   //Se supone que "AllVars" ya se actualizó.

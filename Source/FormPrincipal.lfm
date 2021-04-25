@@ -1,12 +1,13 @@
 object frmPrincipal: TfrmPrincipal
-  Left = 269
-  Height = 632
-  Top = 88
-  Width = 933
+  Left = 409
+  Height = 790
+  Top = 122
+  Width = 1166
   AllowDropFiles = True
   Caption = 'frmPrincipal'
-  ClientHeight = 612
-  ClientWidth = 933
+  ClientHeight = 765
+  ClientWidth = 1166
+  DesignTimePPI = 120
   KeyPreview = True
   Menu = MainMenu1
   OnClose = FormClose
@@ -17,38 +18,39 @@ object frmPrincipal: TfrmPrincipal
   OnKeyDown = FormKeyDown
   OnShow = FormShow
   Position = poScreenCenter
-  LCLVersion = '1.8.4.0'
+  LCLVersion = '2.0.10.0'
   object StatusBar1: TStatusBar
     Left = 0
-    Height = 23
-    Top = 589
-    Width = 933
+    Height = 28
+    Top = 737
+    Width = 1166
     Panels = <    
       item
-        Width = 80
+        Width = 100
       end    
       item
-        Width = 80
+        Width = 100
       end    
       item
-        Width = 120
+        Width = 150
       end    
       item
-        Width = 70
+        Width = 88
       end    
       item
-        Width = 80
+        Width = 100
       end>
+    ParentFont = False
     SimplePanel = False
   end
   object ToolBar1: TToolBar
     Left = 0
-    Height = 26
     Top = 0
-    Width = 933
+    Width = 1166
     Caption = 'ToolBar1'
     Images = ImgActions16
     ParentColor = False
+    ParentFont = False
     ParentShowHint = False
     ShowHint = True
     TabOrder = 1
@@ -59,113 +61,113 @@ object frmPrincipal: TfrmPrincipal
       Action = acArcNewFile
     end
     object ToolButton2: TToolButton
-      Left = 24
+      Left = 30
       Top = 2
       Action = acArcOpen
     end
     object ToolButton3: TToolButton
-      Left = 47
+      Left = 59
       Top = 2
       Action = acArcSave
     end
     object ToolButton4: TToolButton
-      Left = 70
+      Left = 88
       Top = 2
       Action = acArcSaveAs
     end
     object ToolButton5: TToolButton
-      Left = 93
-      Height = 22
+      Left = 117
+      Height = 28
       Top = 2
       Caption = 'ToolButton5'
       Style = tbsSeparator
     end
     object ToolButton6: TToolButton
-      Left = 101
+      Left = 125
       Top = 2
       Action = acEdUndo
     end
     object ToolButton7: TToolButton
-      Left = 124
+      Left = 154
       Top = 2
       Action = acEdRedo
     end
     object ToolButton8: TToolButton
-      Left = 147
+      Left = 183
       Top = 2
       Action = acEdCut
     end
     object ToolButton9: TToolButton
-      Left = 170
+      Left = 212
       Top = 2
       Action = acEdCopy
     end
     object ToolButton10: TToolButton
-      Left = 193
+      Left = 241
       Top = 2
       Action = acEdPaste
     end
     object ToolButton11: TToolButton
-      Left = 216
-      Height = 22
+      Left = 270
+      Height = 28
       Top = 2
       Caption = 'ToolButton11'
       Style = tbsSeparator
     end
     object ToolButton12: TToolButton
-      Left = 224
+      Left = 278
       Top = 2
       Action = acToolCompil
     end
     object ToolButton13: TToolButton
-      Left = 293
+      Left = 365
       Top = 2
       Action = acToolComEjec
     end
     object ToolButton15: TToolButton
-      Left = 316
-      Height = 22
+      Left = 394
+      Height = 28
       Top = 2
       Caption = 'ToolButton15'
       Style = tbsSeparator
     end
     object ToolButton16: TToolButton
-      Left = 324
+      Left = 402
       Top = 2
       Action = acToolConfig
     end
     object ToolButton14: TToolButton
-      Left = 382
+      Left = 475
       Top = 2
       Action = acToolExt1
     end
     object ToolButton17: TToolButton
-      Left = 405
+      Left = 504
       Top = 2
       Action = acToolExt2
     end
     object ToolButton18: TToolButton
-      Left = 428
+      Left = 533
       Top = 2
       Action = acToolExt3
     end
     object ToolButton19: TToolButton
-      Left = 451
+      Left = 562
       Top = 2
       Action = acToolExt4
     end
     object ToolButton20: TToolButton
-      Left = 474
+      Left = 591
       Top = 2
       Action = acToolExt5
     end
     object ToolButton21: TToolButton
-      Left = 247
+      Left = 307
       Top = 2
       Action = acToolASMDebug
     end
     object butSelCompiler: TToolButton
-      Left = 347
+      Left = 431
       Hint = 'Select Compiler'
       Top = 2
       Caption = 'tbSelCompiler'
@@ -175,32 +177,32 @@ object frmPrincipal: TfrmPrincipal
       Style = tbsDropDown
     end
     object ToolButton22: TToolButton
-      Left = 270
+      Left = 336
       Top = 2
       Action = acToolRamExp
     end
   end
   object splSynTree: TSplitter
-    Left = 160
-    Height = 385
-    Top = 64
-    Width = 5
+    Left = 200
+    Height = 481
+    Top = 80
+    Width = 6
     Align = alNone
     ParentColor = False
   end
   inline edAsm: TSynEdit
-    Left = 504
-    Height = 296
-    Top = 72
-    Width = 328
-    Font.Height = -13
+    Left = 630
+    Height = 370
+    Top = 90
+    Width = 410
+    Font.Height = -16
     Font.Name = 'Courier New'
     Font.Pitch = fpFixed
     Font.Quality = fqNonAntialiased
     ParentColor = False
     ParentFont = False
     TabOrder = 3
-    Gutter.Width = 29
+    Gutter.Width = 37
     Gutter.MouseActions = <>
     RightGutter.Width = 0
     RightGutter.MouseActions = <>
@@ -648,12 +650,12 @@ object frmPrincipal: TfrmPrincipal
     LineHighlightColor.Foreground = clNone
     inline SynLeftGutterPartList1: TSynGutterPartList
       object SynGutterMarks1: TSynGutterMarks
-        Width = 24
+        Width = 30
         Visible = False
         MouseActions = <>
       end
       object SynGutterLineNumber1: TSynGutterLineNumber
-        Width = 17
+        Width = 21
         MouseActions = <>
         MarkupInfo.Background = clBtnFace
         MarkupInfo.Foreground = clNone
@@ -663,19 +665,20 @@ object frmPrincipal: TfrmPrincipal
         LeadingZeros = False
       end
       object SynGutterChanges1: TSynGutterChanges
-        Width = 4
+        Width = 5
         Visible = False
         MouseActions = <>
         ModifiedColor = 59900
         SavedColor = clGreen
       end
       object SynGutterSeparator1: TSynGutterSeparator
-        Width = 2
+        Width = 3
         MouseActions = <>
         MarkupInfo.Background = clWhite
         MarkupInfo.Foreground = clGray
       end
       object SynGutterCodeFolding1: TSynGutterCodeFolding
+        Width = 13
         MouseActions = <>
         MarkupInfo.Background = clNone
         MarkupInfo.Foreground = clGray
@@ -686,31 +689,32 @@ object frmPrincipal: TfrmPrincipal
   end
   object panMessages: TPanel
     Left = 0
-    Height = 82
-    Top = 507
-    Width = 933
+    Height = 102
+    Top = 635
+    Width = 1166
     Align = alBottom
+    ParentFont = False
     TabOrder = 4
   end
   object Splitter2: TSplitter
     Cursor = crVSplit
     Left = 0
-    Height = 6
-    Top = 501
-    Width = 933
+    Height = 8
+    Top = 627
+    Width = 1166
     Align = alBottom
     ResizeAnchor = akBottom
   end
   object splEdPas: TSplitter
-    Left = 480
-    Height = 385
-    Top = 16
-    Width = 5
+    Left = 600
+    Height = 481
+    Top = 20
+    Width = 6
     Align = alNone
   end
   object ImgActions16: TImageList
-    left = 216
-    top = 464
+    Left = 270
+    Top = 580
     Bitmap = {
       4C69240000001000000010000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1869,8 +1873,8 @@ object frmPrincipal: TfrmPrincipal
   end
   object ActionList: TActionList
     Images = ImgActions16
-    left = 216
-    top = 400
+    Left = 270
+    Top = 500
     object acArcNewFile: TAction
       Category = 'Arc'
       Caption = 'New &File'
@@ -2135,8 +2139,8 @@ object frmPrincipal: TfrmPrincipal
   end
   object MainMenu1: TMainMenu
     Images = ImgActions16
-    left = 72
-    top = 88
+    Left = 90
+    Top = 110
     object mnFile: TMenuItem
       Caption = '&Archivo'
       object MenuItem3: TMenuItem
@@ -2300,8 +2304,8 @@ object frmPrincipal: TfrmPrincipal
   object ImgActions32: TImageList
     Height = 32
     Width = 32
-    left = 336
-    top = 464
+    Left = 420
+    Top = 580
     Bitmap = {
       4C69240000002000000020000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -6916,8 +6920,8 @@ object frmPrincipal: TfrmPrincipal
   end
   object PopupEdit: TPopupMenu
     Images = ImgActions16
-    left = 336
-    top = 400
+    Left = 420
+    Top = 500
     object MenuItem36: TMenuItem
       Action = acToolFindDec
     end
@@ -6946,23 +6950,23 @@ object frmPrincipal: TfrmPrincipal
   object Timer1: TTimer
     Interval = 100
     OnTimer = Timer1Timer
-    left = 208
-    top = 88
+    Left = 260
+    Top = 110
   end
   object FindDialog1: TFindDialog
     OnFind = FindDialog1Find
-    left = 216
-    top = 328
+    Left = 270
+    Top = 410
   end
   object ReplaceDialog1: TReplaceDialog
     Options = [frDown, frReplace, frReplaceAll, frHidePromptOnReplace]
     OnReplace = ReplaceDialog1Replace
-    left = 328
-    top = 328
+    Left = 410
+    Top = 410
   end
   object PopupCompiler: TPopupMenu
-    left = 216
-    top = 208
+    Left = 270
+    Top = 260
     object MenuItem49: TMenuItem
       Action = acToolSelPIC16
       Caption = 'CPU6502'

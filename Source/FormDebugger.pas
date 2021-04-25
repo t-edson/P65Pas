@@ -5,7 +5,7 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
   ComCtrls, ExtCtrls, StdCtrls, Grids, ActnList, Menus, LCLType, CompBase,
   FrameRamExplorer, FramePicRegisters, FrameRegWatcher,
-  P6502utils, CPUCore, MisUtils, FramePicAsm;
+  P6502utils, CPUCore, MisUtils, FramePicAsm, CompMain;
 type
   { TfrmDebugger }
   TfrmDebugger = class(TForm)
@@ -70,13 +70,13 @@ type
     milsecRefresh: integer;   //Periodo de refresco en milisegunod
     nCyclesPerClk: integer;   //Número de ciclos a ejecutar por pasada
     curVarName : string;
-    cxp: TCompilerBase;
+    cxp: TCompMain;
     pic: TCPUCore;
     procedure picExecutionMsg(message: string);
     procedure RefreshScreen(SetGridRow: boolean = true);
   public
     procedure SetLanguage;
-    procedure Exec(cxp0: TCompilerBase);
+    procedure Exec(cxp0: TCompMain);
   end;
 
 var
@@ -141,7 +141,7 @@ begin
     pic.CommStop := true;  //Manda comando para detener
   end;
 end;
-procedure TfrmDebugger.Exec(cxp0: TCompilerBase);
+procedure TfrmDebugger.Exec(cxp0: TCompMain);
 {Inicia el prcceso de depuración, mostrando la ventana.}
 begin
   cxp := cxp0;

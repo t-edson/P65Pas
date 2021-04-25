@@ -3,8 +3,8 @@ unit FormElemProperty;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Buttons,
-  StdCtrls, ExtCtrls, MisUtils, XpresElementsPIC;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Buttons,
+  StdCtrls, ExtCtrls, MisUtils, XpresElemP65, CompContexts, StrUtils;
 type
 
   { TfrmElemProperty }
@@ -15,18 +15,20 @@ type
     butDetails: TButton;
     Image1: TImage;
     ImageList1: TImageList;
-    lblElemName4: TLabel;
-    lblElemName5: TLabel;
-    lblUsed: TLabel;
+    lblElemName: TLabel;
     lblElemName1: TLabel;
     lblElemName2: TLabel;
     lblElemName3: TLabel;
+    lblElemName4: TLabel;
+    lblElemName5: TLabel;
+    lblUsed: TLabel;
+    Panel1: TPanel;
+    Panel2: TPanel;
+    Memo1: TMemo;
+    txtEleLocaPath: TEdit;
     txtEleLocFile: TEdit;
     txtEleName: TEdit;
-    lblElemName: TLabel;
-    Memo1: TMemo;
     txtEleType: TEdit;
-    txtEleLocaPath: TEdit;
     procedure BitBtn2Click(Sender: TObject);
     procedure butDetailsClick(Sender: TObject);
   private
@@ -35,7 +37,7 @@ type
   public
     OnExplore: procedure(elem0: TxpElement) of object;
     procedure Clear;
-    procedure Exec(elem0: TxpElement);
+    procedure Exec(cIn: TContexts; elem0: TxpElement);
   end;
 
 var
@@ -97,14 +99,17 @@ begin
     butDetails.Enabled := true;
   end;
 end;
-procedure TfrmElemProperty.Exec(elem0: TxpElement);
+procedure TfrmElemProperty.Exec(cIn: TContexts; elem0: TxpElement);
 var
   adicInformation, dirSolic, tmp: String;
-  xcon: TxpEleCon;
-  xfun: TxpEleFun;
-  xbod: TxpEleBody;
-  xvar: TxpEleVar;
+  xcon: TEleConsDec;
+  xfun: TEleFun;
+  xbod: TEleBody;
+  xvar: TEleVarDec;
   ecall : TxpExitCall;
+  xexp: TEleExpress;
+  sen: TxpEleSentence;
+  xtyp: TEleTypeDec;
 begin
   if elem0 = nil then exit;
   elem := elem0;
@@ -112,32 +117,34 @@ begin
   Image1.Proportional := true;  // to keep width/height ratio
   adicInformation := '';
   txtEleName.Caption := elem.name;
-  txtEleLocaPath.Caption := ExtractFileDir(elem.srcDec.Fil);
-  txtEleLocFile.Caption := ExtractFileName(elem.srcDec.Fil) + elem.srcDec.RowColString;
+  txtEleLocaPath.Caption := cIn.ctxFileDir(elem.srcDec);
+  txtEleLocFile.Caption := cIn.ctxFileName(elem.srcDec) + elem.srcDec.RowColString;
   BitBtn2.Enabled := true;
   //Configura etiqueta y botón de número de llamadas al elemento
   SetCalledInfo(elem);
   //Ícono e información adicional
-  if elem.idClass = eltCons then begin
-    xcon := TxpEleCon(elem);
-    if xcon.typ = nil then txtEleType.Caption := 'Unknown'
-    else txtEleType.Caption := xcon.typ.name;
-
+  if          elem.idClass = eleConsDec then begin
+    xcon := TEleConsDec(elem);
+    txtEleType.Caption := 'Constant ('+elem.ClassName+')';
     ImageList1.GetBitmap(4, Image1.Picture.Bitmap);
-    adicInformation := '';
-  end else if elem.idClass = eltVar then begin
-    xvar := TxpEleVar(elem);
-    txtEleType.Caption := xvar.typ.name;
-
+    adicInformation :=
+           'Constan Type: ' + IfThen(xcon.typ=nil, 'Unknown', xcon.typ.name) + LineEnding +
+           'Evaluated: ' + IfThen(xcon.evaluated, 'true', 'false')  + LineEnding +
+           'Value: ' + xcon.value.valuesAsString;
+  end else if elem.idClass = eleVarDec then begin
+    xvar := TEleVarDec(elem);
+    txtEleType.Caption := 'Variable ('+elem.ClassName+')';
     ImageList1.GetBitmap(2, Image1.Picture.Bitmap);
     dirSolic := IntToStr(xvar.adicPar.absAddr);
     adicInformation :=
-           'Direcc. Solicitada: ' + dirSolic + LineEnding +
-           'Direcc. Asignada: ' + xvar.AddrString;
-  end else if elem.idClass = eltFunc then begin
-    xfun := TxpEleFun(elem);
-    if xfun.typ = nil then txtEleType.Caption := 'Unknown'
-    else txtEleType.Caption := xfun.typ.name;
+           'Variable Type: ' + xvar.typ.name + LineEnding +
+           'Storage: '  + xvar.stoStr + LineEnding +
+           'Allocated: '  + ifthen(xvar.allocated, 'true', 'false') + LineEnding +
+           'Required address: ' + dirSolic + LineEnding +
+           'Asigned address: ' + xvar.AddrString;
+  end else if elem.idClass = eleFunc then begin
+    xfun := TEleFun(elem);
+    txtEleType.Caption := 'Function ('+elem.ClassName+')';;
 
     ImageList1.GetBitmap(3, Image1.Picture.Bitmap);
     //Genera reporte de ExitCalls
@@ -147,23 +154,63 @@ begin
              LineEnding;
     end;
     //Información adicional
-    adicInformation := 'Address: $' + IntToHex(xfun.adrr, 3) + LineEnding +
+    adicInformation :=
+           'Return type: ' + ifthen(xfun.retType=nil,'Unknown', xfun.retType.name) + LineEnding +
+           'Address: $' + IntToHex(xfun.adrr, 3) + LineEnding +
            'Size: ' + IntToStr(xfun.srcSize) + LineEnding + tmp;
-  end else if elem.idClass = eltUnit then begin
-    txtEleType.Caption := 'Unit';
+  end else if elem.idClass = eleUnit then begin
+    txtEleType.Caption := 'Unit ('+elem.ClassName+')';
     ImageList1.GetBitmap(6, Image1.Picture.Bitmap);
     adicInformation := '';
-  end else if elem.idClass = eltBody then begin
-    xbod:= TxpEleBody(elem);
-    txtEleType.Caption := 'Body';
+  end else if elem.idClass = eleBody then begin
+    xbod:= TEleBody(elem);
+    txtEleType.Caption := 'Body ('+elem.ClassName+')';
     ImageList1.GetBitmap(12, Image1.Picture.Bitmap);
     adicInformation := 'Address: $' + IntToHex(xbod.adrr, 3) + LineEnding +
            'Begin: ' + xbod.srcDec.RowColString  + LineEnding +
            'End: ' + elem.srcEnd.RowColString;
-  end else if elem.idClass = eltMain then begin
-    txtEleType.Caption := 'Main';
+  end else if elem.idClass = eleProg then begin
+    txtEleType.Caption := 'Main ('+elem.ClassName+')';
     ImageList1.GetBitmap(1, Image1.Picture.Bitmap);
     adicInformation := '';
+  end else if elem.idClass = eleSenten then begin
+    sen := TxpEleSentence(elem);
+    txtEleType.Caption := 'Sentence ('+elem.ClassName+')';
+    ImageList1.GetBitmap(1, Image1.Picture.Bitmap);
+    adicInformation := 'Sentence type: ' + sen.sntTypeAsStr;
+  end else if elem.idClass = eleExpress then begin
+    xexp := TEleExpress(elem);
+    txtEleType.Caption := 'Expression ('+elem.ClassName+')';
+    ImageList1.GetBitmap(1, Image1.Picture.Bitmap);
+    adicInformation :=
+           'Expression type: ' + xexp.opTypeAsStr +
+           ' --> ' + xexp.Typ.name + LineEnding +
+           'Storage: ' + xexp.StoAsStr + LineEnding;
+    case xexp.opType of
+    otConst: begin
+      adicInformation +=
+            'Evaluated: ' + ifthen(xexp.evaluated, 'true', 'false') + LineEnding +
+            'Value: ' + xexp.value.valuesAsString;
+    end;
+    otVariab: begin
+      adicInformation +=
+            'Allocated: '  + ifthen(xexp.allocated, 'true', 'false') + LineEnding +
+            'Address: ' + xexp.add.ToString;
+    end;
+    otExpres: begin
+      adicInformation +=
+            '';
+    end;
+    end;
+  end else if elem.idClass = eleTypeDec then begin
+    xtyp := TEleTypeDec(elem);
+    txtEleType.Caption := 'Type ('+elem.ClassName+')';
+    ImageList1.GetBitmap(14, Image1.Picture.Bitmap);
+    adicInformation :=
+           'Group: ' + xtyp.groupStr + LineEnding +
+           'Cat. Type: '  + xtyp.catTypeStr + LineEnding +
+           'Size: ' + IntToStr(xtyp.size) + LineEnding +
+           '' ;
   end else begin
     txtEleType.Caption := 'Unknown';
     ImageList1.GetBitmap(13, Image1.Picture.Bitmap);

@@ -4,8 +4,8 @@ unit GenCodBas_PIC16;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, XpresBas, XpresElementsPIC, XpresTypesPIC, CPUCore, P6502utils,
-  CompBase, ParserDirec, Globales, CompOperands, MisUtils, LCLType, LCLProc;
+  Classes, SysUtils, CPUCore, P6502utils, CompBase, ParserDirec, Globales,
+  XpresElemP65, XpresAST, LexPas, StrUtils, MisUtils, LCLType, LCLProc;
 const
   STACK_SIZE = 8;      //tamaño de pila para subrutinas en el PIC
   MAX_REGS_AUX_BYTE = 6;   //cantidad máxima de registros a usar
@@ -18,34 +18,34 @@ type
   TIfInfo = record
     igoto  : integer;   //Address where is GOTO
   end;
+  PtrTCPURam = ^TCPURam;
   { TGenCodBas }
   TGenCodBas = class(TParserDirecBase)
+  protected //Operations for parameters or Binary Operators
+    function stoOperation(parA, parB: TEleExpress): TStoOperandsROB; inline;
+    procedure Exchange(var parA, parB: TEleExpress);
+    function BinOperationStr(fun: TEleExpress): string;
   private
     linRep : string;   //línea para generar de reporte
     posFlash: Integer;
-    procedure ClearDeviceError;
-    procedure CompileProcBody(fun: TxpEleFun);
-    function DeviceError: string;
-    function CurrRAM(): integer;
-    procedure GenCodLoadToA(Op: TOperand);
-    procedure GenCodLoadToX(Op: TOperand);
-    procedure GenCodLoadToY(Op: TOperand);
-    procedure GenCodPicReqStartCodeGen;
-    procedure GenCodPicReqStopCodeGen;
+    procedure CodAsigmentToVar(pvar: TEleVarDec; Op2: TEleExpress);
+    procedure GenCodLoadToA(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
+    procedure GenCodLoadToX(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
+    procedure GenCodLoadToY(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
+    procedure StartCodeGen;
+    procedure StopCodeGen;
     procedure ProcByteUsed(offs: word; regPtr: TCPURamCellPtr);
-    function ReturnAttribIn(typ: TxpEleType; const Op: TOperand; offs: integer
-      ): boolean;
     procedure SetSharedUnused;
     procedure SetSharedUsed;
     procedure word_ClearItems(const OpPtr: pointer);
-  protected
-    //Work register (RT)
-    A      : TPicRegister;     //Registro Interno.
+  protected  //Register work
+    //Work register (WR)
+    A      : TCpuRegister;     //Registro Interno.
     //System variables used as registers
-    H      : TxpEleVar;  //To load the high byte of words.
-    E      : TxpEleVar;  //To load the high word of dwords.
-    U      : TxpEleVar;  //To load the high word of dwords.
-    IX     : TxpEleVar;  //To index operands
+    H      : TEleVarDec;  //To load the high byte of words.
+    E      : TEleVarDec;  //To load the high word of dwords.
+    U      : TEleVarDec;  //To load the high word of dwords.
+    IX     : TEleVarDec;  //To index operands
     procedure PutLabel(lbl: string); inline;
     procedure PutTopComm(cmt: string; replace: boolean = true); inline;
     procedure PutComm(cmt: string); inline;
@@ -54,62 +54,44 @@ type
     function ValidateByteRange(n: integer): boolean;
     function ValidateWordRange(n: integer): boolean;
     function ValidateDWordRange(n: Int64): boolean;
+    procedure LoadToWR(fun: TEleExpress);
+  protected  //Register and temporal variables requirement.
+    ModeRequire: boolean;  //Flag to set Mode for Code generator.
+    function requireA: boolean;  //Declare use of register A
+    function requireH: boolean;  //Declare use of register H
+    function requireE: boolean;  //Declare use of register E
+    function requireU: boolean;  //Declare use of register U
+    function requireVar(fun: TEleExpress; rname: string; rtype: TEleTypeDec; out
+      rvar: TEleVarDec): boolean;
   protected
     procedure ResetRAM;
-    procedure StartCodeSub(fun: TxpEleFun);
-    procedure EndCodeSub;
-    procedure FunctCall(fun: TxpEleFunBase; out AddrUndef: boolean);
-    procedure FunctParam(fun: TxpEleFunBase);
-    procedure GenerateROBdetComment;
-    procedure GenerateROUdetComment;
-  protected  //Variables temporales
-    {Estas variables temporales, se crean como forma de acceder a campos de una variable
-     como varbyte.bit o varword.low. Se almacenan en "varFields" y se eliminan al final}
-    varFields: TxpEleVars;  //Contenedor
-    function CreateTmpVar(nam: string; eleTyp: TxpEleType): TxpEleVar;
-    {The following methods, create variables at specific address.
-     They are not storage in "varFields". Must be destroyed manually}
-    function NewTmpVarWord(addr: word): TxpEleVar;
+    procedure functCall(expFun: TEleExpress; fun: TEleFunBase; out AddrUndef: boolean);
+    procedure CreateVarsAndPars;
+    procedure codRTS(isInterrupt: boolean);
+    procedure GenCodeExpr(eleExp: TEleExpress);
+    procedure GenCodeSentences(sentList: TxpElements);
+    procedure GenCodeBody(body: TEleBody);
+    procedure ConstantFoldExpr(eleExp: TEleExpress);
+    procedure ConstantFoldBody(body: TEleBody);
   protected  //Memory managing routines for variables
-    procedure AssignRAM(out addr: word; regName: string; shared: boolean);  //Asigna a una dirección física
-    procedure WriteVaLueToRAM(add: word; typ: TxpEleType; const value: TConsValue);
-    procedure CreateVarInRAM(xVar: TxpEleVar; shared: boolean = false);
-    procedure CreateValueInCode(typ: TxpEleType; const value: TConsValue; out startAddr: integer);
-  protected  //Métodos para fijar el resultado
-    //Métodos básicos
-    procedure SetResultNull;
-    procedure SetResultConst(typ: TxpEleType);
-    procedure SetResultVariab(rVar: TxpEleVar);
-    procedure SetResultExpres(typ: TxpEleType; ChkRTState: boolean = true);
-    procedure SetResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
-    procedure SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer; xtyp: TxpEleType);
-    procedure SetResultExpRef(typ: TxpEleType; ChkRTState: boolean = true);
-    //Fija el resultado de ROB como constante.
-    procedure SetROBResultConst_bool(valBool: Boolean);
-    procedure SetROBResultConst_byte(valByte: integer);
-    procedure SetROBResultConst_char(valByte: integer);
-    procedure SetROBResultConst_word(valWord: integer);
-    //Fija el resultado de ROB como variable
-    procedure SetROBResultVariab(rVar: TxpEleVar);
-    //Fija el resultado de ROB como expresión
-    {El parámetro "Opt", es más que nada para asegurar que solo se use con Operaciones
-     binarias.}
-    procedure SetROBResultExpres_bool(Opt: TxpOperation; logic: TLogicType = logNormal);
-    procedure SetROBResultExpres_byte(Opt: TxpOperation);
-    procedure SetROBResultExpres_char(Opt: TxpOperation);
-    procedure SetROBResultExpres_word(Opt: TxpOperation);
-    //Fija el resultado de ROU
-    procedure SetROUResultConst_bool(valBool: boolean);
-    procedure SetROUResultConst_byte(valByte: integer);
-    procedure SetROUResultVariab(rVar: TxpEleVar);
-    procedure SetROUResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
-    procedure SetROUResultExpres(typ: TxpEleType);
-    procedure SetROUResultExpres_bool(logic: TLogicType);
-    procedure SetROUResultExpres_byte;
-    procedure SetROUResultExpRef(typ: TxpEleType);
-    //Adicionales
-    procedure ChangeResultCharToByte;
-  protected  //Instrucciones
+    procedure WriteVaLueToRAM(target: PtrTCPURam; add: word; typ: TEleTypeDec;
+      const value: TConsValue);
+    procedure CreateVarInRAM(xVar: TEleVarDec; shared: boolean);
+    procedure CreateValueInCode(typ: TEleTypeDec; const value: TConsValue; out startAddr: integer);
+  protected  //Methods for set a function result.
+    procedure SetFunNull(fun: TEleExpress);
+    procedure SetFunConst(fun: TEleExpress);
+    procedure SetFunVariab(fun: TEleExpress; rVar: TEleVarDec);
+    procedure SetFunVariab(fun: TEleExpress; addr: word);
+    procedure SetFunVariab_RamVarOf(fun: TEleExpress; rVar: TEleVarDec;
+      offset: integer);
+    procedure SetFunExpres(fun: TEleExpress; logic: TLogicType = logNormal);
+    //Set result as a constant.
+    procedure SetFunConst_bool(fun: TEleExpress; valBool: Boolean);
+    procedure SetFunConst_byte(fun: TEleExpress; valByte: integer);
+    procedure SetFunConst_char(fun: TEleExpress; valByte: integer);
+    procedure SetFunConst_word(fun: TEleExpress; valWord: integer);
+  protected  //Code instructions
     function _PC: word;
     function _CLOCK: integer;
     procedure _LABEL_post(igot: integer);
@@ -138,11 +120,9 @@ type
     //Alias for BCC and BCS
     procedure _BLT_post(out ibranch: integer);  //Less than
     procedure _BGE_post(out ibranch: integer);  //Greater or equal to
-
     procedure _BPL(const ad: ShortInt);
     procedure _BPL_pre(curAddr: integer);
     procedure _BPL_post(out ibranch: integer);
-
     procedure _CLC;
     procedure _CMPi(const k: word);  //immidiate
     procedure _CMP(const addr: integer);  //Absolute/Zeropage
@@ -183,32 +163,28 @@ type
     procedure _TAY;
     procedure _TYA;
     procedure _TXA;
-    procedure IF_TRUE(OpRes: TOperandPtr; out info: TIfInfo);
-    procedure IF_FALSE(OpRes: TOperandPtr; out info: TIfInfo);
+    procedure IF_TRUE(OpRes: TEleExpress; out info: TIfInfo);
+    procedure IF_FALSE(OpRes: TEleExpress; out info: TIfInfo);
     procedure IF_END(const info: TIfInfo);
-  protected  //Funciones de tipos
+  protected  //Functions for types
     //////////////// Tipo Boolean /////////////
-    procedure bool_LoadToRT(const OpPtr: pointer);
+    procedure bool_LoadToRT(fun: TEleExpress);
     //////////////// Tipo Byte /////////////
-    procedure byte_LoadToRT(const OpPtr: pointer);
+    procedure byte_LoadToRT(fun: TEleExpress);
     procedure byte_DefineRegisters;
     procedure byte_SaveToStk;
     //////////////// Tipo Word /////////////
-    procedure word_LoadToRT(const OpPtr: pointer);
+    procedure word_LoadToRT(fun: TEleExpress);
     procedure word_DefineRegisters;
     procedure word_SaveToStk;
-    procedure word_Low(const OpPtr: pointer);
-    procedure word_High(const OpPtr: pointer);
-  public     //Acceso a campos del CPU
+    procedure word_Low(fun: TEleExpress);
+    procedure word_High(fun: TEleExpress);
+  public     //Access to CPU information
     function PICName: string; override;
     function RAMmax: integer; override;
-  public     //Inicialización
-    pic        : TP6502;       //Objeto PIC de la serie 16.
+  public     //Initialization
+    pic        : TP6502;       //CPU object
     function CompilerName: string; override;
-    procedure CompileIF;
-    procedure CompileWHILE;
-    procedure CompileREPEAT;
-    procedure CompileFOR;
     constructor Create; override;
     destructor Destroy; override;
   end;
@@ -217,35 +193,50 @@ type
 implementation
 var
   TXT_SAVE_W, TXT_SAVE_Z, TXT_SAVE_H, MSG_NO_ENOU_RAM, MSG_VER_CMP_EXP,
-  MSG_STACK_OVERF, MSG_NOT_IMPLEM, ER_VARIAB_EXPEC, ER_ONL_BYT_WORD,
+  MSG_STACK_OVERF, MSG_NOT_IMPLEM, WA_UNUSED_VAR_, ER_NOT_IMPLEM_ ,
   ER_ASIG_EXPECT
   : string;
+  //Global variables of CodAsigmentToVar().
+  _Op1, _eleMeth: TEleExpress;
+  _opr1: TEleFunBase;
 
 procedure SetLanguage;
 begin
   ParserDirec.SetLanguage;
-  {$I ..\language\tra_GenCodBas.pas}
+  {$I ..\_language\tra_GenCodBas.pas}
 end;
 { TGenCodPic }
+function TGenCodBas.BinOperationStr(fun: TEleExpress): string;
+{Returns a string representing a binary operation.}
+var
+  parA, parB: TEleExpress;
+  Oper: String;
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  Oper := IfThen(fun.rfun.operTyp = opkBinary, fun.rfun.oper, fun.name);
+  Result := parA.StoAsStr+'(' + parA.Typ.name + ') ' + Oper + ' ' +
+            parB.StoAsStr+'(' + parB.Typ.name + ')';
+end;
+function TGenCodBas.stoOperation(parA, parB: TEleExpress): TStoOperandsROB;
+begin
+  //Combinación de los almacenamientos de los operandos
+  Result := TStoOperandsROB((Ord(parA.Sto) << 4) or ord(parB.Sto));
+end;
+procedure TGenCodBas.Exchange(var parA, parB: TEleExpress);
+{Intercambia el orden de los operandos.}
+var
+  tmp: TEleExpress;
+begin
+  //Invierte los operandos
+  tmp := parA;
+  parA := parB;
+  parB := tmp;
+end;
 procedure TGenCodBas.ProcByteUsed(offs: word; regPtr: TCPURamCellPtr);
 begin
   linRep := linRep + regPtr^.name +
             ' DB ' + '$' + IntToHex(offs, 3) + LineEnding;
-end;
-function TGenCodBas.ReturnAttribIn(typ: TxpEleType; const Op: TOperand; offs: integer): boolean;
-{Return a temp variable at the specified address.}
-var
-  tmpVar: TxpEleVar;
-begin
-  if Op.Sto = stVariab then begin
-    tmpVar := CreateTmpVar('?', typ);   //Create temporal variable
-    tmpVar.addr := Op.addr + offs;  //Set Address
-    res.SetAsVariab(tmpVar);
-    exit(true);
-  end else begin
-    GenError('Cannot access to field of this expression.');
-    exit(false);
-  end;
 end;
 procedure TGenCodBas.SetSharedUnused;
 begin
@@ -316,120 +307,141 @@ begin
     exit(false);
   end;
 end;
-procedure TGenCodBas.GenerateROBdetComment;
-{Genera un comentario detallado en el código ASM. Válido solo para
-Rutinas de Operación binaria, que es cuando está definido operType, p1, y p2.}
+procedure TGenCodBas.LoadToWR(fun: TEleExpress);
+{Carga un operando a los Registros de Trabajo (WR).}
 begin
-  if incDetComm then begin
-    PutTopComm('      ;Oper(' + p1^.StoOpChr + ':' + p1^.Typ.name + ',' +
-                                p2^.StoOpChr + ':' + p2^.Typ.name + ')', false);
+  if fun.Typ.OnLoadToWR=nil then begin
+    //No implementado
+    GenError(ER_NOT_IMPLEM_, ['LoadToRT']);
+  end else begin
+    fun.Typ.OnLoadToWR(fun);
   end;
 end;
-procedure TGenCodBas.GenerateROUdetComment;
-{Genera un comentario detallado en el código ASM. Válido solo para
-Rutinas de Operación unaria, que es cuando está definido operType, y p1.}
+//Register and temporal variables requirement.
+function TGenCodBas.requireA: boolean;
 begin
-  if incDetComm then begin
-    PutTopComm('      ;Oper(' + p1^.StoOpChr + ':' + p1^.Typ.name + ')', false);
-  end;
+  //if ModeRequire then a.used := True;
+  exit(true);   //Always available
 end;
-//Rutinas de gestión de memoria de bajo nivel
-//Temporal variables.
-function TGenCodBas.CreateTmpVar(nam: string; eleTyp: TxpEleType): TxpEleVar;
-{Crea una variable temporal agregándola al contenedor varFields, que es
-limpiado al iniciar la compilación. Notar que la variable temporal creada, no tiene
-RAM asiganda.}
+function TGenCodBas.requireH: boolean;
+{Indicates the register H will be used in the code generation.
+Returns TRUE if the register is allocated in RAM.}
+begin
+  //if ModeRequire then H.regUsed := true;
+  H.required := true; //Mark to be allocated later
+  exit(H.allocated);   //Already allocated in memory.
+end;
+function TGenCodBas.requireE: boolean;
+begin
+  E.required := true;
+  exit(E.allocated);   //Already allocated in memory.
+end;
+function TGenCodBas.requireU: boolean;
+begin
+  U.required := true;
+  exit(U.allocated);   //Already allocated in memory.
+end;
+function TGenCodBas.requireVar(fun: TEleExpress; rname: string; rtype: TEleTypeDec;
+         out rvar: TEleVarDec): boolean;
+{Indicates we are going to need a temporal variable of the type indicated.
+- Parameter "rname" is a name used to identify the variable. It's case sensitive. Must be
+  unique for the same TxpEleExpress. It's recommended to be short for quick searches.
+- Parameter "rtype" is the type of the variable required.
+- Parameter "rvar" is the reference to the variable required.
+So is we are going to require 2 temporal variables, we should use:
+    requireVar(fun, 'a', typByte, varA);
+    requireVar(fun, 'b', typWord, varB);
+Is the variable is available (created and allocated), returns TRUE.}
 var
-  tmpVar: TxpEleVar;
+  v, exist: TEleVarDec;
 begin
-  tmpVar:= TxpEleVar.Create;
-  tmpVar.name := nam;
-  tmpVar.typ := eleTyp;
-  tmpVar.adicPar.hasAdic := decNone;
-  tmpVar.adicPar.hasInit := false;
-  tmpVar.IsTmp := true;   //Para que se pueda luego identificar.
-  varFields.Add(tmpVar);  //Agrega
-  Result := tmpVar;
-end;
-function TGenCodBas.NewTmpVarWord(addr: word): TxpEleVar;
-{Crea una variable temporal Word, con las direcciones de los registros indicados, y
-devuelve la referencia. La variable se crea sin asignación de memoria.}
-begin
-  Result := TxpEleVar.Create;
-  Result.typ := typWord;
-  Result.adicPar.hasAdic := decNone;
-  Result.adicPar.hasInit := false;
-  Result.addr := addr;  //Set address
+  //Test if requirement exist
+  exist := nil;
+  for v in fun.tempVars do begin
+    if v.name = rname then begin
+      exist := v;
+      break;
+    end;
+  end;
+  if exist<>nil then begin
+    //Exists
+    exit(exist.allocated);
+  end else begin
+    //No exists. We need to create requirement.
+    rvar := CreateVar('', rtype);
+    fun.tempVars.Add(rvar);
+    exit(false);
+  end;
+  //if ModeRequire then begin
 end;
 //Memory managing routines for variables.
-procedure TGenCodBas.AssignRAM(out addr: word; regName: string; shared: boolean);
-//Asocia a una dirección física de la memoria para ser usada como variable.
-//Si encuentra error, devuelve el mensaje de error en "MsjError"
-begin
-  {Esta dirección física, la mantendrá este registro hasta el final de la compilación
-  y en teoría, hasta el final de la ejecución de programa en el PIC.}
-  if not pic.GetFreeByte(addr) then begin
-    GenError(MSG_NO_ENOU_RAM);
-    exit;
-  end;
-  pic.ram[addr].used := ruData;
-  if shared then begin
-    pic.ram[addr].shared := true;  //Marca como compartido
-  end;
-  inc(pic.iRam);  //Pasa al siguiente byte.
-  pic.SetNameRAM(addr, regName);  //pone nombre a registro
-end;
-procedure TGenCodBas.WriteVaLueToRAM(add: word; typ: TxpEleType;
+procedure TGenCodBas.WriteVaLueToRAM(target: PtrTCPURam; add: word; typ: TEleTypeDec;
   const value: TConsValue);
 //Write a constant value, of any type, to a some position in the RAM.
 var
   i: Integer;
 begin
-  if typ = typByte then begin
-    pic.ram[add].value := value.ValInt and $ff;
-  end else if typ = typChar then begin
-    pic.ram[add].value := value.ValInt and $ff;
-  end else if typ = typBool then begin
-    if value.ValBool then pic.ram[add].value := 1
-    else pic.ram[add].value := 0;
-  end else if typ = typWord then begin
-    pic.ram[add].value := value.ValInt and $ff;
-    pic.ram[add+1].value := (value.ValInt >> 8) and $ff;
+  if typ.catType = tctAtomic then begin
+    if typ = typByte then begin
+      target^[add].value := value.ValInt and $ff;
+    end else if typ = typChar then begin
+      target^[add].value := value.ValInt and $ff;
+    end else if typ = typBool then begin
+      if value.ValBool then target^[add].value := 1
+      else target^[add].value := 0;
+    end else if typ = typWord then begin
+      target^[add].value := value.ValInt and $ff;
+      target^[add+1].value := (value.ValInt >> 8) and $ff;
+    end else begin
+      GenError(MSG_NOT_IMPLEM);
+    end;
   end else if typ.catType = tctArray then begin
     //Composite type
     for i:=0 to high(value.items) do begin
-      WriteVaLueToRAM(add, typ.itmType, value.items[i]);  //Recursion
+      WriteVaLueToRAM(target, add, typ.itmType, value.items[i]);  //Recursion
+      if HayError then exit;
       inc(add, typ.itmType.size);
     end;
   end else if typ.catType = tctPointer then begin
     //Pointer are as words
-    pic.ram[add].value := value.ValInt and $ff;
-    pic.ram[add+1].value := (value.ValInt >> 8) and $ff;
+    target^[add].value := value.ValInt and $ff;
+    target^[add+1].value := (value.ValInt >> 8) and $ff;
   end else begin
     GenError(MSG_NOT_IMPLEM);
   end;
 end;
-procedure TGenCodBas.CreateVarInRAM(xVar: TxpEleVar; shared: boolean = false);
-{Rutina para asignar espacio físico a una variable. La variable, es creada en memoria
-en la posición actual que indica iRam
-con los parámetros que posea en ese momento. Si está definida como ABSOLUTE, se le
-creará en la posicón indicada. }
+procedure TGenCodBas.CreateVarInRAM(xVar: TEleVarDec; shared: boolean);
+{Assign physical location in RAM to a variable (If it's not defined as REGISTER).
+Variables are created starting at the "GeneralORG" compiler option position.
+Variables are created in Free RAM location, except if they are ABSOLUTE. }
 var
   varName: String;
   nbytes: integer;
-  typ: TxpEleType;
+  typ: TEleTypeDec;
   startAdd: word;
   i: integer;
   outOfProgram: Boolean;
 begin
+  //Validation
+  if xVar.adicPar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
+    //Register variables don't use RAM.
+    exit;
+  end;
   varName := xVar.name;
   typ := xVar.typ;
-  //Find the memory address where to place the variable
-//  pic.freeStart := pic.iRam;    //Start in the current RAM
-  pic.freeStart := self.GeneralORG;  //Find at the current program block.
+  //Find the memory address where to place the variable.
+  pic.freeStart := GeneralORG;  //Find at the current program block.
   nbytes := typ.size;
   if xVar.adicPar.hasAdic = decAbsol then begin
-    startAdd := xVar.adicPar.absAddr;
+    //It's ABSOLUTE to something
+    if xVar.adicPar.absVar<>nil then begin
+      //ABSOLUTE to a variable.
+      startAdd := xVar.adicPar.absVar.addr+  //Se supone que "xVar.adicPar.absVar" ya está mapeada en RAM.
+                  xVar.adicPar.absOff;
+    end else begin
+      //ABSOLUTE to a fixed address.
+      startAdd := xVar.adicPar.absAddr;
+    end;
   end else begin
     if not pic.GetFreeBytes(nbytes, startAdd) then begin
       GenError(MSG_NO_ENOU_RAM);
@@ -437,24 +449,16 @@ begin
     end;
   end;
   xVar.addr:=startAdd;  //Set address
-//  if pic.dataAddr1=-1 then begin
-//    //The variable has been mapped in the current RAM
-//    inc(pic.iRam, nbytes);  //Move pointer.
-//  end;
+  xVar.allocated := true;
   //Detect if variable location is out of the code block.
-  if FirstPass then begin
-    //In first pass, variables are located in a default position, so it's not secure
-    //to validate.
-    outOfProgram := false;  //Only checks for down
-  end else begin
-    //We assume absolute variables are out of code to protect from initialization
-    {The problem is in the *.PRG format we use for output, doesn't allow to specify
-    separates blocks of memory to fill. For example if we have specified an address like
-    $FFFF, and the program start at $0000, all the RAM must be included in *.PRG.}
-    outOfProgram := (xVar.adicPar.hasAdic = decAbsol) or
-                    (pic.dataAddr1<>-1);  //This means the variable has been placed in the primary data address.
-  end;
-  //Mark as used.
+  //We assume absolute variables are out of code to protect from initialization
+  {The problem is in the *.PRG format we use for output, doesn't allow to specify
+  separates blocks of memory to fill. For example if we have specified an address like
+  $FFFF for an absolute variable, and the program start at $0000, all the RAM must be
+  included in *.PRG.}
+  outOfProgram := (xVar.adicPar.hasAdic = decAbsol) or
+                  (pic.dataAddr1<>-1);  //This means the variable has been placed in the primary data address.
+  //Mark as used as variable Data. Not instruction.
   if outOfProgram then begin
     //Out of the program block, mark as "ruAbsData", in order to not be considered
     //to generate the PRG file.
@@ -486,12 +490,12 @@ begin
       GenError('Cannot initialize absolute variable "%s" in this location.', [varName]);
     end;
     //Here, we need to know the type
-    WriteVaLueToRAM(startAdd, typ, xVar.adicPar.iniVal);
+    WriteVaLueToRAM(@pic.ram, startAdd, typ, xVar.adicPar.constDec.value);
     if HayError then  exit;
   end;
   if typ.OnGlobalDef<>nil then typ.OnGlobalDef(varName, '');
 end;
-procedure TGenCodBas.CreateValueInCode(typ: TxpEleType;
+procedure TGenCodBas.CreateValueInCode(typ: TEleTypeDec;
   const value: TConsValue; out startAddr: integer);
 {Write a constant value in RAM, in the current code section, adding the correspondent JMP
 instruction. Returns in "startAddr", the address where start the value.}
@@ -502,7 +506,7 @@ begin
   nbytes := typ.size;
   _JMP_post(j1);   //Salto hasta después del espacio de variables
   startAddr := pic.iRam;
-  WriteVaLueToRAM(pic.iRam, typ, value);
+  WriteVaLueToRAM(@pic.ram, pic.iRam, typ, value);
   for i:=pic.iRam to pic.iRam+nbytes-1 do begin
     pic.ram[i].used := ruData;
   end;
@@ -510,301 +514,108 @@ begin
 _LABEL_post(j1);   //Termina de codificar el salto
 end;
 //Métodos para fijar el resultado
-procedure TGenCodBas.SetResultNull;
+procedure TGenCodBas.SetFunNull(fun: TEleExpress);
 {Fija el resultado como NULL.}
 begin
-  res.SetAsNull;
+  fun.Typ := typNull;
+  fun.Sto := stNone;
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
   LastIsTXA:= false;
   AcumStatInZ := true;
-  res.logic := logNormal;
+  fun.logic := logNormal;
 end;
-procedure TGenCodBas.SetResultConst(typ: TxpEleType);
+procedure TGenCodBas.SetFunConst(fun: TEleExpress);
 {Fija los parámetros del resultado de una subexpresion. Este método se debe ejcutar,
 siempre antes de evaluar cada subexpresión.}
 begin
-  res.SetAsConst(typ);
-  BooleanFromC:=0;   //para limpiar el estado
+  fun.opType := otConst;
+  fun.Sto := stConst;  //La única opción es esta.
+
+  BooleanFromC:=0;       //Para limpiar el estado
   BooleanFromZ:=0;
   LastIsTXA := false;
   AcumStatInZ := true;
   {Se asume que no se necesita invertir la lógica, en una constante (booleana o bit), ya
   que en este caso, tenemos control pleno de su valor}
-  res.logic := logNormal;
+  fun.logic := logNormal;
 end;
-procedure TGenCodBas.SetResultVariab(rVar: TxpEleVar);
-{Fija los parámetros del resultado de una subexpresion. Este método se debe ejcutar,
-siempre antes de evaluar cada subexpresión.}
+procedure TGenCodBas.SetFunVariab(fun: TEleExpress; rVar: TEleVarDec);
+{Set an operand TxpEleExpress to type otVariab and storage stRamFix.}
 begin
-  res.SetAsVariab(rVar);
+  fun.SetVariab(rVar);
   BooleanFromC:=0;   //para limpiar el estado
   BooleanFromZ:=0;
   LastIsTXA := false;
   AcumStatInZ := true;   //Default TRUE is explained in Documentation.
   //"logic" is not used in this storage.
-  res.logic := logNormal;
+  fun.logic := logNormal;
 end;
-procedure TGenCodBas.SetResultExpres(typ: TxpEleType; ChkRTState: boolean = true);
-{Fija los parámetros del resultado de una subexpresion (en "res"). Este método se debe
-ejecutar, siempre antes de evaluar cada subexpresión. Más exactamente, antes de generar
-código para ña subexpresión, porque esta rutina puede generar su propio código.}
+procedure TGenCodBas.SetFunVariab(fun: TEleExpress; addr: word);
+{Fija los parámetros del resultado de una subexpresion. Este método se debe ejecutar,
+siempre antes de evaluar cada subexpresión.}
 begin
-  if ChkRTState then begin
-    //Se pide verificar si se están suando los RT, para salvarlos en la pila.
-    if RTstate<>nil then begin
-      //Si se usan RT en la operación anterior. Hay que salvar en pila
-      RTstate.SaveToStk;  //Se guardan por tipo
-    end else begin
-      //No se usan. Están libres
-    end;
-  end;
-  //Fija como expresión
-  res.SetAsExpres(typ);
+  fun.SetVariab(addr);
+
+  BooleanFromC:=0;   //para limpiar el estado
+  BooleanFromZ:=0;
+  LastIsTXA := false;
+  AcumStatInZ := true;   //Default TRUE is explained in Documentation.
+  //"logic" is not used in this storage.
+  fun.logic := logNormal;
+end;
+procedure TGenCodBas.SetFunVariab_RamVarOf(fun: TEleExpress; rVar: TEleVarDec;
+  offset: integer);
+{Set an operand TxpEleExpress to type otVariab and storage stRamVarOf.}
+begin
+  fun.SetVariab_RamVarOf(rVar, offset);
+  BooleanFromC:=0;   //para limpiar el estado
+  BooleanFromZ:=0;
+  LastIsTXA := false;
+  AcumStatInZ := true;   //Default TRUE is explained in Documentation.
+  //"logic" is not used in this storage.
+  fun.logic := logNormal;
+end;
+procedure TGenCodBas.SetFunExpres(fun: TEleExpress; logic: TLogicType = logNormal);
+{Fija los parámetros del resultado de una subexpresion. Este método se debe
+ejecutar, siempre antes de evaluar cada subexpresión.}
+begin
+  fun.opType := otExpres; //Fija como expresión
+  fun.Sto := stRegister; //Almacenamiento por defecto
+
   //Limpia el estado. Esto es útil que se haga antes de generar el código para una operación
   BooleanFromC:=0;
   BooleanFromZ:=0;
   LastIsTXA := false;
   AcumStatInZ := true;
-  //Actualiza el estado de los registros de trabajo.
-  RTstate := typ;
-end;
-procedure TGenCodBas.SetResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
-begin
-  res.SetAsVarRef(rVarBase, xtyp);
-  BooleanFromC:=0;   //para limpiar el estado
-  BooleanFromZ:=0;
-  LastIsTXA := false;
-  AcumStatInZ := true;
-  //No se usa "logic" en este almacenamiento
-  res.logic := logNormal;
-end;
-procedure TGenCodBas.SetResultVarConRef(rVarBase: TxpEleVar; consAddr: integer;
-  xtyp: TxpEleType);
-begin
-  res.SetAsVarConRef(rVarBase, consAddr, xtyp);
-  BooleanFromC:=0;   //para limpiar el estado
-  LastIsTXA := false;
-  BooleanFromZ:=0;
-  AcumStatInZ := true;
-  //No se usa "logic" en este almacenamiento
-  res.logic := logNormal;
-end;
-procedure TGenCodBas.SetResultExpRef(typ: TxpEleType; ChkRTState: boolean = true);
-begin
-  if ChkRTState then begin
-    //Se pide verificar si se están suando los RT, para salvarlos en la pila.
-    if RTstate<>nil then begin
-      //Si se usan RT en la operación anterior. Hay que salvar en pila
-      RTstate.SaveToStk;  //Se guardan por tipo
-    end else begin
-      //No se usan. Están libres
-    end;
-  end;
-  res.SetAsExpRef(typ);
-  BooleanFromC:=0;   //para limpiar el estado
-  BooleanFromZ:=0;
-  LastIsTXA := false;
-  AcumStatInZ := true;
-  //No se usa "logic" en este almacenamiento
-  res.logic := logNormal;
+  fun.logic := logic;  //Fija la lógica
 end;
 //Fija el resultado de ROP como constante
-procedure TGenCodBas.SetROBResultConst_bool(valBool: Boolean);
+procedure TGenCodBas.SetFunConst_bool(fun: TEleExpress; valBool: Boolean);
 begin
-  GenerateROBdetComment;
-  SetResultConst(typBool);
-  res.valBool := valBool;
+  SetFunConst(fun);
+  fun.value.valBool := valBool;
 end;
-procedure TGenCodBas.SetROBResultConst_byte(valByte: integer);
+procedure TGenCodBas.SetFunConst_byte(fun: TEleExpress; valByte: integer);
 begin
-  GenerateROBdetComment;
   if not ValidateByteRange(valByte) then
     exit;  //Error de rango
-  SetResultConst(typByte);
-  res.valInt := valByte;
+  SetFunConst(fun);
+  fun.value.valInt := valByte;
 end;
-procedure TGenCodBas.SetROBResultConst_char(valByte: integer);
+procedure TGenCodBas.SetFunConst_char(fun: TEleExpress; valByte: integer);
 begin
-  GenerateROBdetComment;
-  SetResultConst(typChar);
-  res.valInt := valByte;
+  SetFunConst(fun);
+  fun.value.valInt := valByte;
 end;
-procedure TGenCodBas.SetROBResultConst_word(valWord: integer);
+procedure TGenCodBas.SetFunConst_word(fun: TEleExpress; valWord: integer);
 begin
-  GenerateROBdetComment;
   if not ValidateWordRange(valWord) then
     exit;  //Error de rango
-  SetResultConst(typWord);
-  res.valInt := valWord;
+  SetFunConst(fun);
+  fun.value.valInt := valWord;
 end;
-//Fija el resultado de ROP como variable
-procedure TGenCodBas.SetROBResultVariab(rVar: TxpEleVar);
-begin
-  GenerateROBdetComment;
-  SetResultVariab(rVar);
-end;
-//Fija el resultado de ROP como expresión
-procedure TGenCodBas.SetROBResultExpres_bool(Opt: TxpOperation;
-  logic: TLogicType);
-{Define el resultado como una expresión de tipo Boolean, y se asegura de reservar el
-registro Z, para devolver la salida. Debe llamarse cuando se tienen los operandos de
-la oepración en p1^y p2^, porque toma información de allí.}
-begin
-  GenerateROBdetComment;
-  //Se van a usar los RT. Verificar si los RT están ocupadoa
-  if (p1^.Sto = stExpres) or (p2^.Sto = stExpres) then begin
-    //Alguno de los operandos de la operación actual, está usando algún RT
-    SetResultExpres(typBool, false);  //actualiza "RTstate"
-  end else begin
-    {Los RT no están siendo usados, por la operación actual.
-     Pero pueden estar ocupados por la operación anterior (Ver doc. técnica).}
-    SetResultExpres(typBool);  //actualiza "RTstate"
-  end;
-  //Fija la lógica
-  res.logic := logic;
-end;
-procedure TGenCodBas.SetROBResultExpres_byte(Opt: TxpOperation);
-{Define el resultado como una expresión de tipo Byte, y se asegura de reservar el
-registro A, para devolver la salida. Debe llamarse cuando se tienen los operandos de
-la oepración en p1^y p2^, porque toma información de allí.}
-begin
-  GenerateROBdetComment;
-  //Se van a usar los RT. Verificar si los RT están ocupadoa
-  if (p1^.Sto = stExpres) or (p2^.Sto = stExpres) then begin
-    //Alguno de los operandos de la operación actual, está usando algún RT
-    SetResultExpres(typByte, false);  //actualiza "RTstate"
-  end else begin
-    {Los RT no están siendo usados, por la operación actual.
-     Pero pueden estar ocupados por la operación anterior (Ver doc. técnica).}
-    SetResultExpres(typByte);  //actualiza "RTstate"
-  end;
-end;
-procedure TGenCodBas.SetROBResultExpres_char(Opt: TxpOperation);
-{Define el resultado como una expresión de tipo Char, y se asegura de reservar el
-registro A, para devolver la salida. Debe llamarse cuando se tienen los operandos de
-la oepración en p1^y p2^, porque toma información de allí.}
-begin
-  GenerateROBdetComment;
-  //Se van a usar los RT. Verificar si los RT están ocupadoa
-  if (p1^.Sto = stExpres) or (p2^.Sto = stExpres) then begin
-    //Alguno de los operandos de la operación actual, está usando algún RT
-    SetResultExpres(typChar, false);  //actualiza "RTstate"
-  end else begin
-    {Los RT no están siendo usados, por la operación actual.
-     Pero pueden estar ocupados por la operación anterior (Ver doc. técnica).}
-    SetResultExpres(typChar);  //actualiza "RTstate"
-  end;
-end;
-procedure TGenCodBas.SetROBResultExpres_word(Opt: TxpOperation);
-{Define el resultado como una expresión de tipo Word, y se asegura de reservar los
-registros H,A, para devolver la salida.}
-begin
-  GenerateROBdetComment;
-  typWord.DefineRegister;  //
-  //Se van a usar los RT. Verificar si los RT están ocupadoa
-  if (p1^.Sto = stExpres) or (p2^.Sto = stExpres) then begin
-    //Alguno de los operandos de la operación actual, está usando algún RT
-    SetResultExpres(typWord, false);
-  end else begin
-    {Los RT no están siendo usados, por la operación actual.
-     Pero pueden estar ocupados por la operación anterior (Ver doc. técnica).}
-    SetResultExpres(typWord);
-  end;
-end;
-//Fija el resultado de ROU
-procedure TGenCodBas.SetROUResultConst_bool(valBool: boolean);
-begin
-  GenerateROUdetComment;
-  //if not ValidateBoolRange(valByte) then
-  //  exit;  //Error de rango
-  SetResultConst(typBool);
-  res.valBool := valBool;
-end;
-procedure TGenCodBas.SetROUResultConst_byte(valByte: integer);
-begin
-  GenerateROUdetComment;
-  if not ValidateByteRange(valByte) then
-    exit;  //Error de rango
-  SetResultConst(typByte);
-  res.valInt := valByte;
-end;
-procedure TGenCodBas.SetROUResultVariab(rVar: TxpEleVar);
-begin
-  GenerateROUdetComment;
-  SetResultVariab(rVar);
-end;
-procedure TGenCodBas.SetROUResultVarRef(rVarBase: TxpEleVar; xtyp: TxpEleType);
-{Fija el resultado como una referencia de tipo stVarRef}
-begin
-  GenerateROUdetComment;
-  SetResultVarRef(rVarBase, xtyp);
-end;
-procedure TGenCodBas.SetROUResultExpres(typ: TxpEleType);
-{Set the result operand as stExpres}
-begin
-  GenerateROUdetComment;
-  //Se van a usar los RT. Verificar si los RT están ocupadoa
-  if (p1^.Sto = stExpres) then begin
-    //Alguno de los operandos de la operación actual, está usando algún RT
-    SetResultExpres(typ, false);  //actualiza "RTstate"
-  end else begin
-    {Los RT no están siendo usados, por la operación actual.
-     Pero pueden estar ocupados por la operación anterior (Ver doc. técnica).}
-    SetResultExpres(typ);  //actualiza "RTstate"
-  end;
-end;
-procedure TGenCodBas.SetROUResultExpres_bool(logic: TLogicType);
-begin
-  GenerateROUdetComment;
-  //Se van a usar los RT. Verificar si los RT están ocupadoa
-  if (p1^.Sto = stExpres) then begin
-    //Alguno de los operandos de la operación actual, está usando algún RT
-    SetResultExpres(typBool, false);  //actualiza "RTstate"
-  end else begin
-    {Los RT no están siendo usados, por la operación actual.
-     Pero pueden estar ocupados por la operación anterior (Ver doc. técnica).}
-    SetResultExpres(typBool);  //actualiza "RTstate"
-  end;
-  //Fija la lógica
-  res.logic := logic;
-end;
-procedure TGenCodBas.SetROUResultExpres_byte;
-{Define el resultado como una expresión de tipo Byte, y se asegura de reservar el
-registro A, para devolver la salida. Se debe usar solo para operaciones unarias.}
-begin
-  GenerateROUdetComment;
-  //Se van a usar los RT. Verificar si los RT están ocupadoa
-  if (p1^.Sto = stExpres) then begin
-    //Alguno de los operandos de la operación actual, está usando algún RT
-    SetResultExpres(typByte, false);  //actualiza "RTstate"
-  end else begin
-    {Los RT no están siendo usados, por la operación actual.
-     Pero pueden estar ocupados por la operación anterior (Ver doc. técnica).}
-    SetResultExpres(typByte);  //actualiza "RTstate"
-  end;
-end;
-procedure TGenCodBas.SetROUResultExpRef(typ: TxpEleType);
-{Define el resultado como una expresión stExpRef, protegiendo los RT si es necesario.
-Se debe usar solo para operaciones unarias.}
-begin
-  GenerateROUdetComment;
-  //Se van a usar los RT. Verificar si los RT están ocupadoa
-  if (p1^.Sto = stExpres) then begin
-    //Alguno de los operandos de la operación actual, está usando algún RT
-    SetResultExpRef(typ, false);  //actualiza "RTstate"
-  end else begin
-    {Los RT no están siendo usados, por la operación actual.
-     Pero pueden estar ocupados por la operación anterior (Ver doc. técnica).}
-    SetResultExpRef(typ);  //actualiza "RTstate"
-  end;
-end;
-//Adicionales
-procedure TGenCodBas.ChangeResultCharToByte;
-begin
-
-end;
-//Rutinas que facilitan la codifición de instrucciones
+//Codifición de instrucciones
 function TGenCodBas._PC: word; inline;
 {Devuelve la dirección actual en Flash}
 begin
@@ -1214,7 +1025,7 @@ procedure TGenCodBas._TXA;
 begin
   pic.codAsm(i_TXA, aImplicit, 0);
 end;
-procedure TGenCodBas.IF_TRUE(OpRes: TOperandPtr; out info: TIfInfo);
+procedure TGenCodBas.IF_TRUE(OpRes: TEleExpress; out info: TIfInfo);
 {Conditional instruction. Test if last expression is TRUE. In this case, execute
 the following block. The syntax is:
 
@@ -1245,43 +1056,43 @@ The block of code can be one or more instructions.
     end;
   end;
 begin
-  if OpRes^.Sto = stVariab then begin
+  if OpRes.Sto = stRamFix then begin
     //Result in variable
-    _LDA(OpRes^.rVar.addr);
-    JumpIfZero(OpRes^.logic = logInverted);
-  end else if OpRes^.Sto = stExpres then begin
+    _LDA(OpRes.rVar.addr);
+    JumpIfZero(OpRes.logic = logInverted);
+  end else if OpRes.Sto = stRegister then begin
     {We first evaluate the case when it could be done an optimization}
     if BooleanFromC<>0 then begin
       //Expression result has been copied from C to A
       pic.iRam := BooleanFromC;   //Delete last instructions
       //Check C flag
-      JumpIfZeroC(OpRes^.logic <> logInverted);
+      JumpIfZeroC(OpRes.logic <> logInverted);
     end else if BooleanFromZ<>0 then begin
       //Expression result has been copied from Z to A
       pic.iRam := BooleanFromZ;   //Delete last instructions
       //Check Z flag
-      JumpIfZero(OpRes^.logic <> logInverted);  //Logic is inverted wheb checking Z directly
+      JumpIfZero(OpRes.logic <> logInverted);  //Logic is inverted wheb checking Z directly
     end else begin
       {Cannot be (or should be) optimized }
       if AcumStatInZ then begin
         //Still we can use the optimizaction of testing Z flag
-        JumpIfZero(OpRes^.logic = logInverted);
+        JumpIfZero(OpRes.logic = logInverted);
       end else begin
         //Operand value in A but not always in Z
         _TAX;  //To update Z
-        JumpIfZero(OpRes^.logic = logInverted);
+        JumpIfZero(OpRes.logic = logInverted);
       end;
     end;
   end else begin
     genError('Expression storage not supported.');
   end;
 end;
-procedure TGenCodBas.IF_FALSE(OpRes: TOperandPtr; out info: TIfInfo);
+procedure TGenCodBas.IF_FALSE(OpRes: TEleExpress; out info: TIfInfo);
 //Negated version of IF_TRUE()
 begin
-  OpRes^.Invert;   //Change logic
+  OpRes.Invert;   //Change logic
   IF_TRUE(OpRes, info);
-  OpRes^.Invert;   //Restore logic
+  OpRes.Invert;   //Restore logic
 end;
 procedure TGenCodBas.IF_END(const info: TIfInfo);
 {Define the End of the block, created with IF_TRUE().}
@@ -1289,19 +1100,16 @@ begin
   _LABEL_post(info.igoto);  //termina de codificar el salto
 end;
 //////////////// Tipo Boolean /////////////
-procedure TGenCodBas.bool_LoadToRT(const OpPtr: pointer);
-var
-  Op: ^TOperand;
+procedure TGenCodBas.bool_LoadToRT(fun: TEleExpress);
 begin
-  Op := OpPtr;
-  case Op^.Sto of  //el parámetro debe estar en "res"
+  case fun.Sto of  //el parámetro debe estar en "res"
   stConst : begin
-    if Op^.valBool then _LDAi(2) else _LDAi(0);
+    if fun.value.valBool then _LDAi(2) else _LDAi(0);
   end;
-  stVariab: begin
-    _LDA(Op^.rVar.addr);  //values $00 or $02
+  stRamFix: begin
+    _LDA(fun.rVar.addr);  //values $00 or $02
   end;
-  stExpres: begin  //Already in RT
+  stRegister: begin  //Already in WR
   end;
   //stVarRef, stExpRef, stVarConRef: begin
   // Must be similar to byte type
@@ -1316,99 +1124,124 @@ begin
   Result := pic.Model;
 end;
 //////////////// Tipo Byte /////////////
-procedure TGenCodBas.byte_LoadToRT(const OpPtr: pointer);
-{Load operand to RT. It's, convert storage to stExpres }
-var
-  Op: ^TOperand;
-  idx: TxpEleVar;
-  addrNextOp1, addrNextOp2: Integer;
-  off: word;
+procedure TGenCodBas.byte_LoadToRT(fun: TEleExpress);
+{Load operand to WR. It's, convert storage to stExpres }
 begin
-  Op := OpPtr;
-  case Op^.Sto of  //el parámetro debe estar en "res"
+  case fun.Sto of  //el parámetro debe estar en "res"
   stConst : begin
-    _LDAi(Op^.valInt);
+    _LDAi(fun.value.valInt);
   end;
-  stVariab: begin
-    _LDA(Op^.rVar.addr);
+  stRamFix: begin
+    _LDA(fun.rVar.addr);
   end;
-  stExpres: begin  //Already in RT
-  end;
-  stVarRef, stExpRef: begin
-    if Op^.Sto = stExpRef then begin
-      idx := IX;  //Index variable
-    end else begin
-      idx := Op^.rVar;  //Index variable
-    end;
-    if idx.typ.IsByteSize then begin
-      //Indexed in zero page is simple
-      _LDX(idx.addr);
-      pic.codAsm(i_LDA, aZeroPagX, 0);
-    end else if idx.typ.IsWordSize then begin
-      if idx.addr<256 then begin
-        //Index in zero page. It's simple
-        _LDYi(0);
-        pic.codAsm(i_LDA, aIndirecY, idx.addr);
+  stRamVarOf: begin
+    if fun.rvar.typ.IsByteSize then begin
+      //Indexado por Byte
+      if fun.offs<256 then begin
+        _LDX(fun.rvar.addr);  //Load address
+        pic.codAsm(i_LDA, aZeroPagX, fun.offs);
       end else begin
-        //Index is word and not in zero page
-        //WARNING this is "Self-modifiying" code.
-        _LDA(idx.addr);  //Load LSB index
-addrNextOp1 := pic.iRam + 1;  //Address next instruction
-        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-        _LDA(idx.addr+1);  //Load virtual MSB index
-addrNextOp2 := pic.iRam + 1;  //Address next instruction
-        PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
-        //Modified LDA instruction
-        pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
-        //Complete address
-        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
-        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
-        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
-        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
+        _LDX(fun.rvar.addr);  //Load address
+        pic.codAsm(i_LDA, aAbsolutX, fun.offs);
       end;
-    end else begin
-      //refVar can only be byte or word size.
-      GenError('Not supported this index.');
+    end else if fun.rvar.typ.IsWordSize then begin
+      if fun.offs<256 then begin
+        AddCallerToFromCurr(IX);  //We declare using IX
+        //if not IX.allocated then begin
+        //  GenError(ER_NOT_IMPLEM_, [fun.StoAsStr]);
+        //  exit;
+        //end;
+        //Escribe dirección en puntero
+        _LDA(fun.rvar.addr);
+        _STA(IX.addr);
+        _LDA(fun.rvar.addr+1);
+        _STA(IX.addr+1);
+        //Carga desplazamiento
+        _LDYi(fun.offs);  //Load address
+        //Carga indexado
+        pic.codAsm(i_LDA, aIndirecY, IX.addr);
+      end else begin
+        GenError(ER_NOT_IMPLEM_, [fun.StoAsStr]);
+      end;
     end;
   end;
-  stVarConRef: begin
-    idx := Op^.rVar;  //Index variable
-    off := Op^.valInt and $FFFF;
-    if idx.typ.IsByteSize then begin
-      //Indexed in zero page
-      _LDX(idx.addr);
-      if off<256 then begin
-        pic.codAsm(i_LDA, aZeroPagX, off);
-      end else begin
-        pic.codAsm(i_LDA, aAbsolutX, off);
-      end;
-    end else if idx.typ.IsWordSize then begin
-      //Index is word and not in zero page
-      //WARNING this is "Self-modifiying" code.
-      _CLC;
-      _LDA(idx.addr);  //Load LSB index
-      _ADCi(lo(off));
-addrNextOp1 := pic.iRam + 1;  //Address next instruction
-      pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-      _LDA(idx.addr+1);  //Load virtual MSB index
-      _ADCi(hi(off));
-addrNextOp2 := pic.iRam + 1;  //Address next instruction
-      PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
-      //Modified LDA instruction
-      pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
-      //Complete address
-      pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
-      pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
-      pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
-      pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
-    end else begin
-      //refVar can only be byte or word size.
-      GenError('Not supported this index.');
-    end;
-  end
+  stRegister: begin  //Already in WR
+  end;
+//  stVarRef, stExpRef: begin
+//    if Op^.Sto = stExpRef then begin
+//      idx := IX;  //Index variable
+//    end else begin
+//      idx := Op^.rVar;  //Index variable
+//    end;
+//    if idx.typ.IsByteSize then begin
+//      //Indexed in zero page is simple
+//      _LDX(idx.addr);
+//      pic.codAsm(i_LDA, aZeroPagX, 0);
+//    end else if idx.typ.IsWordSize then begin
+//      if idx.addr<256 then begin
+//        //Index in zero page. It's simple
+//        _LDYi(0);
+//        pic.codAsm(i_LDA, aIndirecY, idx.addr);
+//      end else begin
+//        //Index is word and not in zero page
+//        //WARNING this is "Self-modifiying" code.
+//        _LDA(idx.addr);  //Load LSB index
+//addrNextOp1 := pic.iRam + 1;  //Address next instruction
+//        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
+//        _LDA(idx.addr+1);  //Load virtual MSB index
+//addrNextOp2 := pic.iRam + 1;  //Address next instruction
+//        PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
+//        //Modified LDA instruction
+//        pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
+//        //Complete address
+//        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
+//        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
+//        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
+//        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
+//      end;
+//    end else begin
+//      //refVar can only be byte or word size.
+//      GenError('Not supported this index.');
+//    end;
+//  end;
+//  stVarConRef: begin
+//    idx := Op^.rVar;  //Index variable
+//    off := Op^.valInt and $FFFF;
+//    if idx.typ.IsByteSize then begin
+//      //Indexed in zero page
+//      _LDX(idx.addr);
+//      if off<256 then begin
+//        pic.codAsm(i_LDA, aZeroPagX, off);
+//      end else begin
+//        pic.codAsm(i_LDA, aAbsolutX, off);
+//      end;
+//    end else if idx.typ.IsWordSize then begin
+//      //Index is word and not in zero page
+//      //WARNING this is "Self-modifiying" code.
+//      _CLC;
+//      _LDA(idx.addr);  //Load LSB index
+//      _ADCi(lo(off));
+//addrNextOp1 := pic.iRam + 1;  //Address next instruction
+//      pic.codAsm(i_STA, aAbsolute, 0); //Store forward
+//      _LDA(idx.addr+1);  //Load virtual MSB index
+//      _ADCi(hi(off));
+//addrNextOp2 := pic.iRam + 1;  //Address next instruction
+//      PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
+//      //Modified LDA instruction
+//      pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
+//      //Complete address
+//      pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
+//      pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
+//      pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
+//      pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
+//    end else begin
+//      //refVar can only be byte or word size.
+//      GenError('Not supported this index.');
+//    end;
+//  end
   else
     //Almacenamiento no implementado
-    GenError(MSG_NOT_IMPLEM);
+    GenError(ER_NOT_IMPLEM_, [fun.StoAsStr]);
   end;
 end;
 procedure TGenCodBas.byte_DefineRegisters;
@@ -1420,92 +1253,90 @@ begin
   _PHA;
 end;
 //////////////// Tipo Word /////////////
-procedure TGenCodBas.word_LoadToRT(const OpPtr: pointer);
+procedure TGenCodBas.word_LoadToRT(fun: TEleExpress);
 {Carga el valor de una expresión a los registros de trabajo.}
 var
-  Op: ^TOperand;
-  idx: TxpEleVar;
+  idx: TEleVarDec;
   addrNextOp1, addrNextOp2: Integer;
 begin
-  Op := OpPtr;
-  case Op^.Sto of  //el parámetro debe estar en "Op^"
+  case fun.Sto of  //el parámetro debe estar en "Op^"
   stConst : begin
     //byte alto
-    _LDAi(Op^.HByte);
+    _LDAi(fun.value.HByte);
     _STA(H.addr);
     //byte bajo
-    _LDAi(Op^.LByte);
+    _LDAi(fun.value.LByte);
   end;
-  stVariab: begin
-    _LDA(Op^.rVar.addr+1);
+  stRamFix: begin
+    _LDA(fun.rVar.addr+1);
     _STA(H.addr);
-    _LDA(Op^.rVar.addr);
+    _LDA(fun.rVar.addr);
   end;
-  stExpres: begin  //Already in (H,A)
+  stRegister: begin  //Already in (H,A)
   end;
-  stVarRef, stExpRef: begin
-    if Op^.Sto = stExpRef then begin
-      idx := IX;  //Index variable
-    end else begin
-      idx := Op^.rVar;  //Index variable
-    end;
-    if idx.typ.IsByteSize then begin
-      //Indexed in zero page is simple
-      _LDX(idx.addr);
-      _INX;  //Fail in cross-page
-      pic.codAsm(i_LDA, aZeroPagX, 0);  //MSB
-      _STA(H.addr);
-      _DEX;
-      pic.codAsm(i_LDA, aZeroPagX, 0);  //LSB
-    end else if idx.typ.IsWordSize then begin
-      if idx.addr<256 then begin
-        //Index in zero page. It's simple
-        _LDYi(1);
-        pic.codAsm(i_LDA, aIndirecY, idx.addr);  //MSB
-        _STA(H.addr);
-        _DEY;
-        pic.codAsm(i_LDA, aIndirecY, idx.addr);  //LSB
-      end else begin
-        //Index is word and not in zero page
-        //WARNING this is "Self-modifiying" code.
-        //---------- MSB ------------
-        _CLC;   //Prepare adding 1
-        _LDA(idx.addr);  //Load LSB index
-        _ADCi(1);
-addrNextOp1 := pic.iRam + 1;  //Address next instruction
-        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-        _LDA(idx.addr+1);  //Load virtual MSB index
-        _ADCi(0);   //Just to add the carry
-addrNextOp2 := pic.iRam + 1;  //Address next instruction
-        PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
-        //Modified LDA instruction
-        pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
-        //Complete address
-        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
-        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
-        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
-        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
-        _STA(H.addr);  //Store MSB in H
-        //---------- LSB ------------
-        _LDA(idx.addr);  //Load LSB index
-addrNextOp1 := pic.iRam + 1;  //Address next instruction
-        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-        _LDA(idx.addr+1);  //Load virtual MSB index
-addrNextOp2 := pic.iRam + 1;  //Address next instruction
-        PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
-        //Modified LDA instruction
-        pic.codAsm(i_LDA, aAbsolute, 0); //LSB
-        //Complete address
-        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
-        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
-        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
-        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
-      end;
-    end else begin
-      //refVar can only be byte or word size.
-      GenError('Not supported this index.');
-    end;
-  end;
+//  stVarRef, stExpRef: begin
+//    if Op^.Sto = stExpRef then begin
+//      idx := IX;  //Index variable
+//    end else begin
+//      idx := Op^.rVar;  //Index variable
+//    end;
+//    if idx.typ.IsByteSize then begin
+//      //Indexed in zero page is simple
+//      _LDX(idx.addr);
+//      _INX;  //Fail in cross-page
+//      pic.codAsm(i_LDA, aZeroPagX, 0);  //MSB
+//      _STA(H.addr);
+//      _DEX;
+//      pic.codAsm(i_LDA, aZeroPagX, 0);  //LSB
+//    end else if idx.typ.IsWordSize then begin
+//      if idx.addr<256 then begin
+//        //Index in zero page. It's simple
+//        _LDYi(1);
+//        pic.codAsm(i_LDA, aIndirecY, idx.addr);  //MSB
+//        _STA(H.addr);
+//        _DEY;
+//        pic.codAsm(i_LDA, aIndirecY, idx.addr);  //LSB
+//      end else begin
+//        //Index is word and not in zero page
+//        //WARNING this is "Self-modifiying" code.
+//        //---------- MSB ------------
+//        _CLC;   //Prepare adding 1
+//        _LDA(idx.addr);  //Load LSB index
+//        _ADCi(1);
+//addrNextOp1 := pic.iRam + 1;  //Address next instruction
+//        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
+//        _LDA(idx.addr+1);  //Load virtual MSB index
+//        _ADCi(0);   //Just to add the carry
+//addrNextOp2 := pic.iRam + 1;  //Address next instruction
+//        PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
+//        //Modified LDA instruction
+//        pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
+//        //Complete address
+//        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
+//        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
+//        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
+//        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
+//        _STA(H.addr);  //Store MSB in H
+//        //---------- LSB ------------
+//        _LDA(idx.addr);  //Load LSB index
+//addrNextOp1 := pic.iRam + 1;  //Address next instruction
+//        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
+//        _LDA(idx.addr+1);  //Load virtual MSB index
+//addrNextOp2 := pic.iRam + 1;  //Address next instruction
+//        PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
+//        //Modified LDA instruction
+//        pic.codAsm(i_LDA, aAbsolute, 0); //LSB
+//        //Complete address
+//        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
+//        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
+//        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
+//        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
+//      end;
+//    end else begin
+//      //refVar can only be byte or word size.
+//      GenError('Not supported this index.');
+//    end;
+//  end;
   else
     //Almacenamiento no implementado
     GenError(MSG_NOT_IMPLEM);
@@ -1514,7 +1345,7 @@ end;
 procedure TGenCodBas.word_DefineRegisters;
 begin
   //Changed from versión 0.7.1
-  AddCallerTo(H);
+  AddCallerToFromCurr(H);
 end;
 procedure TGenCodBas.word_SaveToStk;
 begin
@@ -1524,88 +1355,80 @@ begin
   _LDA(H.addr);
   _PHA;
 end;
-procedure TGenCodBas.word_Low(const OpPtr: pointer);
+procedure TGenCodBas.word_Low(fun: TEleExpress);
 {Acceso al byte de menor peso de un word.}
 var
-  xvar, tmpVar: TxpEleVar;
-  Op: ^TOperand;
+  par: TEleExpress;
 begin
-  cIn.Next;  //Toma identificador de campo
-  Op := OpPtr;
-  case Op^.Sto of
-  stVariab: begin
-    xvar := Op^.rVar;
+  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  requireA;
+  case par.Sto of
+  stRamFix: begin
+    SetFunExpres(fun);
+    _LDA(par.addL);
+    {La forma más eficiente sería cambiar el nodo a una variable en la misma dirección
+    que la variable "par" (parte baja),  pero la mejor forma sería crear una variable
+    local ABSOLUTE, para que se le asigne la dirección al momento de la asignación de
+    espacio para variables.
+    Crear variables temporales, no funcionaría porque, esta rutina se explora en la
+    fase de optimización, y allí no se tiene todavía la dirección final de la variable
+    "par" y una vez que cambie a variable, ya no se refresca la dirección.}
     //Se devuelve una variable, byte
-    //Crea una variable temporal que representará al campo
-    tmpVar := CreateTmpVar(xvar.name+'.L', typByte);   //crea variable temporal
-    tmpVar.addr :=  xvar.addr;  //byte bajo
-    res.SetAsVariab(tmpVar);
+    //xvar := par.rvar;
+    //tmpVar := CreateTmpVar(xvar.name+'.L', typByte);   //crea variable temporal
+    //tmpVar.addr :=  xvar.addr;  //byte bajo
+    //SetResultVariab(fun, tmpVar);
   end;
   stConst: begin
-    //Se devuelve una constante bit
-    res.SetAsConst(typByte);
-    res.valInt := Op^.ValInt and $ff;
+    //Se devuelve una constante
+    SetFunConst_byte(fun, par.value.ValInt and $ff);
   end;
   else
     GenError('Syntax error.');
   end;
 end;
-procedure TGenCodBas.word_High(const OpPtr: pointer);
+procedure TGenCodBas.word_High(fun: TEleExpress);
 {Acceso al byte de mayor peso de un word.}
 var
-  xvar, tmpVar: TxpEleVar;
-  Op: ^TOperand;
+  par: TEleExpress;
 begin
-  cIn.Next;  //Toma identificador de campo
-  Op := OpPtr;
-  case Op^.Sto of
-  stVariab: begin
-    xvar := Op^.rVar;
-    //A byte type is returned
-    //Temporal variable that will represent the field
-    tmpVar := CreateTmpVar(xvar.name+'.H', typByte);
-    tmpVar.addr := xvar.addrH;  //byte alto
-    res.SetAsVariab(tmpVar);
+  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  requireA;
+  case par.Sto of
+  stRamFix: begin
+    SetFunExpres(fun);
+    _LDA(par.addH);
   end;
   stConst: begin
-    //Se devuelve una constante bit
-    res.SetAsConst(typByte);
-    res.valInt := (Op^.ValInt and $ff00)>>8;
+    //Se devuelve una constante
+    SetFunConst_byte(fun, par.value.ValInt and $ff00 >>8);
   end;
   else
     GenError('Syntax error.');
   end;
 end;
-procedure TGenCodBas.GenCodPicReqStopCodeGen;
+procedure TGenCodBas.StopCodeGen;
 {Required Stop the Code generation}
 begin
   posFlash := pic.iRam; //Probably not the best way.
 end;
-procedure TGenCodBas.GenCodPicReqStartCodeGen;
+procedure TGenCodBas.StartCodeGen;
 {Required Start the Code generation}
 begin
   pic.iRam := posFlash; //Probably not the best way.
 end;
-function TGenCodBas.DeviceError: string;
-begin
-  exit (pic.MsjError);
-end;
-function TGenCodBas.CurrRAM(): integer;
-begin
-  exit(pic.iRam);
-end;
 //Inicialización
-procedure TGenCodBas.GenCodLoadToA(Op: TOperand);
+procedure TGenCodBas.GenCodLoadToA(fun: TEleExpress);
 begin
-  if Op.Typ.IsByteSize then begin
-    case Op.Sto. of
+  if fun.Typ.IsByteSize then begin
+    case fun.Sto. of
     stConst: begin
-      _LDAi(Op.valInt and $ff);
+      _LDAi(fun.value.valInt and $ff);
     end;
-    stVariab: begin
-      _LDA(Op.rVar.addr);
+    stRamFix: begin
+      _LDA(fun.rVar.addr);
     end;
-    stExpres: begin
+    stRegister: begin
       //Already in A
     end
     else
@@ -1615,17 +1438,17 @@ begin
     GenError('Operand must be byte-size to fit in register A.');
   end;
 end;
-procedure TGenCodBas.GenCodLoadToX(Op: TOperand);
+procedure TGenCodBas.GenCodLoadToX(fun: TEleExpress);
 begin
-  if Op.Typ.IsByteSize then begin
-    case Op.Sto. of
+  if fun.Typ.IsByteSize then begin
+    case fun.Sto. of
     stConst: begin
-      _LDXi(Op.valInt and $ff);
+      _LDXi(fun.value.valInt and $ff);
     end;
-    stVariab: begin
-      _LDX(Op.rVar.addr);
+    stRamFix: begin
+      _LDX(fun.rVar.addr);
     end;
-    stExpres: begin
+    stRegister: begin
       _TAX;
     end
     else
@@ -1635,17 +1458,17 @@ begin
     GenError('Operand must be byte-size to fit in register Y.');
   end;
 end;
-procedure TGenCodBas.GenCodLoadToY(Op: TOperand);
+procedure TGenCodBas.GenCodLoadToY(fun: TEleExpress);
 begin
-  if Op.Typ.IsByteSize then begin
-    case Op.Sto. of
+  if fun.Typ.IsByteSize then begin
+    case fun.Sto. of
     stConst: begin
-      _LDYi(Op.valInt and $ff);
+      _LDYi(fun.value.valInt and $ff);
     end;
-    stVariab: begin
-      _LDY(Op.rVar.addr);
+    stRamFix: begin
+      _LDY(fun.rVar.addr);
     end;
-    stExpres: begin
+    stRegister: begin
       _TAY;
     end
     else
@@ -1663,299 +1486,68 @@ function TGenCodBas.RAMmax: integer;
 begin
    Result := high(pic.ram);
 end;
-procedure TGenCodBas.StartCodeSub(fun: TxpEleFun);
-{debe ser llamado para iniciar la codificación de una subrutina}
+procedure TGenCodBas.CodAsigmentToVar(pvar: TEleVarDec; Op2: TEleExpress);
+{Generate code for the assignment to the variable "pvar" from the node "Op2".
+"Op2" must exist (in the AST or not) and contain all the expression to be asigned.}
 begin
-//  iFlashTmp :=  pic.iFlash; //guarda puntero
-//  pic.iFlash := curBloSub;  //empieza a codificar aquí
+  //_Op1.name := pvar.name;  No needed
+  //_Op1.srcDec := pvar.srcDec;  No needed
+  _Op1.Typ := pvar.typ;
+  _Op1.SetVariab(pvar);
+  //Look for the asignment method.
+  _opr1 := MethodFromBinOperator(_Op1.Typ, ':=', Op2.Typ);
+  if _opr1 = nil then begin   //Operator not found
+    GenError('Undefined operation: %s %s %s', [_Op1.Typ.name, ':=', Op2.Typ.name]);
+    exit;
+  end;
+  //Set node Op2
+  _eleMeth.elements[1] := Op2;
+  _opr1.codInline(_eleMeth);  //Code the asignment
 end;
-procedure TGenCodBas.EndCodeSub;
-{debe ser llamado al terminar la codificaión de una subrutina}
-begin
-//  curBloSub := pic.iFlash;  //indica siguiente posición libre
-//  pic.iFlash := iFlashTmp;  //retorna puntero
-end;
-procedure TGenCodBas.FunctParam(fun: TxpEleFunBase);
-{Rutina genérica, que se usa antes de leer los parámetros de una función.}
-begin
-  {Haya o no, parámetros se debe proceder como en cualquier expresión, asumiendo que
-  vamos a devolver una expresión.}
-  SetResultExpres(fun.typ);  //actualiza "RTstate"
-end;
-procedure TGenCodBas.FunctCall(fun: TxpEleFunBase; out AddrUndef: boolean);
-{Rutina genérica para llamar a una función definida por el usuario.}
+procedure TGenCodBas.functCall(expFun: TEleExpress; fun: TEleFunBase; out
+  AddrUndef: boolean);
+{General routine to make the call to a Normal function.
+Parameters "expFun" is used to generate assignment of parameters, before
+make the call.
+}
 var
-  xfun: TxpEleFun;
+  xfun: TEleFun;
+  funcBase: TEleFunBase;
+  i: Integer;
+  par: TxpParFunc;
+  elePar2: TxpElement;
+  Op2: TEleExpress;
 begin
+  //////// Generates paremeters assignment
+  if expFun<>nil then begin
+    funcBase := expFun.rfun;
+    for i := 0 to High(funcBase.pars) do begin
+      par := funcBase.pars[i];
+      elePar2 := expFun.elements[i];   //Get parameter from AST.
+      Op2 := TEleExpress(elePar2);
+      CodAsigmentToVar(par.pvar, Op2);  //Code par := Op2.
+    end;
+  end;
+  //////// Make the CALL
   AddrUndef := false;
-  if FirstPass then begin
-    //In first Pass, definign calls is not really important.
+  //In linking, it's supposed all functions are implemented ?????
+  if fun.idClass = eleFunc then begin
+    xfun := TEleFun(fun);
+  end else begin
+    //Must be a declaration
+    xfun := TEleFunDec(fun).implem;
+  end;
+  if xfun.coded then begin
+    //We have a real address
+    _JSR(xfun.adrr);  //It's a complete function
+  end else begin
+    //Function is not yet coded. We need to complete this call later.
     _JSR($0000);
-  end else begin
-    //In linking, it's supposed all functions are implemented
-    if fun.idClass = eltFunc then begin
-      xfun := TxpEleFun(fun);
-    end else begin
-      //Must be a declaration
-      xfun := TxpEleFunDec(fun).implem;
+    if not pic.disableCodegen then begin  //Verify if we are in mode no-code-generation.
+      xfun.AddAddresPend(pic.iRam-2);  //Register the address to complete later
     end;
-    if xfun.linked then begin
-      //We have a real address
-      _JSR(xfun.adrr);  //It's a complete function
-    end else begin
-      //Function is not yet linked. We need to complete this call later.
-      _JSR($0000);
-      xfun.AddAddresPend(pic.iRam-2);
-    end;
+    AddrUndef := true;
   end;
-end;
-procedure TGenCodBas.CompileIF;
-{Compila una extructura IF}
-var
-  jEND_TRUE: integer;
-  lbl1: TIfInfo;
-  blkSize: word;
-begin
-  if not GetExpressionBool then exit;
-  if not CaptureStr('then') then exit; //toma "then"
-  //Aquí debe estar el cuerpo del "if"
-  case res.Sto of
-  stConst: begin  //la condición es fija
-    if res.valBool then begin
-      //Es verdadero, siempre se ejecuta
-      if not CompileNoConditionBody(true) then exit;
-      //Compila los ELSIF que pudieran haber
-      while cIn.tokL = 'elsif' do begin
-        cIn.Next;   //toma "elsif"
-        if not GetExpressionBool then exit;
-        if not CaptureStr('then') then exit;  //toma "then"
-        //Compila el cuerpo pero sin código
-        if not CompileNoConditionBody(false) then exit;
-      end;
-      //Compila el ELSE final, si existe.
-      if cIn.tokL = 'else' then begin
-        //Hay bloque ELSE, pero no se ejecutará nunca
-        cIn.Next;   //toma "else"
-        if not CompileNoConditionBody(false) then exit;
-        if not VerifyEND then exit;
-      end else begin
-        VerifyEND;
-      end;
-    end else begin
-      //Es falso, nunca se ejecuta
-      if not CompileNoConditionBody(false) then exit;
-      if cIn.tokL = 'else' then begin
-        //hay bloque ELSE, que sí se ejecutará
-        cIn.Next;   //toma "else"
-        if not CompileNoConditionBody(true) then exit;
-        VerifyEND;
-      end else if cIn.tokL = 'elsif' then begin
-        cIn.Next;
-        CompileIF;  //más fácil es la forma recursiva
-        if HayError then exit;
-        //No es necesario verificar el END final.
-      end else begin
-        VerifyEND;
-      end;
-    end;
-  end;
-  stVariab, stExpres:begin
-    IF_TRUE(@res, lbl1);
-    //Compila la parte THEN
-    if not CompileConditionalBody(blkSize) then exit;
-    //Verifica si sigue el ELSE
-    if cIn.tokL = 'else' then begin
-      //Es: IF ... THEN ... ELSE ... END
-      cIn.Next;   //toma "else"
-      _JMP_post(jEND_TRUE);  //llega por aquí si es TRUE
-      IF_END( lbl1);
-      if not CompileConditionalBody(blkSize) then exit;
-      _LABEL_post(jEND_TRUE);   //termina de codificar el salto
-      VerifyEND;   //puede salir con error
-    end else if cIn.tokL = 'elsif' then begin
-      //Es: IF ... THEN ... ELSIF ...
-      cIn.Next;
-      _JMP_post(jEND_TRUE);  //llega por aquí si es TRUE
-      IF_END( lbl1);
-      CompileIF;  //más fácil es la forma recursiva
-      if HayError then exit;
-      _LABEL_post(jEND_TRUE);   //termina de codificar el salto
-      //No es necesario verificar el END final.
-    end else begin
-      //Es: IF ... THEN ... END. (Puede ser recursivo)
-      IF_END( lbl1);
-      VerifyEND;  //puede salir con error
-    end;
-  end;
-  end;
-end;
-procedure TGenCodBas.CompileREPEAT;
-{Compila uan extructura WHILE}
-var
-  l1: Word;
-  info: TIfInfo;
-begin
-  l1 := _PC;        //guarda dirección de inicio
-  CompileCurBlock;
-  if HayError then exit;
-  cIn.SkipWhites;
-  if not CaptureStr('until') then exit; //toma "until"
-  if not GetExpressionBool then exit;
-  case res.Sto of
-  stConst: begin  //la condición es fija
-    if res.valBool then begin
-      //lazo nulo
-    end else begin
-      //lazo infinito
-      _JMP(l1);
-    end;
-  end;
-  stVariab, stExpres: begin
-    IF_FALSE(@res, info);   { TODO : Se debería optimizar. Hay un salto innecesario, útil solo para bloques largos. }
-    _JMP(l1);
-    IF_END(info)
-    //sale cuando la condición es verdadera
-  end;
-  end;
-end;
-procedure TGenCodBas.CompileWHILE;
-{Compila una extructura WHILE}
-var
-  l1, blkSize: Word;
-  info: TIfInfo;
-begin
-  l1 := _PC;        //guarda dirección de inicio
-  if not GetExpressionBool then exit;  //Condición
-  if not CaptureStr('do') then exit;  //toma "do"
-  //Aquí debe estar el cuerpo del "while"
-  case res.Sto of
-  stConst: begin  //la condición es fija
-    if res.valBool then begin
-      //Lazo infinito
-      if not CompileNoConditionBody(true) then exit;
-      if not VerifyEND then exit;
-      _JMP(l1);
-    end else begin
-      //Lazo nulo. Compila sin generar código.
-      if not CompileNoConditionBody(false) then exit;
-      if not VerifyEND then exit;
-    end;
-  end;
-  stVariab, stExpres: begin
-    IF_TRUE(@res, info);
-    if not CompileConditionalBody(blkSize) then exit;
-    _JMP(l1);
-    IF_END(info);
-    if not VerifyEND then exit;
-  end;
-  end;
-end;
-procedure TGenCodBas.CompileFOR;
-{Compila uan extructura FOR}
-var
-  l1, blkSize: Word;
-  LABEL1: Integer;
-  Op1, Op2: TOperand;
-  opr1: TxpOperator;
-  info: TIfInfo;
-begin
-  GetOperand(Op1);
-  if Op1.Sto <> stVariab then begin
-    GenError(ER_VARIAB_EXPEC);
-    exit;
-  end;
-  if HayError then exit;
-  if (Op1.Typ<>typByte) and (Op1.Typ<>typWord) then begin
-    GenError(ER_ONL_BYT_WORD);
-    exit;
-  end;
-  cIn.SkipWhites;
-  opr1 := GetOperator(Op1);   //debe ser ":="
-  if opr1 = nil then begin  //no sigue operador
-    GenError(ER_ASIG_EXPECT);
-    exit;  //termina ejecucion
-  end;
-  if opr1.txt <> ':=' then begin
-    GenError(ER_ASIG_EXPECT);
-    exit;
-  end;
-  Op2 := GetExpression(0);
-  if HayError then exit;
-  //Ya se tiene la asignación inicial
-  Oper(Op1, opr1, Op2);   //codifica asignación
-  if HayError then exit;
-  if not CaptureStr('to') then exit;
-  //Toma expresión Final
-  res := GetExpression(0);
-  if HayError then exit;
-  cIn.SkipWhites;
-  if not CaptureStr('do') then exit;  //toma "do"
-  //Aquí debe estar el cuerpo del "for"
-  if (res.Sto = stConst) or (res.Sto = stVariab) then begin
-    //Es un for con valor final de tipo constante
-    //Se podría optimizar, si el valor inicial es también constante
-    l1 := _PC;        //guarda dirección de inicio
-    //Codifica rutina de comparación, para salir
-    OnExprStart();  //We need this to reset register
-    opr1 := Op1.Typ.FindBinaryOperator('<=');  //Busca operador de comparación
-    if opr1 = nullOper then begin
-      GenError('Internal: No operator <= defined for %s.', [Op1.Typ.name]);
-      exit;
-    end;
-    Op2 := res;   //Copia porque la operación Oper() modificará res
-    Oper(Op1, opr1, Op2);   //verifica resultado
-    IF_TRUE(@res, info);
-    OnExprEnd(pexSTRUC);  //Close expresión
-    if not CompileConditionalBody(blkSize) then exit;
-    if not VerifyEND then exit;
-    //Incrementa variable cursor
-    if Op1.Typ = typByte then begin
-      _INC(Op1.rVar.addr);
-    end else if Op1.Typ = typWord then begin
-      _INC(Op1.rVar.addr);
-      _BNE_post(LABEL1);  //label
-      _INC(Op1.rVar.addr+1);
-_LABEL_post(LABEL1);
-    end;
-    _JMP(l1);  //repite el lazo
-    //ya se tiene el destino del salto
-    IF_END(info);   //termina de codificar el salto
-  end else begin
-    GenError('Last value must be Constant or Variable');
-    exit;
-  end;
-end;
-procedure TGenCodBas.CompileProcBody(fun: TxpEleFun);
-{Compila el cuerpo de un procedimiento}
-begin
-  callStartCodeSub(fun);    //Inicia codificación de subrutina
-  CompileSentence;
-  if HayError then exit;
-  if fun.IsInterrupt then begin
-    //Las interrupciones terminan así
-    _RTI;
-  end else begin
-    //Para los procedimeintos, podemos terminar siempre con un RTS u optimizar,
-    if OptRetProc then begin
-      //Verifica es que ya se ha incluido exit().
-      if fun.ObligatoryExit<>nil then begin
-        //Ya tiene un exit() obligatorio y en el final (al menos eso se espera)
-        //No es necesario incluir el RTS().
-      end else begin
-        //No hay un exit(), seguro
-        _RTS();  //instrucción de salida
-      end;
-    end else begin
-      _RTS();  //instrucción de salida
-    end;
-  end;
-  callEndCodeSub;  //termina codificación
-  //Calcula tamaño
-  fun.srcSize := pic.iRam - fun.adrr;
-end;
-procedure TGenCodBas.ClearDeviceError;
-begin
-  pic.MsjError := '';
 end;
 procedure TGenCodBas.ResetRAM;
 {Reset the device RAM memory, and set the pointer iRam to start writing at the
@@ -1964,47 +1556,354 @@ begin
   pic.iRam := 0;  //Ubica puntero al inicio.
   pic.ClearMemRAM;  //Pone las celdas como no usadas y elimina nombres.
 end;
+procedure TGenCodBas.CreateVarsAndPars;
+{Create in RAM, local variables and parameters for functions.}
+var
+  elem   : TxpElement;
+  xvar   : TEleVarDec;
+  fun    : TEleFun;
+begin
+  //Explora primero a las funciones terminales
+  for fun in usedFuncs do begin
+    if not fun.IsTerminal2 then continue;
+    //DebugLn('función terminal: %s con %d var.loc.', [fun.name, fun.nLocalVars]);
+    //Los parámetros y variables locales aparecen como elementos de la función
+    for elem in fun.elements do if elem.idClass = eleVarDec then begin  //Para todas sus variables.
+      xvar := TEleVarDec(elem);
+      if xvar.IsParameter or  //If function is used, we assume the all the parameters too.
+         (xvar.nCalled>0) then begin
+        //Asign RAM space to this variable in shared mode.
+        CreateVarInRAM(xvar, true);
+        if HayError then exit;
+      end;
+    end;
+    if OptReuProVar then SetSharedUnused;   //limpia las posiciones usadas
+  end;
+  if OptReuProVar then SetSharedUsed;  //Ahora marca como usados, porque ya se creó la zona de bytes compartidos
+  //Explora solo a las funciones que no son terminales
+  for fun in usedFuncs do begin
+    if fun.IsTerminal2 then continue;
+    //Los parámetros y variables locales aparecen como elementos de la función
+    for elem in fun.elements do if elem.idClass = eleVarDec then begin  //Para todas sus variables.
+      xvar := TEleVarDec(elem);
+      if xvar.IsParameter or  //If function is used, we assume the all the parameters too.
+         xvar.required or      //Variable is used as a register and it's used.
+         (xvar.nCalled>0) then begin
+        //Asign RAM space to this variable in Normal mode.
+        CreateVarInRAM(xvar, false);
+        if HayError then exit;
+      end;
+    end;
+  end;
+  //Reserva espacio para las variables (Que no son de funciones).
+  for xvar in TreeElems.AllVars do begin
+    if xvar.Parent.idClass = eleFunc then continue;  //Las variables de funciones ya se crearon
+    //if xvar.Parent.idClass = eleUnit then continue;
+//debugln('Verificando: ' + xvar.name);
+    if (xvar.nCalled>0) or xvar.required then begin
+      //Asigna una dirección válida para esta variable
+//debugln('  ubicando: ' + xvar.name);
+      CreateVarInRAM(xvar, false);
+      if HayError then exit;
+    end else begin
+      //Variable no usada
+      xvar.ResetAddress;
+      if xvar.Parent = TreeElems.main then begin
+        //Genera mensaje solo para variables del programa principal.
+        GenWarn(WA_UNUSED_VAR_, [xVar.name], xvar.srcDec);
+      end;
+    end;
+  end;
+end;
+procedure TGenCodBas.codRTS(isInterrupt: boolean);
+{Encodes a RTS or RTI instruction.}
+begin
+  if isInterrupt then _RTI else _RTS;
+end;
+procedure TGenCodBas.GenCodeExpr(eleExp: TEleExpress);
+{Generate code for a node expression. Some expression (like operation in constant) may
+not generate code. This is a recursive procedure.
+Nodes otConst, must be evaluated.}
+var
+  funcBase: TEleFunBase;
+  AddrUndef, regsUsed: boolean;
+  ele: TxpElement;
+  parExpr: TEleExpress;
+begin
+  if eleExp.opType = otExpres then begin
+    //It's an expression. There should be a function
+    funcBase := eleExp.rfun;
+    if funcBase.codInline<>nil then begin
+      //It's an INLINE function. It could be already implemented or not.
+      if funcBase.idClass = eleFunc then begin
+        //It's the implementation. No problem.
+        regsUsed := false;  //Set flag to indicate Registers are not used.
+        //Check first if it's needed to evaluate parameters.
+        for ele in eleExp.elements do begin
+          parExpr := TEleExpress(ele);
+          GenCodeExpr(parExpr);
+          //Check availability of registers
+          if parExpr.opType = otExpres then begin
+            //An Expression result use registers.
+            if regsUsed = false then begin
+              regsUsed := true;  //Set to used.
+            end else begin
+              //Register are already used.
+              GenError('Too complex expression.', parExpr.srcDec);
+              exit;
+            end;
+          end;
+        end;
+        funcBase.codInline(eleExp);   //Process function
+        //Check if we can simplify
+        if eleExp.opType = otConst then begin
+          //Node resulted as a constant. We convert it to a simple constant (Constant fold).
+          eleExp.evaluated := true;
+          eleExp.elements.Clear;  //Constants don't have childrens.
+          //eleExp.value := eleExp.cons.value;
+        end else if eleExp.opType = otVariab then begin
+          eleExp.elements.Clear;  //Variables don't have childrens.
+        end;
+      end else begin
+        //Should be the declaration. Maybe it's already implemented, or maybe not.
+        //funcDec := TxpEleFunDec(funcBase);
+        { TODO : Completar este caso. Por ahora no lo permitiremos. }
+        GenError('No supported unimplemented INLINE functions.');
+      end;
+    end else begin
+      //Should be a Normal subroutine. Generates the CALL instruction.
+      {Even though this is a Normal function, we can consider functCall() like the
+      INLINE routine callback to this function (like codInline), even more if we consider
+      that extra code can be added (parameters assignment) before the final JSR.}
+      functCall(eleExp, funcBase, AddrUndef);
+    end;
+  end else if eleExp.opType = otConst then begin
+    //A constant expression. We have to evaluate it, if not already evaluated.
+    if not eleExp.evaluated then begin
+      ////Not evaluated. Maybe it was pointing to an constant defined  by an expression.
+      //if (eleExp.cons<>nil) and (eleExp.cons.evaluated) then begin
+      //  //Copy value
+      //  eleExp.value := eleExp.cons.value;
+      //  eleExp.evaluated := true;
+      //end else begin
+        GenError('Constant not evaluated.', eleExp.srcDec);
+        exit;
+      //end;
+    end;
+  end else if eleExp.opType = otVariab then begin
+    //We don't need to generate code for this.
+(*
+    //A variable expression.
+    {Test first, because some variables (like generated by addr() function) are allocated
+    but don't set "rvar".}
+    if not eleExp.allocated then begin
+      if eleExp.rvar.allocated then begin
+        //Copy value
+        eleExp.SetVariab(eleExp.rvar);  //Copy storage and addres.
+      end else begin
+        {Como esta rutina se llama también en la optimización, antes de asignar
+        RAM a las variables, se generará este error.}  { TODO : ¿Se llama en optimización? VErificar porque ha habido cammbios.}
+        //GenError('Variable not evaluated.', eleExp.srcDec);
+        //exit;
+      end;
+    end;
+    *)
+  end else begin
+    GenError('Design error.');
+  end;
+end;
+procedure TGenCodBas.GenCodeSentences(sentList: TxpElements);
+{Generate code for a list of sentences.}
+var
+  eleSen, ele: TxpElement;
+  sen: TxpEleSentence;
+  expFun, expAsm: TEleExpress;
+  inst: TxpEleAsmLine;
+begin
+  for eleSen in sentList do begin
+    if eleSen.idClass <> eleSenten then begin
+      GenError('Sentence expected.');
+      exit;
+    end;
+    //Generates code to the sentence.
+    sen := TxpEleSentence(eleSen);
+    case sen.sntType of
+    sntExpres: begin  //Call to function or method (including assignment)
+      expFun := TEleExpress(sen.elements[0]);  //Takes root node.
+      GenCodeExpr(expFun);
+    end;
+    sntAsmBlock: begin
+      expAsm := TEleExpress(sen.elements[0]);  //Takes root node.
+      for ele in expAsm.elements do begin
+        inst := TxpEleAsmLine(ele);
+        if inst.inst>=0 then begin
+          pic.codAsm(TP6502Inst(inst.inst), TP6502AddMode(inst.addMode), inst.param);
+        end else begin
+
+        end;
+      end;
+    end
+    else
+      GenError('Unknown sentence.', sen.srcDec);
+      exit;
+    end;
+  end;
+end;
+procedure TGenCodBas.GenCodeBody(body: TEleBody);
+{Do code generation for the body element specified. }
+begin
+  TreeElems.OpenElement(body);
+  GenCodeSentences(TreeElems.curNode.elements);
+  //TreeElems.CloseElement;  //NO really needed.
+end;
+procedure TGenCodBas.ConstantFoldExpr(eleExp: TEleExpress);
+{Performs:
+- Constant evaluation, for constant nodes that can be evaluated.
+- Constant folding, for expression nodes, that returns constants.
+Note the similarity of this method with CodeEleExpress().}
+var
+  funcBase: TEleFunBase;
+  AllParsConstant, OneParIsZero: boolean;
+  ele: TxpElement;
+  parExpr: TEleExpress;
+begin
+  if eleExp.opType = otExpres then begin
+    //It's an expression. There should be a function
+    funcBase := eleExp.rfun;
+    if funcBase.codInline<>nil then begin
+      //Only INLINE functions can returns constants.
+      if funcBase.idClass = eleFunc then begin
+        //It's the implementation. No problem.
+        //Process all parameters to analyze and update flags.
+        AllParsConstant := true;
+        OneParIsZero := false;
+        for ele in eleExp.elements do begin
+          parExpr := TEleExpress(ele);
+          if parExpr.opType = otConst then begin
+            //Constant. Check if it's numeric and zero.
+            ConstantFoldExpr(parExpr);  //Try to evaluate constant.
+            if HayError then exit;;
+            if not parExpr.evaluated then begin
+              GenError('Constant is not evaluated.');
+              exit;
+            end;
+            if parExpr.ValueIsZero then OneParIsZero := true;
+          end else begin
+            //This parameter is not constant. Set flag.
+            ConstantFoldExpr(parExpr);  //In the case it's an expression, we delve.
+            if HayError then exit;
+            if parExpr.opType = otConst then begin
+              //Was reduced to a constant. OK.
+              if parExpr.ValueIsZero then OneParIsZero := true;
+            end else begin
+              //Any other thing
+              AllParsConstant:=false;
+            end;
+          end;
+        end;
+        {We know now if parameters of "funcBase" are constants or zero.}
+        if (funcBase.fConResCon and AllParsConstant) or (funcBase.fNulResNul and OneParIsZero) then begin
+          //We know this case will generate a constant.
+          funcBase.codInline(eleExp);  //We expect this won't generate code.
+          if eleExp.opType <> otConst then begin  //Just for verification
+            GenError('Implementation error.');
+            exit;
+          end;
+          eleExp.evaluated := true;  //codInline() has evaluated the constant.
+          eleExp.elements.Clear;  //Constants don't have children.
+        end;
+        ////Check if we can simplify
+        //if eleExp.opType = otConst then begin
+        //  //This is the expected result. We convert it to a simple constant.
+        //  eleExp.evaluated := true;
+        //  eleExp.elements.Clear;  //Constants don't have children.
+        //end else if eleExp.opType = otVariab then begin
+        //  //We don't expect this happens but could be. Don't ask me when happens.
+        //  eleExp.elements.Clear;  //Variables don't have children.
+        //end;
+      end else begin
+        //Should be the declaration. Maybe it's already implemented, or maybe not.
+        //funcDec := TxpEleFunDec(funcBase);
+        { TODO : Completar este caso. Por ahora no lo permitiremos. }
+        GenError('No supported unimplemented INLINE functions.');
+      end;
+    end;
+  end else if eleExp.opType = otConst then begin
+    if eleExp.evaluated then exit;  //No problem it's evaluated.
+    if eleExp.cons = nil then begin
+      //We cannot evaluate it.
+      GenError('Constant not evaluated.', eleExp.srcDec);
+      exit;
+    end else begin
+      //Could be evaluated using "cons"
+      if eleExp.cons.evaluated then begin
+        eleExp.value := eleExp.cons.value;
+        eleExp.evaluated := true;
+      end else begin
+        GenError('Constant not evaluated.', eleExp.srcDec);
+        exit;
+      end;
+    end;
+  end;
+end;
+procedure TGenCodBas.ConstantFoldBody(body: TEleBody);
+{Do constant folding simplification in all expression nodes. Note the similarity with
+GenCodeSentences(), for scanning the AST.
+Constant fold are done only if constant are in the same Node. It is:
+
+  <constant> + <constant> + <variable>
+
+Cases like:
+
+  <constant> + <variable> + <constant>
+
+Won't be folded because constant will be located in the AST in different nodes.
+}
+var
+  expFun: TEleExpress;
+  sen: TxpEleSentence;
+  eleSen: TxpElement;
+begin
+  //Process body
+  TreeElems.OpenElement(body);
+  for eleSen in TreeElems.curNode.elements do begin
+    if eleSen.idClass <> eleSenten then continue;
+    sen := TxpEleSentence(eleSen);
+    if sen.sntType = sntExpres then begin  //Call to function or method (including assignment)
+      expFun := TEleExpress(sen.elements[0]);  //Takes root node.
+      ConstantFoldExpr(expFun);
+    end;
+  end;
+  TreeElems.CloseElement;              //Close the Body.
+end;
 constructor TGenCodBas.Create;
+var
+  srcPosNull: TSrcPos;
 begin
   inherited Create;
   ID := 16;  //Identifica al compilador PIC16
   devicesPath := patDevices16;
-  OnReqStartCodeGen:=@GenCodPicReqStartCodeGen;
-  OnReqStopCodeGen:=@GenCodPicReqStopCodeGen;
   pic := TP6502.Create;
   picCore := pic;   //Referencia picCore
-  //Crea lista de variables temporales
-  varFields    := TxpEleVars.Create(true);
-
-  //Implement calls to Code Generator
-  callCurrRAM         := @CurrRAM;
-  callResetRAM        := @ResetRAM;
-  callCreateVarInRAM  := @CreateVarInRAM;
-  callSetSharedUnused := @SetSharedUnused;
-  callSetSharedUsed   := @SetSharedUsed;
-  callReturnAttribIn  := @ReturnAttribIn;
-  callDeviceError     := @DeviceError;
-  callClearDeviceError:= @ClearDeviceError;
-  callCompileProcBody := @CompileProcBody;
-  callFunctParam      := @FunctParam;
-  callFunctCall       := @FunctCall;
-  callStartCodeSub    := @StartCodeSub;
-  callEndCodeSub      := @EndCodeSub;
-
-  callCompileIF       := @CompileIF;;
-  callCompileWHILE    := @CompileWHILE;
-  callCompileREPEAT   := @CompileREPEAT;
-  callCompileFOR      := @CompileFOR;
-  callLoadToA         := @GenCodLoadToA;
-  callLoadToX         := @GenCodLoadToX;
-  callLoadToY         := @GenCodLoadToY;
+  //Prepare a node function, ready to make fast asignments with CodAsigmentToVar()
+  {This nodes are created here once and keeps available when an assignment to a variable
+  is needed to be coded, using CodAsigmentToVar(). In this way we avoid to create
+  nodes every time an assignment is needed.}
+  srcPosNull.idCtx := -1;   //Null position
+  _Op1 := CreateExpression('', typNull, otVariab, srcPosNull);
+  _eleMeth := CreateExpression('_set', typNull, otExpres, srcPosNull);
+  _eleMeth.elements := TxpElements.Create(false);  //Without control because we want to destroy "eleMeth" without destroy Op2
+  //Add elements (parameter) of the _set method. Note
+  _eleMeth.elements.Add(_Op1);  //Won't change
+  _eleMeth.elements.Add(nil);   //Will be set later
 end;
 destructor TGenCodBas.Destroy;
 begin
-  varFields.Destroy;
+  _Op1.Destroy;
+  _eleMeth.Destroy;
   pic.Destroy;
   inherited Destroy;
 end;
 
 end.
-
+//1873

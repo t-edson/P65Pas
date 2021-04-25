@@ -4,17 +4,21 @@ unit Compiler_PIC16;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, lclProc, SynEditHighlighter, MisUtils, XpresBas,
-  XpresElementsPIC, P6502utils, CPUCore, CompBase, ParserDirec,
-  GenCodBas_PIC16, GenCod_PIC16, ParserDirec_PIC16, Globales, FormConfig,
-  CompOperands {Por diseño, FormConfig, no debería accederse desde aquí};
+  Classes, SysUtils, lclProc,
+  MisUtils, P6502utils, CPUCore, CompBase, ParserDirec, GenCodBas_PIC16,
+  GenCod_PIC16, ParserDirec_PIC16, Globales, FormConfig,
+  XpresElemP65 {Por diseño, FormConfig, no debería accederse desde aquí};
 type
   { TCompiler_PIC16 }
   TCompiler_PIC16 = class(TParserDirec)
   private   //Funciones básicas
     procedure cInNewLine(lin: string);
   private //Compilación de secciones
-    procedure CompileLinkProgram;
+    procedure EvaluateConstantDeclare;
+    procedure ConstantFolding;
+    procedure ScanForRegsRequired;
+    procedure DoOptimize;
+    procedure DoGenerateCode;
   public
     OnAfterCompile: procedure of object;   //Al finalizar la compilación.
     procedure Compile(NombArc: string; Link: boolean); override;
@@ -43,7 +47,7 @@ var
 procedure SetLanguage;
 begin
   ParserDirec_PIC16.SetLanguage;
-  {$I ..\language\tra_Compiler.pas}
+  {$I ..\_language\tra_Compiler.pas}
 end;
 procedure TCompiler_PIC16.cInNewLine(lin: string);
 //Se pasa a una nueva _Línea en el contexto de entrada
@@ -52,36 +56,181 @@ begin
     pic.addTopComm('    ;'+trim(lin));  //agrega _Línea al código ensmblador
   end;
 end;
-procedure TCompiler_PIC16.CompileLinkProgram;
-{Genera el código compilado final. Usa la información del árbol de sintaxis, para
-ubicar a los diversos elementos que deben compilarse.
-Se debe llamar después de compilar con CompileProgram.
-Esto es lo más cercano a un enlazador, que hay en PicPas.}
+procedure TCompiler_PIC16.EvaluateConstantDeclare;
+{Calculates final values from constant declared in CONST sections of program and
+functions. Constants could be expressions:
+  const
+    C1 = 123;
+    C2 = C1 and $FF;
+}
 var
-  elem   : TxpElement;
-  bod    : TxpEleBody;
-  fun    : TxpEleFun;
-  iniMain, i: integer;
-  add, addr: Word;
+  cons: TEleConsDec;
+  consExpres: TEleExpress;
+begin
+  //Calculate values in CONST sections
+  for cons in TreeElems.AllCons do begin
+    {For optimziation we should evaluate only used Constant, but we evaluate alls
+    because constants like the field "length" of arrays, needs to be evaluated in order
+    to get the size defined, before assign RAM. }
+    //if cons.nCalled > 0 then begin  //Used constant.
+       TreeElems.OpenElement(cons);  //To resolve properly identifiers
+       if not cons.evaluated then begin
+         //If it isn't evaluated, must be an expression.
+         consExpres := TEleExpress(cons.elements[0]);  //Takes the expression node.
+         //Should be an expression. Need to be calculated.
+         ConstantFoldExpr(consExpres);
+         if HayError then exit;
+         if consExpres.opType<>otConst then begin
+           //The expression returned a not-constant value.
+           GenError('Expected constant expression.', consExpres.srcDec);
+           exit;
+         end;
+         if not consExpres.evaluated then begin
+           GenError('Constant not evaluated.', consExpres.srcDec);
+           exit;
+         end;
+         //Copy the value.
+         cons.value := consExpres.value;
+         cons.evaluated := true;
+       end;
+    //end;
+  end;
+end;
+procedure TCompiler_PIC16.ConstantFolding;
+{Do a fold constant optimization and evaluate constant expresion. }
+var
+  fun : TEleFun;
+  bod: TEleBody;
+begin
+  //Code subroutines
+  for fun in usedFuncs do begin
+    ConstantFoldBody(fun.BodyNode);
+    if HayError then exit;   //Puede haber error
+  end;
+  //Code body
+  bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
+  ConstantFoldBody(bod);
+end;
+procedure TCompiler_PIC16.ScanForRegsRequired;
+{Do an exploration to the AST, callin to the code generation (without generates
+code) in order to:
+- Detect Registers and Temporal variables required to evaluate expressions.
+}
+var
+  fun : TEleFun;
+  bod: TEleBody;
+begin
+  //Set flags to enable routines requireA(), requireH(), ...
+  ModeRequire := true;  //Mode to only detect required register or variables uses.
+  pic.disableCodegen := true;  //Disable the code generation
+  pic.iRam := 0;  //Clear RAM position
+  //Code subroutines
+  for fun in usedFuncs do begin
+    if fun.IsInterrupt then continue;
+    GenCodeBody(fun.BodyNode);
+    if HayError then exit;   //Puede haber error
+  end;
+  //Code body
+  bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
+  GenCodeBody(bod);
+  //if HayError then exit;   //Puede haber error
+end;
+procedure TCompiler_PIC16.DoOptimize;
+{Usa la información del árbol de sintaxis, para optimizar su estructura con
+miras a la síntesis.
+Se debe llamar después de llamar a DoAnalyzeProgram().}
 begin
   ExprLevel := 0;
-  ResetRAM;
+  ResetRAM;    //2ms aprox.
   ClearError;
   pic.MsjError := '';
-  //Verifica las constantes usadas. Solo en el nodo principal, para no sobrecargar mensajes.
-  for elem in TreeElems.main.elements do if elem.idClass = eltCons then begin
-    if elem.nCalled = 0 then begin
-      GenWarnPos(WA_UNUSED_CON_, [elem.name], elem.srcDec);
+  {Realiza una exploración al AST para detectar funciones no usadas, y así marcar
+  todos sus elementos (constantes, variables, tipos) como no-usados, quitando las
+  referencias (callers). }
+  RefreshAllElementLists;  //Actualiza lista de elementos
+//  EndCountElapsed('-- Optimized in: ');
+  RemoveUnusedFunc;   //Se debe empezar con las funciones. 1ms aprox.
+  RemoveUnusedVars;   //Luego las variables. 1ms aprox.
+  RemoveUnusedCons;   //1ms aprox.
+  RemoveUnusedTypes;  //1ms aprox.
+  UpdateFunLstCalled; //Actualiza lista "lstCalled" de las funciones usadas
+  if HayError then exit;
+  SeparateUsedFunctions;
+  EvaluateConstantDeclare;
+  if HayError then exit;
+  ConstantFolding;
+  if HayError then exit;
+  //{Realiza una primera creación de variables para que la síntesis posterior se haga de
+  //la forma más parecida a como se haría. }
+  //CreateVarsAndPars;
+  {Realiza la simplificación del AST, realizando una primera compilación.}
+ ScanForRegsRequired;
+end;
+procedure TCompiler_PIC16.DoGenerateCode;
+{Generates the final binary code using information from the AST as input.
+Must be called after DoOptimize().}
+  procedure GenCodeMainBody(body: TEleBody);
+  {Generates code for a Main Body element.}
+  begin
+    //It's the main program
+    PutLabel('__main_program__');
+    //Process body
+    TreeElems.OpenElement(body); //Locate in the Body. Formally this won't be necessary if we are not going to solve identifiers.
+    GenCodeSentences(TreeElems.curNode.elements);
+    TreeElems.CloseElement;              //Close the Body.
+    //Ending label
+    PutLabel('__end_program__');
+    //{ TODO : Considerar incluir este código de verificación. }
+    //  if pic.MsjError<>'' then begin //Puede ser error al escribir la última instrucción
+    //    GenError(pic.MsjError);
+    //    exit;
+    //  end;
+  end;
+  procedure GenCodeFunction(body: TEleBody);
+  {Generates code for a function element.}
+  var
+    isInt: boolean;
+    funcPar: TEleFunBase;
+  begin
+    PutLabel('__' + body.Parent.name);
+    funcPar := TEleFunBase(body.Parent);  //Parent function
+    isInt := funcPar.IsInterrupt;  //Update flag
+    //Process body
+    TreeElems.OpenElement(body); //Locate in the Body.
+    GenCodeSentences(TreeElems.curNode.elements);
+    TreeElems.CloseElement;              //Close the Body.
+    //Includes the final RTS
+    if OptRetProc then begin  //Optimize
+      //Verifica es que ya se ha incluido exit().
+      if funcPar.ObligatoryExit<>nil then begin
+        //Ya tiene un exit() obligatorio y en el final (al menos eso se espera)
+        //No es necesario incluir el RTS().
+      end else begin
+        //No hay un exit(), seguro
+        codRTS(isInt);  //RTS instruction
+      end;
+    end else begin  //Always include
+      codRTS(isInt);  //RTS instruction
     end;
   end;
-  //Explora las funciones, para identifcar a las no usadas
-  RefreshAllElementLists;
-  RemoveUnusedFunc;  //Se debe empezar con las funciones
-  RemoveUnusedVars;  //Luego las variables
-  RemoveUnusedCons;
-  RemoveUnusedTypes;
+var
+  add, addr: word;
+  fun    : TEleFun;
+  i      : Integer;
+  bod    : TEleBody;
+  iniMain: integer;
+  elem   : TxpElement;
+begin
+  //Verifica las constantes usadas. Solo en el nodo principal, para no sobrecargar mensajes.
+  for elem in TreeElems.main.elements do if elem.idClass = eleConsDec then begin
+    if elem.nCalled = 0 then begin
+      GenWarn(WA_UNUSED_CON_, [elem.name], elem.srcDec);
+    end;
+  end;
   //Inicio de generación de código.
-  pic.iRam := GeneralORG;  //inicia puntero a RAM
+  pic.iRam := GeneralORG;  //Inicia puntero a RAM
+  ModeRequire := false;  //Generates code.
+  pic.disableCodegen := false;  //Enable the code generation
   if Commodore64 then begin
     //En modo Commodore 64
     if pic.iRam = $801 then begin
@@ -103,12 +252,9 @@ begin
     end;
   end;
   _JMP_post(iniMain);   //Salto hasta después del espacio de variables
-  UpdateFunLstCalled;   //Actualiza lista "lstCalled" de las funciones usadas
-  if HayError then exit;
-  SeparateUsedFunctions;
+  //Asigna memoria a registros
   //Asigna memoria para las variables, buscando memoria libre a partir de "GeneralORG".
-  CreateLocalVarsAndPars;  //Primero a las variables locales (y parámetros) de las funciones
-  CreateGlobalVars;        //Luego para variables globales (Que no son de funciones).
+  CreateVarsAndPars;  //Primero a las variables locales (y parámetros) de las funciones
   //Find the next free RAM location, to write functions.
   pic.freeStart := GeneralORG;  //Start of program block
   pic.dataAddr1   := -1; {Disable. It has been already used for allocatig variables, but
@@ -117,25 +263,26 @@ begin
   pic.iRam := addr;
   //Codifica la función INTERRUPT, si existe
   if interruptFunct<>nil then begin;
-    fun := interruptFunct;
-    //Compila la función en la dirección 0x04
-    pic.iRam := $04;
-    fun.adrr := pic.iRam;    //Actualiza la dirección final
-    fun.typ.DefineRegister;    //Asegura que se dispondrá de los RT necesarios
-    cIn.PosAct := fun.posCtx;  //Posiciona escáner
-    PutLabel('__'+fun.name);
-    TreeElems.OpenElement(fun.BodyNode); //Ubica el espacio de nombres, de forma similar a la pre-compilación
-    callCompileProcBody(fun);
-    TreeElems.CloseElement;  //cierra el body
-    TreeElems.CloseElement;  //cierra la función
-    if HayError then exit;     //Puede haber error
+    { TODO : Revisar }
+    //fun := interruptFunct;
+    ////Compila la función en la dirección 0x04
+    //pic.iRam := $04;
+    //fun.adrr := pic.iRam;    //Actualiza la dirección final
+    //fun.retType.DefineRegister;    //Asegura que se dispondrá de los WR necesarios
+    //SetCtxState(fun.posCtx);  //Posiciona escáner
+    //PutLabel('__'+fun.name);
+    //TreeElems.OpenElement(fun.BodyNode); //Ubica el espacio de nombres, de forma similar a la pre-compilación
+    //CompileSentence;
+    //TreeElems.CloseElement;  //cierra el body
+    //TreeElems.CloseElement;  //cierra la función
+    //if HayError then exit;     //Puede haber error
   end;
   //Codifica las subrutinas usadas
   for fun in usedFuncs do begin
     if fun.IsInterrupt then continue;
 //debugln('---Función usada: ' + fun.name);
     {According the method we use to add callers (See TCompilerBase.AddCallerTo() ),
-    condition "fun.nCalled>0" ensure we have here the first ocurrence of a function. So
+    condition "fun.nCalled>0" ensures we have here the first ocurrence of a function. So
     it can be:
       - A common function/procedure in the main program.
       - A INTERFACE function.
@@ -143,28 +290,13 @@ begin
     }
     //Compile used function in the current address.
     fun.adrr := pic.iRam;     //Actualiza la dirección final
-    fun.typ.DefineRegister;   //Asegura que se dispondrá de los RT necesarios
-    PutLabel('__'+fun.name);
-    cIn.PosAct := fun.posCtx; //Posiciona escáner
-    if fun.compile<>nil then begin
-      //Is system function. Has not body.
-      fun.compile(fun);   //codifica
-    end else begin
-      //Is a common function with body.
-      TreeElems.OpenElement(fun.BodyNode); //Ubica el espacio de nombres, de forma similar a la pre-compilación
-      callCompileProcBody(fun);
-      if HayError then exit;     //Puede haber error
-      if pic.MsjError<>'' then begin //Error en el mismo PIC
-          GenError(pic.MsjError);
-          exit;
-      end;
-      TreeElems.CloseElement;  //cierra el body
-      TreeElems.CloseElement;  //cierra la función
-    end;
-    fun.linked := true;      //Marca como ya enlazada
+    //Is a common function with body.
+    GenCodeFunction(fun.BodyNode);
+    if HayError then exit;   //Puede haber error
+    fun.coded := true;       //Marca como ya codficada en memoria.
     //Verifica si hace falta completar llamadas
     if fun.nAddresPend>0 then begin
-        //Hay llamadas pendientes qie completar a esta función
+        //Hay llamadas pendientes que completar a esta función
         for i:=0 to fun.nAddresPend -1 do begin
           debugln('Completando lllamadas pendientes a %s en %d', [fun.name, fun.addrsPend[i]]);
           //Completa la instrucción JSR $0000
@@ -178,7 +310,7 @@ begin
     //Esta función no se usa.
     if fun.Parent = TreeElems.main then begin
       //Genera mensaje solo para funciones del programa principal.
-      GenWarnPos(WA_UNUSED_PRO_, [fun.name], fun.srcDec);
+      GenWarn(WA_UNUSED_PRO_, [fun.name], fun.srcDec);
     end;
   end;
   //Compila cuerpo del programa principal
@@ -189,19 +321,11 @@ begin
     exit;
   end;
   bod.adrr := pic.iRam;  //guarda la dirección de codificación
-//  bod.nCalled := 1;        //actualiza
-  cIn.PosAct := bod.posCtx;   //ubica escaner
-  PutLabel('__main_program__');
-  TreeElems.OpenElement(bod);
-  CompileCurBlock;
-  TreeElems.CloseElement;   //cierra el cuerpo principal
-  PutLabel('__end_program__');
+//  bod.nCalled := 1;    //Actualiza
+  GenCodeMainBody(bod);
+  //if HayError then exit;     //Puede haber error
   {No es necesario hacer más validaciones, porque ya se hicieron en la primera pasada}
   //_RTS();   //agrega instrucción final
-  if pic.MsjError<>'' then begin //Puede ser error al escribir la última instrucción
-    GenError(pic.MsjError);
-    exit;
-  end;
 end;
 procedure TCompiler_PIC16.Compile(NombArc: string; Link: boolean);
 //Compila el contenido de un archivo.
@@ -223,7 +347,7 @@ begin
     ejecProg := true;  //marca bandera
     ClearError;
     //Genera instrucciones de inicio
-    cIn.ClearAll;       //elimina todos los Contextos de entrada
+    ClearContexts;       //elimina todos los Contextos de entrada
     //Compila el texto indicado
     if not OpenContextFrom(NombArc) then begin
       //No lo encuentra
@@ -236,51 +360,48 @@ begin
     TreeElems.main.name := ExtractFileName(mainFile);
     p := pos('.',TreeElems.main.name);
     if p <> 0 then TreeElems.main.name := copy(TreeElems.main.name, 1, p-1);
-    TreeElems.main.srcDec.fil := mainFile;
+//    TreeElems.main.srcDec.fil := mainFile;
+    TreeElems.main.srcDec := GetSrcPos;
     //Continúa con preparación
     TreeDirec.Clear;
-    TreeElems.OnAddElement := @Tree_AddElement;   //Se va a modificar el árbol
-    FirstPass := true;
-    CreateSystemElements;  //Crea los elementos del sistema
+    StartCountElapsed;  //Start timer
+    CreateSystemElements;  //Crea los elementos del sistema. 3ms aprox.
     ClearMacros;           //Limpia las macros
     //Inicia PIC
     ExprLevel := 0;  //inicia
-    ResetRAM;  //Inicia la memoria RAM
     pic.dataAddr1   := -1;  {Reset flag}
     //Compila el archivo actual como programa o como unidad
     if IsUnit then begin
       CompiledUnit := true;
-      //Hay que compilar una unidad
-      consoleTickStart;
-      debugln('*** Compiling unit: Pass 1.');
-      CompileUnit(TreeElems.main);
+      DoAnalyzeUnit(TreeElems.main);
+      if HayError then exit;
       UpdateCallersToUnits;
-      consoleTickCount('** First Pass.');
+      EndCountElapsed('** Unit analyzed in: ');
     end else begin
       //Debe ser un programa
       CompiledUnit := false;
-      {Se hace una primera pasada para ver, a modo de exploración, para ver qué
-      procedimientos, y variables son realmente usados, de modo que solo estos, serán
-      codificados en la segunda pasada. Así evitamos incluir, código innecesario.}
-      consoleTickStart;
-      debugln('*** Compiling program: Pass 2.');
-      pic.iRam := 0;     //dirección de inicio del código principal
-      CompileProgram;  //puede dar error
+      DoAnalyzeProgram;    //puede dar error
       if HayError then exit;
       UpdateCallersToUnits;
-      consoleTickCount('** First Pass.');
+      EndCountElapsed('** Program analyzed in: ');
       if Link then begin  //El enlazado solo es válido para programas
-        {Compila solo los procedimientos usados, leyendo la información del árbol de sintaxis,
-        que debe haber sido actualizado en la primera pasada.}
-        FirstPass := false;
-        CompileLinkProgram;
-        consoleTickCount('** Second Pass.');
+//        {Compila solo los procedimientos usados, leyendo la información del árbol de sintaxis,
+//        que debe haber sido actualizado en la primera pasada.}
+        StartCountElapsed;
+        DoOptimize;
+        if HayError then exit;
+        EndCountElapsed('-- Optimized in: ');
+        StartCountElapsed;
+        DoGenerateCode;
+        EndCountElapsed('-- Synthetized in: ');
+        StartCountElapsed;
         //Genera archivo hexa, en la misma ruta del programa
         pic.GenHex(hexFile, GeneralORG);
+        EndCountElapsed('-- Output generated in: ');
       end;
     end;
     {-------------------------------------------------}
-    cIn.ClearAll;//es necesario por dejar limpio
+    //ClearAll;//es necesario por dejar limpio
   finally
     ejecProg := false;
     //Tareas de finalización
@@ -295,10 +416,11 @@ end;
 procedure TCompiler_PIC16.RAMusage(lins: TStrings; ExcUnused: boolean);
 {Devuelve una cadena con información sobre el uso de la memoria.}
 var
-  v: TxpEleVar;
+  v: TEleVarDec;
   subUsed: string;
 begin
   for v in TreeElems.AllVars do begin   //Se supone que "AllVars" ya se actualizó.
+      //debugln('AllVars['+IntToStr(i)+']='+v.name+','+v.Parent.name);
       if ExcUnused and (v.nCalled = 0) then continue;
       if v.nCalled = 0 then subUsed := '; <Unused>' else subUsed := '';
       if v.typ.IsByteSize then begin
@@ -383,7 +505,7 @@ var
   tmpList: TStringList;
   txt, OpCode, Times, state: String;
 
-  fun: TxpEleFun;
+  fun: TEleFun;
   caller : TxpEleCaller;
   called : TxpElement;
   exitCall: TxpExitCall;
@@ -443,7 +565,7 @@ begin
 
       lins.Add( copy(fun.name + space(24) , 1, 24) + ' ' +
                 state + ' ' +
-                fun.srcDec.RowColString + ':' + fun.srcDec.fil
+                fun.srcDec.RowColString + ':' + ctxFile(fun.srcDec.idCtx)
       );
     end;
   end;
@@ -522,9 +644,8 @@ end;
 constructor TCompiler_PIC16.Create;
 begin
   inherited Create;
-  cIn.OnNewLine:=@cInNewLine;
+  OnNewLine:=@cInNewLine;
   mode := modPicPas;   //Por defecto en sintaxis nueva
-  StartSyntax;   //Debe hacerse solo una vez al inicio
 end;
 destructor TCompiler_PIC16.Destroy;
 begin

@@ -7,10 +7,10 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, lazcontrols, FormPrincipal, FrameSyntaxTree, XpresElementsPIC,
-  Globales, FormConfig, PicPasProject, FrameEditView, FrameMessagesWin,
-  FormElemProperty, ParserAsm_PIC16, FrameCfgExtTool, FormDebugger,
-  FormRAMExplorer, ParserDirec, CompMain;
+  Forms, etpackage, lazcontrols, FormPrincipal, FrameSyntaxTree, Globales,
+  FormConfig, PicPasProject, FrameEditView, FrameMessagesWin, FormElemProperty,
+  FrameCfgExtTool, FormDebugger, FormRAMExplorer, ParserDirec, CompMain, LexPas,
+  CompContexts, ParserASM_6502, XpresElemP65;
 
 {$R *.res}
 

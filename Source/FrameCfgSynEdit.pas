@@ -84,7 +84,7 @@ implementation
 procedure TfraCfgSynEdit.SetLanguage;
 //Rutina de traducción
 begin
-   {$I ..\language\tra_CfgSynEdit.pas}
+   {$I ..\_language\tra_CfgSynEdit.pas}
 end;
 procedure TfraCfgSynEdit.Iniciar(section: string; cfgFile: TMiConfigXML);
 var

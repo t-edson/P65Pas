@@ -5,12 +5,12 @@ unit ParserDirec_PIC16;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, ParserDirec, ParserAsm_PIC16;
+  Classes, SysUtils, ParserDirec, GenCod_PIC16;
 
 type
 
   { TParserDirec }
-  TParserDirec = class(TParserAsm)
+  TParserDirec = class(TGenCod)
   private
     procedure ProcCOMMODORE64;
   public
@@ -23,7 +23,8 @@ type
 implementation
 procedure SetLanguage;
 begin
-  ParserAsm_PIC16.SetLanguage;
+  //ParserAsm_PIC16.SetLanguage;
+  GenCod_PIC16.SetLanguage;
 end;
 
 procedure TParserDirec.ProcCOMMODORE64;

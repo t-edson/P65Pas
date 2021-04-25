@@ -183,7 +183,7 @@ var
 implementation
 {$R *.lfm}
 { TConfig }
-  {$I ..\language\tra_FormConfig.pas}
+  {$I ..\_language\tra_FormConfig.pas}
 procedure TConfig.FormCreate(Sender: TObject);
 begin
   fraCfgSynEdit := TfraCfgSynEdit.Create(self);

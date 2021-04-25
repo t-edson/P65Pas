@@ -3,7 +3,7 @@ unit FramePicRegisters;
 interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, StdCtrls, LCLProc,
-  LCLIntf, LCLType, Grids, ExtCtrls, CompBase,
+  LCLIntf, LCLType, Grids, ExtCtrls, CompBase, CompMain,
   CPUCore, P6502utils;
 type
 
@@ -28,7 +28,7 @@ type
     STATptr: ^byte;
     procedure ShowRegister(reg: byte; gri: TStringGrid);
   public
-    procedure SetCompiler(cxp0: TCompilerBase);
+    procedure SetCompiler(cxp0: TCompMain);
     procedure Refrescar;
     //procedure SetRegisters();
     constructor Create(AOwner: TComponent) ; override;
@@ -54,7 +54,7 @@ begin
   if (reg and %10000000)<>0 then gri.Cells[2, 1] := '1' else gri.Cells[2, 1] := '0';
   gri.EndUpdate;
 end;
-procedure TfraPicRegisters.SetCompiler(cxp0: TCompilerBase);
+procedure TfraPicRegisters.SetCompiler(cxp0: TCompMain);
 {Fija el compilador actual.}
 var
   pic : TCPUCore;
