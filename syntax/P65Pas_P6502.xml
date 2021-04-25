@@ -192,7 +192,7 @@ TAX TAY TSX TXA TXS TYA
     </token>
     <!--tipos de datos--> 
     <token attribute="Types"> 
-	bit byte word boolean char dword
+	byte word boolean char dword
     </token>
   </Identifiers>
   
