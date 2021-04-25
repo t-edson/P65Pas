@@ -1,0 +1,290 @@
+<?xml version="1.0"?>
+<Language name="SQL Oracle" ext="sql" ColorBlock="Block">
+  <Completion>
+    <Include Attribute="Keyword"></Include>
+	<List Name="plantillas"> 
+"ALTER SESSION SET "
+"BEGIN&#xD;END;"
+"COMMIT;"
+"CREATE OR REPLACE "
+"CREATE TABLE nombre(&#xD;
+  campo1 tipo1,&#xD;  campo2 tipo2);"
+"CREATE INDEX "
+"CREATE UNIQUE INDEX nombre ON tabla(campos)"
+"CREATE SEQUENCE "
+"CREATE SEQUENCE nombre MINVALUE valor START WITH valor INCREMENT BY valor;"
+"CREATE SYNONYM "
+"CREATE VIEW "
+"CURSOR nombre IS consulta;"
+"dbms_output.enable("
+"dbms_output.put_line("
+"DECLARE &#xD;  variables&#xD;BEGIN cuerpo END;"
+"DELETE FROM"
+"DELETE FROM nombre WHERE condición;"
+"DROP INDEX "
+"DROP TABLE "
+"END IF;"
+"END;"
+"EXCEPTION&#xD;WHEN OTHERS THEN NULL;"
+"EXECUTE INMEDIATE "
+"FOR i IN 1..n LOOP&#xD;END LOOP;"
+"FOR i IN nombre_de_cursor LOOP&#xD;END LOOP;"
+"FOREIGN KEY"
+"FORMAT "
+"FORMAT A9"
+"FORMAT 99.99"
+"FUNCTION nombre(parámetros) RETURN tipo IS&#xD;BEGIN&#xD;END;"
+"GROUP BY "
+"IF THEN ELSE END IF;"
+"IF THEN ELSIF END IF;"
+"IF NOT "
+"INCREMENT BY "
+"INDEX "
+"INSERT "
+"INSERT INTO tabla VALUES(valores_separados_por_comas);"
+"LOCK TABLE tabla IN EXCLUSIVE MODE;"
+"ORDER BY "
+"PROCEDURE nombre(parámetros) IS&#xD;BEGIN&#xD;END;"
+"PROMPT mensaje"
+"RENAME nombre TO nuevo_nombre;"
+"ROLLBACK;"
+"SELECT * FROM "
+"SELECT count( *) FROM "
+"SELECT table_name FROM tabs WHERE table_name LIKE '%%';"
+"SELECT campos FROM tabla &#xD; WHERE condición ORDER BY campos;"
+"SET LINESIZE 1000"
+"SET PAGESIZE 5000"
+"SPOOL OFF"
+"SPOOL c:\aaa.txt"
+"TRUNCATE TABLE"
+"UNION ALL"
+"UPDATE tabla SET campo=valor, ... WHERE condicion;"
+"WHILE condicion LOOP&#xD;END LOOP;"
+	</List>
+    <List Name="presql">
+"PRIMERO "
+"EN "
+"fecha "
+"FINCONSULTAR"
+"FINDEFINIR"
+"FINPARA"
+"HACER "
+
+"$COLUMNAS()"
+"$COLUMNAS(""tabla"")"
+"$CONSULTAR "
+"$CONSULTAR FINCONSULTAR"
+"$DEFINIR "
+"$DEFINIR nombre COMO cuerpo FINDEFINIR"
+"$DEFINIR nombre = valor"
+"$DIR_ACTUAL"
+"$DIR_ACTUAL()"
+"$EXPR("
+"$EXPR(1+1)"
+"$FECHA_ACTUAL("
+"$FECHA_ACTUAL(0,""dd/mm/yyyy"")"
+"$FECHA_ACTUAL(-1,""yyyy/mm/dd"")"
+"$FORMATO("
+"$FORMATO(fecha ,""ddd dd/mm/yyyy"")"
+"$FORMATO(5,""0000"")"
+"$HORAS"
+"$INCLUIR "
+"$INCLUIR D:\aaa.txt"
+"$INDICES()"
+"$INDICES(""tabla"")"
+"$INFOTABLA()"
+"$INFOTABLA(""tabla"")"
+"$INFOVISTA()"
+"$INFOVISTA(""vista"")"
+"$LEE_CADENA()"
+"$LEE_FECHA()"
+"$LEE_NUMERO()"
+"$MESES"
+"$NOM_ACTUAL"
+"$NOM_ACTUAL()"
+"$PARA "
+"$PARA EN HACER FINPARA"
+"$PARA x EN 1 2 3 HACER&#xD;FINPARA"
+"$PSQL_REINIC"
+"$REDEF "
+"$REDEF nombre COMO cuerpo FINDEFINIR"
+"%ROWTYPE"
+"%TYPE"
+	</List>
+    <List Name="Alter">
+"SESSION SET"
+"TABLE "
+"TABLE tabla ADD columna tipo;"
+"TABLE tabla MODIFY columna tipo;"
+"TABLE tabla DROP columna;"
+"INDEX "
+"INDEX índice REBUILD;"
+"INDEX índice RENAME TO índice;"
+"INDEX índice STORAGE (PCTINCREASE 50);"
+"INDEX VISIBLE;"
+	</List>
+    <List Name="From">
+    DUAL
+    USER_TABLES
+    USER_VIEWS
+    ALL_TABLES
+    ALL_VIEWS
+	</List>
+    <List Name="Set">
+    APPINFO
+    ARRAYSIZE
+    AUTOCOMMIT
+    AUTOPRINT
+    AUTORECOVERY
+    AUTOTRACE
+    BLOCKTERMINATOR
+    BTITLE
+    CMDSEP
+    COLSEP
+    COMPATIBILITY
+    CONCAT
+    COPYCOMMIT
+    COPYTYPECHECK
+    DEFINE
+    DESCRIBE
+    MARKUP
+    ECHO
+    EDITFILE
+    EMBEDDED
+    ESCAPE
+    FEEDBACK
+    FLAGGER
+    FLUSH
+    HEADING
+    HEADSEP
+    INSTANCE
+    LINESIZE
+    "LINESIZE 500"
+    LNO
+    LOBOFFSET
+    LOGSOURCE
+    LONG
+    LONGCHUNKSIZE
+    NEWPAGE
+    NLS_DATE_FORMAT
+    "NLS_DATE_FORMAT = 'DD/MM/YYYY';"
+    "NLS_DATE_FORMAT = 'YYYY/MM/DD';"
+    "NLS_DATE_FORMAT = 'YYYY/MM/DD HH24:MI:SS';"
+    NULL
+    NUMFORMAT
+    NUMWIDTH
+    PAGESIZE
+    "PAGESIZE 5000"
+    PAUSE
+    PNO
+    RECSEP
+    RECSEPCHAR
+    RELEASE
+    REPFOOTER
+    REPHEADER
+    SERVEROUTPUT
+    SHIFTINOUT
+    SHOWMODE
+    SPOOL
+    SQLBLANKLINES
+    SQLCASE
+    SQLCODE
+    SQLCONTINUE
+    SQLNUMBER
+    SQLPREFIX
+    SQLPROMPT
+    SQLTERMINATOR
+    SUFFIX
+    TAB
+    TERMOUT
+    TIME
+    TIMING
+    TRIMOUT
+    TRIMSPOOL
+    TTITLE
+    UNDERLINE
+    USER
+    VERIFY
+    WRAP
+	</List>
+    <OpenOn AfterPattern="'Alter',space" FilterBy="None" Action="Insert">
+	  <Include list="Alter"/>
+	</OpenOn>
+    <OpenOn AfterPattern="'Alter',space,identifier">
+	  <Include list="Alter"/>
+	</OpenOn>
+	<OpenOn AfterPattern="'from',space" FilterBy="None" Action="Insert">
+	  <Include list="From"/>
+	</OpenOn>
+	<OpenOn AfterPattern="'from',space,identifier">
+	  <Include list="From"/>
+	</OpenOn>
+	<OpenOn AfterPattern="'Set',space" FilterBy="None" Action="Insert">
+	  <Include list="Set"/>
+	</OpenOn>
+  </Completion>
+
+  <Attribute Name="Keyword" Bold="true"></Attribute>
+  <Attribute Name="presql" ForeCol="Red"></Attribute>
+  <Identifiers CharsStart= "A..Za..z_$" Content = "A..Za..z0..9_$"> 
+    <Keyword> 
+  ACCESS ADD ALL ALTER AND ANY AS ASC AUDIT BEGIN BETWEEN BY 
+CHAR CHECK CLUSTERS CLUSTER COLAUTH COLUMN CRASH COMMENT COMPRESS CONNECT CREATE CURRENT CURSOR
+DATABASE DATE DECIMAL DECLARE DEFAULT DEFINE DELETE DESC DESCRIBE DISCONNECT DISTINCT DROP 
+ELSE ELSIF END EXCEPTION EXCLUSIVE EXECUTE EXIT EXISTS 
+FILE FLOAT FOR FROM FUNCTION GLOBAL GOTO GRANT GROUP HAVING IDENTIFIED 
+IF IMMEDIATE IN INCREMENT INDEXES INDEX INITIAL INSERT INTEGER INTERSECT INTO IS 
+LEVEL LIKE LOCK LONG LOOP MAXEXTENTS MINUS MLSLABEL MODE MODIFY NOAUDIT NOCOMPRESS NOT NOWAIT NULL NUMBER 
+OF OFFLINE ON OR ONLINE OPTION OFF ORDER OVERLAPS PCTFREE PRIOR PROCEDURE PROMPT PRIVILEGES PUBLIC 
+RANGE RAW RECORD RENAME RESOURCE REVOKE ROW ROWID ROWNUM ROWS 
+SELECT SESSION SET SYSDATE SPOOL SHARE SIZE SMALLINT SQL START SUBTYPE SUCCESSFUL SYNONYM 
+TABAUTH TABLE THEN TO TRIGGER TYPE UID UNION UNIQUE UPDATE USE USER 
+VALIDATE VALUES VARCHAR VARCHAR2 VIEW VIEWS WHEN WHENEVER WHERE WITH 
+    </Keyword>
+	<presql>
+	  $DEFINIR
+	  $REDEF
+	  $INCLUIR
+	  $PARA
+	  $CONSULTAR
+	  CON
+	  COMO
+	  EN
+	  FINPARA
+	  FINDEFINIR
+	  HACER
+$dir_actual
+$nom_actual
+$fecha_actual
+$formato
+$intervalo_semana
+$psql_reinic
+$expr
+$horas
+$meses
+$infotabla
+$infovista
+	</presql>
+  </Identifiers>
+  <Token CharsStart="0..9" Content = '0..9' Attribute="NUMBER"> </Token>
+  <String Start="'" End="'"></String>
+  <String Start="&quot;" End="&quot;"></String>
+  <Comment Start="--" ></Comment>
+  <Comment Start="/*" End="*/" Multiline="true" Folding="True"></Comment>
+
+  <Block Start="$PARA" End="FINPARA" Folding="True" Parent="Main" Name="blq_PARA"></Block>
+  <Block Start="COMO" End="FINDEFINIR"></Block>
+  
+  <Block Start="SELECT" End=";" BackCol="#F2F5A9" Folding="False" Name="blo_SELECT">
+    <End TokPos="1">/</End>
+	<Section Start="SELECT" FirstSec="True" BackCol="#CEF6CE" Name="sec_SELECT"> </Section>
+	<Section Start="FROM" BackCol="#F2F5A9" Name="sec_FROM"> </Section>
+  </Block>
+  <Block Start="BEGIN" End="END" Folding="True"></Block>
+  <Block Start="THEN" End="END" Folding="True"></Block>
+  <Block Start="FOR" End="END" Folding="True"></Block>
+  <Block Start="INSERT" End=";" BackCol="#F6D5D5" Name="blo_INSERT"></Block>
+  <Block Start="UPDATE" End=";" BackCol="#F6D5D5" Name="blo_UPDATE"></Block>
+  <Block Start="DELETE" End=";" BackCol="#F6D5D5" Name="blo_DELETE"></Block>
+
+</Language>

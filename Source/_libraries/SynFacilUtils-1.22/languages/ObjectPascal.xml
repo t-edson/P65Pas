@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<Language name="Object Pascal" ext="pas" ColorBlock="Block">
+  <Completion>
+  "begin&#xD;  &#xD;end;"
+  "if expresion then begin&#xD;  &#xD;end;"
+  "if expresion then begin&#xD;  &#xD;end else begin&#xD;end;"
+  "while expresion do begin&#xD;  &#xD;end;"
+    <Include Attribute="Keyword"></Include>
+  </Completion>
+  <Attribute Name="Keyword" Style="b"> </Attribute>
+  <Identifiers CharsStart= "A..Za..z_" Content = "A..Za..z0..9_"> 
+    <token attribute="Keyword"> 
+    absolute  and  array  asm as 
+    begin 
+    case  const  constructor class 
+    destructor  div  do  downto dispose  
+    else  end exit except  exports 
+    for function file finalization finally
+    goto
+    if  implementation  in  inherited  inline  interface initialization  is 
+    library label
+    mod
+    not nil new
+    or object  of  on  operator out 
+    procedure property 
+	protected public private published packed program 
+    repeat record  reintroduce raise 
+    string self  set  shl  shr  
+    then to try true type threadvar 
+    unit  until  uses 
+    var 
+    while  with 
+    xor
+    </token>
+  </Identifiers>
+  <Token CharsStart="$" Content = '0..9ABCDEFabcdef' Attribute='NUMBER'> </Token>
+  <Token CharsStart="#" Content = '0..9' Attribute='STRING'> </Token>
+  <Token CharsStart="0..9" Content = '0..9.' Attribute='NUMBER'> </Token>
+  <String Start="'" End="'"></String>
+  <Comment Start="//" ></Comment>
+  <Comment Start="(*" End="*)" Multiline="true"></Comment>
+  <Comment Start="{" End="}" Multiline="true" Folding="true"></Comment>
+
+  <Section Name="unit" Start="unit"></Section>
+  <Section Name="interface" Start="interface"  BackCol="#E0FFF0">
+	<Block Start="(" End=")" BackCol="Transparent"></Block>
+  </Section>
+  <Section Name="implementation" Start="implementation">
+    <Block Name="Proc" Start="procedure" End="end">
+      <Block Name="ProcParam" Start="(" End=")" Folding="false"></Block>
+      <Section Start="var" > </Section>
+      <Section Start="begin" Unique="true"> </Section>
+    </Block>
+    <Block Name="Func" Start="function" End="end">
+      <Block Name="FuncParam" Start="(" End=")" Folding="false"></Block>
+      <Section Start="var" > </Section>
+      <Section Start="begin" Unique="true"> </Section>
+    </Block>
+  </Section>
+
+  <Section Name="unit-type" Start="type" Parent="unit"></Section>
+
+  <Block Name="Class" Start="Class" End="end" BackCol="Transparent">
+      <Section Start="protected" BackCol="Transparent"> </Section>
+      <Section Start="published" BackCol="Transparent"> </Section>
+      <Section Start="private" BackCol="Transparent"> </Section>
+	  <Section Start="public" BackCol="Transparent"> </Section>
+  </Block>
+  <Block Name="Record" Start="Record" End="End" BackCol="Transparent"></Block>
+  <Block Name="BeginEnd"  Start="Begin" End= "End">
+  </Block>
+  <Block>
+    <Start> Repeat </Start>
+	<End> Until </End>
+  </Block>
+  <Block Start="Case" End= "End" ></Block>
+  <Block Name="Proc" Start="procedure" End="end" Parent="Main" BackCol="#D0F5FF">
+    <Block Name="ProcParam" Start="(" End=")" Folding="false"></Block>
+    <Section Start="var" BackCol="#F3F781"> </Section>
+    <Section Start="begin" BackCol="#F5DA81" Unique="true"> </Section>
+  </Block>
+  <Block Name="Func" Start="function" End="end" Parent="Main" BackCol="#D0F5FF">
+    <Block Name="FuncParam" Start="(" End=")" Folding="false"></Block>
+    <Section Start="var" BackCol="#F3F781"> </Section>
+    <Section Start="begin" BackCol="#F5DA81" Unique="true"> </Section>
+  </Block>
+</Language>

@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<Language name="Unix shell" ext="*.sh" CaseSensitive="true" ColorBlock="Block">
+  <Completion> 
+alias ar asa awk
+"awk '{}'"
+"awk -F. '{print $1}'"
+banner basename bash bc bdiff break bunzip2 bzip2 
+"case"
+"case $x in&#xD;
+ 1)&#xD;   echo ""uno"" &#xD;
+ ;;&#xD;
+ 2)&#xD;   echo ""dos"" &#xD;
+ ;;&#xD;
+ *)&#xD;   echo ""otro"" &#xD;
+ ;;&#xD;
+ esac"
+"cat " "cd " "cd .." "chgrp " 
+"chmod " "chmod 755" "chmod 777"
+"chown"
+"chown usuario directorio/archivo"
+"continue"
+"cp "
+"cp origen destino"
+"crontab "
+"crontab -l"
+"crontab -l | grep "
+"date"
+"date +%Y%m%d %H%M%S"
+"df"
+"df -k"
+"df -k | grep "
+"do"
+"done"
+"du"
+"du -k"
+"echo"
+"echo """""
+"elif "
+"else"
+"esac"
+"exit"
+"expr"
+"fcopy"
+"fi"
+"for "
+"for variable in $lista&#xD;do&#xD;done"
+"format"
+"ftp "
+"grep "
+"head "
+"id "
+"if "
+"if [ expresíon ]; then&#xD;fi"
+"if [ expresíon ]; then&#xD;else&#xD;fi"
+"in"
+"join "
+"kill"
+"kill -9 "
+"ln"
+"ls"
+"ls -l"
+"mail"
+"man"
+"mkdir"
+"mv "
+"mv origen destino"
+"nawk "
+"nawk -F. ""{print $1}"""
+"ping"
+"passwd"
+"passwd usuario"
+"pwd"
+"ps "
+"ps -fu"
+"rm "
+"rmdir "
+"sleep "
+"sort"
+"tail "
+"tar"
+"telnet"
+"then"
+"top "
+"tty "
+"uname"
+"uniq"
+"until"
+"useradd"
+"useradd usuario"
+"vi "
+"vmstat "
+"wc "
+"wc -l "
+"while "
+"while [ exprsion ]; do &#xD;done"
+"who "
+"write "
+ 
+  </Completion>
+  <Attribute name="Keyword" ForeCol="#00A000" Bold="true"></Attribute>
+  <Attribute name="Langs" ForeCol="#FF00FF"></Attribute>
+  <Attribute name="Awk" BackCol="#C8F7F7"></Attribute>
+  <Identifiers CharsStart= "A..Za..z_$" Content = "A..Za..z0..9_"> 
+    <Keyword>
+alias ar asa
+banner basename bash bc bdiff break bunzip2 bzip2 
+cal calendar caller case cat cc cd chmod cksum clear cmp col comm command compress continue cp cpio crontab crypt csplit ctags cut 
+date dc dd declare deroff dev df diff diff3 dircmp dirname do done du 
+echo ed egrep elif else env esac eval ex exec exit expand export expr 
+false fc fgrep fi file find fmt fold for function functions 
+getconf getopt getopts grep gres 
+halt hash head help history hostname
+iconv id if in integer 
+jobs join kill local logout
+lc let line ln logname look ls 
+m4 mail mailx make man mkdir more mt mv 
+newgrp nl nm nohup ntps od 
+pack paste patch pathchk pax pcat perl pg pr print printf ps pwd 
+read readonly reboot red return rev rm rmdir 
+sed select seq set sh shift size sleep sort spell split start strings strip stty sum suspend sync 
+tail tar tee test then time times touch tr trap true tsort tty type typeset 
+ulimit umask unalias uname uncompress unexpand uniq unpack unset until uudecode uuencode 
+vdir vi vim 
+wait wc whatis whence whereis which while who whoami
+xargs zcat    
+    </Keyword>
+	<Langs>
+      awk nawk
+	</Langs>
+  </Identifiers>
+  <Token CharsStart="0..9" Content = '0..9' Attribute="NUMBER"> </Token>
+  <String Start='"' End='"'></String>
+  <Token Start="'" End="'" Multiline = "true" Folding="true" Attribute="Awk"></Token>
+  <Comment Start="#" ></Comment>
+
+  <Block Start="{" End="}" Name="blk_llaves" BackCol="#F7F7C8" Parent="Main"></Block>
+
+  <Block Start="if"   End="fi"   Name="blk_if" BackCol="transparent"></Block>
+  <Block Start="do"   End="done" Name="blk_do" BackCol="transparent"></Block>
+  <Block Start="case" End="esac" Name="blk_ca" BackCol="transparent"></Block>
+
+</Language>
