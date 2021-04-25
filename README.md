@@ -3,7 +3,7 @@
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=7LKYWG9LXNQ9C&lc=ES&item_name=Tito%20Hinostroza&item_number=2153&no_note=0&cn=Dar%20instrucciones%20especiales%20al%20vendedor%3a&no_shipping=2&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
 
 
-P65Pas 0.7.8
+P65Pas 0.8.0
 ============
 
 Cross-platform Pascal cross-compiler for 6502 CPU.
@@ -469,6 +469,44 @@ end;
 
 The return value is indicated with the exit() instruction.
 
+### Register variables
+
+Variables can be declared as a REGISTER.
+
+```
+var 
+  reg: byte register;  //Stored at register A
+  regA: byte registerA; //Stored at register A
+  regX: byte registerX; //Stored at register X
+  regY: byte registerY; //Stored at register Y
+```
+
+A register variable doesn't use RAM as storage. Rather use the specified register.
+
+Register parameters are defined using the following reserved words:
+
+* REGISTER -> Use internal work register defined by the compiler. Can be used for types of one or two bytes.
+* REGISTERA -> Use always the register A of the CPU. Can be used only for 1-byte size parameters.
+* REGISTERX -> Use always the register X of the CPU. Can be used only for 1-byte size parameters.
+* REGISTERY -> Use always the register Y of the CPU. Can be used only for 1-byte size parameters.
+
+Variables declared simply as "Register" can be of size: 1 or 2 bytes. The compiler will decide wich register or RAM position will be used to storage these variables.
+
+As the register variables keep their values in internal registers of the CPU, any operation that affects these registers will also change the content of the register variables.
+
+```
+var 
+  a: boolean register;
+  b: byte;
+begin
+  a := true;  //Set variable "a".
+  b := 0;  //!!! WARNING: variable "a" has changed.
+  
+end.
+```
+
+Register variables can be considered as a high level way to access to CPU registers.
+
 ### Register parameters
 
 When using in procedures parameters, a REGISTER parameter can be included:
@@ -482,13 +520,6 @@ end;
 ```
 
 Register parameters are fast, because they use CPU register instead of RAM for passing values.
-
-Register parameters are defined using the following reserved words:
-
-* REGISTER -> Use internal work register defined by the compiler. Can be used for types of one or two bytes.
-* REGISTERA -> Use always the register A of the CPU. Can be used only for 1-byte size parameters.
-* REGISTERX -> Use always the register X of the CPU. Can be used only for 1-byte size parameters.
-* REGISTERY -> Use always the register Y of the CPU. Can be used only for 1-byte size parameters.
 
 As register parameters use internal CPU register, they values could be lost after some instruction is executed, so is a good practice to save immediatly they value in other normal variable. So the first operation in a procedure, using a register parameter must be read this parameter.
 
@@ -508,11 +539,11 @@ begin
     ;Load 3 to Acumulator 
     LDA #03
     RTS
-  end
+  end;
 end;
 ```
 
-ASM blocks are not instructions, that's why they are not finished with ";". It lets the ASM block, to be included in almost any place of the source code, like a comment.
+ASM blocks are like instructions and they must be finished with ";". 
 
 WARNING: Changing some register used by compiler, inside an ASM block, can generate errors in compilation or in the code compiled.
 

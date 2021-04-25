@@ -3,10 +3,7 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion3.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\temp\newfile-1.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.8.0\temp\HolaMundo.pas
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -14,7 +11,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\temp\newfile-1.pas
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="275"/>
+  <SynTreeWidth Val="248"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="2"/>
   <MessPanBack Val="-2147483643"/>
@@ -42,16 +39,16 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\temp\newfile-1.pas
     <ResPalCTxt Val="0"/>
     <ResPalCBor Val="15780518"/>
     <ResPalFWord Val="False"/>
-    <VerPanVer Val="True"/>
+    <VerPanVer Val="False"/>
     <VerNumLin Val="True"/>
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion3.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.7.8\testcode65\MustFail\recursion2-0.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.8.0\testcode65\Simul_1\Test1_Vars.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.8.0\testcode65\Simul_1\Test1_HelloWorld.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.8.0\temp\HolaMundo.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.8.2\units\Commodore64.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.8.1\units\Commodore64.pas
 "/>
   </Edit>
   <IncDecVar Val="True"/>
