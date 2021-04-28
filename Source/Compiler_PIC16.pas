@@ -102,6 +102,8 @@ var
   fun : TEleFun;
   bod: TEleBody;
 begin
+  pic.disableCodegen := true;  //Disable the code generation
+  pic.iRam := 0;  //Clear RAM position
   //Code subroutines
   for fun in usedFuncs do begin
     ConstantFoldBody(fun.BodyNode);

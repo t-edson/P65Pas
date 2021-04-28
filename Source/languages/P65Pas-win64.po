@@ -1,0 +1,71 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+#: tfrasyntaxtree.acgenexpall.caption
+msgid "Expand All"
+msgstr ""
+
+#: tfrasyntaxtree.acgengoto.caption
+msgid "Go To..."
+msgstr ""
+
+#: tfrasyntaxtree.acgenprop.caption
+msgid "&Properties"
+msgstr ""
+
+#: tfrasyntaxtree.acgenrefres.caption
+msgid "&Refresh"
+msgstr ""
+
+#: tfrasyntaxtree.acgenviewdec.caption
+msgid "View by &Declaration"
+msgstr ""
+
+#: tfrasyntaxtree.acgenviewgr.caption
+msgid "View by &Groups"
+msgstr ""
+
+#: tfrasyntaxtree.comboboxex1.itemsex[2].caption
+msgid "ItemEx2"
+msgstr ""
+
+#: tfrasyntaxtree.label1.caption
+msgid "Syntax Tree"
+msgstr ""
+
+#: tfrmelemproperty.butdetails.caption
+msgid "&Details ..."
+msgstr ""
+
+#: tfrmelemproperty.caption
+msgid "Element Properties"
+msgstr ""
+
+#: tfrmelemproperty.lblelemname.caption
+msgid "Element name:"
+msgstr ""
+
+#: tfrmelemproperty.lblelemname1.caption
+msgid "Element type:"
+msgstr ""
+
+#: tfrmelemproperty.lblelemname2.caption
+msgid "Location:"
+msgstr ""
+
+#: tfrmelemproperty.lblelemname3.caption
+msgid "Status:"
+msgstr ""
+
+#: tfrmelemproperty.lblelemname4.caption
+msgid "Path:"
+msgstr ""
+
+#: tfrmelemproperty.lblelemname5.caption
+msgid "File:"
+msgstr ""
+
+#: tfrmelemproperty.lblused.caption
+msgid "lblUsed"
+msgstr ""
+

@@ -47,7 +47,7 @@ type  //Abstract Syntax Tree
     procedure AddElementToParent(elem: TxpElement; AtBegin: boolean);
     procedure OpenElement(elem: TxpElement);
     procedure CloseElement;
-    procedure DeleteTypeNode(parent: TxpElement; typNode: TEleTypeDec);
+    procedure DeleteTypeNode(typNode: TEleTypeDec);
     procedure ChangeParentTo(newparent, elem: TxpElement; position: integer = - 1);
     procedure InsertParentTo(newparent, elem: TxpElement);
     function AddElementBodyAndOpen(srcPos: TSrcPos): TEleBody;
@@ -168,18 +168,30 @@ begin
 end;
 procedure TXpTreeElements.CloseElement;
 {Close the current node and returns to the parent node.}
+var
+  isCodeContainer: Boolean;
 begin
-  if curNode=curCodCont then begin //We are closing a body
-    curCodCont := nil;
-  end;
-  if curNode.Parent<>nil then
+  isCodeContainer := (curNode=curCodCont);
+  if curNode.Parent<>nil then begin
     curNode := curNode.Parent;
+  end;
+  if isCodeContainer then begin //We are closing a Code container
+    curCodCont := curNode.codCont;  //Restore last value
+  end;
 end;
-procedure TXpTreeElements.DeleteTypeNode(parent: TxpElement; typNode: TEleTypeDec);
-{Delete a node of typw }
+procedure TXpTreeElements.DeleteTypeNode(typNode: TEleTypeDec);
+{Delete a node of type "TEleTypeDec"}
+var
+  parent: TxpElement;
 begin
-  parent.elements.Remove(typNode);
-  AllTypes.Remove(typNode);
+  parent := typNode.Parent;
+  //parent.elements.Remove(typNode);
+  parent.elements.Extract(typNode);  //Doesn't free "ele". No need to update lists (AllCons, AllVars, ...) because it will be reinserted.
+  //AllTypes.Remove(typNode);
+  AllTypes.Extract(typNode);
+  typNode.Destroy;
+  { WARNING: This procedure is incomplete. It doesn't delete the possible "callers"
+   existing in "typNode".}
 end;
 procedure TXpTreeElements.ChangeParentTo(newparent, elem: TxpElement; position: integer = -1);
 {Change the current parent of "elem". The element "elem" is reinserted in the
@@ -222,6 +234,7 @@ begin
   Result := TEleBody.Create;
   Result.name := TIT_BODY_ELE;
   Result.srcDec := srcPos;
+  curNode.codCont := curCodCont;  //Save before change
   AddElementAndOpen(Result);
   curCodCont := Result;  //Update current Code container
 end;
@@ -232,6 +245,7 @@ begin
   Result.name   := cname;
   Result.typ    := ctype;   //Set reference to type.
   Result.srcDec := srcPos;
+  curNode.codCont := curCodCont;  //Save before change
   AddElementAndOpen(Result);
   curCodCont := Result;  //Update current Code container
 end;
@@ -242,6 +256,7 @@ begin
   Result.name   :=vname;
   Result.typ    := vtype;   //fija  referencia a tipo
   Result.srcDec := srcPos;
+  curNode.codCont := curCodCont;  //Save before change
   AddElementAndOpen(Result);
   curCodCont := Result;  //Update current Code container
 end;
@@ -254,6 +269,7 @@ begin
   Result.size    := tsize;
   Result.catType := catType;
   Result.group   := group;
+  curNode.codCont := curCodCont;  //Save before change
   AddElementAndOpen(Result);  //Open type
   curCodCont := Result;  //Update current Code container
 end;
@@ -338,7 +354,8 @@ begin
   //Busca recursivamente, a partir del espacio actual
   curFind.Name := UpCase(name);  //This value won't change in all the search
   curFind.inUnit := false;       //Set flag
-  if curCodCont <> nil then begin
+  if curCodCont=nil then exit(nil);  //This shouldn't happen
+  if curCodCont.idClass = eleBody then begin
     {Para los cuerpos de procedimientos o de programa, se debe explorar hacia atrás a
     partir de la posición del nodo actual.}
     curFind.Idx := curCodCont.Index;   //Set index for searching. Here is the body index.

@@ -256,14 +256,22 @@ procedure TGenCod.ROU_address(fun: TEleExpress);
 {Return the address of any operand.}
 var
   startAddr: integer;
+  par: TEleExpress;
 begin
-  case fun.Sto of
+  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  case par.Sto of
   stConst : begin
-    if fun.Typ.catType = tctArray then begin
+    if par.Typ.catType = tctArray then begin
       //We allow to get the address for constant arrays, storing first in RAM.
-      CreateValueInCode(fun.Typ, fun.Value, startAddr);
-      SetFunConst(fun);
-      fun.value.ValInt := startAddr;
+      if pic.disableCodegen then begin
+        //Cannot generate code
+        SetFunExpres(fun); //Still as a function
+      end else begin
+        CreateValueInCode(par.Typ, par.Value, startAddr);
+        SetFunConst(fun);
+        fun.value.ValInt := startAddr;
+        fun.evaluated := true;
+      end;
     end else begin
       genError('Cannot obtain address of constant.');
     end;
@@ -271,8 +279,13 @@ begin
   stRamFix: begin
     //Es una variable normal
     //La dirección de una variable es constante
-    SetFunConst(fun);
-    fun.value.valInt := fun.rVar.addr;
+    if par.rVar.allocated then begin
+      SetFunConst(fun);
+      fun.value.valInt := par.rVar.addr;
+      fun.evaluated := par.rVar.allocated;
+    end else begin
+      SetFunExpres(fun); //Still as a function
+    end;
   end;
   stRegister: begin
     genError('Cannot obtain address of an expression.');
@@ -4810,7 +4823,7 @@ begin
   CreateUOMethod(etyp, '', 'high'  , typByte, @arrayHigh);
   CreateUOMethod(etyp, '', 'clear' , typNull, @GenCodArrayClear);
   CreateBOMethod(etyp, '', '_getitem', typByte, etyp.itmType, @GenCodArrayGetItem);
-
+  CreateUOMethod(etyp, '@', 'addr', typWord, @ROU_address);
 //  etyp.CreateField('item'  , @GenCodArrayGetItem, @GenCodArraySetItem);
 //  etyp.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address); //defined in all types
 end;
@@ -5012,53 +5025,44 @@ begin
   TreeElems.OpenElement(typBool);
   f:=CreateBOMethod(typBool, ':=',  '_set', typBool, typNull, @ROB_bool_asig_bool);
   f:=CreateUOMethod(typBool, 'NOT', '_not', typBool, @ROU_not_bool, opkUnaryPre);
-  f.fConResCon := true;
   f:=CreateBOMethod(typBool, 'AND', '_and', typBool, typBool, @ROB_bool_and_bool);
-  f.fConmutat := true; f.fConResCon := true; f.fNulResNul := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typBool, '=' ,  '_equ', typBool, typBool, @ROB_bool_equal_bool);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typBool, '<>',  '_dif', typBool, typBool, @ROB_bool_difer_bool);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   TreeElems.CloseElement;   //Close Type
   /////////////// Byte type ////////////////////
   //Methods-Operators
   TreeElems.OpenElement(typByte);
-//  opr:=typByte.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
+  f:=CreateUOMethod(typByte, '@', 'addr', typWord, @ROU_address);
   f:=CreateBOMethod(typByte, ':=', '_set', typByte, typNull, @ROB_byte_asig_byte);
   f:=CreateBOMethod(typByte, '+=', '_aadd',typByte, typNull, @ROB_byte_aadd_byte);
   f:=CreateBOMethod(typByte, '-=', '_asub',typByte, typNull, @ROB_byte_asub_byte);
   f:=CreateBOMethod(typByte, '+' , '_add', typByte, typByte, @ROB_byte_add_byte);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typByte, '+' , '_add', typWord, typWord, @ROB_byte_add_word);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typByte, '-' , '_sub', typByte, typByte, @ROB_byte_sub_byte);
-  f.fConResCon := true;
   f:=CreateBOMethod(typByte, '*' , '_mul', typByte, typWord, @ROB_byte_mul_byte);
-  f.fConmutat := true; f.fConResCon := true; f.fNulResNul := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typByte, 'AND','_and', typByte, typByte, @ROB_byte_and_byte);
-  f.fConmutat := true; f.fConResCon := true; f.fNulResNul := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typByte, 'OR' ,'_or' , typByte, typByte, @ROB_byte_or_byte);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typByte, 'XOR','_xor', typByte, typByte, @ROB_byte_xor_byte);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateUOMethod(typByte, 'NOT','_not', typByte, @ROU_not_byte, opkUnaryPre);
-  f.fConResCon := true;
   f:=CreateBOMethod(typByte, '=' , '_equ', typByte, typBool, @ROB_byte_equal_byte);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typByte, '<>', '_dif', typByte, typBool, @ROB_byte_difer_byte);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typByte, '>' , '_gre', typByte, typBool, @ROB_byte_great_byte);
-  f.fConResCon := true;
   f:=CreateBOMethod(typByte, '<' , '_les', typByte, typBool, @ROB_byte_less_byte);
-  f.fConResCon := true;
   f:=CreateBOMethod(typByte, '>=', '_gequ',typByte, typBool, @ROB_byte_gequ_byte);
-  f.fConResCon := true;
   f:=CreateBOMethod(typByte, '<=', '_lequ',typByte, typBool, @ROB_byte_lequ_byte);
-  f.fConResCon := true;
   f:=CreateBOMethod(typByte, '>>', '_shr', typByte, typByte, @ROB_byte_shr_byte);  { TODO : Definir bien la precedencia }
-  f.fConResCon := true;
   f:=CreateBOMethod(typByte, '<<', '_shl', typByte, typByte, @ROB_byte_shl_byte);
-  f.fConResCon := true;
   TreeElems.CloseElement;   //Close Type
   /////////////// Char type ////////////////////
   TreeElems.OpenElement(typChar);
@@ -5066,9 +5070,9 @@ begin
   f:=CreateBOMethod(typChar, ':=', '_set', typChar, typNull, @ROB_char_asig_char);
   //opr.CreateOperation(typString, @ROB_char_asig_string);
   f:=CreateBOMethod(typChar, '=' , '_equ', typChar, typBool, @ROB_char_equal_char);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typChar, '<>', '_dif', typChar, typBool, @ROB_char_difer_char);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   TreeElems.CloseElement;   //Close Type
 
   /////////////// Word type ////////////////////
@@ -5080,41 +5084,30 @@ begin
   f:=CreateBOMethod(typWord, '+=' ,'_aadd', typWord, typNull, @ROB_word_aadd_word);
   f:=CreateBOMethod(typWord, '-=' ,'_asub', typByte, typNull, @ROB_word_asub_byte);
   f:=CreateBOMethod(typWord, '+'  , '_add', typByte, typWord, @ROB_word_add_byte);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typWord, '+'  , '_add', typWord, typWord, @ROB_word_add_word);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typWord, '-'  , '_sub', typByte, typWord, @ROB_word_sub_byte);
-  f.fConResCon := true;
   f:=CreateBOMethod(typWord, '-'  , '_sub', typWord, typWord, @ROB_word_sub_word);
-  f.fConResCon := true;
   f:=CreateBOMethod(typWord, 'AND', '_and', typByte, typByte, @ROB_word_and_byte);
-  f.fConmutat := true; f.fConResCon := true; f.fNulResNul := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typWord, 'AND', '_and', typWord, typWord, @ROB_word_and_word);
-  f.fConmutat := true; f.fConResCon := true; f.fNulResNul := true;
+  f.fConmutat := true;
   f:=CreateUOMethod(typWord, 'NOT', '_not', typWord, @ROU_not_word, opkUnaryPre);
-  f.fConResCon := true;
   f:=CreateBOMethod(typWord, '>>' , '_shr', typByte, typWord, @ROB_word_shr_byte); { TODO : Definir bien la precedencia }
-  f.fConResCon := true;
   f:=CreateBOMethod(typWord, '<<' , '_shl', typByte, typWord, @ROB_word_shl_byte);
-  f.fConResCon := true;
 
   f:=CreateBOMethod(typWord, '=' , '_equ' , typWord, typBool, @ROB_word_equal_word);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typWord, '<>', '_dif' , typWord, typBool, @ROB_word_difer_word);
-  f.fConmutat := true; f.fConResCon := true;
+  f.fConmutat := true;
   f:=CreateBOMethod(typWord, '>=', '_gequ', typWord, typBool, @ROB_word_gequ_word);
-  f.fConResCon := true;
   f:=CreateBOMethod(typWord, '<' , '_les' , typWord, typBool, @ROB_word_less_word);
-  f.fConResCon := true;
   f:=CreateBOMethod(typWord, '>' , '_gre' , typWord, typBool, @ROB_word_great_word);
-  f.fConResCon := true;
   f:=CreateBOMethod(typWord, '<=', '_lequ', typWord, typBool, @ROB_word_lequ_word);
-  f.fConResCon := true;
   //Methods
   f:=CreateUOMethod(typWord, '', 'low' , typByte, @word_Low);
-  f.fConResCon := true;
   f:=CreateUOMethod(typWord, '', 'high', typByte, @word_High);
-  f.fConResCon := true;
 
   TreeElems.CloseElement;   //Close Type
 

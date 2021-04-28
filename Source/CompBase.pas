@@ -977,7 +977,7 @@ llamadas que se hacen a una unidad desde el programa o unidad que la incluye.
 El objetivo final es determinar los accesos a las unidades.}
   procedure ScanUnits(nod: TxpElement);
   var
-    ele, eleInter , eleUnit: TxpElement;
+    ele, eleInter , elemUnit: TxpElement;
     uni : TEleUnit;
     cal , c: TxpEleCaller;
   begin
@@ -985,7 +985,7 @@ El objetivo final es determinar los accesos a las unidades.}
     if nod.elements<>nil then begin
       for ele in nod.elements do begin
         //Solo se explora a las unidades
-        if ele.idClass = XpresElemP65.eleUnit then begin
+        if ele.idClass = eleUnit then begin
 //debugln('  Unit:'+ele.name);
           //"ele" es una unidad de "nod". Verifica si es usada
           uni := TEleUnit(ele);    //Accede a la unidad.
@@ -996,8 +996,8 @@ El objetivo final es determinar los accesos a las unidades.}
 //debugln('    Interface Elem:'+eleInter.name);
             //Explora por los llamadores de este elemento.
             for cal in eleInter.lstCallers do begin
-              eleUnit := cal.CallerUnit;   //Unidad o programa
-              if eleUnit = nod then begin
+              elemUnit := cal.CallerUnit;   //Unidad o programa
+              if elemUnit = nod then begin
                 {Este llamador está contenido en "nod". Lo ponemos como llamador de
                 la unidad.}
                 c := AddCallerToFromCurr(uni);

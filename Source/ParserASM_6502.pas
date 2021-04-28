@@ -38,14 +38,13 @@ type
     procedure AddLabel(name: string; addr: integer);
     procedure AddUJump(name: string; addr: integer; idInst: TP6502Inst);
     function CaptureAddress: boolean;
-    function CaptureByte(out k: byte): boolean;
     function CaptureParenthes: boolean;
     procedure EndASM;
     function GetFaddressByte(addr: integer): byte;
-    function HaveByteInformation(out bytePos: byte): boolean;
     function IsLabel(txt: string; out dir: integer): boolean;
     procedure ProcASMline(out blkEnd: boolean);
     procedure ProcInstrASM(idInst: TP6502Inst; var blkEnd: boolean);
+    procedure ScanOperations;
 
     procedure StartASM;
   protected
@@ -127,129 +126,6 @@ begin
   //No encontró
   exit(false);
 end;
-function TParserAsm_6502.HaveByteInformation(out bytePos: byte): boolean;
-begin
-//    state0 := lexAsm.State;  //gaurda posición
-  if cpx.token = '.' then begin
-    //Hay precisión de campo
-    cpx.Next;
-    if UpCase(cpx.token) = 'LOW' then begin
-      bytePos := 0;
-      cpx.Next;
-      exit(true);
-    end else if UpCase(cpx.token) = 'HIGH' then begin
-      bytePos := 1;
-      cpx.Next;
-      exit(true);
-    end else begin
-      //No es ninguno
-      exit(false);
-    end;
-  end else if cpx.token = '@' then begin
-    cpx.Next;
-    if UpCase(cpx.token) = '0' then begin
-      bytePos := 0;
-      cpx.Next;
-      exit(true);
-    end else if UpCase(cpx.token) = '1' then begin
-      bytePos := 1;
-      cpx.Next;
-      exit(true);
-    end else if UpCase(cpx.token) = '2' then begin
-      bytePos := 2;
-      cpx.Next;
-      exit(true);
-    end else if UpCase(cpx.token) = '3' then begin
-      bytePos := 3;
-      cpx.Next;
-      exit(true);
-    end else begin
-      //No es ninguno
-      exit(false);
-    end;
-  end else begin
-    //No tiene indicación de campo
-    exit(false);
-  end;
-end;
-function TParserAsm_6502.CaptureByte(out k: byte): boolean;
-{Captura un byte y devuelve en "k". Si no encuentra devuelve FALSE.}
-var
-  n: Integer;
-  xcon: TEleConsDec;
-  ele: TxpElement;
-  bytePos: byte;
-  str: String;
-  xvar: TEleVarDec;
-begin
-  Result := false;
-  cpx.SkipWhitesNoEOL;
-  if cpx.tokType = tkLitNumber then begin
-    //es una dirección numérica
-    n := StrToInt(cpx.token);
-    if (n>255) then begin
-      cpx.GenError(ER_EXPECT_BYTE);
-      exit(false);
-    end;
-    k:=n;
-    cpx.Next;
-    exit(true);
-  end else if cpx.tokType = tkIdentifier then begin
-    //Es un identificador, puede ser referencia a una constante o variable.
-    ele := cpx.TreeElems.FindFirst(cpx.token);  //identifica elemento
-    if ele = nil then begin
-      //No identifica a este elemento
-      cpx.GenError(ER_EXP_CON_VAL);
-      exit;
-    end;
-    if ele.idClass = eleConsDec then begin
-      xcon := TEleConsDec(ele);
-      cpx.AddCallerToFromCurr(xcon);  //lleva la cuenta
-      if (xcon.typ = cpx.typByte) or (xcon.typ = cpx.typChar) then begin
-        k := xcon.value.ValInt;
-        cpx.Next;
-        exit(true);
-      end else if xcon.typ = cpx.typWord then begin
-        cpx.Next;
-        if HaveByteInformation(bytePos) then begin
-          //Hay precisión de byte
-          if bytePos = 0 then begin  //Byte bajo
-            k := (xcon.value.ValInt and $FF);
-          end else begin        //Byte alto
-            k := (xcon.value.ValInt and $FF00) >> 8;
-          end;
-        end else begin  //No se indica byte
-          k := (xcon.value.ValInt and $FF);
-        end;
-        exit(true);
-      end else begin
-        cpx.GenError(ER_NOGETVAL_CON);
-        exit(false);
-      end;
-    end else if ele.idClass = eleVarDec then begin
-      //Para varaibles, se toma la dirección
-      xvar := TEleVarDec(ele);
-      cpx.AddCallerToFromCurr(xvar);  //lleva la cuenta
-      n := xvar.addr;
-      k := GetFaddressByte(n);
-      cpx.Next;
-      exit(true);
-    end else begin
-      //No es constante
-      cpx.GenError(ER_EXP_CON_VAL);
-      exit(false);
-    end;
-  end else if (cpx.tokType = tkString) and (length(cpx.token) = 3) then begin
-    //Es un caracter
-    str := cpx.token;
-    k := ord(str[2]);   //lee código de caracter
-    cpx.Next;
-    exit(true);
-  end else begin
-    cpx.GenError(ER_EXPECT_BYTE);
-    exit(false);
-  end;
-end;
 function TParserAsm_6502.CaptureParenthes: boolean;
 {Captura el paréntesis ')'. Si no encuentra devuelve error}
 begin
@@ -262,18 +138,128 @@ begin
     exit(false);
   end;
 end;
+procedure TParserAsm_6502.ScanOperations;
+{Scan in the current line for ASM operations. If operations are found, they will be
+added as nodes in the current node of the AST.}
+  function ScanOperation(out operation: TAsmInstOperation;
+                         out value: word; out opTxt: string): boolean;
+  {Look for one operations, in the current context. Operatiosn valids are:
+        .HIGH
+        .LOW
+        + <VALUE>
+        - <VALUE>.
+  If one operations is found:
+     * Retunns operation and value in parameters.
+     * Returns TRUE in the function.
+  If not operations are found, returns FALSE.
+  "opTxt" is a text to identify the operation.}
+  var
+    valueInt: Longint;
+  begin
+    cpx.SkipWhitesNoEOL;
+    if (cpx.tokType = tkEol) or (cpx.token = ';') then begin
+      //End of line
+      exit(false);
+    end;
+    if cpx.token = '.' then begin
+      //Hay precisión de campo
+      cpx.Next;
+      if UpCase(cpx.token) = 'LOW' then begin
+        operation := aopSelByte;
+        value := 0;
+        opTxt := '@0';
+        cpx.Next;
+        exit(true);
+      end else if UpCase(cpx.token) = 'HIGH' then begin
+        operation := aopSelByte;
+        value := 1;
+        opTxt := '@1';
+        cpx.Next;
+        exit(true);
+      end else begin
+        cpx.GenError('Field expected after "."');
+        exit(false);
+      end;
+    end else if cpx.token = '@' then begin
+      cpx.Next;
+      if UpCase(cpx.token) = '0' then begin
+        operation := aopSelByte;
+        value := 0;
+        opTxt := '@0';
+        cpx.Next;
+        exit(true);
+      end else if UpCase(cpx.token) = '1' then begin
+        operation := aopSelByte;
+        value := 1;
+        opTxt := '@1';
+        cpx.Next;
+        exit(true);
+      end else if UpCase(cpx.token) = '2' then begin
+        operation := aopSelByte;
+        value := 2;
+        opTxt := '@2';
+        cpx.Next;
+        exit(true);
+      end else if UpCase(cpx.token) = '3' then begin
+        operation := aopSelByte;
+        value := 3;
+        opTxt := '@3';
+        cpx.Next;
+        exit(true);
+      end else begin
+        cpx.GenError('Field expected after "@"');
+        exit(false);
+      end;
+    end else if (cpx.token = '+') or (cpx.token = '-') then begin
+      if cpx.token='+' then operation := aopAddValue else operation := aopSubValue;
+      opTxt := cpx.token;
+      //Get operand
+      cpx.Next;
+      cpx.SkipWhitesNoEOL;
+      if (cpx.tokType = tkEol) or (cpx.token = ';') then begin
+        //End of line
+        cpx.GenError('Operand expected');
+        exit(false);
+      end else begin
+        //Follows something
+        if not TryStrToInt(cpx.token, valueInt) then begin
+          cpx.GenError('Numeric operand expected');
+          exit(false);
+        end;
+        cpx.Next;
+        value := word(valueInt);
+        exit(true);
+      end;
+    end else begin
+      //Other token
+      exit(false);
+    end;
+  end;
+var
+  operation: TAsmInstOperation;
+  value: word;
+  opTxt: string;
+  opr: TEleAsmOperat;
+begin
+  while ScanOperation(operation, value, opTxt) do begin
+    //There is an operation
+    opr := TEleAsmOperat.Create;
+    opr.operation := operation;  //Select byte
+    opr.value := value;          //Byte position
+    opr.name := opTxt;
+    curInst.AddElement(opr);
+  end;
+end;
 function TParserAsm_6502.CaptureAddress: boolean;
 {Captura una dirección a una instrucción. Si no encuentra genera
 error y devuelve FALSE.}
 var
   dir: integer;
-  bytePos: byte;
   ele: TxpElement;
   xfun: TEleFun;
   xvar: TEleVarDec;
   xcon: TEleConsDec;
-  opd: TEleOperand;
-  opr: TEleOperator;
+  opd: TEleAsmOperand;
 begin
   Result := false;
   cpx.SkipWhitesNoEOL;
@@ -281,40 +267,16 @@ begin
     //Es una dirección relativa
     cpx.Next;
     cpx.SkipWhitesNoEOL;
-    //Puede tener + o -
-    if (cpx.token= '') or (cpx.token = ';') then begin
-      //Termina la instrucción sin o con comentario
-      curInst.param := -1;  //Create as expression
-      opd := TEleOperand.Create;
-      opd.txt := '$';
-      curInst.AddElement(opd);
-      exit(true);
-    end else if (cpx.token = '+') or (cpx.token = '-') then begin
-      //Es dirección sumada
-      curInst.param := -1;  //Create as expression
-      opr := TEleOperator.Create;
-      opr.txt := cpx.token;
-      curInst.AddElement(opr);
-      //Get operand
-      cpx.Next;
-      cpx.SkipWhitesNoEOL;
-      if cpx.tokType = tkEol then begin
-        cpx.GenError('Operand expected');
-        exit(false);
-      end else begin
-        //Follow something
-        opd := TEleOperand.Create;
-        opd.txt := cpx.token;  //Get operand
-        curInst.AddElement(opd);
-        //CaptureByte(offset);  //captura desplazamiento
-        //if HayError then exit(false);
-        exit(true);
-        //Formally we should continue checking expression or check nothing follows
-      end;
-    end else begin
-      //Sigue otra cosa
-      cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
-    end;
+    //Creates node "Operand".
+    curInst.param := -1;  //Create as expression
+    opd := TEleAsmOperand.Create;
+    opd.srcDec := cpx.GetSrcPos;
+    opd.name := '$';
+    curInst.AddElement(opd);
+    //Check for operations
+   ScanOperations;
+    if cpx.HayError then exit(false);
+    exit(true);
   end else if cpx.tokType = tkLitNumber then begin
     //Es una dirección numérica
     curInst.param := StrToInt(cpx.token);  //Simple number
@@ -333,30 +295,32 @@ begin
         //Es un identificador de función del árbol de sintaxis
         xfun := TEleFun(ele);
         cpx.AddCallerToFromCurr(xfun);  //lleva la cuenta
-        //ad := xfun.adrr;   //lee su dirección
+        cpx.Next;  //Take variable name
+        //Creates node "Operand".
         curInst.param := -1;  //Set as expression
-        opd := TEleOperand.Create;
+        opd := TEleAsmOperand.Create;
+        opd.srcDec := cpx.GetSrcPos;
         opd.elem := xfun;
         curInst.AddElement(opd);  //Add operand
-
-        cpx.Next;
+        //Check for operations
+        ScanOperations;
+        if cpx.HayError then exit(false);
         exit(true);
       end else if ele.idClass = eleVarDec then begin
-        //Es identificador de variable
+        //It's variable identifier
         xvar := TEleVarDec(ele);
         cpx.AddCallerToFromCurr(xvar);  //lleva la cuenta
-        curInst.param := -1;  //Set as expression
-        cpx.Next;
-        if HaveByteInformation(bytePos) then begin
-          //Add operator of position
-          opr := TEleOperator.Create;
-          opr.txt := '@'+chr(bytePos+48);  //@0, @1, ...
-          //Could be optimized if using char or number instead of "opr.txt".
-          curInst.AddElement(opr);
-        end;
-        opd := TEleOperand.Create;
+        cpx.Next;  //Take variable name
+        //Creates node "Operand".
+        curInst.param := -1;  //Create as expression
+        opd := TEleAsmOperand.Create;
+        opd.srcDec := cpx.GetSrcPos;
+        opd.name := xvar.name; //Not really used, just for having information in AST.
         opd.elem := xvar;
         curInst.AddElement(opd);
+        //Check for operations
+        ScanOperations;
+        if cpx.HayError then exit(false);
         exit(true);
       end else if ele.idClass = eleConsDec then begin
         //Es identificador de constante
@@ -366,6 +330,7 @@ begin
         if (xcon.typ = cpx.typByte) or (xcon.typ = cpx.typWord) then begin
             curInst.param := xcon.value.ValInt;  //Get Value
           cpx.Next;
+
         end else begin
           //Otro tipo de constante
           cpx.GenError(ER_NOGETVAL_CON);
@@ -380,8 +345,9 @@ begin
     end else begin
       //Es un identificador, no definido. Puede definirse luego.
       curInst.param := -1;  //Create as expression
-      opd := TEleOperand.Create;
-      opd.txt := cpx.token;  //Probably a label. Will ne later linked.
+      opd := TEleAsmOperand.Create;
+      opd.srcDec := cpx.GetSrcPos;
+      opd.name := cpx.token;  //Probably a label. Will be later linked.
       curInst.AddElement(opd);
       cpx.Next;
       exit(true);
@@ -403,9 +369,6 @@ begin
   uJumps.Clear;
 end;
 procedure TParserAsm_6502.EndASM;  //Termina el procesamiento de código ASM
-var
-  jmp : TPicUJump;
-  loc: integer;
 begin
   ////Completa los saltos indefinidos
   //if uJumps.Count>0 then begin
@@ -579,7 +542,15 @@ begin
         exit;
       end;
     end else begin
+      if addressModes = [aRelative] then begin
+        //Only accept "aRelative" address. Like BEQ, BNE, ...
+        UpdateInstruction(idInst, aRelative, curInst.param);
+      end else if addressModes = [aImplicit] then begin
+        //Only accept "aImplicit" address. Like CLC, CLD, ...
+        UpdateInstruction(idInst, aImplicit, curInst.param);
+      end else begin
         UpdateInstruction(idInst, aAbsolute, curInst.param);
+      end;
     end;
   end else if tok = '(' then begin
     //Direccionamiento Indirecto: (indirect), (indirect,X) o (indirect),Y
@@ -648,7 +619,6 @@ procedure TParserAsm_6502.ProcASMline(out blkEnd: boolean);
  After processing a line (with error or not), this procedure leaves the lexer cursor at
  the start of the next line, except when the delimiter END is found. }
 var
-  n: LongInt;
   idInst: TP6502Inst;
   tok, lbl: String;
   d: integer;

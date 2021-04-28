@@ -20,6 +20,8 @@ type
     procedure AnalyzeIF;
     procedure AnalyzeREPEAT;
     procedure AnalyzeWHILE;
+    procedure MoveInternalTypes(node: TxpElement; declarSec: TxpElement;
+      declarPos: Integer);
   protected
     function IsUnit: boolean;
     function StartOfSection: boolean;
@@ -289,20 +291,20 @@ begin
       if xType.isDynam then begin
         //Dynamic size
         xType.consNitm.value.ValInt := nItems;   //Update array size
-        //Type name needs to be updated too.
-        xType.name := GenArrayTypeName(xType.itmType.name, nItems);
-        //NOTE type name (and structrure) has changed.
+        //Type name could be updated too.
+        //xType.name := GenArrayTypeName(xType.itmType.name, nItems);
       end;
       //Validation for item types.
       if xType.itmType <> consTyp.itmType then begin
         GenError('Item type doesn''t match for initialize array.');
         exit;
       end;
-      //Validation for size.
+      //Validation for size. Must have the same size to simplify creating and calling new types.
       if xType.nItems < nItems then begin
         GenError('Too many items to initialize array.');
-        //exit
-      end;
+      end else if xType.nItems > nItems then begin
+        GenError('Too few items to initialize array.');
+      end ;
       //Validate type compatibility
       {Until here we have validated that xType and consTyp and both arrays,
       have the same item type and compatible sizes, so they are compatible to
@@ -492,8 +494,7 @@ ttdDeclar -> Crea un tipo nuevo con la definición del nuevo tipo especificado, 
 Entre "decStyle" y el "catType" del tipo devuelto (Ver comentario de TxpCatType),
 debería quedar completamente especificada la declaración del tipo.
 
-"TypeCreated" indicates when a new Type instance was created (and will be destroyed or
-added to the syntax Tree).
+"TypeCreated" indicates when a new Type instance was created in the AST).
 In general, creating new types is avoided when exists other type equivalent.
 
 If some problems happens, Error is generated and the NIL value is returned.
@@ -743,7 +744,7 @@ begin
     //Es declaración de arreglo
     decStyle := ttdDeclar;  //Es declaración elaborada
     //typ := AddTypeAndOpen('!', -1, tctArray, t_object, srcPos);  //No name by now
-    typ := TreeElems.AddElementTypeAndOpen(srcPos, '!', -1, tctArray, t_object);
+    typ := TreeElems.AddElementTypeAndOpen(srcPos, '<undef>', -1, tctArray, t_object);
     if HayError then exit;  //Can be duplicated
     TypeCreated := true;
     ArrayDeclaration(srcpos, itemTyp);
@@ -765,7 +766,8 @@ begin
   end else if tokType = tkIdentifier then begin
     //Es un identificador de tipo
     typName := token;
-    decStyle := ttdDirect;  //Es directo
+    decStyle := ttdDirect;  //Es directo. Se refiere
+    TypeCreated := false;
     {Se pensó usar GetOperandIdent(), para identificar al tipo, pero no está preparado
     para procesar tipos y no se espera tanta flexibilidad. Así que se hace "a mano".}
     ele := TreeElems.FindFirstType(typName);
@@ -778,7 +780,7 @@ begin
       //Es un tipo
       Next;   //toma identificador
       typ := TEleTypeDec(ele);
-      AddCallerToFromCurr(typ);
+      //AddCallerToFromCurr(typ);  Poner la llamada aquí, complica el manejo posteriormente.
       if typ.copyOf<>nil then typ := typ.copyOf;  {Apunta al tipo copia. Esto es útil para
                      lograr una mejor compatibilidad cuando se usan Tipos en parámetros de
                      procedimientos.}
@@ -835,6 +837,7 @@ begin
   Next;
   ProcComments;
   if not CaptureTok('=') then exit;
+  if TreeElems.curCodCont=nil then TreeElems.curCodCont:=typByte; {Ver comentario de CompileVarDeclar()}
   etyp := GetTypeDeclar(decStyle, typeCreated);
   if HayError then exit;
   //Analiza la declaración
@@ -845,8 +848,8 @@ begin
     //etyp := CreateEleType(typName, srcPos, reftyp.size, reftyp.catType, reftyp.group);
     etyp := TreeElems.AddElementTypeAndOpen(srcPos, typName, reftyp.size, reftyp.catType, reftyp.group);
     if HayError then exit;  //Can be duplicated
+    AddCallerToFromCurr(reftyp);  //Llamada al tipo usado.  { TODO : Validar si se manejan bien las llamadas a los tipos copia. }
     TreeElems.CloseElement;  //Close type
-
     {Crea la copia del tipo del sistema, que básicamente es el mismo tipo, solo que
     con otro nombre y que además, ahora, está en el árbol de sintaxis, por lo tanto
     tiene otras reglas de alcance.}
@@ -989,6 +992,7 @@ var
   xtyp: TEleTypeDec;
   decStyle: TTypDeclarStyle;
   typeCreated: boolean;
+  nItems: Int64;
 begin
   SetLength(varNames, 0);
   //Procesa variables a,b,c : int;
@@ -1003,6 +1007,10 @@ begin
     Next;  //lo toma
     ProcComments;
     //Lee el tipo de la variable.
+    {Primero fijamos un contenedor de código cualquiera en TreeElems.curCodCont, para
+    que GetTypeDeclar() crea que está dentro de una declaración y así pueda ubicar bien a
+    sus elmentos cuando use FindFirst().}
+    if TreeElems.curCodCont=nil then TreeElems.curCodCont:=typByte;
     xtyp := GetTypeDeclar(decStyle, typeCreated);
     if HayError then exit;
     //Lee información adicional de la declaración (ABSOLUTE, REGISTER, initial value)
@@ -1023,32 +1031,37 @@ begin
     {Aquí, finalmente, se tiene el tipo completo en su estructura porque, si había un
     arreglo no dimensionado, como:  foo []CHAR = 'HELLO'; ya se verificó la
     inicialización.}
-    if typeCreated and (typesCreated=1) then begin
-      {La definición de tipo ha creado un tipo y la inicialización también ha creado un
-      tipo al AST. Esto se produce en un caso como:
-      VAR myarray: ARRAY[] OF char  //Tipo creado en la definición
-         = 'abc';          //Tipo creado en la inicialización.
-      }
-      {Para evitar dejar tipos duplicados, eliminamos uno de los tipos y generamos una
-      llamada al tipo de la constante. }
-//      TreeElems.DeleteTypeNode(xtyp.Parent, xtyp);  //Podemos eliminar porque no hay llamadas a este elemento.
-//      AddCallerToFromCurr(adicVarDec.constDec.typ);
-      { TODO : Por ahora seguimos manteniendo dos tipo iguales, porque se obtuvo error en las pruebas. }
-      AddCallerToFromCurr(xtyp);
-    end else begin
-      //Registramos la llamada al tipo de la declaración
-      AddCallerToFromCurr(xtyp);
+    if typeCreated then begin
+      //A new type is created in the definition of the variable.
+      if adicVarDec.hasInit then begin
+        //A initialization exists.
+        if typesCreated=1 then begin
+          {La inicialización también ha creado un tipo en el AST. Esto se produce en un
+          caso de arreglo dinámico, como:
+            VAR myarray: ARRAY[] OF char  //Tipo creado en la definición
+               = 'abc';          //Tipo creado en la inicialización.
+          }
+          {Podríamos eliminar un tipo y dejar solo uno, pero para no tener que lidiar con
+          la eliminación de un elemento del AST (y sus "callers"). }
+          //Actualizamos para que apunte al tipo de la inicialización, porque ya tiene una llamada creada.
+          xtyp := adicVarDec.constDec.typ;
+        end else begin
+          {La inicialización no ha creado un tipo nuevo. Debe ser porque se ha
+          se ha reusado el tipo "xtyp". Puede ser algo como:
+            VAR myarray: ARRAY[3] OF char  //Tipo creado en la definición
+               = 'abc';          //Usa el mismo tipo de la definición.
+          }
+          //En este caso, solo nos queda darle el nombre aporopiado a xtyp:
+          nItems := xtyp.consNitm.value.ValInt;
+          xtyp.name := GenArrayTypeName(xtyp.itmType.name, nItems);
+        end;
+      end
     end;
     //Aquí ya se tiene el tipo creado y en el árbol de sintaxis
     //Reserva espacio para las variables
     for i := 0 to high(varNames) do begin
       xvar := AddVariableAndOpen(varNames[i], xtyp, srcPosArray[i]);
       if HayError then break;        //Sale para ver otros errores
-      //Verifica si hay referencia a variable para abrirla aquí después de que se ha abierto la variable
-      //if aditVar.absVar<>nil then begin
-      //  //Hayreferencia a variable
-      //  AddCallerToFromCurr(aditVar.absVar); //Add reference to variable, however final operand can be: <variable>.<fieldName>
-      //end;
       //Inicia campos
       xvar.adicPar := adicVarDec;    //Actualiza propiedades adicionales
       xvar.location := curLocation;  //Actualiza bandera
@@ -1061,10 +1074,15 @@ begin
       decAbsol : xvar.storage := stRamFix;  //Will have a fixed memory address.
       decNone  : xvar.storage := stRamFix;  //Will have a fixed memory address.
       end;
-      //Agrega la llamada, específica, desde esta variable.
+      //Agrega la llamada al tipo de la variable.
+      AddCallerToFromCurr(xtyp);  //Llamada al tipo usado (Lo usa cada variable declarada.)
+      //Agrega llamada a variable cuando se use en ABSOLUTE.
       if adicVarDec.absVar<>nil then begin
-        AddCallerToFromCurr(adicVarDec.absVar); { TODO : Sería mejor llamar a GetExpression
-        y dejar que allí se generen las llamadas, como se hace en la declaración de constantes.}
+        AddCallerToFromCurr(adicVarDec.absVar);
+      end;
+      //Agrega llamada a constante cuando se use al inicializar
+      if adicVarDec.hasInit then begin
+        AddCallerToFromCurr(adicVarDec.constDec);
       end;
       TreeElems.CloseElement;  //Close variable
     end;
@@ -1074,7 +1092,7 @@ begin
   end;
   if not CaptureDelExpres then exit;
   ProcComments;
-  //puede salir con error
+  //Puede salir con error.
 end;
 procedure TCompMain.CompileProcDeclar;
 {Compila la declaración de procedimientos. Tanto procedimientos como funciones
@@ -1580,6 +1598,24 @@ begin
   TreeElems.CloseElement;  //Close block
   if not VerifyEND then exit;
 end;
+procedure TCompMain.MoveInternalTypes(node: TxpElement;
+             declarSec: TxpElement; declarPos: Integer);
+{Explore all the types declared in "node" at any deep level and move it to
+the current declaartion section.}
+var
+  ele: TxpElement;
+begin
+  if node.elements= nil then exit;
+  for ele in node.elements do begin
+    //Explore the first level.
+    if ele.idClass = eleTypeDec then begin  //It's a type, we need to move
+      //Move the element to declaration section
+      TreeElems.ChangeParentTo(declarSec, ele, declarPos);
+    end;
+    //Explore in deeper level
+    MoveInternalTypes(ele, declarSec, declarPos);
+  end;
+end;
 procedure TCompMain.CompileSentence;
 {Compile one Pascal sentence. One sentence can be:
  1. Assigment sentence.
@@ -1594,8 +1630,9 @@ procedure TCompMain.CompileSentence;
  }
 var
   tokUp: String;
-  ele: TxpElement;
+  ele, declarSec: TxpElement;
   ex: TEleExpress;
+  declarPos: Integer;
 begin
   if not (TreeElems.curNode.idClass in [eleBody, eleBlock]) then begin
     //No debería pasar, porque las instrucciones solo pueden estar en eleBody
@@ -1686,7 +1723,12 @@ begin
         GenError('Syntax error.');
         exit;
       end;
-      ele :=TreeElems.curNode.elements[0];  //Take the first (should be the unique) element.
+      //Check for possible types generated to move to the declaration section.
+      declarSec := TreeElems.curCodCont.Parent;  //Declaraion section.
+      declarPos := TreeElems.curCodCont.Index;  //Position before of the body.
+      MoveInternalTypes(TreeElems.curNode, declarSec, declarPos);
+      //Take the first (should be the unique) element.
+      ele :=TreeElems.curNode.elements[0];
       //We expected one expression element.
       if ele.idClass = eleExpress then begin
         //The expected element
@@ -2041,8 +2083,7 @@ begin
   end;
   bod := TreeElems.AddElementBodyAndOpen(GetSrcPos);  //Abre nodo Body
   Next;   //Takes "BEGIN"
-  //Codifica el contenido
-  CompileCurBlock;   //compila el cuerpo
+  CompileCurBlock;   //Compiles the body
   TreeElems.CloseElement;   //No debería ser tan necesario.
   bod.srcEnd := GetSrcPos;
   if HayError then exit;

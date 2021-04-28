@@ -3,7 +3,7 @@
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=7LKYWG9LXNQ9C&lc=ES&item_name=Tito%20Hinostroza&item_number=2153&no_note=0&cn=Dar%20instrucciones%20especiales%20al%20vendedor%3a&no_shipping=2&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
 
 
-P65Pas 0.8.2
+P65Pas 0.8.3
 ============
 
 Cross-platform Pascal cross-compiler for 6502 CPU.
@@ -325,10 +325,10 @@ In general, arrays can be initialized when declaring a variable;
 ```
 TYPE 
   TAStr = [3]char;
-  TAByte = [5]byte;
+  TAByte = [4]byte;
 VAR
   str : TASrt = ('a','b','c');
-  numb: TAByte = (1, 2); //Only the first items can be set.
+  numb: TAByte = (1, 2, 3); //ERROR: Expected 4 items.
 ```
 
 Arrays support several methods:

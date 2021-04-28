@@ -129,7 +129,6 @@ type  //Previous definitions for elements
     absAddr  : integer;       //ABSOLUTE address
     absOff   : integer;       //Offset to variable when ABSOLUTE.
     hasInit  : boolean;       //Indicate if variable is initialized
-    //iniVal   : TConsValue;    //Initial constant value
     constDec: TEleConsDec;    //Reference to the const declaration for init value.
   end;
 type  //Type categories and declaration styles
@@ -192,29 +191,29 @@ type  //Type categories and declaration styles
 type  //TxpElement class
   //Element types for the language.
   TxpIDClass = (//Declaraction
-                eleNone,     //No type
-                eleVarDec,   //Variable declaration
-                eleConsDec,  //Constant declaration
-                eleTypeDec,     //Type declaration
-                eleFuncDec,  //Function declaration
-                eleFunc,     //Function
+                eleNone,      //No type
+                eleVarDec,    //Variable declaration
+                eleConsDec,   //Constant declaration
+                eleTypeDec,   //Type declaration
+                eleFuncDec,   //Function declaration
+                eleFunc,      //Function
                 //Structural
-                eleBody,     //Body procedure/program
-                eleBlock,    //Block of code
+                eleBody,      //Body procedure/program
+                eleBlock,     //Block of code
                 eleProgFrame, //Code container
-                eleProg,     //Main program
-                eleUnit,     //Unit
-                eleFinal,    //FINALIZATION section
+                eleProg,      //Main program
+                eleUnit,      //Unit
+                eleFinal,     //FINALIZATION section
                 //Expressions
-                eleExpress,  //Expression
-                eleOperand,  //Operand
-                eleOperator,  //Operator
+                eleExpress,   //Expression
+                eleAsmOperand,//ASM Operand
+                eleAsmOperat, //ASM Operation
                 //Instructions relative
-                eleSenten,   //Sentence/Instruction
-                eleAsmLine,  //ASM line
-                eleAsmBlock  //ASM block
+                eleSenten,    //Sentence/Instruction
+                eleAsmLine,   //ASM line
+                eleAsmBlock   //ASM block
                 );
-
+  TxpEleCodeCont = class;
   { TxpElement }
   //Base class for all syntactic elements
   TxpElement = class
@@ -246,10 +245,11 @@ type  //TxpElement class
     procedure AddCalled(elem: TxpElement);
     function UpdateCalledAll: integer;
   public
-    Parent  : TxpElement;  //Referencia al elemento padre
-    idClass : TxpIDClass;  //Para no usar RTTI
-    elements: TxpElements; //Referencia a nombres anidados, cuando sea función
-    location: TxpEleLocation;  //Ubicación del elemento
+    Parent  : TxpElement;  //Reference to parent element
+    idClass : TxpIDClass;  //To avoid use RTTI
+    elements: TxpElements; //Container list for other elements
+    location: TxpEleLocation;  //Element location
+    codCont : TxpEleCodeCont;  //Temporal field for Code container.
     property name: string read Fname write Setname;
     property uname: string read Funame;
     function Path: string;
@@ -402,7 +402,7 @@ type  //Declaration elements
                }
   );
 
-  { TxpEleVarDec }
+  { TEleVarDec }
   //Class to modelate variable declarations.
   TEleVarDec = class(TxpEleCodeCont)
   private
@@ -440,18 +440,26 @@ type  //Declaration elements
   TEleVarDecs = specialize TFPGObjectList<TEleVarDec>;
 
 type  //Expression elements
+  //Valid operations for TEleAsmOperat
+  TAsmInstOperation = (
+    aopSelByte,  //Selecciona un byte
+    aopAddValue, //Suma un valor
+    aopSubValue  //Resta un valor
+  );
 
   { TxpEleOperand }
-  TEleOperand = class(TxpElement)
+  {Represent an operand in ASM expressions.}
+  TEleAsmOperand = class(TxpElement)
     elem: TxpElement;  //Reference to element if apply.
-    txt: string;       //Text of the operand, if it's not an element.
     constructor Create; override;
   end;
 
   { TxpEleOperator }
-  TEleOperator= class(TxpElement)
-    //oper: TxpOperator; //Reference to operator if apply.
-    txt: string;       //Text of the operator, if it's not an element.
+  {Represent an operation in ASM expressions.}
+  TEleAsmOperat= class(TxpElement)
+    operation: TAsmInstOperation;   //Operation
+    value    : word;                //Value
+    //txt      : string;       //Text of the operator, if it's not an element.
     constructor Create; override;
   end;
 
@@ -463,11 +471,8 @@ type  //Expression elements
 
   TEleFunBase = class;
 
-  { TxpEleExpress }
-  {Represents an expression. }
-
   { TEleExpress }
-
+  {Represents an expression. }
   TEleExpress = class(TxpElement)
   public
     opType : TopType;     //Operand type.
@@ -629,8 +634,9 @@ type  //Instructions relative elements
                           be agnostic of hardware if possible.
                         }
     param: integer;   {Represents the operand of the instruction, when it's a simple
-                       number. When it's -1, indicates the operand is an expression and
-                       it's stored in child elements.}
+                       number. When it's -1, this element have child elements, operand
+                       is an expression and it's stored in child elements, in the format
+                       described in documentation.}
     constructor Create; override;
   end;
 
@@ -681,8 +687,6 @@ type  //Declaration elements (functions)
     {Note that the precedence of the operators, is fixed and depends only of operator.}
   public //Flags for operators
     fConmutat : boolean; //Represents a conmutative binary operator.
-    fConResCon: boolean; //If the operands are constant, the result will be, definitely a constant. Used for optimization.
-    fNulResNul: boolean; //If one operand is 0, the result will be 0 (like AND or *). Used for optimization.
   public //References
     {Call to routine that generate code for the function, when the function is defined as
     INLINE like used in many system functions.}
@@ -812,22 +816,22 @@ begin
   inherited Destroy;
 end;
 { TxpEleOperator }
-constructor TEleOperator.Create;
+constructor TEleAsmOperat.Create;
 begin
   inherited Create;
-  idClass := eleOperator;
+  idClass := eleAsmOperat;
 end;
 { TxpEleOperand }
-constructor TEleOperand.Create;
+constructor TEleAsmOperand.Create;
 begin
   inherited Create;
-  idClass := eleOperand;
+  idClass := eleAsmOperand;
 end;
 function TEleExpress.opTypeAsStr: string;
 begin
   WriteStr(Result, opType);
 end;
-{ TxpEleExpress }
+{ TEleExpress }
 function TEleExpress.StoAsStr: string;
 //Resturns storage as string
 begin
@@ -1120,11 +1124,11 @@ begin
   for i := lstCallers.Count-1 downto 0 do begin
     cal := lstCallers[i];
     if cal.caller = callElem then begin
-if callElem=nil then begin
-  debugln('+Eliminado de ' + self.name + ' caller: '+'nil');
-end else begin
-  debugln('+Eliminado de ' + self.name + ' caller: ' + callElem.name);
-end;
+//if callElem=nil then begin
+//  debugln('+Eliminado de ' + self.name + ' caller: '+'nil');
+//end else begin
+//  debugln('+Eliminado de ' + self.name + ' caller: ' + callElem.name);
+//end;
       lstCallers.Delete(i);
       inc(n);
     end;
@@ -1431,7 +1435,7 @@ begin
   inherited;
   idClass := eleConsDec;
 end;
-{ TxpEleVarDec }
+{ TEleVarDec }
 function TEleVarDec.Gettyp: TEleTypeDec;
 begin
   if ftyp.copyOf<>nil then begin

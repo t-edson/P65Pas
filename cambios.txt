@@ -1,46 +1,54 @@
-P65PAS 0.8.2
+P65PAS 0.8.3
 ============
 COMENTARIOS
-La versión 0.8.1 corrigió algunas fallas en la nueva implementación y avanzó en el 
-diseño del optimizador.
-Esta versión ha hecho también avances importantes, implementando varias características
-incompletas o implementadas erróneamente. Se destaca el avance en cuanto a la declaración 
-de tipos y variables. El soporte es bastante completo y flexible en la versión anterior.
-Por primera vez se logra compilar sin errores (aunque no se ha verificado el código 
-compilado) la unidad Commodore64.
+En esta versión se logran dos avances importantes:
+- Se logra hacer funcional la codificación de instrucciones ASM.
+- Se mejora el procesamiento de la declaración de variables y tipos.
 
 OBJETIVOS
-- Crear estructura para almacenar información de los diferentes archivos que componen el proyecto.
+- Lograr compilar, sin errores de sintaxis, las rutinas de prueba, y las unidades estándar
+ del compilador.
 
 CAMBIOS
-- Se modifica la documentación. Se corrigen algunos nombres desactualizados.
-- Se define el uso del estado ModeRequire y se modifica TGenCod.ROB_byte_asig_byte() para
-que lo soporte.
-- Se modifica TGenCodBas.GenCodeExpr() para que no realiza la verificación del caso
-"eleExp.opType = otVariab".
-- Se corrige un problema en el cálculo de los tiempos de cada proceso.
-- Se agregan dos nuevos atributos a TEleExpress para manejar direcciones de memoria 
-cuando la expresión es de tipo otVariab y el almacenamiento es stRamFix.
-- Se crea la función TEleExpress.add() para acceder a la dirección de memoria.
-- Se crea la función TEleExpress.allocated().
-- Se modifica GetAdicVarDeclar() para que elimine el operando creado cuando una variable
-es inicializada.
-- Se crea TCompMain.AddConstDeclar() para extraer la función de creación de constantes
-en el AST y poder usarla desde otros puntos.
-- Se modifica TCompMain.CompileConstDeclar() para que mejore su comportamiento y mueva los
-tipos generados al mismo nivel que la constante.
-- Se crea el método TXpTreeElements.ChangeParentTo() para mover un elemento del AST.
-- Se elimina el campo TAdicVarDec.iniVal y se crea TAdicVarDec.constDec.
-- Se corrige un error en la inicialización de literales arreglo, en TCompilerBase.GetOperand().
-- Se corrige la declaración de tipos copia en TCompMain.CompileTypeDeclar().
-- Se corrige TCompMain.CompileSentence() para que acepte también palabras reservadas.
-- Se corrige un error en TGenCod.fun_Word() 
+- Se eliminan los atributos "TEleFunBase.fConResCon" y "TEleFunBase.fNulResNul".
+- Se simplifica TGenCodBas.ConstantFoldExpr() y se agrega una protección a la simplificación
+de constantes no evaluadas.
+- Se agrega el atributo TxpElement.curCodCont.
+- Se modifican las rutinas TXpTreeElements.AddElementXXXAndOpen() para que guarden el valor
+de "curCodCont" antes de abrir un nuevo contenedor de código.
+- Se modifica TXpTreeElements.CloseElement() para restaurar el último valor de "curCodCont".
+- Se modifica TCompMain.CompileSentence() para que mueva los posibles tipos creados, a la 
+sección de declaraciones.
+- Se corrige TGenCod.ROU_address() para que trabaje bien con arreglos constantes.
+- Se cambian los nombres de los enumerados eleOperand y eleOperator a eleAsmOperand y 
+eleAsmOperat.
+- Se cambian los nombres de las clases TEleOperand y TEleOperator por TEleAsmOperand y
+TEleAsmOperat.
+- Se agregan íconos en el explorador de código para identificar a elementos de los bloques
+ensamblador.
+- Se crea el método TParserAsm_6502.ScanOperations() y se modifica 
+TParserAsm_6502.CaptureAddress() para completar la implementación de instrucciones ASM.
+- Se eliminan TParserAsm_6502.CaptureByte() y TParserAsm_6502.HaveByteInformation() porque 
+ya no se usan.
+- Se modifica TParserAsm_6502.ProcInstrASM() para tener mejor precisión en la dientificación
+de los direccionamientos de las instrucciones.
+- Se modifica TCompMain.CompileVarDeclar() para use solo una declaración de tipos cuando 
+genera dos declaraciones (a: array[3] of char = 'abc'). 
+- Se corrige TCompMain.CompileVarDeclar() para que genere las llamadas correspondientes
+a la constante de inicialización, cuando se usa. 
+- Se corrige TCompMain.CompileVarDeclar() para que genere las llamadas correctamente al 
+tipo de la variable creada.
+- Se modifica TCompMain.GetAdicVarDeclar() para que se valide la inicialización de arreglos
+de forma exacta. Antes se permitía inicializar con menos ítems.
+- Se corrige TCompMain.CompileVarDeclar() para que se fije TreeElems.curCodCont a un valor
+antes de llamar a GetTypeDeclar()
+- Se modifica TCompMain.GetTypeDeclar() para que no llame a AddCallerToFromCurr() ya que no 
+se garantiza que se pueda estar dentro de un contenedor de código, cuando se le llame.
+- Se modifica TGenCodBas.GenCodeSentences() para procesar mejor a las líneas ASM y se crea
+el método TGenCodBas.GenCodeASMline().
+- Se actualiza información en la documentación.
 
 TAREAS PLANIFICADAS
-- Definir cómo se van a manejar los tipos creados dinámicamente por 
-TCompilerBase.GetExpression(). Una opción es dejarlos dónnde se crean (al lado del operando
-rompiendo la estructura del AST) y moverlos con un proceso posterior. Otra opción es 
-crear un parámetro GetExpression() para definir en dónde se crearán los tipos. 
 - Implementar a obligatoriedad de localizar el registro IX en la página cero.
 - Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
 - Implementra la sintaxis de arreglos: VAR str: TAByte = (1,2,3); Se sugiere implementar 
@@ -113,6 +121,47 @@ octeto = object
   end;
 
 
+P65PAS 0.8.2
+============
+COMENTARIOS
+La versión 0.8.1 corrigió algunas fallas en la nueva implementación y avanzó en el 
+diseño del optimizador.
+Esta versión ha hecho también avances importantes, implementando varias características
+incompletas o implementadas erróneamente. Se destaca el avance en cuanto a la declaración 
+de tipos y variables. El soporte es bastante completo y flexible en la versión anterior.
+Por primera vez se logra compilar sin errores (aunque no se ha verificado el código 
+compilado) la unidad Commodore64.
+
+OBJETIVOS
+- Crear estructura para almacenar información de los diferentes archivos que componen el proyecto.
+
+CAMBIOS
+- Se modifica la documentación. Se corrigen algunos nombres desactualizados.
+- Se define el uso del estado ModeRequire y se modifica TGenCod.ROB_byte_asig_byte() para
+que lo soporte.
+- Se modifica TGenCodBas.GenCodeExpr() para que no realiza la verificación del caso
+"eleExp.opType = otVariab".
+- Se corrige un problema en el cálculo de los tiempos de cada proceso.
+- Se agregan dos nuevos atributos a TEleExpress para manejar direcciones de memoria 
+cuando la expresión es de tipo otVariab y el almacenamiento es stRamFix.
+- Se crea la función TEleExpress.add() para acceder a la dirección de memoria.
+- Se crea la función TEleExpress.allocated().
+- Se modifica GetAdicVarDeclar() para que elimine el operando creado cuando una variable
+es inicializada.
+- Se crea TCompMain.AddConstDeclar() para extraer la función de creación de constantes
+en el AST y poder usarla desde otros puntos.
+- Se modifica TCompMain.CompileConstDeclar() para que mejore su comportamiento y mueva los
+tipos generados al mismo nivel que la constante.
+- Se crea el método TXpTreeElements.ChangeParentTo() para mover un elemento del AST.
+- Se elimina el campo TAdicVarDec.iniVal y se crea TAdicVarDec.constDec.
+- Se corrige un error en la inicialización de literales arreglo, en TCompilerBase.GetOperand().
+- Se corrige la declaración de tipos copia en TCompMain.CompileTypeDeclar().
+- Se corrige TCompMain.CompileSentence() para que acepte también palabras reservadas.
+- Se corrige un error en TGenCod.fun_Word() 
+
+
+
+
 P65PAS 0.8.1 (No funcional)
 ============
 COMENTARIOS
@@ -148,6 +197,22 @@ TCompiler_PIC16.ScanForRegsRequired() y se cambia la llamada a ConstantFoldBody(
 
 P65PAS 0.8.0 (No funcional)
 ============
+COMENTARIOS
+La versión anterior 0.7.9 realizó cambios dramáticos en la estructura del compilador, referidos 
+principalmente al uso del lexer. 
+Ahora, con esta versión, se trabaja más en la parte del llenado del árbol de sintaxis, que 
+incluye detalle de las expresiones. Esta nueva forma de trabajo influye en muchas rutinas básicas
+como el analizdor de expresiones (el que se ha recosntruido casi por completo) y el manejo de 
+operandos.
+Se han creado estructuras nuevas y conceptos nuevos también que dan forma al nuevo diseño del 
+compilador.
+Cabe resaltar que se ha logrado el objetivo de eliminar las llamadas "funciones y tipos del 
+sistema" y que se ha dado un paso grande al implementar el futuro soporte a la definición de 
+objetos, con las nuevas estructuras creadas.
+También es importante el avance en la definición de funciones INLINE.
+El generador de código es ahora más flexible y permitirá la creación de nuevas optimizaciones.
+
+
 CAMBIOS
 - Se elimina la instrucción que limpiaba los contextos después de compilar, para poder acceder
 a información de archivos.
@@ -205,22 +270,6 @@ locales en lugar de globales.
 - Se modifica la ventana de propiedades del explorador de código, para que refleje 
 información más uniforme y más completa para las expresiones.
 - Se revisa y actualiza la documentación ampliamente.
-
-COMENTARIOS
-La versión anterior 0.7.9 realizó cambios dramáticos en la estructura del compilador, referidos 
-principalmente al uso del lexer. 
-Ahora, con esta versión, se trabaja más en la parte del llenado del árbol de sintaxis, que 
-incluye detalle de las expresiones. Esta nueva forma de trabajo influye en muchas rutinas básicas
-como el analizdor de expresiones (el que se ha recosntruido casi por completo) y el manejo de 
-operandos.
-Se han creado estructuras nuevas y conceptos nuevos también que dan forma al nuevo diseño del 
-compilador.
-Cabe resaltar que se ha logrado el objetivo de eliminar las llamadas "funciones y tipos del 
-sistema" y que se ha dado un paso grande al implementar el futuro soporte a la definición de 
-objetos, con las nuevas estructuras creadas.
-También es importante el avance en la definición de funciones INLINE.
-El generador de código es ahora más flexible y permitirá la creación de nuevas optimizaciones.
-
 
 P65PAS 0.7.9 (No es funcional)
 ============
