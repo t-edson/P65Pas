@@ -33,6 +33,7 @@ type
     procedure GenCodLoadToA(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToX(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToY(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
+    procedure GenCondeIF(sen: TxpEleSentence);
     procedure StartCodeGen;
     procedure StopCodeGen;
     procedure ProcByteUsed(offs: word; regPtr: TCPURamCellPtr);
@@ -72,6 +73,7 @@ type
     procedure GenCodeExpr(eleExp: TEleExpress);
     procedure GenCodeSentences(sentList: TxpElements);
     procedure GenCodeBody(body: TEleBody);
+    procedure GenCodeBlock(block: TEleBlock);
     procedure ConstantFoldExpr(eleExp: TEleExpress);
     procedure ConstantFoldBody(body: TEleBody);
   protected  //Memory managing routines for variables
@@ -1397,8 +1399,15 @@ begin
   requireA;
   case par.Sto of
   stRamFix: begin
-    SetFunExpres(fun);
-    _LDA(par.addH);
+    //SetFunExpres(fun);
+    //_LDA(par.addH);
+    if par.rvar.allocated then begin
+      SetFunVariab(fun, par.addH);
+    end else begin
+      //We cannot set a variable yet
+      SetFunExpres(fun);
+      //_LDA(par.addH);
+    end;
   end;
   stConst: begin
     //Se devuelve una constante
@@ -1673,7 +1682,13 @@ begin
         GenError('No supported unimplemented INLINE functions.');
       end;
     end else begin
-      //Should be a Normal subroutine. Generates the CALL instruction.
+      //Should be a Normal subroutine.
+      //First we evaluate the parameters
+      for ele in eleExp.elements do begin
+        parExpr := TEleExpress(ele);
+        GenCodeExpr(parExpr);
+      end;
+      //Generates the CALL instruction.
       {Even though this is a Normal function, we can consider functCall() like the
       INLINE routine callback to this function (like codInline), even more if we consider
       that extra code can be added (parameters assignment) before the final JSR.}
@@ -1784,12 +1799,60 @@ begin
     //It's not an instruction
   end;
 end;
+procedure TGenCodBas.GenCondeIF(sen: TxpEleSentence);
+var
+  expCond: TEleExpress;
+  i: Integer;
+  cond: TxpElement;
+  lbl1: TIfInfo;
+  //Variables for jumps completion.
+  njumps: integer;
+  jumps: array of integer;
+begin
+  njumps := 0;
+  SetLength(jumps, njumps);
+  i:=0;
+  while i<sen.elements.Count do begin
+    //Takes condition
+    cond := sen.elements[i];
+    expCond := TEleExpress(cond);  //Takes condition
+    GenCodeExpr(expCond);
+    if (expCond.opType = otConst) then begin
+      //Constant conditions have special behaviour.
+      if (expCond.value.ValBool=false) then begin
+        i+=2;  //Not processed
+      end else begin
+        //True expressions are the last executed.
+        GenCodeBlock(TEleBlock(sen.elements[i+1]));
+        break;  //No more is executed.
+      end;
+    end else begin
+      //Not constant expressions.
+      IF_TRUE(expCond, lbl1);
+      GenCodeBlock(TEleBlock(sen.elements[i+1]));
+      //Check if there is more conditions
+      if i+2<sen.elements.Count then begin
+        //There are more conditions.
+        //We need to include a jump to the end
+        inc(njumps);
+        SetLength(jumps, njumps);  //Create new jump address
+        _JMP_post(jumps[njumps-1]); //New jump to complete later
+      end;
+      IF_END(lbl1);
+      i+=2;
+    end;
+  end;
+  //Complete jumps
+  for i:=0 to high(jumps) do begin
+    _LABEL_post(jumps[i]);
+  end;
+end;
 procedure TGenCodBas.GenCodeSentences(sentList: TxpElements);
 {Generate code for a list of sentences.}
 var
   eleSen, ele: TxpElement;
   sen: TxpEleSentence;
-  expFun, expAsm: TEleExpress;
+  expFun, expAsm, expCon: TEleExpress;
   inst: TxpEleAsmLine;
 begin
   for eleSen in sentList do begin
@@ -1810,6 +1873,9 @@ begin
         inst := TxpEleAsmLine(ele);
         GenCodeASMline(inst);
       end;
+    end;
+    sntIF: begin
+      GenCondeIF(sen);
     end
     else
       GenError('Unknown sentence.', sen.srcDec);
@@ -1822,7 +1888,12 @@ procedure TGenCodBas.GenCodeBody(body: TEleBody);
 begin
   TreeElems.OpenElement(body);
   GenCodeSentences(TreeElems.curNode.elements);
-  //TreeElems.CloseElement;  //NO really needed.
+end;
+procedure TGenCodBas.GenCodeBlock(block: TEleBlock);
+{Do code generation for the body element specified. }
+begin
+  TreeElems.OpenElement(block);
+  GenCodeSentences(TreeElems.curNode.elements);
 end;
 procedure TGenCodBas.ConstantFoldExpr(eleExp: TEleExpress);
 {Performs:
@@ -1867,6 +1938,15 @@ begin
         { TODO : Completar este caso. Por ahora no lo permitiremos. }
         GenError('No supported unimplemented INLINE functions.');
       end;
+    end else begin
+      //In Normal subroutine, we scan for parameters
+      //Process all parameters.
+      for ele in eleExp.elements do begin
+        parExpr := TEleExpress(ele);
+        ConstantFoldExpr(parExpr);  //Try to evaluate constant.
+        if HayError then exit;
+      end;
+      { TODO : ¿No debería llamarse también a functCall(). Allí también se genera código.? }
     end;
   end else if eleExp.opType = otConst then begin
     if eleExp.evaluated then exit;  //No problem it's evaluated.

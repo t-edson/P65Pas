@@ -806,6 +806,7 @@ var
   decStyle: TTypDeclarStyle;
   TypeCreated: boolean;
 begin
+  if TreeElems.curCodCont=nil then TreeElems.curCodCont:=typByte; {Ver comentario de CompileVarDeclar()}
   Result := GetTypeDeclar(decStyle, TypeCreated);  //lee tipo
   if HayError then exit;
   if TypeCreated then begin
@@ -1523,6 +1524,7 @@ begin
   if Upcase(token) = 'ELSE' then begin
     //Hay bloque ELSE, pero no se ejecutará nunca
     Next;   //toma "else"
+    GenExpressionConstBool('else', true, GetSrcPos);  //An "else" is similar to a ELSIF true
     TreeElems.AddElementBlockAndOpen(GetSrcPos);  //Open block
     if not CompileStructBody then exit;
     TreeElems.CloseElement;  //Close block

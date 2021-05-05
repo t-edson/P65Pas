@@ -151,6 +151,9 @@ begin
   end else if elem.idClass = eleTypeDec then begin
     nod.ImageIndex := 15;
     nod.SelectedIndex := 15;
+  end else if elem.idClass = eleFuncDec then begin
+    nod.ImageIndex := 16;
+    nod.SelectedIndex := 16;
   end else if elem.idClass = eleFunc then begin
     nod.ImageIndex := 3;
     nod.SelectedIndex := 3;

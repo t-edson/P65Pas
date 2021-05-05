@@ -2134,7 +2134,7 @@ begin
       _STA(parA.addH);
     end;
     else
-      GenError(MSG_UNSUPPORTED); exit;
+      GenError(MSG_UNSUPPORTED, parB.srcDec); exit;
     end;
   end else if parA.Sto = stRegister then begin
     requireA;
@@ -2257,7 +2257,7 @@ begin
 //      GenError(MSG_UNSUPPORTED); exit;
 //    end;
   end else begin
-    GenError('Cannot assign to this Operand.'); exit;
+    GenError('Cannot assign to this Operand.', parB.srcDec); exit;
   end;
 end;
 procedure TGenCod.ROB_word_asig_byte(fun: TEleExpress);
@@ -4275,13 +4275,16 @@ begin
   stConst : begin
     if par.Typ = typByte then begin
       SetFunConst(fun);
+      fun.evaluated := par.evaluated;
       fun.value.ValInt := par.value.ValInt;  //Copy value
     end else if par.Typ = typChar then begin
       SetFunConst(fun);
+      fun.evaluated := par.evaluated;
       fun.value.ValInt := par.value.ValInt;  //Copy value
     end else if par.Typ = typWord then begin
       //Already Word
       SetFunConst(fun);
+      fun.evaluated := par.evaluated;
       fun.value.ValInt := par.value.ValInt;  //Copy value
     end else begin
       GenError('Cannot convert this constant to word.'); exit;
@@ -4997,7 +5000,7 @@ begin
   unit (more less) and we create the system function here, so we use the same code for
   linking, calling and optimization that we use in common functions. Moreover, we can
   create private functions.}
-  uni := CreateUnit('-');  //System unit
+  uni := CreateUnit('System');  //System unit
   TreeElems.AddElementAndOpen(uni);  //Open Unit
   /////////////// System types ////////////////////
   typBool := CreateEleType('boolean', srcPosNull, 1, tctAtomic, t_boolean);

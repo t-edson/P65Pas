@@ -8,8 +8,8 @@ object fraSyntaxTree: TfraSyntaxTree
   DesignTimePPI = 120
   ParentFont = False
   TabOrder = 0
-  DesignLeft = 274
-  DesignTop = 141
+  DesignLeft = 165
+  DesignTop = 152
   object Label1: TLabel
     Left = 0
     Height = 21

@@ -1,60 +1,50 @@
-P65PAS 0.8.3
+P65PAS 0.8.4
 ============
 COMENTARIOS
-En esta versión se logran dos avances importantes:
-- Se logra hacer funcional la codificación de instrucciones ASM.
-- Se mejora el procesamiento de la declaración de variables y tipos.
+Aún no se cierra esta versión, porque no se ha logrado el objetivo.
+Las ultimas 4 versiones han dado un gran avance en la implementación de un compilador
+funcional con el nuevo diseño, pero hay todavía un largo camino por delante. Mientras
+tanto se deja la versión 0.7.8 como la última estable.
 
 OBJETIVOS
-- Lograr compilar, sin errores de sintaxis, las rutinas de prueba, y las unidades estándar
- del compilador.
+- Compilar y ejecutar sin errores los primeros 3 archivos de prueba.
 
 CAMBIOS
-- Se eliminan los atributos "TEleFunBase.fConResCon" y "TEleFunBase.fNulResNul".
-- Se simplifica TGenCodBas.ConstantFoldExpr() y se agrega una protección a la simplificación
-de constantes no evaluadas.
-- Se agrega el atributo TxpElement.curCodCont.
-- Se modifican las rutinas TXpTreeElements.AddElementXXXAndOpen() para que guarden el valor
-de "curCodCont" antes de abrir un nuevo contenedor de código.
-- Se modifica TXpTreeElements.CloseElement() para restaurar el último valor de "curCodCont".
-- Se modifica TCompMain.CompileSentence() para que mueva los posibles tipos creados, a la 
-sección de declaraciones.
-- Se corrige TGenCod.ROU_address() para que trabaje bien con arreglos constantes.
-- Se cambian los nombres de los enumerados eleOperand y eleOperator a eleAsmOperand y 
-eleAsmOperat.
-- Se cambian los nombres de las clases TEleOperand y TEleOperator por TEleAsmOperand y
-TEleAsmOperat.
-- Se agregan íconos en el explorador de código para identificar a elementos de los bloques
-ensamblador.
-- Se crea el método TParserAsm_6502.ScanOperations() y se modifica 
-TParserAsm_6502.CaptureAddress() para completar la implementación de instrucciones ASM.
-- Se eliminan TParserAsm_6502.CaptureByte() y TParserAsm_6502.HaveByteInformation() porque 
-ya no se usan.
-- Se modifica TParserAsm_6502.ProcInstrASM() para tener mejor precisión en la dientificación
-de los direccionamientos de las instrucciones.
-- Se modifica TCompMain.CompileVarDeclar() para use solo una declaración de tipos cuando 
-genera dos declaraciones (a: array[3] of char = 'abc'). 
-- Se corrige TCompMain.CompileVarDeclar() para que genere las llamadas correspondientes
-a la constante de inicialización, cuando se usa. 
-- Se corrige TCompMain.CompileVarDeclar() para que genere las llamadas correctamente al 
-tipo de la variable creada.
-- Se modifica TCompMain.GetAdicVarDeclar() para que se valide la inicialización de arreglos
-de forma exacta. Antes se permitía inicializar con menos ítems.
-- Se corrige TCompMain.CompileVarDeclar() para que se fije TreeElems.curCodCont a un valor
-antes de llamar a GetTypeDeclar()
-- Se modifica TCompMain.GetTypeDeclar() para que no llame a AddCallerToFromCurr() ya que no 
-se garantiza que se pueda estar dentro de un contenedor de código, cuando se le llame.
-- Se modifica TGenCodBas.GenCodeSentences() para procesar mejor a las líneas ASM y se crea
-el método TGenCodBas.GenCodeASMline().
-- Se actualiza información en la documentación.
+- Se cambia de nombre a la unidad System.
+- Se corrige un error en TGenCodBas.CodAsigmentToVar() respecto al almacenamiento de _Op1.
+- Se corrige TCompilerBase.GetOperand() para que actualice correctamente el campo 
+"evaluated".
+- Se corrige TCompilerBase.CreateFunctionParams() para que actualice "srcDec" de las 
+variables creadas para los parámetros y para que define el alamacenamiento de las 
+variables correctamente.
+- Se corrigen TGenCodBas.GenCodeExpr() y TGenCodBas.ConstantFoldExpr() para que evaluen
+los parámetros de una función normal antes de llamar a la función normal.
+- Se modifica TCompMain.AnalyzeIF para que agregue una condición TRUE antes del bloque
+ELSE, de modo que se uniformizan todos los bloques del IF.
+- Se crea TGenCodBas.GenCondeIF() para que genere código para las condicionales.
+- Se incluye información sobre las condicionales en la documentación.
+- Se agregan nuevos íconos al frame FrameSyntaxTree e información adicional, con algunas
+correcciones, a FormElemProperty.
 
 TAREAS PLANIFICADAS
-- Implementar a obligatoriedad de localizar el registro IX en la página cero.
+- Queda pendiente soportar la instrucción:
+	aword.high := 1;
+Actualmente no se resuelve "aword.high" como operando variable, hasta despúes de que se
+define a "aword" en RAM (lo que está bien). El caso es que las rutinas ROB, cuando se
+llaman en modo "Require" o "ConstEvaluation", todavía pueden generar errores. Y estas
+rutinas ROB son las que generan error.
+Debe dejarse bien establecdo en el compilador, en las ROB, cómo responder correctamente en
+cada modo. Y debe definirse también claramente los modos de trabajo en la síntesis. 
+Por eso, se debría primero, crear una variable que indique el modo de trabajo (Require, 
+ConstEvalution o Syntesis) en lugar de solo usar banderas, como se hace actualmente.
+
+
+- Implementar la obligatoriedad de localizar el registro IX en la página cero.
 - Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
 - Implementra la sintaxis de arreglos: VAR str: TAByte = (1,2,3); Se sugiere implementar 
 en TCompilerBase.GetOperand() el reconcimiento de arreglos de la forma: ('a', 'b') y así 
-se facilitará la creación de literales constantes.
-  numb: TAByte = (1, 2); //Only the first items can be set.
+se facilitará la creación de literales constantes.  numb: TAByte = (1, 2); 
+Se puede empezar creando la función array(1,2,3).
 - Revisar las instrucciones TGenCodBas.Exchange(), porque no tienen el efecto deseado.
 - Revisar la instrucción exit. No funciona con parámetros;
 - Revisar el llenado del campo TxpExitCall.IsObligat porque en el nuevo esquema de trabajo
@@ -121,7 +111,58 @@ octeto = object
   end;
 
 
-P65PAS 0.8.2
+P65PAS 0.8.3 (No funcional)
+============
+COMENTARIOS
+En esta versión se logran dos avances importantes:
+- Se logra hacer funcional la codificación de instrucciones ASM.
+- Se mejora el procesamiento de la declaración de variables y tipos.
+
+OBJETIVOS
+- Lograr compilar, sin errores de sintaxis, las rutinas de prueba, y las unidades estándar
+ del compilador.
+
+CAMBIOS
+- Se eliminan los atributos "TEleFunBase.fConResCon" y "TEleFunBase.fNulResNul".
+- Se simplifica TGenCodBas.ConstantFoldExpr() y se agrega una protección a la simplificación
+de constantes no evaluadas.
+- Se agrega el atributo TxpElement.curCodCont.
+- Se modifican las rutinas TXpTreeElements.AddElementXXXAndOpen() para que guarden el valor
+de "curCodCont" antes de abrir un nuevo contenedor de código.
+- Se modifica TXpTreeElements.CloseElement() para restaurar el último valor de "curCodCont".
+- Se modifica TCompMain.CompileSentence() para que mueva los posibles tipos creados, a la 
+sección de declaraciones.
+- Se corrige TGenCod.ROU_address() para que trabaje bien con arreglos constantes.
+- Se cambian los nombres de los enumerados eleOperand y eleOperator a eleAsmOperand y 
+eleAsmOperat.
+- Se cambian los nombres de las clases TEleOperand y TEleOperator por TEleAsmOperand y
+TEleAsmOperat.
+- Se agregan íconos en el explorador de código para identificar a elementos de los bloques
+ensamblador.
+- Se crea el método TParserAsm_6502.ScanOperations() y se modifica 
+TParserAsm_6502.CaptureAddress() para completar la implementación de instrucciones ASM.
+- Se eliminan TParserAsm_6502.CaptureByte() y TParserAsm_6502.HaveByteInformation() porque 
+ya no se usan.
+- Se modifica TParserAsm_6502.ProcInstrASM() para tener mejor precisión en la dientificación
+de los direccionamientos de las instrucciones.
+- Se modifica TCompMain.CompileVarDeclar() para use solo una declaración de tipos cuando 
+genera dos declaraciones (a: array[3] of char = 'abc'). 
+- Se corrige TCompMain.CompileVarDeclar() para que genere las llamadas correspondientes
+a la constante de inicialización, cuando se usa. 
+- Se corrige TCompMain.CompileVarDeclar() para que genere las llamadas correctamente al 
+tipo de la variable creada.
+- Se modifica TCompMain.GetAdicVarDeclar() para que se valide la inicialización de arreglos
+de forma exacta. Antes se permitía inicializar con menos ítems.
+- Se corrige TCompMain.CompileVarDeclar() para que se fije TreeElems.curCodCont a un valor
+antes de llamar a GetTypeDeclar()
+- Se modifica TCompMain.GetTypeDeclar() para que no llame a AddCallerToFromCurr() ya que no 
+se garantiza que se pueda estar dentro de un contenedor de código, cuando se le llame.
+- Se modifica TGenCodBas.GenCodeSentences() para procesar mejor a las líneas ASM y se crea
+el método TGenCodBas.GenCodeASMline().
+- Se actualiza información en la documentación.
+
+
+P65PAS 0.8.2 (No funcional)
 ============
 COMENTARIOS
 La versión 0.8.1 corrigió algunas fallas en la nueva implementación y avanzó en el 

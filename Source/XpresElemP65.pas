@@ -903,7 +903,7 @@ procedure TEleExpress.SetVariab(var0: TEleVarDec);
 {Set as variable type (and storage stRamFix) from a variable.}
 begin
   opType    := otVariab;
-  Sto       := stRamFix;  //Almacenamiento por defecto
+  Sto       := var0.storage;  //Common is stRamFix
   rvar      := var0;
 end;
 procedure TEleExpress.SetVariab(add0: word);

@@ -1,18 +1,14 @@
-RAM Used   = 28/65280B (0.043%)
+RAM Used   = 125/65536B (0.19%)
 ;INSTRUCTION COUNTER
 ;===================
-ADC    ->0009
-Inv    ->0005
-STA    ->0002
-PHP    ->0002
-LDA    ->0002
-SED    ->0001
-SBC    ->0001
-ROL    ->0001
-ORA    ->0001
-JSR    ->0001
+ADC    ->0107
+STA    ->0004
+LDA    ->0004
+ORA    ->0003
+Inv    ->0003
+RTI    ->0001
+LDY    ->0001
 JMP    ->0001
-BMI    ->0001
 ASL    ->0001
 
 ;PROCEDURE LIST

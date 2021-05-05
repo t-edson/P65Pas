@@ -101,7 +101,7 @@ begin
 end;
 procedure TfrmElemProperty.Exec(cIn: TContexts; elem0: TxpElement);
 var
-  adicInformation, dirSolic, tmp: String;
+  adicInformation, dirSolic, tmp, implem: String;
   xcon: TEleConsDec;
   xfun: TEleFun;
   xbod: TEleBody;
@@ -110,6 +110,7 @@ var
   xexp: TEleExpress;
   sen: TxpEleSentence;
   xtyp: TEleTypeDec;
+  xfundec: TEleFunDec;
 begin
   if elem0 = nil then exit;
   elem := elem0;
@@ -158,6 +159,22 @@ begin
            'Return type: ' + ifthen(xfun.retType=nil,'Unknown', xfun.retType.name) + LineEnding +
            'Address: $' + IntToHex(xfun.adrr, 3) + LineEnding +
            'Size: ' + IntToStr(xfun.srcSize) + LineEnding + tmp;
+  end else if elem.idClass = eleFuncDec then begin
+    xfundec := TEleFunDec(elem);
+    txtEleType.Caption := 'Function Dec.('+elem.ClassName+')';;
+
+    ImageList1.GetBitmap(16, Image1.Picture.Bitmap);
+    //Genera reporte de ExitCalls
+    tmp := '';
+    for ecall in xfundec.lstExitCalls do begin
+      tmp := tmp + 'exit() in : ' + ecall.srcPos.RowColString + ' ' +
+             LineEnding;
+    end;
+    //Información adicional
+    if xfundec.implem<>nil then implem := 'Yes' else implem := 'Not';
+    adicInformation :=
+           'Return type: ' + ifthen(xfundec.retType=nil,'Unknown', xfundec.retType.name) + LineEnding +
+           'Implemented: ' + implem + LineEnding + tmp;
   end else if elem.idClass = eleUnit then begin
     txtEleType.Caption := 'Unit ('+elem.ClassName+')';
     ImageList1.GetBitmap(6, Image1.Picture.Bitmap);
@@ -165,7 +182,7 @@ begin
   end else if elem.idClass = eleBody then begin
     xbod:= TEleBody(elem);
     txtEleType.Caption := 'Body ('+elem.ClassName+')';
-    ImageList1.GetBitmap(12, Image1.Picture.Bitmap);
+    ImageList1.GetBitmap(5, Image1.Picture.Bitmap);
     adicInformation := 'Address: $' + IntToHex(xbod.adrr, 3) + LineEnding +
            'Begin: ' + xbod.srcDec.RowColString  + LineEnding +
            'End: ' + elem.srcEnd.RowColString;
