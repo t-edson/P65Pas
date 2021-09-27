@@ -14,6 +14,12 @@ const
   MAX_REGS_STACK_BIT = 4;  //cantidad máxima de registros a usar en la pila
 
 type
+  //Modes the compiler can call to the Code Generation routines
+  TCompMod = (
+    cmGenCode,   //Generating code
+    cmConsEval,  //Evaluating constant
+    cmRequire    //Checking register and variables requirement
+  );
   {Información sobre los saltos con la instrucción kIF_TRUE}
   TIfInfo = record
     igoto  : integer;   //Address where is GOTO
@@ -22,7 +28,7 @@ type
   { TGenCodBas }
   TGenCodBas = class(TParserDirecBase)
   protected //Operations for parameters or Binary Operators
-    function stoOperation(parA, parB: TEleExpress): TStoOperandsROB; inline;
+    function stoOperation(parA, parB: TEleExpress): TStoOperandsBOR; inline;
     procedure Exchange(var parA, parB: TEleExpress);
     function BinOperationStr(fun: TEleExpress): string;
   private
@@ -58,7 +64,7 @@ type
     function ValidateDWordRange(n: Int64): boolean;
     procedure LoadToWR(fun: TEleExpress);
   protected  //Register and temporal variables requirement.
-    ModeRequire: boolean;  //Flag to set Mode for Code generator.
+    compMod: TCompMod;  //Mode of the compiler
     function requireA: boolean;  //Declare use of register A
     function requireH: boolean;  //Declare use of register H
     function requireE: boolean;  //Declare use of register E
@@ -221,10 +227,10 @@ begin
   Result := parA.StoAsStr+'(' + parA.Typ.name + ') ' + Oper + ' ' +
             parB.StoAsStr+'(' + parB.Typ.name + ')';
 end;
-function TGenCodBas.stoOperation(parA, parB: TEleExpress): TStoOperandsROB;
+function TGenCodBas.stoOperation(parA, parB: TEleExpress): TStoOperandsBOR;
 begin
   //Combinación de los almacenamientos de los operandos
-  Result := TStoOperandsROB((Ord(parA.Sto) << 4) or ord(parB.Sto));
+  Result := TStoOperandsBOR((Ord(parA.Sto) << 4) or ord(parB.Sto));
 end;
 procedure TGenCodBas.Exchange(var parA, parB: TEleExpress);
 {Intercambia el orden de los operandos.}
@@ -597,6 +603,7 @@ end;
 procedure TGenCodBas.SetFunConst_bool(fun: TEleExpress; valBool: Boolean);
 begin
   SetFunConst(fun);
+  fun.evaluated := true;
   fun.value.valBool := valBool;
 end;
 procedure TGenCodBas.SetFunConst_byte(fun: TEleExpress; valByte: integer);
@@ -604,11 +611,13 @@ begin
   if not ValidateByteRange(valByte) then
     exit;  //Error de rango
   SetFunConst(fun);
+  fun.evaluated := true;
   fun.value.valInt := valByte;
 end;
 procedure TGenCodBas.SetFunConst_char(fun: TEleExpress; valByte: integer);
 begin
   SetFunConst(fun);
+  fun.evaluated := true;
   fun.value.valInt := valByte;
 end;
 procedure TGenCodBas.SetFunConst_word(fun: TEleExpress; valWord: integer);
@@ -616,6 +625,7 @@ begin
   if not ValidateWordRange(valWord) then
     exit;  //Error de rango
   SetFunConst(fun);
+  fun.evaluated := true;
   fun.value.valInt := valWord;
 end;
 //Codifición de instrucciones
@@ -1368,19 +1378,13 @@ begin
   case par.Sto of
   stRamFix: begin
     SetFunExpres(fun);
-    _LDA(par.addL);
-    {La forma más eficiente sería cambiar el nodo a una variable en la misma dirección
-    que la variable "par" (parte baja),  pero la mejor forma sería crear una variable
-    local ABSOLUTE, para que se le asigne la dirección al momento de la asignación de
-    espacio para variables.
-    Crear variables temporales, no funcionaría porque, esta rutina se explora en la
-    fase de optimización, y allí no se tiene todavía la dirección final de la variable
-    "par" y una vez que cambie a variable, ya no se refresca la dirección.}
-    //Se devuelve una variable, byte
-    //xvar := par.rvar;
-    //tmpVar := CreateTmpVar(xvar.name+'.L', typByte);   //crea variable temporal
-    //tmpVar.addr :=  xvar.addr;  //byte bajo
-    //SetResultVariab(fun, tmpVar);
+    if par.rvar.allocated then begin
+      SetFunVariab(fun, par.addL);
+    end else begin
+      //We cannot set a variable yet
+      SetFunExpres(fun);
+      //_LDA(par.addH);
+    end;
   end;
   stConst: begin
     //Se devuelve una constante
@@ -1399,8 +1403,6 @@ begin
   requireA;
   case par.Sto of
   stRamFix: begin
-    //SetFunExpres(fun);
-    //_LDA(par.addH);
     if par.rvar.allocated then begin
       SetFunVariab(fun, par.addH);
     end else begin
@@ -1720,7 +1722,7 @@ var
   i: Integer;
   operat: TEleAsmOperat;
 begin
-  if ModeRequire then exit;  //We don't require anything to generate an ASM instruction.
+  if compMod = cmRequire then exit;  //We don't require anything to generate an ASM instruction.
   if inst.inst>=0 then begin
     cpu_inst := TP6502Inst(inst.inst);
     cpu_amod := TP6502AddMode(inst.addMode);
@@ -1852,7 +1854,7 @@ procedure TGenCodBas.GenCodeSentences(sentList: TxpElements);
 var
   eleSen, ele: TxpElement;
   sen: TxpEleSentence;
-  expFun, expAsm, expCon: TEleExpress;
+  expFun, expAsm: TEleExpress;
   inst: TxpEleAsmLine;
 begin
   for eleSen in sentList do begin

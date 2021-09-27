@@ -102,6 +102,7 @@ var
   fun : TEleFun;
   bod: TEleBody;
 begin
+  compMod := cmConsEval;    //Generates code.
   pic.disableCodegen := true;  //Disable the code generation
   pic.iRam := 0;  //Clear RAM position
   //Code subroutines
@@ -123,7 +124,7 @@ var
   bod: TEleBody;
 begin
   //Set flags to enable routines requireA(), requireH(), ...
-  ModeRequire := true;  //Mode to only detect required register or variables uses.
+  compMod := cmRequire;  //Mode to only detect required register or variables uses.
   pic.disableCodegen := true;  //Disable the code generation
   pic.iRam := 0;  //Clear RAM position
   //Code subroutines
@@ -231,7 +232,7 @@ begin
   end;
   //Inicio de generación de código.
   pic.iRam := GeneralORG;  //Inicia puntero a RAM
-  ModeRequire := false;  //Generates code.
+  compMod := cmGenCode;    //Generates code.
   pic.disableCodegen := false;  //Enable the code generation
   if Commodore64 then begin
     //En modo Commodore 64

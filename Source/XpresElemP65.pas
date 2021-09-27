@@ -362,7 +362,7 @@ type  //Declaration elements
   {Mixed storage used to implement INLINE binary operands code. This is created to
   represent two TStorage values in a simple byte constant (joining bits), in order to
   facilitate the use in a CASE ... OF structure.}
-  TStoOperandsROB =(
+  TStoOperandsBOR =(
     stConst_Const    = %00010001,   //stConst - stConst
     stConst_Variab   = %00010010,   //stConst - stRamFix
     stConst_Expres   = %00011000,   //stConst - stRegister

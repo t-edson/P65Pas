@@ -33,7 +33,7 @@ actualizan las banderas: BooleanBit y BooleanInverted, que implican que:
 * La bandera BooleanBit, indica si el resultado se deja en C o Z.
 
 Por normas de Xpres, se debe considerar que:
-* Todas las ROB reciben sus dos parámetros en las variables p1^ y p2^.
+* Todas las BOR reciben sus dos parámetros en las variables p1^ y p2^.
 * El resultado de cualquier expresión se debe dejar indicado en el objeto "res".
 
 Si el objeto "res" es constante, almacena directamente sus valores en:
@@ -82,75 +82,72 @@ type
       procedure fun_Byte(fun: TEleExpress);
 //      procedure DefineArray(etyp: TxpEleType);
       procedure LoadIXmult(const idx: TEleVarDec; size: byte; offset: word);
-      procedure ROB_arr_asig_arr(fun: TEleExpress);
-      procedure ROB_byte_add_word(fun: TEleExpress);
-      procedure ROB_word_aadd_byte(fun: TEleExpress);
-      procedure ROB_word_aadd_word(fun: TEleExpress);
-      procedure ROB_word_and_word(fun: TEleExpress);
-      procedure ROB_word_asub_byte(fun: TEleExpress);
-      procedure ROB_word_gequ_word(fun: TEleExpress);
-      procedure ROB_word_great_word(fun: TEleExpress);
-      procedure ROB_word_lequ_word(fun: TEleExpress);
-      procedure ROB_word_less_word(fun: TEleExpress);
-      procedure ROB_word_shl_byte(fun: TEleExpress);
-      procedure ROB_word_shr_byte(fun: TEleExpress);
-      procedure ROU_not_word(fun: TEleExpress);
+      procedure BOR_arr_asig_arr(fun: TEleExpress);
       procedure ValidRAMaddr(addr: integer);
       procedure GenCodArrayGetItem(fun: TEleExpress);
       procedure GenCodArraySetItem(const OpPtr: pointer);
       procedure GenCodArrayClear(fun: TEleExpress);
-      procedure ROB_bool_and_bool(fun: TEleExpress);
-      procedure ROB_bool_difer_bool(fun: TEleExpress);
-      procedure ROB_bool_equal_bool(fun: TEleExpress);
-      procedure ROB_byte_mul_byte(fun: TEleExpress);
-      procedure ROB_pointer_add_word(fun: TEleExpress);
-      procedure ROB_pointer_sub_word(fun: TEleExpress);
-//      procedure ROB_string_add_char(Opt: TxpOperation; SetRes: boolean);
-//      procedure ROB_string_add_string(fun: TxpEleExpress);
-      procedure ROB_word_add_byte(fun: TEleExpress);
-      procedure ROB_word_add_word(fun: TEleExpress);
-      procedure ROB_word_sub_byte(fun: TEleExpress);
-      procedure ROB_word_sub_word(fun: TEleExpress);
-      procedure ROU_not_bool(fun: TEleExpress);
-      procedure ROU_not_byte(fun: TEleExpress);
-      procedure ROU_address(fun: TEleExpress);
+      procedure BOR_pointer_add_word(fun: TEleExpress);
+      procedure BOR_pointer_sub_word(fun: TEleExpress);
+      procedure UOR_address(fun: TEleExpress);
 
-      procedure ROB_word_and_byte(fun: TEleExpress);
+      procedure BOR_word_and_byte(fun: TEleExpress);
       procedure word_shift_l(fun: TEleExpress);
-    protected //Boolean oeprations
-      procedure ROB_bool_asig_bool(fun: TEleExpress);
-
-    protected //Operaciones con byte
-      procedure ROB_byte_asig_byte(fun: TEleExpress);
-      procedure ROB_byte_aadd_byte(fun: TEleExpress);
-      procedure ROB_byte_asub_byte(fun: TEleExpress);
-      procedure ROB_byte_sub_byte(fun: TEleExpress);
-      procedure ROB_byte_add_byte(fun: TEleExpress);
-      procedure ROB_byte_and_byte(fun: TEleExpress);
-      procedure ROB_byte_or_byte(fun: TEleExpress);
-      procedure ROB_byte_xor_byte(fun: TEleExpress);
-      procedure ROB_byte_equal_byte(fun: TEleExpress);
-      procedure ROB_byte_difer_byte(fun: TEleExpress);
-      procedure ROB_byte_great_byte(fun: TEleExpress);
-      procedure ROB_byte_less_byte(fun: TEleExpress);
-      procedure ROB_byte_gequ_byte(fun: TEleExpress);
-      procedure ROB_byte_lequ_byte(fun: TEleExpress);
-      procedure ROB_byte_shr_byte(fun: TEleExpress);
-      procedure ROB_byte_shl_byte(fun: TEleExpress);
+    protected //Boolean operations
+      procedure BOR_bool_asig_bool(fun: TEleExpress);
+      procedure BOR_bool_and_bool(fun: TEleExpress);
+      procedure BOR_bool_difer_bool(fun: TEleExpress);
+      procedure BOR_bool_equal_bool(fun: TEleExpress);
+      procedure UOR_not_bool(fun: TEleExpress);
+    protected //Byte operations
+      procedure BOR_byte_asig_byte(fun: TEleExpress);
+      procedure BOR_byte_aadd_byte(fun: TEleExpress);
+      procedure BOR_byte_asub_byte(fun: TEleExpress);
+      procedure BOR_byte_sub_byte(fun: TEleExpress);
+      procedure BOR_byte_add_byte(fun: TEleExpress);
+      procedure BOR_byte_and_byte(fun: TEleExpress);
+      procedure BOR_byte_or_byte(fun: TEleExpress);
+      procedure BOR_byte_xor_byte(fun: TEleExpress);
+      procedure BOR_byte_equal_byte(fun: TEleExpress);
+      procedure BOR_byte_difer_byte(fun: TEleExpress);
+      procedure BOR_byte_great_byte(fun: TEleExpress);
+      procedure BOR_byte_less_byte(fun: TEleExpress);
+      procedure BOR_byte_gequ_byte(fun: TEleExpress);
+      procedure BOR_byte_lequ_byte(fun: TEleExpress);
+      procedure BOR_byte_shr_byte(fun: TEleExpress);
+      procedure BOR_byte_shl_byte(fun: TEleExpress);
+      procedure BOR_byte_add_word(fun: TEleExpress);
+      procedure BOR_byte_mul_byte(fun: TEleExpress);
+      procedure UOR_not_byte(fun: TEleExpress);
     private  //Operaciones con Word
-      procedure ROB_word_asig_word(fun: TEleExpress);
-      procedure ROB_word_asig_byte(fun: TEleExpress);
-      procedure ROB_word_equal_word(fun: TEleExpress);
-      procedure ROB_word_difer_word(fun: TEleExpress);
+      procedure BOR_word_asig_word(fun: TEleExpress);
+      procedure BOR_word_asig_byte(fun: TEleExpress);
+      procedure BOR_word_equal_word(fun: TEleExpress);
+      procedure BOR_word_difer_word(fun: TEleExpress);
+      procedure BOR_word_add_byte(fun: TEleExpress);
+      procedure BOR_word_add_word(fun: TEleExpress);
+      procedure BOR_word_sub_byte(fun: TEleExpress);
+      procedure BOR_word_sub_word(fun: TEleExpress);
+      procedure BOR_word_aadd_byte(fun: TEleExpress);
+      procedure BOR_word_aadd_word(fun: TEleExpress);
+      procedure BOR_word_and_word(fun: TEleExpress);
+      procedure BOR_word_asub_byte(fun: TEleExpress);
+      procedure BOR_word_gequ_word(fun: TEleExpress);
+      procedure BOR_word_great_word(fun: TEleExpress);
+      procedure BOR_word_lequ_word(fun: TEleExpress);
+      procedure BOR_word_less_word(fun: TEleExpress);
+      procedure BOR_word_shl_byte(fun: TEleExpress);
+      procedure BOR_word_shr_byte(fun: TEleExpress);
+      procedure UOR_not_word(fun: TEleExpress);
     private  //Operaciones con Char
-      procedure ROB_char_asig_char(fun: TEleExpress);
-      procedure ROB_char_asig_string(fun: TEleExpress);
-      procedure ROB_char_equal_char(fun: TEleExpress);
-      procedure ROB_char_difer_char(fun: TEleExpress);
+      procedure BOR_char_asig_char(fun: TEleExpress);
+      procedure BOR_char_asig_string(fun: TEleExpress);
+      procedure BOR_char_equal_char(fun: TEleExpress);
+      procedure BOR_char_difer_char(fun: TEleExpress);
     protected //Operaciones con punteros
-      procedure ROB_pointer_add_byte(fun: TEleExpress);
-      procedure ROB_pointer_sub_byte(fun: TEleExpress);
-      procedure ROU_derefPointer(fun: TEleExpress; SetRes: boolean);
+      procedure BOR_pointer_add_byte(fun: TEleExpress);
+      procedure BOR_pointer_sub_byte(fun: TEleExpress);
+      procedure UOR_derefPointer(fun: TEleExpress; SetRes: boolean);
     private  //Funciones internas.
       procedure codif_1mseg;
       procedure codif_delay_ms(fun: TEleExpress);
@@ -230,7 +227,7 @@ begin
   end;
   //Muestra informa
 end;
-procedure TGenCod.ROU_not_byte(fun: TEleExpress);
+procedure TGenCod.UOR_not_byte(fun: TEleExpress);
 var
   par: TEleExpress;
 begin
@@ -245,14 +242,14 @@ begin
     _EORi($FF);
   end;
 //  stExpres: begin
-//    SetROUResultExpres_byte;
+//    SetUORResultExpres_byte;
 //    //////
 //  end;
   else
     genError('Not implemented: "%s"', [fun.name]);
   end;
 end;
-procedure TGenCod.ROU_address(fun: TEleExpress);
+procedure TGenCod.UOR_address(fun: TEleExpress);
 {Return the address of any operand.}
 var
   startAddr: integer;
@@ -294,7 +291,7 @@ begin
     genError('Cannot obtain address of this operand.');
   end;
 end;
-procedure TGenCod.ROU_not_bool(fun: TEleExpress);
+procedure TGenCod.UOR_not_bool(fun: TEleExpress);
 var
   par: TEleExpress;
 begin
@@ -311,7 +308,7 @@ begin
     Copy_Z_to_A;
   end;
 //  stExpres: begin
-//    SetROUResultExpres_byte;
+//    SetUORResultExpres_byte;
 //    //////
 //  end;
   else
@@ -319,7 +316,7 @@ begin
   end;
 end;
 ////////////Byte operations
-procedure TGenCod.ROB_byte_asig_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_asig_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
   parBsto: TStorage;
@@ -334,10 +331,13 @@ begin
      if HayError then exit;
      parB.Sto := stRegister;
   end;
-  if ModeRequire then begin
+  if compMod = cmRequire then begin
      {We can exit here because LoadToWR() defined is IX is used or not.
      and the remain code doesn't need more registers or temporal variables.}
     parB.Sto := parBsto;  //Restore storage just in case it has changed.
+    exit;
+  end else if compMod = cmConsEval then begin
+    //We don't calculate constant here.
     exit;
   end;
   //Validates parA.
@@ -474,7 +474,7 @@ begin
   end;
 
 end;
-procedure TGenCod.ROB_byte_and_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_and_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -557,7 +557,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_byte_or_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_or_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -637,7 +637,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_byte_xor_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_xor_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -689,7 +689,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_byte_equal_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_equal_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -752,7 +752,7 @@ begin
     Copy_Z_to_A;
   end;
 //  stExpres_Expres:begin
-//    SetROBResultExpres_bool(fun, logNormal);   //Se pide Z para el resultado
+//    SetBORResultExpres_bool(fun, logNormal);   //Se pide Z para el resultado
 //    //la expresión p1 debe estar salvada y p2 en el acumulador
 //    rVar := GetVarByteFromStk;
 //    _EOR(rVar.adrByte0);  //Si son iguales Z=1.
@@ -762,12 +762,12 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_byte_difer_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_difer_byte(fun: TEleExpress);
 begin
-  ROB_byte_equal_byte(fun);  //usa el mismo código
+  BOR_byte_equal_byte(fun);  //usa el mismo código
   fun.Invert;  //Invierte la lógica
 end;
-procedure TGenCod.ROB_byte_aadd_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_aadd_byte(fun: TEleExpress);
 {Operación de asignación suma: +=}
 var
   parA, parB: TEleExpress;
@@ -889,7 +889,7 @@ begin
     GenError('Cannot assign to this Operand.'); exit;
   end;
 end;
-procedure TGenCod.ROB_byte_asub_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_asub_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -1015,10 +1015,10 @@ begin
     GenError('Cannot assign to this Operand.'); exit;
   end;
 end;
-procedure TGenCod.ROB_byte_add_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_add_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
-  stoo: TStoOperandsROB;
+  stoo: TStoOperandsBOR;
 begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
@@ -1085,13 +1085,13 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_byte_add_word(fun: TEleExpress);
+procedure TGenCod.BOR_byte_add_word(fun: TEleExpress);
 begin
   fun.elements.Exchange(0,1);  //Convert to word_add_byte
-  ROB_word_add_byte(fun);
+  BOR_word_add_byte(fun);
   fun.elements.Exchange(0,1);
 end;
-procedure TGenCod.ROB_byte_sub_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_sub_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -1188,7 +1188,7 @@ _LABEL_post(m1);
     _LDA(fac1.addr);
     _RTS();
 end;
-procedure TGenCod.ROB_byte_mul_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_mul_byte(fun: TEleExpress);
 var
   AddrUndef: boolean;
   fmul: TEleFun;
@@ -1352,7 +1352,7 @@ begin
   end;
   stVariab_Const: begin
     fun.elements.Exchange(0,1);
-    ROB_byte_mul_byte(fun);
+    BOR_byte_mul_byte(fun);
     fun.elements.Exchange(0,1);
   end;
   stVariab_Variab:begin
@@ -1379,12 +1379,12 @@ begin
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en A
     fun.elements.Exchange(0,1);
-    ROB_byte_mul_byte(fun);  //, true);
+    BOR_byte_mul_byte(fun);  //, true);
     fun.elements.Exchange(0,1);
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en A
     fun.elements.Exchange(0,1);
-    ROB_byte_mul_byte(fun);  //, true);
+    BOR_byte_mul_byte(fun);  //, true);
     fun.elements.Exchange(0,1);
   end;
 //  stExpres_Expres:begin
@@ -1399,7 +1399,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_byte_great_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_great_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -1480,14 +1480,14 @@ begin
   //  //la expresión p1 debe estar salvada y p2 en el acumulador
   //  parA.SetAsVariab(GetVarByteFromStk, 0);  //Convierte a variable
   //  //Luego el caso es similar a stVariab_Expres
-  //  ROB_byte_great_byte(fun, true);
+  //  BOR_byte_great_byte(fun, true);
   //  FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
   //end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_byte_less_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_less_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -1501,28 +1501,28 @@ begin
 //    //la expresión p1 debe estar salvada y p2 en el acumulador
 //    parA.SetAsVariab(GetVarByteFromStk);  //Convierte a variable
 //    //Luego el caso es similar a stVariab_Expres
-//    ROB_byte_less_byte(Opt, SetRes);
+//    BOR_byte_less_byte(Opt, SetRes);
 //    FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
   else
     //Para los otros casos, funciona
     fun.elements.Exchange(0,1);
-    ROB_byte_great_byte(fun);
+    BOR_byte_great_byte(fun);
     fun.elements.Exchange(0,1);
   end;
 end;
-procedure TGenCod.ROB_byte_gequ_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_gequ_byte(fun: TEleExpress);
 begin
-  ROB_byte_less_byte(fun);
+  BOR_byte_less_byte(fun);
   fun.Invert;
 end;
-procedure TGenCod.ROB_byte_lequ_byte(fun: TEleExpress);
+procedure TGenCod.BOR_byte_lequ_byte(fun: TEleExpress);
 begin
-  ROB_byte_great_byte(fun);
+  BOR_byte_great_byte(fun);
   fun.Invert;
 end;
-procedure TGenCod.ROB_byte_shr_byte(fun: TEleExpress);  //Desplaza a la derecha
+procedure TGenCod.BOR_byte_shr_byte(fun: TEleExpress);  //Desplaza a la derecha
 var
   L2, L1: integer;
   parA, parB: TEleExpress;
@@ -1652,7 +1652,7 @@ _LABEL_post(L2);
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_byte_shl_byte(fun: TEleExpress);   //Desplaza a la izquierda
+procedure TGenCod.BOR_byte_shl_byte(fun: TEleExpress);   //Desplaza a la izquierda
 var
   L1, L2: integer;
   parA, parB: TEleExpress;
@@ -1783,7 +1783,7 @@ _LABEL_post(L2);
   end;
 end;
 ////////////operaciones con Boolean
-procedure TGenCod.ROB_bool_asig_bool(fun: TEleExpress);
+procedure TGenCod.BOR_bool_asig_bool(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -1906,7 +1906,7 @@ begin
     GenError('Cannot assign to this Operand.'); exit;
   end;
 end;
-procedure TGenCod.ROB_bool_and_bool(fun: TEleExpress);
+procedure TGenCod.BOR_bool_and_bool(fun: TEleExpress);
 var
   sale0: integer;
   parA, parB: TEleExpress;
@@ -1955,7 +1955,7 @@ _LABEL_post(sale0);
   stVariab_Expres:begin   //Expresion p2 evaluated in A
     //Algorith like in "stVariab_Variab"
     SetFunExpres(fun, logInverted);
-    //Obviously, the last RO was what generates the expression, so we can check "AcumStatInZ".
+    //Obviously, the last ORT was what generates the expression, so we can check "AcumStatInZ".
     if not AcumStatInZ then _TAX;   //Update Z, if needed.
     //Here, we have Z updated with the value of A
     _BEQ_post(sale0);  //p1=0
@@ -1975,7 +1975,7 @@ _LABEL_post(sale0);
   stExpres_Variab:begin  //Expresion p1 evaluated in A
     //Algorith like in "stVariab_Variab"
     SetFunExpres(fun, logInverted);
-    //Obviously, the last RO was what generates the expression, so we can check "AcumStatInZ".
+    //Obviously, the last ORT was what generates the expression, so we can check "AcumStatInZ".
     if not AcumStatInZ then _TAX;   //Update Z, if needed.
     //Here, we have Z updated with the value of A
     _BEQ_post(sale0);  //p1=0
@@ -1994,7 +1994,7 @@ _LABEL_post(sale0);
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_bool_equal_bool(fun: TEleExpress);
+procedure TGenCod.BOR_bool_equal_bool(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -2084,13 +2084,13 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_bool_difer_bool(fun: TEleExpress);
+procedure TGenCod.BOR_bool_difer_bool(fun: TEleExpress);
 begin
-  ROB_bool_equal_bool(fun);
+  BOR_bool_equal_bool(fun);
   fun.Invert;
 end;
 ////////////operaciones con Word
-procedure TGenCod.ROB_word_asig_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_asig_word(fun: TEleExpress);
 var
   idxVar: TEleVarDec;
   parA, parB: TEleExpress;
@@ -2260,7 +2260,7 @@ begin
     GenError('Cannot assign to this Operand.', parB.srcDec); exit;
   end;
 end;
-procedure TGenCod.ROB_word_asig_byte(fun: TEleExpress);
+procedure TGenCod.BOR_word_asig_byte(fun: TEleExpress);
 var
   idxVar: TEleVarDec;
   parA, parB: TEleExpress;
@@ -2349,7 +2349,7 @@ begin
     GenError('Cannot assign to this Operand.'); exit;
   end;
 end;
-procedure TGenCod.ROB_word_equal_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_equal_word(fun: TEleExpress);
 var
   sale0: integer;
   parA, parB: TEleExpress;
@@ -2434,19 +2434,19 @@ _LABEL_post(sale0);
 //    //La expresión p1, debe estar salvada y p2 en (H,A)
 //    parA.SetAsVariab(GetVarWordFromStk);
 //    //Luego el caso es similar a variable-expresión
-//    ROB_word_equal_word(fun, SetRes);
+//    BOR_word_equal_word(fun, SetRes);
 //    FreeStkRegisterWord;
 //  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_word_difer_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_difer_word(fun: TEleExpress);
 begin
-  ROB_word_equal_word(fun);
+  BOR_word_equal_word(fun);
   fun.Invert;
 end;
-procedure TGenCod.ROB_word_add_byte(fun: TEleExpress);
+procedure TGenCod.BOR_word_add_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -2558,7 +2558,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_word_add_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_add_word(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -2673,7 +2673,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_word_sub_byte(fun: TEleExpress);
+procedure TGenCod.BOR_word_sub_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -2759,7 +2759,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_word_sub_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_sub_word(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -2845,7 +2845,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_word_aadd_byte(fun: TEleExpress);
+procedure TGenCod.BOR_word_aadd_byte(fun: TEleExpress);
 var
   L1, L2: integer;
   parA, parB: TEleExpress;
@@ -2900,7 +2900,7 @@ _LABEL_post(L2);
     GenError('Cannot assign to this Operand.'); exit;
   end;
 end;
-procedure TGenCod.ROB_word_aadd_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_aadd_word(fun: TEleExpress);
 var
   L1, L2: integer;
   val2: DWord;
@@ -2975,7 +2975,7 @@ _LABEL_post(L2);
     GenError('Cannot assign to this Operand.'); exit;
   end;
 end;
-procedure TGenCod.ROB_word_asub_byte(fun: TEleExpress);
+procedure TGenCod.BOR_word_asub_byte(fun: TEleExpress);
 var
   L1: integer;
   parA, parB: TEleExpress;
@@ -3105,7 +3105,7 @@ _LABEL_post(L1);
     GenError('Cannot assign to this Operand.'); exit;
   end;
 end;
-procedure TGenCod.ROB_word_gequ_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_gequ_word(fun: TEleExpress);
 var
   L1B: integer;
   parA, parB: TEleExpress;
@@ -3237,39 +3237,39 @@ _LABEL_post(L1B);
 //    //la expresión p1 debe estar salvada y p2 en el acumulador
 //    parA.SetAsVariab(GetVarByteFromStk, 0);  //Convierte a variable
 //    //Luego el caso es similar a stVariab_Expres
-//    ROB_byte_great_byte(fun, true);
+//    BOR_byte_great_byte(fun, true);
 //    FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
 //  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_word_less_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_less_word(fun: TEleExpress);
 begin
-  ROB_word_gequ_word(fun);
+  BOR_word_gequ_word(fun);
   fun.Invert;
 end;
-procedure TGenCod.ROB_word_great_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_great_word(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   fun.elements.Exchange(0,1);
-  ROB_word_less_word(fun);
+  BOR_word_less_word(fun);
   fun.elements.Exchange(0,1);
 end;
-procedure TGenCod.ROB_word_lequ_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_lequ_word(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   fun.elements.Exchange(0,1);
-  ROB_word_gequ_word(fun);
+  BOR_word_gequ_word(fun);
   fun.elements.Exchange(0,1);
 end;
-procedure TGenCod.ROB_word_and_byte(fun: TEleExpress);
+procedure TGenCod.BOR_word_and_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -3323,7 +3323,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_word_and_word(fun: TEleExpress);
+procedure TGenCod.BOR_word_and_word(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -3427,7 +3427,7 @@ _LABEL_pre(lbl1);
   _BNE_pre(lbl1);
   _RTS;
 end;
-procedure TGenCod.ROB_word_shl_byte(fun: TEleExpress);
+procedure TGenCod.BOR_word_shl_byte(fun: TEleExpress);
 var
   i, L1, L2: Integer;
   AddrUndef: boolean;
@@ -3567,7 +3567,7 @@ _LABEL_pre(L1);
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROB_word_shr_byte(fun: TEleExpress);
+procedure TGenCod.BOR_word_shr_byte(fun: TEleExpress);
 var
   i: Integer;
   parA, parB: TEleExpress;
@@ -3625,7 +3625,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.ROU_not_word(fun: TEleExpress);
+procedure TGenCod.UOR_not_word(fun: TEleExpress);
 var
   par: TEleExpress;
 begin
@@ -3645,7 +3645,7 @@ begin
     _EORi($FF);
   end;
 //  stExpres: begin
-//    SetROUResultExpres_byte;
+//    SetUORResultExpres_byte;
 //    //////
 //  end;
   else
@@ -3653,11 +3653,11 @@ begin
   end;
 end;
 //////////// Operaciones con Char
-procedure TGenCod.ROB_char_asig_char(fun: TEleExpress);
+procedure TGenCod.BOR_char_asig_char(fun: TEleExpress);
 begin
-  ROB_byte_asig_byte(fun);
+  BOR_byte_asig_byte(fun);
 end;
-procedure TGenCod.ROB_char_asig_string(fun: TEleExpress);
+procedure TGenCod.BOR_char_asig_string(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
 begin
@@ -3673,43 +3673,16 @@ begin
     exit;
   end;
   parB.value.ValInt := ord(parB.value.ValStr[1]);  //transform
-  ROB_byte_asig_byte(fun);
+  BOR_byte_asig_byte(fun);
 end;
-procedure TGenCod.ROB_char_equal_char(fun: TEleExpress);
+procedure TGenCod.BOR_char_equal_char(fun: TEleExpress);
 begin
-  ROB_byte_equal_byte(fun);  //es lo mismo
+  BOR_byte_equal_byte(fun);  //es lo mismo
 end;
-procedure TGenCod.ROB_char_difer_char(fun: TEleExpress);
+procedure TGenCod.BOR_char_difer_char(fun: TEleExpress);
 begin
-  ROB_byte_difer_byte(fun); //es lo mismo
+  BOR_byte_difer_byte(fun); //es lo mismo
 end;
-//////////// Operaciones con String
-//procedure TGenCod.ROB_string_add_string(Opt: TxpOperation; SetRes: boolean);
-//{Implementation of string is incomplete. Just created this oepration to facilitate
-//initialization of ARRAY OF chars with string}
-//begin
-//  case stoOperation(parA, parB) of
-//  stConst_Const: begin  //Special case. Comapares constants.
-//    SetResultConst(typString);
-//    res.valStr := parA.valStr + parB.valStr;
-//  end;
-//  else
-//    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-//  end;
-//end;
-//procedure TGenCod.ROB_string_add_char(Opt: TxpOperation; SetRes: boolean);
-//{Implementation of string is incomplete. Just created this oepration to facilitate
-//initialization of ARRAY OF chars with string}
-//begin
-//  case stoOperation(parA, parB) of
-//  stConst_Const: begin  //Special case. Comapares constants.
-//    SetResultConst(typString);
-//    res.valStr := parA.valStr + chr(parB.valInt);
-//  end;
-//  else
-//    genError(MSG_CANNOT_COMPL, [OperationStr(Opt)]);
-//  end;
-//end;
 procedure TGenCod.LoadIXmult(const idx: TEleVarDec; size: byte; offset: word);
 {Load in IX register, the value of the "idx" variable multiplied by "size" and added by
 "offset". Parameter "idx" must by byte-size or word-size.
@@ -3753,7 +3726,7 @@ begin
   end;
 end;
 //////////// Pointer operations
-procedure TGenCod.ROB_pointer_add_byte(fun: TEleExpress);
+procedure TGenCod.BOR_pointer_add_byte(fun: TEleExpress);
 {Implementa la suma de un puntero (a cualquier tipo) y un byte.}
 //var
 //  ptrType: TxpEleType;
@@ -3765,7 +3738,7 @@ begin
 //  * Conviene manejar esto de forma dinámica para dar flexibilidad al lenguaje}
 //  ptrType := parA.Typ;   //Se ahce aquí porque después puede cambiar parA.
 //  //La suma de un puntero y un byte, se procesa, como una suma de bytes
-//  ROB_word_add_byte(fun);
+//  BOR_word_add_byte(fun);
 //  //Devuelve byte, oero debe devolver el tipo puntero
 //  case fun.Sto of
 //  stConsta: res.SetAsConst(ptrType);  //Cambia el tipo a la constante
@@ -3778,7 +3751,7 @@ begin
 //  stRegister: res.SetAsExpres(ptrType);  //Cambia tipo a la expresión
 //  end;
 end;
-procedure TGenCod.ROB_pointer_add_word(fun: TEleExpress);
+procedure TGenCod.BOR_pointer_add_word(fun: TEleExpress);
 {Implementa la suma de un puntero (a cualquier tipo) y un byte.}
 //var
 //  ptrType: TxpEleType;
@@ -3790,7 +3763,7 @@ begin
 //  * Conviene manejar esto de forma dinámica para dar flexibilidad al lenguaje}
 //  ptrType := parA.Typ;   //Se hace aquí porque después puede cambiar parA.
 //  //La suma de un puntero y un byte, se procesa, como una suma de bytes
-//  ROB_word_add_word(fun);
+//  BOR_word_add_word(fun);
 //  //Devuelve byte, oero debe devolver el tipo puntero
 //  case fun.Sto of
 //  stConsta: res.SetAsConst(ptrType);  //Cambia el tipo a la constante
@@ -3803,33 +3776,33 @@ begin
 //  stRegister: res.SetAsExpres(ptrType);  //Cambia tipo a la expresión
 //  end;
 end;
-procedure TGenCod.ROB_pointer_sub_byte(fun: TEleExpress);
+procedure TGenCod.BOR_pointer_sub_byte(fun: TEleExpress);
 {Implementa la resta de un puntero (a cualquier tipo) y un byte.}
 //var
 //  ptrType: TxpEleType;
 begin
-//  //La explicación es la misma que para la rutina ROB_pointer_add_byte
+//  //La explicación es la misma que para la rutina BOR_pointer_add_byte
 //  ptrType := parA.Typ;
-//  ROB_word_sub_byte(fun);
+//  BOR_word_sub_byte(fun);
 //  case fun.Sto of
 //  stConsta  : res.SetAsConst(ptrType);
 //  stRegister: res.SetAsExpres(ptrType);
 //  end;
 end;
-procedure TGenCod.ROB_pointer_sub_word(fun: TEleExpress);
+procedure TGenCod.BOR_pointer_sub_word(fun: TEleExpress);
 {Implementa la resta de un puntero (a cualquier tipo) y un byte.}
 //var
 //  ptrType: TxpEleType;
 begin
-//  //La explicación es la misma que para la rutina ROB_pointer_add_byte
+//  //La explicación es la misma que para la rutina BOR_pointer_add_byte
 //  ptrType := parA.Typ;
-//  ROB_word_sub_word(fun);
+//  BOR_word_sub_word(fun);
 //  case fun.Sto of
 //  stConsta  : res.SetAsConst(ptrType);
 //  stRegister: res.SetAsExpres(ptrType);
 //  end;
 end;
-procedure TGenCod.ROU_derefPointer(fun: TEleExpress; SetRes: boolean);
+procedure TGenCod.UOR_derefPointer(fun: TEleExpress; SetRes: boolean);
 {Implementa el operador de desreferencia "^", para Opr que se supone debe ser
  categoria "tctPointer", es decir, puntero a algún tipo de dato.}
 begin
@@ -3839,7 +3812,7 @@ begin
 //    //Se asume que devuelve una variable de tipo Byte.
 //    tmpVar := CreateTmpVar('', typByte);
 //    tmpVar.addr := parA.val;  //Fija dirección de constante
-//    SetROUResultVariab(fun, tmpVar);
+//    SetUORResultVariab(fun, tmpVar);
 //  end;
 //  stRamFix: begin
 //    //Caso común: ptrVar^
@@ -3847,7 +3820,7 @@ begin
 //    //By default we generate code as Setter
 //    idxVar := CreateTmpVar('', typWord);
 //    idxVar.addr := parA.addr;      //Var pointer as word
-//    SetROUResultVarRef(idxVar, itemType);
+//    SetUORResultVarRef(idxVar, itemType);
 //    //Here the Operand can be stVarRef or stExpRef
 //    if OperMode = opmGetter then begin
 //      //In mode Getter, we change this to stRegister, because ROP's don't like "strange" storages.
@@ -3859,7 +3832,7 @@ begin
 //  end;
 //  stRegister: begin
 //    //La expresión Esta en WR, pero es una dirección, no un valor
-//    SetROUResultExpRef(parA.Typ);
+//    SetUORResultExpRef(parA.Typ);
 //  end;
 //  else
 ////////////    genError('Not implemented: "%s"', [Opr.OperationString]);
@@ -4140,9 +4113,11 @@ begin
   stConst : begin
     if par.Typ = typChar then begin
       SetFunConst(fun);
+      fun.evaluated := par.evaluated;
       fun.value.valInt := par.value.ValInt;
     end else if par.Typ = typBool then begin
       SetFunConst(fun);
+      fun.evaluated := par.evaluated;
       if par.value.ValBool then fun.value.ValInt := 0 else fun.value.ValInt := 1;
     end else begin
       GenError('Cannot get the ordinal of %s.', [par.Typ.name]); exit;
@@ -4179,9 +4154,11 @@ begin
   stConst : begin
     if par.Typ = typByte then begin
       SetFunConst(fun);
+      fun.evaluated := par.evaluated;
       fun.value.valInt := par.value.ValInt;
     end else if par.Typ = typWord then begin
       SetFunConst(fun);
+      fun.evaluated := par.evaluated;
       fun.value.valInt := par.value.valInt and $FF;
     end else begin
       GenError('Cannot convert this to char.'); exit;
@@ -4424,7 +4401,7 @@ begin
   SetFunConst(fun);
   fun.value.ValInt := par.Typ.nItems;
 end;
-procedure TGenCod.ROB_arr_asig_arr(fun: TEleExpress);
+procedure TGenCod.BOR_arr_asig_arr(fun: TEleExpress);
 {Array assigment.}
 var
   nItems, itSize, i: Integer;
@@ -4764,19 +4741,19 @@ procedure TGenCod.DefineShortPointer(etyp: TEleTypeDec);
 begin
   //Asignación desde Byte y Puntero
 //  opr:=etyp.CreateBinaryOperator(':=',2,'_set');
-//  opr.CreateOperation(typByte, @ROB_byte_asig_byte);
-//  opr.CreateOperation(etyp   , @ROB_byte_asig_byte);
+//  opr.CreateOperation(typByte, @BOR_byte_asig_byte);
+//  opr.CreateOperation(etyp   , @BOR_byte_asig_byte);
 //  //Agrega a los bytes, la posibilidad de ser asignados por punteros
-//  typByte.operAsign.CreateOperation(etyp, @ROB_byte_asig_byte);
+//  typByte.operAsign.CreateOperation(etyp, @BOR_byte_asig_byte);
 //
 //  opr:=etyp.CreateBinaryOperator('=',3,'equal');  //asignación
-//  opr.CreateOperation(typByte, @ROB_byte_equal_byte);
+//  opr.CreateOperation(typByte, @BOR_byte_equal_byte);
 //  opr:=etyp.CreateBinaryOperator('+',4,'add');  //suma
-//  opr.CreateOperation(typByte, @ROB_pointer_add_byte);
+//  opr.CreateOperation(typByte, @BOR_pointer_add_byte);
 //  opr:=etyp.CreateBinaryOperator('-',4,'add');  //resta
-//  opr.CreateOperation(typByte, @ROB_pointer_sub_byte);
+//  opr.CreateOperation(typByte, @BOR_pointer_sub_byte);
 //
-//  etyp.CreateUnaryPostOperator('^',6,'deref', @ROU_derefPointer);  //dereferencia
+//  etyp.CreateUnaryPostOperator('^',6,'deref', @UOR_derefPointer);  //dereferencia
 end;
 procedure TGenCod.DefinePointer(etyp: TEleTypeDec);
 {Set operations that defines pointers aritmethic.}
@@ -4785,25 +4762,25 @@ procedure TGenCod.DefinePointer(etyp: TEleTypeDec);
 begin
   //Asignación desde Byte y Puntero
 //  opr:=etyp.CreateBinaryOperator(':=',2,'_set');
-//  opr.CreateOperation(typWord, @ROB_word_asig_word);
-//  opr.CreateOperation(etyp   , @ROB_word_asig_word);
+//  opr.CreateOperation(typWord, @BOR_word_asig_word);
+//  opr.CreateOperation(etyp   , @BOR_word_asig_word);
 //  //Agrega a los word, la posibilidad de ser asignados por punteros
-//  typWord.operAsign.CreateOperation(etyp, @ROB_word_asig_word);
+//  typWord.operAsign.CreateOperation(etyp, @BOR_word_asig_word);
 //
 //  opr:=etyp.CreateBinaryOperator('=',3,'equal');  //asignación
-//  opr.CreateOperation(typWord, @ROB_word_equal_word);
+//  opr.CreateOperation(typWord, @BOR_word_equal_word);
 //  opr:=etyp.CreateBinaryOperator('+',4,'add');  //suma
-//  opr.CreateOperation(typWord, @ROB_pointer_add_word);
-//  opr.CreateOperation(typByte, @ROB_pointer_add_byte);
+//  opr.CreateOperation(typWord, @BOR_pointer_add_word);
+//  opr.CreateOperation(typByte, @BOR_pointer_add_byte);
 //  opr:=etyp.CreateBinaryOperator('-',4,'add');  //resta
-//  opr.CreateOperation(typWord, @ROB_pointer_sub_word);
-//  opr.CreateOperation(typByte, @ROB_pointer_sub_byte);
+//  opr.CreateOperation(typWord, @BOR_pointer_sub_word);
+//  opr.CreateOperation(typByte, @BOR_pointer_sub_byte);
 //  opr:=etyp.CreateBinaryOperator('+=',2,'aadd');  //suma
-//  opr.CreateOperation(typWord, @ROB_word_aadd_word);
-//  opr.CreateOperation(typByte, @ROB_word_aadd_byte);
+//  opr.CreateOperation(typWord, @BOR_word_aadd_word);
+//  opr.CreateOperation(typByte, @BOR_word_aadd_byte);
 //
-//  etyp.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address); //defined in all types
-//  etyp.CreateUnaryPostOperator('^',6, 'deref', @ROU_derefPointer);  //dereferencia
+//  etyp.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address); //defined in all types
+//  etyp.CreateUnaryPostOperator('^',6, 'deref', @UOR_derefPointer);  //dereferencia
 end;
 procedure TGenCod.DefineArray(etyp: TEleTypeDec);
 var
@@ -4811,7 +4788,7 @@ var
   expr: TEleExpress;
 begin
   //Create assigement method
-  CreateBOMethod(etyp, ':=', '_set', etyp, typNull, @ROB_arr_asig_arr);
+  CreateBOMethod(etyp, ':=', '_set', etyp, typNull, @BOR_arr_asig_arr);
   //Create attribute "low" as constant.
   cons := AddConstantAndOpen('low', typNull, GetSrcPos);  //No type defined here.
   if HayError then exit;   //Can be duplicated
@@ -4826,9 +4803,9 @@ begin
   CreateUOMethod(etyp, '', 'high'  , typByte, @arrayHigh);
   CreateUOMethod(etyp, '', 'clear' , typNull, @GenCodArrayClear);
   CreateBOMethod(etyp, '', '_getitem', typByte, etyp.itmType, @GenCodArrayGetItem);
-  CreateUOMethod(etyp, '@', 'addr', typWord, @ROU_address);
+  CreateUOMethod(etyp, '@', 'addr', typWord, @UOR_address);
 //  etyp.CreateField('item'  , @GenCodArrayGetItem, @GenCodArraySetItem);
-//  etyp.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address); //defined in all types
+//  etyp.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address); //defined in all types
 end;
 procedure TGenCod.ValidRAMaddr(addr: integer);
 {Validate a physical RAM address. If error generate error.}
@@ -5026,88 +5003,88 @@ begin
   /////////////// Boolean type ////////////////////
   //Methods-Operators
   TreeElems.OpenElement(typBool);
-  f:=CreateBOMethod(typBool, ':=',  '_set', typBool, typNull, @ROB_bool_asig_bool);
-  f:=CreateUOMethod(typBool, 'NOT', '_not', typBool, @ROU_not_bool, opkUnaryPre);
-  f:=CreateBOMethod(typBool, 'AND', '_and', typBool, typBool, @ROB_bool_and_bool);
+  f:=CreateBOMethod(typBool, ':=',  '_set', typBool, typNull, @BOR_bool_asig_bool);
+  f:=CreateUOMethod(typBool, 'NOT', '_not', typBool, @UOR_not_bool, opkUnaryPre);
+  f:=CreateBOMethod(typBool, 'AND', '_and', typBool, typBool, @BOR_bool_and_bool);
   f.fConmutat := true;
-  f:=CreateBOMethod(typBool, '=' ,  '_equ', typBool, typBool, @ROB_bool_equal_bool);
+  f:=CreateBOMethod(typBool, '=' ,  '_equ', typBool, typBool, @BOR_bool_equal_bool);
   f.fConmutat := true;
-  f:=CreateBOMethod(typBool, '<>',  '_dif', typBool, typBool, @ROB_bool_difer_bool);
+  f:=CreateBOMethod(typBool, '<>',  '_dif', typBool, typBool, @BOR_bool_difer_bool);
   f.fConmutat := true;
   TreeElems.CloseElement;   //Close Type
   /////////////// Byte type ////////////////////
   //Methods-Operators
   TreeElems.OpenElement(typByte);
-  f:=CreateUOMethod(typByte, '@', 'addr', typWord, @ROU_address);
-  f:=CreateBOMethod(typByte, ':=', '_set', typByte, typNull, @ROB_byte_asig_byte);
-  f:=CreateBOMethod(typByte, '+=', '_aadd',typByte, typNull, @ROB_byte_aadd_byte);
-  f:=CreateBOMethod(typByte, '-=', '_asub',typByte, typNull, @ROB_byte_asub_byte);
-  f:=CreateBOMethod(typByte, '+' , '_add', typByte, typByte, @ROB_byte_add_byte);
+  f:=CreateUOMethod(typByte, '@', 'addr', typWord, @UOR_address);
+  f:=CreateBOMethod(typByte, ':=', '_set', typByte, typNull, @BOR_byte_asig_byte);
+  f:=CreateBOMethod(typByte, '+=', '_aadd',typByte, typNull, @BOR_byte_aadd_byte);
+  f:=CreateBOMethod(typByte, '-=', '_asub',typByte, typNull, @BOR_byte_asub_byte);
+  f:=CreateBOMethod(typByte, '+' , '_add', typByte, typByte, @BOR_byte_add_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, '+' , '_add', typWord, typWord, @ROB_byte_add_word);
+  f:=CreateBOMethod(typByte, '+' , '_add', typWord, typWord, @BOR_byte_add_word);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, '-' , '_sub', typByte, typByte, @ROB_byte_sub_byte);
-  f:=CreateBOMethod(typByte, '*' , '_mul', typByte, typWord, @ROB_byte_mul_byte);
+  f:=CreateBOMethod(typByte, '-' , '_sub', typByte, typByte, @BOR_byte_sub_byte);
+  f:=CreateBOMethod(typByte, '*' , '_mul', typByte, typWord, @BOR_byte_mul_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, 'AND','_and', typByte, typByte, @ROB_byte_and_byte);
+  f:=CreateBOMethod(typByte, 'AND','_and', typByte, typByte, @BOR_byte_and_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, 'OR' ,'_or' , typByte, typByte, @ROB_byte_or_byte);
+  f:=CreateBOMethod(typByte, 'OR' ,'_or' , typByte, typByte, @BOR_byte_or_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, 'XOR','_xor', typByte, typByte, @ROB_byte_xor_byte);
+  f:=CreateBOMethod(typByte, 'XOR','_xor', typByte, typByte, @BOR_byte_xor_byte);
   f.fConmutat := true;
-  f:=CreateUOMethod(typByte, 'NOT','_not', typByte, @ROU_not_byte, opkUnaryPre);
-  f:=CreateBOMethod(typByte, '=' , '_equ', typByte, typBool, @ROB_byte_equal_byte);
+  f:=CreateUOMethod(typByte, 'NOT','_not', typByte, @UOR_not_byte, opkUnaryPre);
+  f:=CreateBOMethod(typByte, '=' , '_equ', typByte, typBool, @BOR_byte_equal_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, '<>', '_dif', typByte, typBool, @ROB_byte_difer_byte);
+  f:=CreateBOMethod(typByte, '<>', '_dif', typByte, typBool, @BOR_byte_difer_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, '>' , '_gre', typByte, typBool, @ROB_byte_great_byte);
-  f:=CreateBOMethod(typByte, '<' , '_les', typByte, typBool, @ROB_byte_less_byte);
-  f:=CreateBOMethod(typByte, '>=', '_gequ',typByte, typBool, @ROB_byte_gequ_byte);
-  f:=CreateBOMethod(typByte, '<=', '_lequ',typByte, typBool, @ROB_byte_lequ_byte);
-  f:=CreateBOMethod(typByte, '>>', '_shr', typByte, typByte, @ROB_byte_shr_byte);  { TODO : Definir bien la precedencia }
-  f:=CreateBOMethod(typByte, '<<', '_shl', typByte, typByte, @ROB_byte_shl_byte);
+  f:=CreateBOMethod(typByte, '>' , '_gre', typByte, typBool, @BOR_byte_great_byte);
+  f:=CreateBOMethod(typByte, '<' , '_les', typByte, typBool, @BOR_byte_less_byte);
+  f:=CreateBOMethod(typByte, '>=', '_gequ',typByte, typBool, @BOR_byte_gequ_byte);
+  f:=CreateBOMethod(typByte, '<=', '_lequ',typByte, typBool, @BOR_byte_lequ_byte);
+  f:=CreateBOMethod(typByte, '>>', '_shr', typByte, typByte, @BOR_byte_shr_byte);  { TODO : Definir bien la precedencia }
+  f:=CreateBOMethod(typByte, '<<', '_shl', typByte, typByte, @BOR_byte_shl_byte);
   TreeElems.CloseElement;   //Close Type
   /////////////// Char type ////////////////////
   TreeElems.OpenElement(typChar);
-  //opr:=typChar.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
-  f:=CreateBOMethod(typChar, ':=', '_set', typChar, typNull, @ROB_char_asig_char);
-  //opr.CreateOperation(typString, @ROB_char_asig_string);
-  f:=CreateBOMethod(typChar, '=' , '_equ', typChar, typBool, @ROB_char_equal_char);
+  //opr:=typChar.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address);
+  f:=CreateBOMethod(typChar, ':=', '_set', typChar, typNull, @BOR_char_asig_char);
+  //opr.CreateOperation(typString, @BOR_char_asig_string);
+  f:=CreateBOMethod(typChar, '=' , '_equ', typChar, typBool, @BOR_char_equal_char);
   f.fConmutat := true;
-  f:=CreateBOMethod(typChar, '<>', '_dif', typChar, typBool, @ROB_char_difer_char);
+  f:=CreateBOMethod(typChar, '<>', '_dif', typChar, typBool, @BOR_char_difer_char);
   f.fConmutat := true;
   TreeElems.CloseElement;   //Close Type
 
   /////////////// Word type ////////////////////
   TreeElems.OpenElement(typWord);
-  //opr:=typWord.CreateUnaryPreOperator('@', 6, 'addr', @ROU_address);
-  f:=CreateBOMethod(typWord, ':=' ,'_set' , typWord, typNull, @ROB_word_asig_word);
-  f:=CreateBOMethod(typWord, ':=' ,'_set' , typByte, typNull, @ROB_word_asig_byte);
-  f:=CreateBOMethod(typWord, '+=' ,'_aadd', typByte, typNull, @ROB_word_aadd_byte);
-  f:=CreateBOMethod(typWord, '+=' ,'_aadd', typWord, typNull, @ROB_word_aadd_word);
-  f:=CreateBOMethod(typWord, '-=' ,'_asub', typByte, typNull, @ROB_word_asub_byte);
-  f:=CreateBOMethod(typWord, '+'  , '_add', typByte, typWord, @ROB_word_add_byte);
+  //opr:=typWord.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address);
+  f:=CreateBOMethod(typWord, ':=' ,'_set' , typWord, typNull, @BOR_word_asig_word);
+  f:=CreateBOMethod(typWord, ':=' ,'_set' , typByte, typNull, @BOR_word_asig_byte);
+  f:=CreateBOMethod(typWord, '+=' ,'_aadd', typByte, typNull, @BOR_word_aadd_byte);
+  f:=CreateBOMethod(typWord, '+=' ,'_aadd', typWord, typNull, @BOR_word_aadd_word);
+  f:=CreateBOMethod(typWord, '-=' ,'_asub', typByte, typNull, @BOR_word_asub_byte);
+  f:=CreateBOMethod(typWord, '+'  , '_add', typByte, typWord, @BOR_word_add_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typWord, '+'  , '_add', typWord, typWord, @ROB_word_add_word);
+  f:=CreateBOMethod(typWord, '+'  , '_add', typWord, typWord, @BOR_word_add_word);
   f.fConmutat := true;
-  f:=CreateBOMethod(typWord, '-'  , '_sub', typByte, typWord, @ROB_word_sub_byte);
-  f:=CreateBOMethod(typWord, '-'  , '_sub', typWord, typWord, @ROB_word_sub_word);
-  f:=CreateBOMethod(typWord, 'AND', '_and', typByte, typByte, @ROB_word_and_byte);
+  f:=CreateBOMethod(typWord, '-'  , '_sub', typByte, typWord, @BOR_word_sub_byte);
+  f:=CreateBOMethod(typWord, '-'  , '_sub', typWord, typWord, @BOR_word_sub_word);
+  f:=CreateBOMethod(typWord, 'AND', '_and', typByte, typByte, @BOR_word_and_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typWord, 'AND', '_and', typWord, typWord, @ROB_word_and_word);
+  f:=CreateBOMethod(typWord, 'AND', '_and', typWord, typWord, @BOR_word_and_word);
   f.fConmutat := true;
-  f:=CreateUOMethod(typWord, 'NOT', '_not', typWord, @ROU_not_word, opkUnaryPre);
-  f:=CreateBOMethod(typWord, '>>' , '_shr', typByte, typWord, @ROB_word_shr_byte); { TODO : Definir bien la precedencia }
-  f:=CreateBOMethod(typWord, '<<' , '_shl', typByte, typWord, @ROB_word_shl_byte);
+  f:=CreateUOMethod(typWord, 'NOT', '_not', typWord, @UOR_not_word, opkUnaryPre);
+  f:=CreateBOMethod(typWord, '>>' , '_shr', typByte, typWord, @BOR_word_shr_byte); { TODO : Definir bien la precedencia }
+  f:=CreateBOMethod(typWord, '<<' , '_shl', typByte, typWord, @BOR_word_shl_byte);
 
-  f:=CreateBOMethod(typWord, '=' , '_equ' , typWord, typBool, @ROB_word_equal_word);
+  f:=CreateBOMethod(typWord, '=' , '_equ' , typWord, typBool, @BOR_word_equal_word);
   f.fConmutat := true;
-  f:=CreateBOMethod(typWord, '<>', '_dif' , typWord, typBool, @ROB_word_difer_word);
+  f:=CreateBOMethod(typWord, '<>', '_dif' , typWord, typBool, @BOR_word_difer_word);
   f.fConmutat := true;
-  f:=CreateBOMethod(typWord, '>=', '_gequ', typWord, typBool, @ROB_word_gequ_word);
-  f:=CreateBOMethod(typWord, '<' , '_les' , typWord, typBool, @ROB_word_less_word);
-  f:=CreateBOMethod(typWord, '>' , '_gre' , typWord, typBool, @ROB_word_great_word);
-  f:=CreateBOMethod(typWord, '<=', '_lequ', typWord, typBool, @ROB_word_lequ_word);
+  f:=CreateBOMethod(typWord, '>=', '_gequ', typWord, typBool, @BOR_word_gequ_word);
+  f:=CreateBOMethod(typWord, '<' , '_les' , typWord, typBool, @BOR_word_less_word);
+  f:=CreateBOMethod(typWord, '>' , '_gre' , typWord, typBool, @BOR_word_great_word);
+  f:=CreateBOMethod(typWord, '<=', '_lequ', typWord, typBool, @BOR_word_lequ_word);
   //Methods
   f:=CreateUOMethod(typWord, '', 'low' , typByte, @word_Low);
   f:=CreateUOMethod(typWord, '', 'high', typByte, @word_High);

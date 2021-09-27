@@ -44,8 +44,8 @@ protected  //Parser routines
   function CaptureStr(cstr: string): boolean;
   procedure CaptureParams(out funPars: TxpParFuncArray);
 protected  //Flags for boolean type.
-  {This variables are reset at the begginig of each ROU or ROB. They contains the state
-  of the Register/Satus-flags if the last ROU or ROB is executed.  }
+  {This variables are reset at the begginig of each UOR or BOR. They contains the state
+  of the Register/Satus-flags if the last UOR or BOR is executed.  }
   BooleanFromC: integer; {Flag and index. When <>0, indicates the boolean expression result
                           was obtained, in the last expression, using the bit C and moved
                           to A. Used for code optimization.}
@@ -54,7 +54,7 @@ protected  //Flags for boolean type.
                           to A. Used for code optimization.}
   AcumStatInZ: boolean;  {Indicates the Z flag contains the status of the value in A
                           register. For example if A = 0, Z wil be 1.}
-  LastIsTXA  : boolean;  {Last instruction of RO or expresion is TXA, and it's used only
+  LastIsTXA  : boolean;  {Last instruction of ORT or expresion is TXA, and it's used only
                           to move result from X to acumulator.}
 protected  //Elements creation
   function NameExistsIn(eName: string; list: TxpElements): boolean;
