@@ -1,43 +1,27 @@
-P65PAS 0.8.4
+P65PAS 0.8.5
 ============
 COMENTARIOS
-Aún no se cierra esta versión, porque no se ha logrado el objetivo.
-Las ultimas 4 versiones han dado un gran avance en la implementación de un compilador
-funcional con el nuevo diseño, pero hay todavía un largo camino por delante. Mientras
-tanto se deja la versión 0.7.8 como la última estable.
+Se ha hecho un gran avance en reordenar y completar la documentación técnica.
+
 
 OBJETIVOS
-- Compilar y ejecutar sin errores los primeros 3 archivos de prueba.
+- Implementar la síntesis para el caso: Expresión-expresión. 
 
 CAMBIOS
-- Se cambia de nombre a la unidad System.
-- Se corrige un error en TGenCodBas.CodAsigmentToVar() respecto al almacenamiento de _Op1.
-- Se corrige TCompilerBase.GetOperand() para que actualice correctamente el campo 
-"evaluated".
-- Se corrige TCompilerBase.CreateFunctionParams() para que actualice "srcDec" de las 
-variables creadas para los parámetros y para que define el alamacenamiento de las 
-variables correctamente.
-- Se corrigen TGenCodBas.GenCodeExpr() y TGenCodBas.ConstantFoldExpr() para que evaluen
-los parámetros de una función normal antes de llamar a la función normal.
-- Se modifica TCompMain.AnalyzeIF para que agregue una condición TRUE antes del bloque
-ELSE, de modo que se uniformizan todos los bloques del IF.
-- Se crea TGenCodBas.GenCondeIF() para que genere código para las condicionales.
-- Se incluye información sobre las condicionales en la documentación.
-- Se agregan nuevos íconos al frame FrameSyntaxTree e información adicional, con algunas
-correcciones, a FormElemProperty.
+- Se cambia en la documentación y en el código, los acrónimos RO, ROB, ROU, por sus 
+equivalentes en inglés.
+- Se reordena la documentación y se corrigen o actualizan algunas secciones. 
+- Se reordena el código de la unidad GenCod_PIC16.
 
 TAREAS PLANIFICADAS
-- Queda pendiente soportar la instrucción:
-	aword.high := 1;
-Actualmente no se resuelve "aword.high" como operando variable, hasta despúes de que se
-define a "aword" en RAM (lo que está bien). El caso es que las rutinas ROB, cuando se
-llaman en modo "Require" o "ConstEvaluation", todavía pueden generar errores. Y estas
-rutinas ROB son las que generan error.
-Debe dejarse bien establecdo en el compilador, en las ROB, cómo responder correctamente en
-cada modo. Y debe definirse también claramente los modos de trabajo en la síntesis. 
-Por eso, se debría primero, crear una variable que indique el modo de trabajo (Require, 
-ConstEvalution o Syntesis) en lugar de solo usar banderas, como se hace actualmente.
-
+- Documentar detalladamente el estado en que se encuentran los nodos del AST después de 
+cada fase del análisis y síntesis.
+- Implementar la inclusión de información en el árbol de sintaxis para facilitar el acceso a 
+expresiones y poder evitar el caso Expresion-Expresion.
+-Pasar a usar más variables auxiliares en lugar de registros. Debe existir un mecanismo 
+confiable para que un procedimiento pueda pedir variables adicionales para cálculos 
+intermedios. La idea es 
+- Implementar las operaciones de tipo Expres + Expres, usando variables auxiliares.
 
 - Implementar la obligatoriedad de localizar el registro IX en la página cero.
 - Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
@@ -61,18 +45,8 @@ PENDIENTES
 - Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
 - Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
 globales, locales) y los registros de trabajo.
-- Implementar la inclusión de información en el árbol de sintaxis para facilitar el acceso a 
-expresiones y poder evitar el caso Expresion-Expresion.
-- Analizar si conviene desaparecer demasiados métodos: valInt, valFloat, ..., de TOperand, 
-e implementar esos accesos desde el generador de código, y que accedan a FConst.ValInt, ...
--Pasar a usar más variables auxiliares en lugar de registros. Debe existir un mecanismo confiable 
-para que un procedimiento pueda pedir variables adicionales para cálculos intermedios. La idea es 
-simplificar las operaciones de tipo expresión-expresión, usando variables adicionales.
-- Implementar los casos expresión-expresión 
-
-Generar bloques IF (o de otro tipo), de más de 128 bytes.
-
-Revisar y adaptar los programas de prueba para el compilador.
+-Generar bloques IF (o de otro tipo), de más de 128 bytes.
+-Revisar y adaptar los programas de prueba para el compilador.
 
 Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
 implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
@@ -85,13 +59,10 @@ Queda pendiente también implementar la declaración de tipos en los parámetros de
 De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
 almacenar la lista de los posibles tipos creados.
 
-Queda pendiente implementar las operaciones de tipo Expres + Expres, usando variables 
-auxiliares.
-
 Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
+
 inline func1(var x: byte; const y: word; expr z: char);
 begin
-
 end;
 
 La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
@@ -109,6 +80,45 @@ octeto = object
     
     end;
   end;
+
+
+
+P65PAS 0.8.4 (No funcional)
+============
+COMENTARIOS
+En esta versión se avanzó en lograr el objetivo, pero se cierra la versión porque se 
+encontró un problema que tiene que ver con el procesamietno de expresiones que requiere
+diseñar una nueva característica.
+Las ultimas 4 versiones han dado un gran avance en la implementación de un compilador
+funcional con el nuevo diseño, pero hay todavía un largo camino por delante. Mientras
+tanto se deja la versión 0.7.8 como la última estable.
+
+OBJETIVOS
+- Compilar y ejecutar sin errores los primeros 3 archivos de prueba.
+
+CAMBIOS
+- Se cambia de nombre a la unidad System.
+- Se corrige un error en TGenCodBas.CodAsigmentToVar() respecto al almacenamiento de _Op1.
+- Se corrige TCompilerBase.GetOperand() para que actualice correctamente el campo 
+"evaluated".
+- Se corrige TCompilerBase.CreateFunctionParams() para que actualice "srcDec" de las 
+variables creadas para los parámetros y para que define el alamacenamiento de las 
+variables correctamente.
+- Se corrigen TGenCodBas.GenCodeExpr() y TGenCodBas.ConstantFoldExpr() para que evaluen
+los parámetros de una función normal antes de llamar a la función normal.
+- Se modifica TCompMain.AnalyzeIF para que agregue una condición TRUE antes del bloque
+ELSE, de modo que se uniformizan todos los bloques del IF.
+- Se crea TGenCodBas.GenCondeIF() para que genere código para las condicionales.
+- Se incluye información sobre las condicionales en la documentación.
+- Se agregan nuevos íconos al frame FrameSyntaxTree e información adicional, con algunas
+correcciones, a FormElemProperty.
+- Se elimina el campo TGenCodBas.ModeRequire y se crea la variable TGenCodBas.compMod.
+- Se modifica TGenCod.ROB_byte_asig_byte() para que salga en el modo de evaluación de 
+constantes.
+- Se corrige TGenCod.fun_Chr() para que actualicen el campo "evaluated" en el caso de 
+constantes.
+- Se completa TGenCodBas.word_Low() para que trabaje de forma similar a TGenCodBas.word_High().
+- Se corrige TGenCodBas.SetFunConst_byte().
 
 
 P65PAS 0.8.3 (No funcional)
@@ -435,29 +445,6 @@ almacenar la lista de los posibles tipos creados.
 
 Queda pendiente implementar las operaciones de tipo Expres + Expres, usando variables 
 auxiliares.
-
-
-Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
-inline func1(var x: byte; const y: word; expr z: char);
-begin
-
-end;
-
-La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
-considerando el tipo de almacenamiento del operando.
-Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
-codificar operaciones sobre tipos objeto:
-
-octeto = object
-    value: byte;
-  public 
-    inline assign(var x: byte) operator ":="  precedence 5;
-    
-    end;
-    inline assign(x: byte) operator ":=";
-    
-    end;
-  end;
 
 
 
