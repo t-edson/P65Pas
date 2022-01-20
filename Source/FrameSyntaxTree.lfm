@@ -72,9 +72,6 @@ object fraSyntaxTree: TfraSyntaxTree
       ItemHeight = 20
       ItemsEx = <      
         item
-          ImageIndex = 0
-        end      
-        item
           ImageIndex = 10
         end      
         item
@@ -807,17 +804,6 @@ object fraSyntaxTree: TfraSyntaxTree
       000000C600000000000000000000
     }
   end
-  object PopupGroup: TPopupMenu
-    Images = ImageList1
-    Left = 30
-    Top = 60
-    object MenuItem5: TMenuItem
-      Action = acGenExpAll
-    end
-    object mnRefresh1: TMenuItem
-      Action = acGenRefres
-    end
-  end
   object ActionList1: TActionList
     Images = ImageList1
     Left = 130
@@ -837,11 +823,6 @@ object fraSyntaxTree: TfraSyntaxTree
       ImageIndex = 8
       OnExecute = acGenPropExecute
     end
-    object acGenViewGr: TAction
-      Caption = 'View by &Groups'
-      ImageIndex = 0
-      OnExecute = acGenViewGrExecute
-    end
     object acGenViewDec: TAction
       Caption = 'View by &Declaration'
       ImageIndex = 10
@@ -858,7 +839,8 @@ object fraSyntaxTree: TfraSyntaxTree
     Left = 30
     Top = 270
     object MenuItem1: TMenuItem
-      Action = acGenViewGr
+      Caption = 'View by &Groups'
+      ImageIndex = 0
     end
     object MenuItem2: TMenuItem
       Action = acGenViewDec

@@ -1,7 +1,7 @@
 {
 XpresElementsPIC
 ================
-Definitions and implementation of the AST (Abstract Syntax Tree) structure.
+Definitions and implementation for the AST (Abstract Syntax Tree) structure.
 This unit is based in the unit XpresElements from the framework Xpres, and is adapted
 to the 6502 CPU architecture and to the Pascal dialect used here.
 
@@ -119,8 +119,8 @@ begin
 end;
 //Filling the tree
 procedure TXpTreeElements.AddElement(elem: TxpElement; position: integer = -1);
-{Add a new element to the current node. Commonly elements are add at the end of the list
-unless "position" is specified.
+{Add a new element to the current node. Commonly elements are added at the end of the
+list unless "position" is specified.
 This is the unique entry point to add elements to the Syntax Tree.}
 begin
   //Add the node

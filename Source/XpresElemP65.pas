@@ -221,7 +221,7 @@ type  //TxpElement class
     Fname    : string;   //Element name
     Funame   : string;   //Upper case name. Used to acelerate searchings.
     procedure Setname(AValue: string);
-  public  //Gestion de llamadas al elemento
+  public  //Callers management
     //List of functions that calls to this function.
     lstCallers: TxpListCallers;
     function nCalled: integer; virtual; //número de llamadas
@@ -393,7 +393,7 @@ type  //Declaration elements
                 - stConsta
                 - stRamFix   //Special case
                }
-    otExpres    {Operand is a function/method or expression result. Only for read.
+    otFunct    {Operand is a function/method or expression result. Only for read.
                Support storages:
                 - stRegister
                 - stRegistA
@@ -472,7 +472,7 @@ type  //Expression elements
   TEleFunBase = class;
 
   { TEleExpress }
-  {Represents an expression. }
+  {Represents an expression/operand. }
   TEleExpress = class(TxpElement)
   public
     opType : TopType;     //Operand type.
@@ -487,9 +487,9 @@ type  //Expression elements
     function ValueIsZero: boolean;
   public  //Temporal variables required for evaluating expression.
     tempVars: TEleVarDecs;
-  public  //Fields used when opType is otExpres.
+  public  //Fields used when opType is otFunct.
     rfun   : TEleFunBase;  //Reference to function
-    {When element is "otExpres", this flag indicates the function/method has been
+    {When element is "otFunct", this flag indicates the function/method has been
     called using an operator instead of call the function by its name.}
     fcallOp: boolean;
   public  //Fields used when opType is otConst.
@@ -591,11 +591,14 @@ type  //Structural elements
   end;
 
 type  //Instructions relative elements
+  //Sentences categories
   TxpSentence = (
     sntNull,       //Default value
-    sntExpres,     //Expression or operand
+    //sntExpres,     //Expression or operand
+    sntAssign,     //Assignment
+    sntProcCal,    //Procedure call
     sntAsmBlock,   //ASM block
-    sntBEGIN_END,  //BEGIN-END block
+    sntBeginEnd,   //BEGIN-END block
     sntIF,         //Conditional IF
     sntREPEAT,     //REPEAT Loop
     sntWHILE,      //WHILE Loop

@@ -214,7 +214,7 @@ begin
             'Allocated: '  + ifthen(xexp.allocated, 'true', 'false') + LineEnding +
             'Address: ' + xexp.add.ToString;
     end;
-    otExpres: begin
+    otFunct: begin
       adicInformation +=
             '';
     end;

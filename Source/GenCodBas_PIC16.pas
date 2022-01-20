@@ -589,7 +589,7 @@ procedure TGenCodBas.SetFunExpres(fun: TEleExpress; logic: TLogicType = logNorma
 {Fija los parámetros del resultado de una subexpresion. Este método se debe
 ejecutar, siempre antes de evaluar cada subexpresión.}
 begin
-  fun.opType := otExpres; //Fija como expresión
+  fun.opType := otFunct; //Fija como expresión
   fun.Sto := stRegister; //Almacenamiento por defecto
 
   //Limpia el estado. Esto es útil que se haga antes de generar el código para una operación
@@ -1642,7 +1642,7 @@ var
   ele: TxpElement;
   parExpr: TEleExpress;
 begin
-  if eleExp.opType = otExpres then begin
+  if eleExp.opType = otFunct then begin
     //It's an expression. There should be a function
     funcBase := eleExp.rfun;
     if funcBase.codInline<>nil then begin
@@ -1655,7 +1655,7 @@ begin
           parExpr := TEleExpress(ele);
           GenCodeExpr(parExpr);
           //Check availability of registers
-          if parExpr.opType = otExpres then begin
+          if parExpr.opType = otFunct then begin
             //An Expression result use registers.
             if regsUsed = false then begin
               regsUsed := true;  //Set to used.
@@ -1865,7 +1865,11 @@ begin
     //Generates code to the sentence.
     sen := TxpEleSentence(eleSen);
     case sen.sntType of
-    sntExpres: begin  //Call to function or method (including assignment)
+    sntAssign: begin  //Assignment
+      expFun := TEleExpress(sen.elements[0]);  //Takes root node.
+      GenCodeExpr(expFun);
+    end;
+    sntProcCal: begin  //Call to function or method
       expFun := TEleExpress(sen.elements[0]);  //Takes root node.
       GenCodeExpr(expFun);
     end;
@@ -1880,7 +1884,7 @@ begin
       GenCondeIF(sen);
     end
     else
-      GenError('Unknown sentence.', sen.srcDec);
+      GenError('Unknown sentence type.', sen.srcDec);
       exit;
     end;
   end;
@@ -1907,7 +1911,7 @@ var
   ele: TxpElement;
   parExpr: TEleExpress;
 begin
-  if eleExp.opType = otExpres then begin
+  if eleExp.opType = otFunct then begin
     //It's an expression. There should be a function
     funcBase := eleExp.rfun;
     if funcBase.codInline<>nil then begin
@@ -1991,7 +1995,8 @@ begin
   for eleSen in TreeElems.curNode.elements do begin
     if eleSen.idClass <> eleSenten then continue;
     sen := TxpEleSentence(eleSen);
-    if sen.sntType = sntExpres then begin  //Call to function or method (including assignment)
+    //if sen.sntType = sntExpres then begin  //Call to function or method (including assignment)
+    if sen.sntType = sntAssign then begin  //assignment)
       expFun := TEleExpress(sen.elements[0]);  //Takes root node.
       ConstantFoldExpr(expFun);
       if HayError then exit;
@@ -2014,7 +2019,7 @@ begin
   nodes every time an assignment is needed.}
   srcPosNull.idCtx := -1;   //Null position
   _Op1 := CreateExpression('', typNull, otVariab, srcPosNull);
-  _eleMeth := CreateExpression('_set', typNull, otExpres, srcPosNull);
+  _eleMeth := CreateExpression('_set', typNull, otFunct, srcPosNull);
   _eleMeth.elements := TxpElements.Create(false);  //Without control because we want to destroy "eleMeth" without destroy Op2
   //Add elements (parameter) of the _set method. Note
   _eleMeth.elements.Add(_Op1);  //Won't change

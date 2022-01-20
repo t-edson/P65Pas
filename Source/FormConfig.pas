@@ -21,8 +21,7 @@ type
   TOptimLev = (olvFool,   //Nivel básico de optimización
                olvSmart   //Nivel mayor de optimización
                );
-  TTreeViewMode = (vmGroups,   //Muestra por grupos
-                   vmDeclar,   //Muestra en el orden de declaración
+  TTreeViewMode = (vmDeclar,   //Muestra en el orden de declaración
                    vmFileExp   //Muestra el explorador de archivos
                    );
   { TConfig }

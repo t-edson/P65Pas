@@ -1159,14 +1159,11 @@ function TCompilerBase.GetOperand(): TEleExpress;
 If an operand is obtained, it is added to the current node in the AST as a TxpEleExpress
 (and set as active node), and the reference is returned in this function.
 If an operand is not found, an error is generated, a NIL value is returned and the AST
-can be modified or not depending on the point where the error is raised.
+can be modified or not, depending on the point where the error is raised.
 
 --> [identifier] ----+ <---------------------------------- +
-                     |                                     |
                      +--> '[' --> [expression] --> ']' --> +
-                     |                                     |
                      +--> '.' --> [field identifier] ----> +
-                     |                                     |
                      +----------------> '^' -------------> +
                      |
                      +--------------------------------------->
@@ -1279,7 +1276,7 @@ begin
       xfun := TEleFunBase(ele);  //The ancestor of eleFunc and eleFuncDec
       {We create the expression here because we're going to create parameters nodes
       when scanning with CaptureParams()}
-      Op1 := OpenExpression(ele.name, xfun.retType, otExpres, posCall);
+      Op1 := OpenExpression(ele.name, xfun.retType, otFunct, posCall);
       //Op1.Sto := ; { TODO : ¿No es necesario completar el almacenamiento de esta función? }
       //Capture parameters
       CaptureParams(pars);    //Read parameters in "pars".
@@ -1432,7 +1429,7 @@ begin
         Next;               //Take identifier
         SkipWhites;         //Take spaces
         xfun := TEleFunBase(field);  //The ancestor of eleFunc and eleFuncDec
-        eleMeth := CreateExpression(field.name, xfun.retType, otExpres, posCall);
+        eleMeth := CreateExpression(field.name, xfun.retType, otFunct, posCall);
         TreeElems.InsertParentTo(eleMeth, Op1);
         TreeElems.OpenElement(eleMeth);  //Set parent to add parameters.
         eleMeth.rfun := xfun;            //Set function
@@ -1476,7 +1473,7 @@ begin
         exit;
       end;
       xfun := TEleFunBase(field);  //The ancestor of eleFunc and eleFuncDec
-      eleMeth := CreateExpression(field.name, xfun.retType, otExpres, GetSrcPos);
+      eleMeth := CreateExpression(field.name, xfun.retType, otFunct, GetSrcPos);
       TreeElems.InsertParentTo(eleMeth, Op1);
       TreeElems.OpenElement(eleMeth);  //Set parent to add parameters.
       eleMeth.rfun := xfun;            //Set function
@@ -1497,7 +1494,7 @@ end;
 function TCompilerBase.GetExpression(const prec: Integer): TEleExpress;
 {Analyze a common Pascal expression, and represent it in the AST, according to the
 predefined rules.
-In normal case, create an element TxpEleExpress, in the current node, and returns a
+In normal case, creates an element TxpEleExpress, in the current node, and returns a
 reference to the expression element root.
 In some cases like when reading arrays or objects, a new type can be created.
 }
@@ -1530,7 +1527,7 @@ begin
       exit;
     end;
     //Put method as parent
-    eleMeth := CreateExpression(opr1.name, opr1.retType, otExpres, oprPos);  //Type will updated later.
+    eleMeth := CreateExpression(opr1.name, opr1.retType, otFunct, oprPos);  //Type will updated later.
     eleMeth.fcallOp := true;  //Come from an operator.
     TreeElems.InsertParentTo(eleMeth, Op1);
     TreeElems.OpenElement(eleMeth);  //Set parent to add parameters.
@@ -1558,10 +1555,10 @@ begin
     end;
     Next;  //Takes operator
     //Put element as parent of Op1
-    eleMeth := CreateExpression('', typNull, otExpres, oprPos);  //Type will updated later.
+    eleMeth := CreateExpression('', typNull, otFunct, oprPos);  //Type will be updated later.
     eleMeth.fcallOp := true;  //Come from an operator.
     TreeElems.InsertParentTo(eleMeth, Op1);
-    TreeElems.OpenElement(eleMeth);  //Set parent to add parameters.
+    TreeElems.OpenElement(eleMeth);  //Set parent to method to allow add parameters as child node.
     //-------------------- Get second operand --------------------
     Op2 := GetExpression(oprPre);   //toma operando con precedencia
     if HayError then exit;

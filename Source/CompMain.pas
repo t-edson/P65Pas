@@ -902,7 +902,7 @@ begin
     cons.value := init.value;
     cons.evaluated := init.evaluated;
   end else begin
-    {Puede que siga una expresión "otExpres" como la llamada a una función que
+    {Puede que siga una expresión "otFunct" como la llamada a una función que
     devolverá a una constante, como en el caso:
     CONST := word(1);
     Pero como no podemos definir el resultado de esa expresión en este nivel, lo
@@ -1635,6 +1635,7 @@ var
   ele, declarSec: TxpElement;
   ex: TEleExpress;
   declarPos: Integer;
+  snt: TxpEleSentence;
 begin
   if not (TreeElems.curNode.idClass in [eleBody, eleBlock]) then begin
     //No debería pasar, porque las instrucciones solo pueden estar en eleBody
@@ -1714,7 +1715,7 @@ begin
       TreeElems.CloseElement;  //Close sentence
     end else begin
       //Could be Assigment sentence, Procedure call or Function operand.
-      TreeElems.AddElementSentAndOpen(GetSrcPos, sntExpres); //Open sentence
+      snt := TreeElems.AddElementSentAndOpen(GetSrcPos, sntAssign); //Open sentence
       //Parse expression
       GetExpression(0);
       //Validate expression
@@ -1735,17 +1736,21 @@ begin
       if ele.idClass = eleExpress then begin
         //The expected element
         ex := TEleExpress(ele);
-        if ex.opType = otExpres then begin
+        if ex.opType = otFunct then begin
           //Should be a procedure or function call.
-          //It's OK but if it comes from an operator (different from ':=') is bad.
-          if ex.fcallOp and (ex.name <> '_set') then begin
-            GenError('Expressions are not allowed here.', ex.srcDec);
+          if ex.fcallOp then begin   //It comes from an operator
+            //Only assignment ':=' is allowed.
+            if ex.name <> '_set' then begin
+               GenError('Expressions are not allowed here.', ex.srcDec);
+            end;
+          end else begin             //Should be a function call
+            snt.sntType := sntProcCal;   //Update type.
           end;
         end else begin
           //Returns a type. Should be an expression
           GenError('Invalid sentence.', ex.srcDec);
         end;
-      end else begin
+      end else begin  //Maybe a simple operand.
         GenError('Expression expected.');
       end;
       TreeElems.CloseElement;  //Close sentence

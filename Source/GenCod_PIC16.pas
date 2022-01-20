@@ -3988,7 +3988,7 @@ begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
   case par.opType of
   otConst: begin GenError('Cannot increase a constant.');exit; end;
-  otExpres: begin GenError('Cannot increase a function/procedure or expression result.'); exit; end;
+  otFunct: begin GenError('Cannot increase a function/procedure or expression result.'); exit; end;
   otVariab: ; //The only valid type.
   else  //Not expected to happen
     GenError('Unimplemented.'); exit;
@@ -4048,7 +4048,7 @@ begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
   case par.opType of
   otConst: begin GenError('Cannot decrease a constant.');exit; end;
-  otExpres: begin GenError('Cannot decrease a function/procedure or expression result.'); exit; end;
+  otFunct: begin GenError('Cannot decrease a function/procedure or expression result.'); exit; end;
   otVariab: ; //The only valid type.
   else  //Not expected to happen
     GenError('Unimplemented.'); exit;
@@ -4344,7 +4344,7 @@ begin
       exit;
     end;
   end;
-  //otExpres: begin
+  //otFunct: begin
   { TODO : Faltaría implementar etso, después de que se defina el campo "coded" (o similar) en los TxpEleExpress para indciar cuando la función se ha implementado y codificado en memoria. }
     ////Should be a function call
     //if par.coded then begin

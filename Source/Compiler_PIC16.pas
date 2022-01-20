@@ -13,6 +13,7 @@ type
   TCompiler_PIC16 = class(TParserDirec)
   private   //Funciones básicas
     procedure cInNewLine(lin: string);
+    procedure SplitAssigments(body: TEleBody);
   private //Compilación de secciones
     procedure EvaluateConstantDeclare;
     procedure ConstantFolding;
@@ -69,7 +70,7 @@ var
 begin
   //Calculate values in CONST sections
   for cons in TreeElems.AllCons do begin
-    {For optimziation we should evaluate only used Constant, but we evaluate alls
+    {For optimization we should evaluate only used Constant, but we evaluate alls
     because constants like the field "length" of arrays, needs to be evaluated in order
     to get the size defined, before assign RAM. }
     //if cons.nCalled > 0 then begin  //Used constant.
@@ -138,10 +139,102 @@ begin
   GenCodeBody(bod);
   //if HayError then exit;   //Puede haber error
 end;
+procedure TCompiler_PIC16.SplitAssigments(body: TEleBody);
+{Do a separation for assigmente sentences in order to have the three-address code" form
+used in several compilers.}
+  function MoveNodeToAssign(curSent: TxpEleSentence; Op: TEleExpress): TEleExpress;
+  {Mueve el nodo especificado "Op" a una nueva instruccion de asignación (que es creada
+  antes de la sentencia "curSent") y los reemplaza por una variable temporal.
+  }
+  var
+    _varaux: TEleVarDec;
+    _setaux: TEleExpress;
+    Op1aux, Op2aux: TEleExpress;
+    funSet: TEleFunBase;
+    OpPos: Integer;
+    OpParent: TxpElement;
+  begin
+    //Create a new variable in the declaration section of this body.
+    _varaux := CreateVar('_x' + IntToStr(body.Index), typByte);  //Generate a unique name in this body
+    TreeElems.openElement(body.Parent);
+    TreeElems.AddElement(_varaux, body.Index);  //Add before the body.
+
+    _setaux := CreateExpression('_set', typNull, otFunct, Op.srcDec);
+    funSet := MethodFromBinOperator(Op.Typ, ':=', Op.Typ);
+    if funSet = nil then begin   //Operator not found
+      GenError('Undefined operation: %s %s %s', [Op.Typ.name, ':=', Op.Typ.name]);
+      exit(nil);
+    end;
+    _setaux.rfun := funSet;
+
+    //Add the new assigment before the main
+    TreeElems.openElement(curSent);
+    TreeElems.AddElement(_setaux, 0);    //Add a new assigmente before
+    _setaux.elements := TxpElements.Create(true);  //Create list
+    TreeElems.openElement(_setaux);
+
+    Op1aux := CreateExpression(_varaux.name, _varaux.typ, otVariab, Op.srcDec);
+    Op1aux.SetVariab(_varaux);
+    TreeElems.addElement(Op1aux);
+
+    //Move the second operand to the previous _set created
+    OpParent := Op.Parent;    //Keep current parent reference.
+    OpPos := Op.Index;        //Keep current operand position.
+    TreeElems.ChangeParentTo(_setaux, Op);
+
+    //Replace the missed function
+    TreeElems.openElement(OpParent);
+    Op2aux := CreateExpression(_varaux.name, _varaux.typ, otVariab, Op.srcDec);
+    Op2aux.SetVariab(_varaux);
+    TreeElems.addElement(Op2aux, OpPos);
+    exit(_setaux);
+  end;
+  function SplitSet(curSent: TxpEleSentence; setMethod: TxpElement): boolean;
+  {Verify if a set expression has more than three operands. If so then
+  it's splitted adding an aditional set sentence. }
+  var
+    Op2, parExp: TEleExpress;
+    par: TxpElement;
+  begin
+    Op2 := TEleExpress(setMethod.elements[1]);  //Takes assigment source.
+    if (Op2.opType = otFunct) and Op2.fcallOp then begin
+      {IT's the form:
+            x := A + B
+      or:
+           x := A++        }
+      {We expect parameters A, B, C should be simple operands (Constant or variables)
+      otherwise we will move them to a separate assigment}
+      for par in Op2.elements do begin
+        parExp := TEleExpress(par);
+        if parExp.opType = otFunct then begin
+          MoveNodeToAssign(curSent, parExp);
+          if HayError then exit;
+        end;
+      end;
+    end;
+  end;
+var
+  sen: TxpEleSentence;
+  eleSen, _set: TxpElement;
+begin
+  for eleSen in body.elements do begin
+    if eleSen.idClass <> eleSenten then continue;
+    //We have a sentence here.
+    sen := TxpEleSentence(eleSen);
+    if sen.sntType = sntAssign then begin  //Assignment
+      _set := sen.elements[0];  //Takes the _set method.
+      SplitSet(sen, _set);  //Might generate additional assigments sentences
+
+      //DebugLn(Op2.name);
+    end;
+  end;
+end;
 procedure TCompiler_PIC16.DoOptimize;
 {Usa la información del árbol de sintaxis, para optimizar su estructura con
 miras a la síntesis.
 Se debe llamar después de llamar a DoAnalyzeProgram().}
+var
+  bod: TEleBody;
 begin
   ExprLevel := 0;
   ResetRAM;    //2ms aprox.
@@ -150,24 +243,25 @@ begin
   {Realiza una exploración al AST para detectar funciones no usadas, y así marcar
   todos sus elementos (constantes, variables, tipos) como no-usados, quitando las
   referencias (callers). }
-  RefreshAllElementLists;  //Actualiza lista de elementos
-//  EndCountElapsed('-- Optimized in: ');
-  RemoveUnusedFunc;   //Se debe empezar con las funciones. 1ms aprox.
-  RemoveUnusedVars;   //Luego las variables. 1ms aprox.
-  RemoveUnusedCons;   //1ms aprox.
-  RemoveUnusedTypes;  //1ms aprox.
-  UpdateFunLstCalled; //Actualiza lista "lstCalled" de las funciones usadas
+  RefreshAllElementLists; //Actualiza lista de elementos
+  RemoveUnusedFunc;       //Se debe empezar con las funciones. 1ms aprox.
+  RemoveUnusedVars;       //Luego las variables. 1ms aprox.
+  RemoveUnusedCons;       //1ms aprox.
+  RemoveUnusedTypes;      //1ms aprox.
+  UpdateFunLstCalled;     //Actualiza lista "lstCalled" de las funciones usadas.
   if HayError then exit;
   SeparateUsedFunctions;
   EvaluateConstantDeclare;
   if HayError then exit;
-  ConstantFolding;
-  if HayError then exit;
-  //{Realiza una primera creación de variables para que la síntesis posterior se haga de
-  //la forma más parecida a como se haría. }
-  //CreateVarsAndPars;
-  {Realiza la simplificación del AST, realizando una primera compilación.}
- ScanForRegsRequired;
+  {Do a first folding in nodes. Some constants (like those that depend on addresses)
+  might not be evaluated. So it should be needed to do other Code folding again.}
+//  ConstantFolding;
+//  if HayError then exit;
+  //Simplify AST
+  bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
+  SplitAssigments(bod)
+  //{Realiza la simplificación del AST, realizando una primera compilación.}
+  //ScanForRegsRequired;
 end;
 procedure TCompiler_PIC16.DoGenerateCode;
 {Generates the final binary code using information from the AST as input.
@@ -335,6 +429,8 @@ procedure TCompiler_PIC16.Compile(NombArc: string; Link: boolean);
 var
   p: SizeInt;
 begin
+  debugln('');
+  StartCountElapsed;  //Start timer
   DefCompiler;   //Debe hacerse solo una vez al inicio
   mode := modPicPas;   //Por defecto en sintaxis nueva
   mainFile := NombArc;
@@ -367,7 +463,8 @@ begin
     TreeElems.main.srcDec := GetSrcPos;
     //Continúa con preparación
     TreeDirec.Clear;
-    StartCountElapsed;  //Start timer
+//    EndCountElapsed('** Setup in: ');
+//    StartCountElapsed;  //Start timer
     CreateSystemElements;  //Crea los elementos del sistema. 3ms aprox.
     ClearMacros;           //Limpia las macros
     //Inicia PIC
@@ -379,25 +476,25 @@ begin
       DoAnalyzeUnit(TreeElems.main);
       if HayError then exit;
       UpdateCallersToUnits;
-      EndCountElapsed('** Unit analyzed in: ');
+      EndCountElapsed('-- Unit analyzed in: ');
     end else begin
       //Debe ser un programa
       CompiledUnit := false;
       DoAnalyzeProgram;    //puede dar error
       if HayError then exit;
       UpdateCallersToUnits;
-      EndCountElapsed('** Program analyzed in: ');
+      EndCountElapsed('-- Program analyzed in: ');
       if Link then begin  //El enlazado solo es válido para programas
-//        {Compila solo los procedimientos usados, leyendo la información del árbol de sintaxis,
-//        que debe haber sido actualizado en la primera pasada.}
+        {Compila solo los procedimientos usados, leyendo la información del árbol de sintaxis,
+        que debe haber sido actualizado en la primera pasada.}
         StartCountElapsed;
         DoOptimize;
         if HayError then exit;
         EndCountElapsed('-- Optimized in: ');
         StartCountElapsed;
         DoGenerateCode;
-        EndCountElapsed('-- Synthetized in: ');
-        StartCountElapsed;
+//        EndCountElapsed('-- Synthetized in: ');
+//        StartCountElapsed;
         //Genera archivo hexa, en la misma ruta del programa
         pic.GenHex(hexFile, GeneralORG);
         EndCountElapsed('-- Output generated in: ');
@@ -406,9 +503,11 @@ begin
     {-------------------------------------------------}
     //ClearAll;//es necesario por dejar limpio
   finally
+    StartCountElapsed;
     ejecProg := false;
     //Tareas de finalización
     if OnAfterCompile<>nil then OnAfterCompile;
+    EndCountElapsed('-- OnAfterCompile in: ');
   end;
 end;
 function AdrStr(absAdr: word): string;

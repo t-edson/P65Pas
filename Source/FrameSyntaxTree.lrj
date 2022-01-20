@@ -1,10 +1,10 @@
 {"version":1,"strings":[
 {"hash":150912277,"name":"tfrasyntaxtree.label1.caption","sourcebytes":[83,121,110,116,97,120,32,84,114,101,101],"value":"Syntax Tree"},
-{"hash":11279586,"name":"tfrasyntaxtree.comboboxex1.itemsex[2].caption","sourcebytes":[73,116,101,109,69,120,50],"value":"ItemEx2"},
+{"hash":11279586,"name":"tfrasyntaxtree.comboboxex1.itemsex[1].caption","sourcebytes":[73,116,101,109,69,120,50],"value":"ItemEx2"},
 {"hash":146640424,"name":"tfrasyntaxtree.acgenrefres.caption","sourcebytes":[38,82,101,102,114,101,115,104],"value":"&Refresh"},
 {"hash":22750702,"name":"tfrasyntaxtree.acgengoto.caption","sourcebytes":[71,111,32,84,111,46,46,46],"value":"Go To..."},
 {"hash":115529379,"name":"tfrasyntaxtree.acgenprop.caption","sourcebytes":[38,80,114,111,112,101,114,116,105,101,115],"value":"&Properties"},
-{"hash":109030307,"name":"tfrasyntaxtree.acgenviewgr.caption","sourcebytes":[86,105,101,119,32,98,121,32,38,71,114,111,117,112,115],"value":"View by &Groups"},
 {"hash":99318286,"name":"tfrasyntaxtree.acgenviewdec.caption","sourcebytes":[86,105,101,119,32,98,121,32,38,68,101,99,108,97,114,97,116,105,111,110],"value":"View by &Declaration"},
-{"hash":138578252,"name":"tfrasyntaxtree.acgenexpall.caption","sourcebytes":[69,120,112,97,110,100,32,65,108,108],"value":"Expand All"}
+{"hash":138578252,"name":"tfrasyntaxtree.acgenexpall.caption","sourcebytes":[69,120,112,97,110,100,32,65,108,108],"value":"Expand All"},
+{"hash":109030307,"name":"tfrasyntaxtree.menuitem1.caption","sourcebytes":[86,105,101,119,32,98,121,32,38,71,114,111,117,112,115],"value":"View by &Groups"}
 ]}
