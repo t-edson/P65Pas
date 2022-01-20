@@ -21,16 +21,18 @@ msgstr ""
 msgid "View by &Declaration"
 msgstr ""
 
-#: tfrasyntaxtree.acgenviewgr.caption
-msgid "View by &Groups"
-msgstr ""
-
-#: tfrasyntaxtree.comboboxex1.itemsex[2].caption
+#: tfrasyntaxtree.comboboxex1.itemsex[1].caption
+msgctxt "tfrasyntaxtree.comboboxex1.itemsex[1].caption"
 msgid "ItemEx2"
 msgstr ""
 
 #: tfrasyntaxtree.label1.caption
 msgid "Syntax Tree"
+msgstr ""
+
+#: tfrasyntaxtree.menuitem1.caption
+msgctxt "tfrasyntaxtree.menuitem1.caption"
+msgid "View by &Groups"
 msgstr ""
 
 #: tfrmelemproperty.butdetails.caption
