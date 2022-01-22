@@ -241,10 +241,6 @@ begin
     _LDA(par.rvar.addr);
     _EORi($FF);
   end;
-//  stExpres: begin
-//    SetUORResultExpres_byte;
-//    //////
-//  end;
   else
     genError('Not implemented: "%s"', [fun.name]);
   end;

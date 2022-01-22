@@ -69,7 +69,7 @@ type
     function requireH: boolean;  //Declare use of register H
     function requireE: boolean;  //Declare use of register E
     function requireU: boolean;  //Declare use of register U
-    function requireVar(fun: TEleExpress; rname: string; rtype: TEleTypeDec; out
+    function requireVar2(fun: TEleExpress; rname: string; rtype: TEleTypeDec; out
       rvar: TEleVarDec): boolean;
   protected
     procedure ResetRAM;
@@ -80,8 +80,6 @@ type
     procedure GenCodeSentences(sentList: TxpElements);
     procedure GenCodeBody(body: TEleBody);
     procedure GenCodeBlock(block: TEleBlock);
-    procedure ConstantFoldExpr(eleExp: TEleExpress);
-    procedure ConstantFoldBody(body: TEleBody);
   protected  //Memory managing routines for variables
     procedure WriteVaLueToRAM(target: PtrTCPURam; add: word; typ: TEleTypeDec;
       const value: TConsValue);
@@ -350,7 +348,7 @@ begin
   U.required := true;
   exit(U.allocated);   //Already allocated in memory.
 end;
-function TGenCodBas.requireVar(fun: TEleExpress; rname: string; rtype: TEleTypeDec;
+function TGenCodBas.requireVar2(fun: TEleExpress; rname: string; rtype: TEleTypeDec;
          out rvar: TEleVarDec): boolean;
 {Indicates we are going to need a temporal variable of the type indicated.
 - Parameter "rname" is a name used to identify the variable. It's case sensitive. Must be
@@ -1138,7 +1136,7 @@ begin
 end;
 //////////////// Tipo Byte /////////////
 procedure TGenCodBas.byte_LoadToRT(fun: TEleExpress);
-{Load operand to WR. It's, convert storage to stExpres }
+{Load operand to WR. It's, convert storage to stRegister }
 begin
   case fun.Sto of  //el parámetro debe estar en "res"
   stConst : begin
@@ -1854,7 +1852,7 @@ procedure TGenCodBas.GenCodeSentences(sentList: TxpElements);
 var
   eleSen, ele: TxpElement;
   sen: TxpEleSentence;
-  expFun, expAsm: TEleExpress;
+  expSet, expAsm: TEleExpress;
   inst: TxpEleAsmLine;
 begin
   for eleSen in sentList do begin
@@ -1866,12 +1864,14 @@ begin
     sen := TxpEleSentence(eleSen);
     case sen.sntType of
     sntAssign: begin  //Assignment
-      expFun := TEleExpress(sen.elements[0]);  //Takes root node.
-      GenCodeExpr(expFun);
+      for ele in sen.elements do begin
+        expSet := TEleExpress(ele);  //Takes assigment function.
+        GenCodeExpr(expSet);
+      end;
     end;
     sntProcCal: begin  //Call to function or method
-      expFun := TEleExpress(sen.elements[0]);  //Takes root node.
-      GenCodeExpr(expFun);
+      expSet := TEleExpress(sen.elements[0]);  //Takes root node.
+      GenCodeExpr(expSet);
     end;
     sntAsmBlock: begin
       expAsm := TEleExpress(sen.elements[0]);  //Takes root node.
@@ -1900,109 +1900,6 @@ procedure TGenCodBas.GenCodeBlock(block: TEleBlock);
 begin
   TreeElems.OpenElement(block);
   GenCodeSentences(TreeElems.curNode.elements);
-end;
-procedure TGenCodBas.ConstantFoldExpr(eleExp: TEleExpress);
-{Performs:
-- Constant evaluation, for constant nodes that can be evaluated.
-- Constant folding, for expression nodes, that returns constants.
-Note the similarity of this method with GenCodeExpr().}
-var
-  funcBase: TEleFunBase;
-  ele: TxpElement;
-  parExpr: TEleExpress;
-begin
-  if eleExp.opType = otFunct then begin
-    //It's an expression. There should be a function
-    funcBase := eleExp.rfun;
-    if funcBase.codInline<>nil then begin
-      //Only INLINE functions can returns constants.
-      if funcBase.idClass = eleFunc then begin
-        //It's the implementation. No problem.
-        //Process all parameters.
-        for ele in eleExp.elements do begin
-          parExpr := TEleExpress(ele);
-          ConstantFoldExpr(parExpr);  //Try to evaluate constant.
-          if HayError then exit;
-        end;
-        { TODO : Tal vez sea posible que por optimización, solo llamar a funcBase.codInline() cuando los parámetros (o alguno) sean constante, para evitar muchas llamadas }
-        funcBase.codInline(eleExp);  //We don't expect this generates code.
-        //Check if we can simplify
-        if eleExp.opType = otConst then begin
-          //Node resulted as a constant.
-          if eleExp.evaluated then begin
-            //We convert it to a simple constant (Constant fold).
-            eleExp.elements.Clear;  //Constants don't have childrens.
-          end else begin
-            //Maybe this constant depend of RAM assigment
-          end;
-        end else if eleExp.opType = otVariab then begin
-          eleExp.elements.Clear;  //Variables don't have childrens.
-        end;
-      end else begin
-        //Should be the declaration. Maybe it's already implemented, or maybe not.
-        //funcDec := TxpEleFunDec(funcBase);
-        { TODO : Completar este caso. Por ahora no lo permitiremos. }
-        GenError('No supported unimplemented INLINE functions.');
-      end;
-    end else begin
-      //In Normal subroutine, we scan for parameters
-      //Process all parameters.
-      for ele in eleExp.elements do begin
-        parExpr := TEleExpress(ele);
-        ConstantFoldExpr(parExpr);  //Try to evaluate constant.
-        if HayError then exit;
-      end;
-      { TODO : ¿No debería llamarse también a functCall(). Allí también se genera código.? }
-    end;
-  end else if eleExp.opType = otConst then begin
-    if eleExp.evaluated then exit;  //No problem it's evaluated.
-    if eleExp.cons = nil then begin
-      //We cannot evaluate it.
-      GenError('Constant not evaluated.', eleExp.srcDec);
-      exit;
-    end else begin
-      //Could be evaluated using "cons"
-      if eleExp.cons.evaluated then begin
-        eleExp.value := eleExp.cons.value;
-        eleExp.evaluated := true;
-      end else begin
-        GenError('Constant not evaluated.', eleExp.srcDec);
-        exit;
-      end;
-    end;
-  end;
-end;
-procedure TGenCodBas.ConstantFoldBody(body: TEleBody);
-{Do constant folding simplification in all expression nodes. Note the similarity with
-GenCodeSentences(), for scanning the AST.
-Constant fold are done only if constant are in the same Node. It is:
-
-  <constant> + <constant> + <variable>
-
-Cases like:
-
-  <constant> + <variable> + <constant>
-
-Won't be folded because constant will be located in the AST in different nodes.
-}
-var
-  expFun: TEleExpress;
-  sen: TxpEleSentence;
-  eleSen: TxpElement;
-begin
-  //Process body
-  TreeElems.OpenElement(body);
-  for eleSen in TreeElems.curNode.elements do begin
-    if eleSen.idClass <> eleSenten then continue;
-    sen := TxpEleSentence(eleSen);
-    //if sen.sntType = sntExpres then begin  //Call to function or method (including assignment)
-    if sen.sntType = sntAssign then begin  //assignment)
-      expFun := TEleExpress(sen.elements[0]);  //Takes root node.
-      ConstantFoldExpr(expFun);
-      if HayError then exit;
-    end;
-  end;
-  TreeElems.CloseElement;              //Close the Body.
 end;
 constructor TGenCodBas.Create;
 var

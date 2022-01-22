@@ -836,23 +836,9 @@ begin
 end;
 { TEleExpress }
 function TEleExpress.StoAsStr: string;
-//Resturns storage as string
+//Resturns storage as string.
 begin
   WriteStr(Result, Sto);
-//  case Sto of
-//  stConst    : exit('Constant');
-//  stVariab   : exit('Variable');
-//  stExpres   : exit('Expression');
-//  stVarRef   : exit('Referenced by Var');
-//  stVarConRef: exit('Referenced by Var');
-//  stExpRef   : exit('Referenced by Expresion ');
-//  //Aditional expressions types
-//  stExpresA  : exit('Register A');
-//  stExpresX  : exit('Register X');
-//  stExpresY  : exit('Register Y');
-//  else
-//    exit('?');
-//  end;
 end;
 procedure TEleExpress.Invert;
 begin

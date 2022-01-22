@@ -13,6 +13,7 @@ type
   TCompiler_PIC16 = class(TParserDirec)
   private   //Funciones básicas
     procedure cInNewLine(lin: string);
+    procedure ConstantFoldExpr(eleExp: TEleExpress);
     procedure SplitAssigments(body: TEleBody);
   private //Compilación de secciones
     procedure EvaluateConstantDeclare;
@@ -57,6 +58,77 @@ begin
     pic.addTopComm('    ;'+trim(lin));  //agrega _Línea al código ensmblador
   end;
 end;
+procedure TCompiler_PIC16.ConstantFoldExpr(eleExp: TEleExpress);
+{Performs:
+- Constant evaluation, for constant nodes that can be evaluated.
+- Constant folding, for expression nodes, that returns constants.
+Note the similarity of this method with GenCodeExpr().}
+var
+  funcBase: TEleFunBase;
+  ele: TxpElement;
+  parExpr: TEleExpress;
+begin
+  if eleExp.opType = otFunct then begin
+    //It's an expression. There should be a function
+    funcBase := eleExp.rfun;
+    if funcBase.codInline<>nil then begin
+      //Only INLINE functions can returns constants.
+      if funcBase.idClass = eleFunc then begin
+        //It's the implementation. No problem.
+        //Process all parameters.
+        for ele in eleExp.elements do begin
+          parExpr := TEleExpress(ele);
+          ConstantFoldExpr(parExpr);  //Try to evaluate constant.
+          if HayError then exit;
+        end;
+        { TODO : Tal vez sea posible que por optimización, solo llamar a funcBase.codInline() cuando los parámetros (o alguno) sean constante, para evitar muchas llamadas }
+        funcBase.codInline(eleExp);  //We don't expect this generates code.
+        //Check if we can simplify
+        if eleExp.opType = otConst then begin
+          //Node resulted as a constant.
+          if eleExp.evaluated then begin
+            //We convert it to a simple constant (Constant fold).
+            eleExp.elements.Clear;  //Constants don't have childrens.
+          end else begin
+            //Maybe this constant depend of RAM assigment
+          end;
+        end else if eleExp.opType = otVariab then begin
+          eleExp.elements.Clear;  //Variables don't have childrens.
+        end;
+      end else begin
+        //Should be the declaration. Maybe it's already implemented, or maybe not.
+        //funcDec := TxpEleFunDec(funcBase);
+        { TODO : Completar este caso. Por ahora no lo permitiremos. }
+        GenError('No supported unimplemented INLINE functions.');
+      end;
+    end else begin
+      //In Normal subroutine, we scan for parameters
+      //Process all parameters.
+      for ele in eleExp.elements do begin
+        parExpr := TEleExpress(ele);
+        ConstantFoldExpr(parExpr);  //Try to evaluate constant.
+        if HayError then exit;
+      end;
+      { TODO : ¿No debería llamarse también a functCall(). Allí también se genera código.? }
+    end;
+  end else if eleExp.opType = otConst then begin
+    if eleExp.evaluated then exit;  //No problem it's evaluated.
+    if eleExp.cons = nil then begin
+      //We cannot evaluate it.
+      GenError('Constant not evaluated.', eleExp.srcDec);
+      exit;
+    end else begin
+      //Could be evaluated using "cons"
+      if eleExp.cons.evaluated then begin
+        eleExp.value := eleExp.cons.value;
+        eleExp.evaluated := true;
+      end else begin
+        GenError('Constant not evaluated.', eleExp.srcDec);
+        exit;
+      end;
+    end;
+  end;
+end;
 procedure TCompiler_PIC16.EvaluateConstantDeclare;
 {Calculates final values from constant declared in CONST sections of program and
 functions. Constants could be expressions:
@@ -98,7 +170,39 @@ begin
   end;
 end;
 procedure TCompiler_PIC16.ConstantFolding;
-{Do a fold constant optimization and evaluate constant expresion. }
+{Do a fold constant optimization and evaluate constant expresions. }
+  procedure ConstantFoldBody(body: TEleBody);
+  {Do constant folding simplification in all expression nodes. Note the similarity with
+  TGenCodeBas.GenCodeSentences(), for scanning the AST.
+  Constant fold are done only if constant are in the same Node. It is:
+
+    <constant> + <constant> + <variable>
+
+  Cases like:
+
+    <constant> + <variable> + <constant>
+
+  Won't be folded because constant will be located in the AST in different nodes.
+  }
+  var
+    expFun: TEleExpress;
+    sen: TxpEleSentence;
+    eleSen: TxpElement;
+  begin
+    //Process body
+    TreeElems.OpenElement(body);
+    for eleSen in TreeElems.curNode.elements do begin
+      if eleSen.idClass <> eleSenten then continue;
+      sen := TxpEleSentence(eleSen);
+      //if sen.sntType = sntExpres then begin  //Call to function or method (including assignment)
+      if sen.sntType = sntAssign then begin    //assignment)
+        expFun := TEleExpress(sen.elements[0]);  //Takes root node.
+        ConstantFoldExpr(expFun);
+        if HayError then exit;
+      end;
+    end;
+    TreeElems.CloseElement;              //Close the Body.
+  end;
 var
   fun : TEleFun;
   bod: TEleBody;
@@ -141,10 +245,12 @@ begin
 end;
 procedure TCompiler_PIC16.SplitAssigments(body: TEleBody);
 {Do a separation for assigmente sentences in order to have the three-address code" form
-used in several compilers.}
+like used in several compilers.}
   function MoveNodeToAssign(curSent: TxpEleSentence; Op: TEleExpress): TEleExpress;
   {Mueve el nodo especificado "Op" a una nueva instruccion de asignación (que es creada
-  antes de la sentencia "curSent") y los reemplaza por una variable temporal.
+  antes de la sentencia "curSent") y reemplaza el nodo faltante por una variable temporal
+  que es la que se crea en la instrucción de asignación.
+  Retorna la intsrucción de asignación creada.
   }
   var
     _varaux: TEleVarDec;
@@ -159,6 +265,7 @@ used in several compilers.}
     TreeElems.openElement(body.Parent);
     TreeElems.AddElement(_varaux, body.Index);  //Add before the body.
 
+    //Create the new _set() expression.
     _setaux := CreateExpression('_set', typNull, otFunct, Op.srcDec);
     funSet := MethodFromBinOperator(Op.Typ, ':=', Op.Typ);
     if funSet = nil then begin   //Operator not found
@@ -173,15 +280,16 @@ used in several compilers.}
     _setaux.elements := TxpElements.Create(true);  //Create list
     TreeElems.openElement(_setaux);
 
+    //Add first operand (variable) of the assignment.
     Op1aux := CreateExpression(_varaux.name, _varaux.typ, otVariab, Op.srcDec);
     Op1aux.SetVariab(_varaux);
     TreeElems.addElement(Op1aux);
+    AddCallerToFromCurr(_varaux); //Add reference to auxiliar variable.
 
     //Move the second operand to the previous _set created
     OpParent := Op.Parent;    //Keep current parent reference.
     OpPos := Op.Index;        //Keep current operand position.
     TreeElems.ChangeParentTo(_setaux, Op);
-
     //Replace the missed function
     TreeElems.openElement(OpParent);
     Op2aux := CreateExpression(_varaux.name, _varaux.typ, otVariab, Op.srcDec);
@@ -191,24 +299,53 @@ used in several compilers.}
   end;
   function SplitSet(curSent: TxpEleSentence; setMethod: TxpElement): boolean;
   {Verify if a set expression has more than three operands. If so then
-  it's splitted adding an aditional set sentence. }
+  it's splitted adding one or more aditional set sentences.
+  If at least one new set sentence is added, returns TRUE.}
   var
-    Op2, parExp: TEleExpress;
+    Op2, parExp, new_set: TEleExpress;
     par: TxpElement;
   begin
+    Result := false;
     Op2 := TEleExpress(setMethod.elements[1]);  //Takes assigment source.
     if (Op2.opType = otFunct) and Op2.fcallOp then begin
       {IT's the form:
-            x := A + B
+           x := A + B
+                \___/
+                 Op2
       or:
            x := A++        }
-      {We expect parameters A, B, C should be simple operands (Constant or variables)
+      {We expect parameters A, B should be simple operands (Constant or variables)
       otherwise we will move them to a separate assigment}
       for par in Op2.elements do begin
         parExp := TEleExpress(par);
         if parExp.opType = otFunct then begin
-          MoveNodeToAssign(curSent, parExp);
+          new_set := MoveNodeToAssign(curSent, parExp);
           if HayError then exit;
+          SplitSet(curSent, new_set);  //Check if it's needed split the new _set() created.
+          Result := true;
+        end;
+      end;
+    end;
+  end;
+  function SplitExpress(curSent: TxpEleSentence; expMethod: TEleExpress): boolean;
+  {Verify if an expression has more than three operands. If so then
+  it's splitted adding one or more set sentences.
+  If at least one new set sentence is added, returns TRUE.}
+  var
+    parExp, new_set: TEleExpress;
+    par: TxpElement;
+  begin
+    Result := false;
+    if (expMethod.opType = otFunct) and expMethod.fcallOp then begin
+      {We expect parameters should be simple operands (Constant or variables)
+      otherwise we will move them to a separate assigment}
+      for par in expMethod.elements do begin
+        parExp := TEleExpress(par);
+        if parExp.opType = otFunct then begin
+          new_set := MoveNodeToAssign(curSent, parExp);
+          if HayError then exit;
+          SplitSet(curSent, new_set);  //Check if it's needed split the new _set() created.
+          Result := true;
         end;
       end;
     end;
@@ -216,16 +353,19 @@ used in several compilers.}
 var
   sen: TxpEleSentence;
   eleSen, _set: TxpElement;
+  _exp: TEleExpress;
 begin
   for eleSen in body.elements do begin
     if eleSen.idClass <> eleSenten then continue;
     //We have a sentence here.
     sen := TxpEleSentence(eleSen);
     if sen.sntType = sntAssign then begin  //Assignment
-      _set := sen.elements[0];  //Takes the _set method.
-      SplitSet(sen, _set);  //Might generate additional assigments sentences
-
-      //DebugLn(Op2.name);
+      _set := sen.elements[0];  //Takes the one _set method.
+      SplitSet(sen, _set)  //Might generate additional assigments sentences
+//    end else if sen.sntType = sntIF then begin  //IF sentence
+//      //There are expressions in a IF block
+//      _exp := TEleExpress(sen.elements[0]);  //The first item is a TEleExpress
+//      SplitExpress(sen, _exp)
     end;
   end;
 end;
@@ -240,26 +380,26 @@ begin
   ResetRAM;    //2ms aprox.
   ClearError;
   pic.MsjError := '';
-  {Realiza una exploración al AST para detectar funciones no usadas, y así marcar
-  todos sus elementos (constantes, variables, tipos) como no-usados, quitando las
-  referencias (callers). }
+  //Detecting unused elements
   RefreshAllElementLists; //Actualiza lista de elementos
   RemoveUnusedFunc;       //Se debe empezar con las funciones. 1ms aprox.
   RemoveUnusedVars;       //Luego las variables. 1ms aprox.
   RemoveUnusedCons;       //1ms aprox.
   RemoveUnusedTypes;      //1ms aprox.
+  //Updating callers and calleds.
   UpdateFunLstCalled;     //Actualiza lista "lstCalled" de las funciones usadas.
   if HayError then exit;
   SeparateUsedFunctions;
+  //Evaluate constant declarated
   EvaluateConstantDeclare;
   if HayError then exit;
+  //Simplify assigment sentences
+  bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
+  SplitAssigments(bod);
   {Do a first folding in nodes. Some constants (like those that depend on addresses)
   might not be evaluated. So it should be needed to do other Code folding again.}
-//  ConstantFolding;
-//  if HayError then exit;
-  //Simplify AST
-  bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
-  SplitAssigments(bod)
+  ConstantFolding;
+  if HayError then exit;
   //{Realiza la simplificación del AST, realizando una primera compilación.}
   //ScanForRegsRequired;
 end;
@@ -493,8 +633,8 @@ begin
         EndCountElapsed('-- Optimized in: ');
         StartCountElapsed;
         DoGenerateCode;
-//        EndCountElapsed('-- Synthetized in: ');
-//        StartCountElapsed;
+        //EndCountElapsed('-- Synthetized in: ');
+        //StartCountElapsed;
         //Genera archivo hexa, en la misma ruta del programa
         pic.GenHex(hexFile, GeneralORG);
         EndCountElapsed('-- Output generated in: ');
