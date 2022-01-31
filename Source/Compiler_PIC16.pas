@@ -246,11 +246,11 @@ end;
 procedure TCompiler_PIC16.SplitAssigments(body: TEleBody);
 {Do a separation for assigmente sentences in order to have the three-address code" form
 like used in several compilers.}
-  function MoveNodeToAssign(curSent: TxpEleSentence; Op: TEleExpress): TEleExpress;
+  function MoveNodeToAssign(curContainer: TxpElement; Op: TEleExpress): TEleExpress;
   {Mueve el nodo especificado "Op" a una nueva instruccion de asignación (que es creada
-  antes de la sentencia "curSent") y reemplaza el nodo faltante por una variable temporal
-  que es la que se crea en la instrucción de asignación.
-  Retorna la intsrucción de asignación creada.
+  al inicio del bloque "curContainer") y reemplaza el nodo faltante por una variable
+  temporal que es la que se crea en la instrucción de asignación.
+  Retorna la instrucción de asignación creada.
   }
   var
     _varaux: TEleVarDec;
@@ -275,7 +275,7 @@ like used in several compilers.}
     _setaux.rfun := funSet;
 
     //Add the new assigment before the main
-    TreeElems.openElement(curSent);
+    TreeElems.openElement(curContainer);
     TreeElems.AddElement(_setaux, 0);    //Add a new assigmente before
     _setaux.elements := TxpElements.Create(true);  //Create list
     TreeElems.openElement(_setaux);
@@ -297,9 +297,10 @@ like used in several compilers.}
     TreeElems.addElement(Op2aux, OpPos);
     exit(_setaux);
   end;
-  function SplitSet(curSent: TxpEleSentence; setMethod: TxpElement): boolean;
+  function SplitSet(curContainer: TxpElement; setMethod: TxpElement): boolean;
   {Verify if a set expression has more than three operands. If so then
-  it's splitted adding one or more aditional set sentences.
+  it's splitted adding one or more aditional set sentences, at the beggining of
+  "curContainer".
   If at least one new set sentence is added, returns TRUE.}
   var
     Op2, parExp, new_set: TEleExpress;
@@ -319,15 +320,15 @@ like used in several compilers.}
       for par in Op2.elements do begin
         parExp := TEleExpress(par);
         if parExp.opType = otFunct then begin
-          new_set := MoveNodeToAssign(curSent, parExp);
+          new_set := MoveNodeToAssign(curContainer, parExp);
           if HayError then exit;
-          SplitSet(curSent, new_set);  //Check if it's needed split the new _set() created.
+          SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
           Result := true;
         end;
       end;
     end;
   end;
-  function SplitExpress(curSent: TxpEleSentence; expMethod: TEleExpress): boolean;
+  function SplitExpress(curContainer: TxpElement; expMethod: TEleExpress): boolean;
   {Verify if an expression has more than three operands. If so then
   it's splitted adding one or more set sentences.
   If at least one new set sentence is added, returns TRUE.}
@@ -342,9 +343,9 @@ like used in several compilers.}
       for par in expMethod.elements do begin
         parExp := TEleExpress(par);
         if parExp.opType = otFunct then begin
-          new_set := MoveNodeToAssign(curSent, parExp);
+          new_set := MoveNodeToAssign(curContainer, parExp);
           if HayError then exit;
-          SplitSet(curSent, new_set);  //Check if it's needed split the new _set() created.
+          SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
           Result := true;
         end;
       end;
@@ -352,7 +353,7 @@ like used in several compilers.}
   end;
 var
   sen: TxpEleSentence;
-  eleSen, _set: TxpElement;
+  eleSen, _set, ele: TxpElement;
   _exp: TEleExpress;
 begin
   for eleSen in body.elements do begin
@@ -362,10 +363,14 @@ begin
     if sen.sntType = sntAssign then begin  //Assignment
       _set := sen.elements[0];  //Takes the one _set method.
       SplitSet(sen, _set)  //Might generate additional assigments sentences
-//    end else if sen.sntType = sntIF then begin  //IF sentence
-//      //There are expressions in a IF block
-//      _exp := TEleExpress(sen.elements[0]);  //The first item is a TEleExpress
-//      SplitExpress(sen, _exp)
+    end else if sen.sntType = sntIF then begin  //IF sentence
+      //There are expressions inside conditions in a IF block
+      for ele in sen.elements do begin
+        if ele.idClass = eleCondit then begin  //It's a condition
+          _exp := TEleExpress(ele.elements[0]);  //The first item is a TEleExpress
+          SplitExpress(ele, _exp)
+        end;
+      end;
     end;
   end;
 end;

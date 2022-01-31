@@ -208,6 +208,7 @@ type  //TxpElement class
                 eleExpress,   //Expression
                 eleAsmOperand,//ASM Operand
                 eleAsmOperat, //ASM Operation
+                eleCondit,    //Condition
                 //Instructions relative
                 eleSenten,    //Sentence/Instruction
                 eleAsmLine,   //ASM line
@@ -475,7 +476,7 @@ type  //Expression elements
   {Represents an expression/operand. }
   TEleExpress = class(TxpElement)
   public
-    opType : TopType;     //Operand type.
+    opType : TopType;     //Operand type: otVariab, otConst, otFunct.
     Sto    : TStorage;    //Storage of the value (memory, register, value)
     Typ    : TEleTypeDec;  //Data type for the operand.
     logic  : TLogicType;  {Used when operand is Boolean type. Indicates the type of logic
@@ -526,6 +527,13 @@ type  //Expression elements
     destructor Destroy; override;
   end;
 
+  { TEleCondit }
+  {Represents a condition or boolean expression. Used to represent conditional
+  expression in conditional statements.}
+  TEleCondit = class(TxpElement)
+  public  //Initialization
+    constructor Create; override;
+  end;
 type  //Structural elements
   { TxpEleBody }
   //Class to modelate the body of the main program or the procedures.
@@ -543,7 +551,7 @@ type  //Structural elements
     destructor Destroy; override;
   end;
 
-  { TxpEleProgFrame }
+  { TEleProgFrame }
   {Defines an element that have a strucure similar to a general Pascal program,
   including declaractions (VAR, CONST, PROCEDURE) and a Code container (BODY).
   be used as a general code container, like the main program,
@@ -785,6 +793,12 @@ end;
 function GenPointerTypeName(refTypeName: string): string; inline;
 begin
   exit(PREFIX_PTR + '-' +refTypeName);
+end;
+{ TEleCondit }
+constructor TEleCondit.Create;
+begin
+  inherited Create;
+  idClass := eleCondit;
 end;
 { TConsValue }
 function TConsValue.LByte: byte;

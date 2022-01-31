@@ -63,8 +63,11 @@ type
       procedure arrayHigh(fun: TEleExpress);
       procedure arrayLength(fun: TEleExpress);
       procedure arrayLow(fun: TEleExpress);
+      procedure BOR_bool_or_bool(fun: TEleExpress);
       procedure byte_mul_byte_16(fun: TEleExpress);
+      procedure Invert_A_to_A;
       procedure Copy_Z_to_A;
+      procedure Invert_Z_to_A;
       procedure Copy_C_to_A;
       function CreateBOMethod(clsType: TEleTypeDec; opr: string; name: string;
         parType: TEleTypeDec; retType: TEleTypeDec; pCompile: TxpCodInline
@@ -96,7 +99,7 @@ type
     protected //Boolean operations
       procedure BOR_bool_asig_bool(fun: TEleExpress);
       procedure BOR_bool_and_bool(fun: TEleExpress);
-      procedure BOR_bool_difer_bool(fun: TEleExpress);
+      procedure BOR_bool_xor_bool(fun: TEleExpress);
       procedure BOR_bool_equal_bool(fun: TEleExpress);
       procedure UOR_not_bool(fun: TEleExpress);
     protected //Byte operations
@@ -181,20 +184,47 @@ begin
   GenCodBas_PIC16.SetLanguage;
   {$I ..\_language\tra_GenCod.pas}
 end;
+procedure TGenCod.Invert_A_to_A;
+{Invert all the bits of A register (as boolean expression) .
+If A=$00 => A = $FF
+If A=$FF => A = $00
+}
+begin
+  lastASMcode := lacNotAtoA;  //Activates flag
+  lastASMaddr := _PC;  //Get current address.
+  _EORi($FF);
+end;
 procedure TGenCod.Copy_Z_to_A;
-{Copy the logic value of Z flag to A register (as boolean expression).}
+{Copy the logic value of Z flag to A register (as boolean expression) .
+If Z=0 => A = $00
+If Z=1 => A = $FF
+}
 begin
   //Result in Z. Move to A.
-  BooleanFromZ := _PC;  //Activates flag, and get current address.
-  _PHP;
-  _PLA;
-  _ANDi($02);   //If true get $02
+  lastASMcode := lacCopyZtoA;  //Activates flag
+  lastASMaddr := _PC;  //Get current address.
+  _BEQ(2);  //If Z=1: regA = 0
+  _LDAi($FF);
+  _EORi($FF);  // Invert A
+end;
+procedure TGenCod.Invert_Z_to_A;
+{Copy the logic value of Z flag (inverted) to A register (as boolean expression) .
+If Z=1 => A = $00
+If Z=0 => A = $FF
+}
+begin
+  //Result in Z. Move to A.
+  lastASMcode := lacNotZtoA;  //Activates flag
+  lastASMaddr := _PC;  //Get current address.
+  _BEQ(2);    //If Z=1: regA = 0
+  _LDAi($FF);
 end;
 procedure TGenCod.Copy_C_to_A;
 {Copy the logic value of C flag to A register (as boolean expression).}
 begin
   //Result in C. Move to A.
-  BooleanFromC := _PC;  //Activates flag, and get current address.
+  lastASMcode := lacCopyCtoA;  //Activates flag
+  lastASMaddr := _PC;  //Get current address.
   _PHP;
   _PLA;
   _ANDi($01);
@@ -292,6 +322,14 @@ var
   par: TEleExpress;
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
+  //Process special modes of the compiler.
+  if compMod = cmRequire then begin
+    exit;  //We don't need more registers or temporal variables.
+  end else if compMod = cmConsEval then begin
+    SetFunConst_bool(fun, not par.value.valBool);
+    exit;
+  end;
+  //Code generation
   case par.Sto of
   stConst : begin
     //NOT for a constant is defined easily
@@ -300,13 +338,14 @@ begin
   stRamFix: begin
     SetFunExpres(fun, logNormal);
     //We have to return logical value inverted in A
-    _LDA(par.rVar.addr);   //Result of "NOT var" in Z
-    Copy_Z_to_A;
+    _LDA(par.rVar.addr);
+    _EORi($FF);
   end;
-//  stExpres: begin
-//    SetUORResultExpres_byte;
-//    //////
-//  end;
+  stRegister, stRegistA: begin
+    SetFunExpres(fun, logNormal);
+    //We have to return logical value inverted in A
+    _EORi($FF);  //Operand already in regA
+  end;
   else
     genError('Not implemented: "%s"', [fun.name]);
   end;
@@ -327,6 +366,7 @@ begin
      if HayError then exit;
      parB.Sto := stRegister;
   end;
+  //Process special modes of the compiler.
   if compMod = cmRequire then begin
      {We can exit here because LoadToWR() defined is IX is used or not.
      and the remain code doesn't need more registers or temporal variables.}
@@ -1035,7 +1075,7 @@ begin
       _LDX(parB.add);
       _INX;
       _TXA;
-      LastIsTXA := true;  //Set flag
+      lastASMcode := lacLastIsTXA;  //Set flag
       exit;
     end;
     SetFunExpres(fun);
@@ -1786,6 +1826,12 @@ begin
   SetFunNull(fun);  //In Pascal an assigment doesn't return type.
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmRequire then begin
+    exit;  //We don't need more registers or temporal variables.
+  end else if compMod = cmConsEval then begin
+    exit;  //We don't calculate constant here.
+  end;
   //Validates parA.
   if parA.opType<>otVariab then begin //The only valid type.
     GenError('Only variables can be assigned.');
@@ -1797,8 +1843,7 @@ begin
     case parB.Sto of
     stConst : begin
       if parB.value.valBool then begin
-        //Por facilidad se usa el bit 1
-        _LDAi(2);
+        _LDAi(255);
         _STA(parA.add);
       end else begin
         _LDAi(0);
@@ -1826,8 +1871,7 @@ begin
     case parB.Sto of
     stConst : begin
       if parB.value.valBool then begin
-        //Por facilidad se usa el bit 1
-        _LDAi(2);
+        _LDAi(255);
       end else begin
         _LDAi(0);
       end;
@@ -1852,7 +1896,7 @@ begin
     stConst : begin
       if parB.value.valBool then begin
         //Por facilidad se usa el bit 1
-        _LDXi(2);
+        _LDXi(255);
       end else begin
         _LDXi(0);
       end;
@@ -1877,8 +1921,7 @@ begin
     case parB.Sto of
     stConst : begin
       if parB.value.valBool then begin
-        //Por facilidad se usa el bit 1
-        _LDYi(2);
+        _LDYi(255);
       end else begin
         _LDYi(0);
       end;
@@ -1909,85 +1952,175 @@ var
 begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
-  case stoOperation(parA, parB) of
-  stConst_Const: begin  //Special case. Comapares constants.
-    SetFunConst_bool(fun, parA.value.valBool and parB.value.valBool);
-  end;
-  stConst_Variab: begin
-    if parA.value.valBool = false then begin  //Special case.
+  //Process special modes of the compiler.
+  if compMod = cmRequire then begin
+    exit;  //We don't need more registers or temporal variables.
+  end else if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      SetFunConst_bool(fun, parA.value.valBool and parB.value.valBool);
+    end else if (parA.Sto = stConst) and (parA.value.ValBool = false) then begin
       SetFunConst_bool(fun, false);
-    end else begin  //Special case.
-      SetFunVariab(fun, parB.rVar);  //Can be problematic return "var". Formaly it should be an expression.
+    end else if (parB.Sto = stConst) and (parB.value.ValBool = false) then begin
+      SetFunConst_bool(fun, false);
+    end;
+    exit;
+  end;
+  //Code generation
+  if parA.Sto = stConst then begin
+     case parB.Sto of
+     stConst: begin
+       SetFunConst_bool(fun, parA.value.valBool and parB.value.valBool);
+     end;
+     stRamFix: begin
+        if parA.value.valBool = false then begin  //Special case.
+          SetFunConst_bool(fun, false);
+        end else begin  //Special case.
+          SetFunVariab(fun, parB.rVar);  //Can be problematic return "var". Formaly it should be an expression.
+        end;
+     end;
+     stRegister, stRegistA: begin
+       if parA.value.valBool = false then begin  //Special case.
+         SetFunConst_bool(fun, false);
+       end else begin  //Special case.
+         SetFunExpres(fun);  //No needed do anything. Result already in A
+       end;
+     end;
+     else
+       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+     end;
+  end else if parA.Sto = stRamFix then begin
+    case parB.Sto of
+    stConst: begin
+      if parB.value.valBool = false then begin  //Special case.
+        SetFunConst_bool(fun, false);
+        exit;
+      end else begin  //Special case.
+        SetFunVariab(fun, parA.rVar);  //Can be problematic return "var". Formaly it should be an expression.
+        exit;
+      end;
+    end;
+    stRamFix: begin
+      SetFunExpres(fun, logNormal);
+      _LDA(parA.add);
+      _AND(parB.add)
+    end;
+    stRegister, stRegistA: begin
+      SetFunExpres(fun, logNormal);
+      //parB already in A
+      _AND(parA.add)
+    end;
+    else
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    end;
+  end else if parA.Sto in [stRegister, stRegistA] then begin
+    case parB.Sto of
+    stConst: begin
+      if parB.value.valBool = false then begin  //Special case.
+        SetFunConst_bool(fun, false);
+      end else begin  //Special case.
+        SetFunExpres(fun);  //No needed do anything. Result already in A
+      end;
+    end;
+    stRamFix: begin
+      SetFunExpres(fun, logNormal);
+      //parA already in A
+      _AND(parB.add)
+    end;
+    else
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    end;
+  end else begin
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+  end;
+end;
+procedure TGenCod.BOR_bool_or_bool(fun: TEleExpress);
+var
+  sale0: integer;
+  parA, parB: TEleExpress;
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmRequire then begin
+    exit;  //We don't need more registers or temporal variables.
+  end else if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      SetFunConst_bool(fun, parA.value.valBool or parB.value.valBool);
+    end else if (parA.Sto = stConst) and (parA.value.ValBool = true) then begin
+      SetFunConst_bool(fun, true);
+    end else if (parB.Sto = stConst) and (parB.value.ValBool = true) then begin
+      SetFunConst_bool(fun, true);
+    end else begin
+      exit;
     end;
   end;
-  stConst_Expres: begin  //Expression p2 evaluated in A
-    if parA.value.valBool = false then begin  //Special case.
-      SetFunConst_bool(fun, false);
-      exit;
-    end else if parA.value.valBool = true then begin  //Special case.
-      SetFunExpres(fun);  //No needed do anything. Result already in A
-      exit;
+  if parA.Sto = stConst then begin
+     case parB.Sto of
+     stConst: begin
+       SetFunConst_bool(fun, parA.value.valBool or parB.value.valBool);
+     end;
+     stRamFix: begin
+        if parA.value.valBool = true then begin  //Special case.
+          SetFunConst_bool(fun, true);
+        end else begin  //Special case.
+          SetFunVariab(fun, parB.rVar);  //Can be problematic return "var". Formaly it should be an expression.
+        end;
+     end;
+     stRegister, stRegistA: begin
+       if parA.value.valBool = true then begin  //Special case.
+         SetFunConst_bool(fun, true);
+       end else begin  //Special case.
+         SetFunExpres(fun);  //No needed do anything. Result already in A
+       end;
+     end;
+     else
+       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+     end;
+  end else if parA.Sto = stRamFix then begin
+    case parB.Sto of
+    stConst: begin
+      if parB.value.valBool = true then begin  //Special case.
+        SetFunConst_bool(fun, true);
+        exit;
+      end else begin  //Special case.
+        SetFunVariab(fun, parA.rVar);  //Can be problematic return "var". Formaly it should be an expression.
+        exit;
+      end;
     end;
-  end;
-  stVariab_Const: begin
-    if parB.value.valBool = false then begin  //Special case.
-      SetFunConst_bool(fun, false);
-      exit;
-    end else if parB.value.valBool = true then begin  //Special case.
-      SetFunVariab(fun, parA.rVar);  //Can be problematic return "var". Formaly it should be an expression.
-      exit;
+    stRamFix: begin
+      SetFunExpres(fun, logNormal);
+      _LDA(parA.add);
+      _ORA(parB.add)
     end;
-  end;
-  stVariab_Variab: begin
-    SetFunExpres(fun, logInverted);
-    _LDX(parA.add);
-    _BEQ_post(sale0);  //p1=0
-    _LDX(parB.add);
-_LABEL_post(sale0);
-    //Here  : Z = 0 if p1<>0 and p2<>0
-    //That's: Z = NOT (p1 and p2)
-    Copy_Z_to_A;  //Maintain the inverted logic
-  end;
-  stVariab_Expres:begin   //Expresion p2 evaluated in A
-    //Algorith like in "stVariab_Variab"
-    SetFunExpres(fun, logInverted);
-    //Obviously, the last ORT was what generates the expression, so we can check "AcumStatInZ".
-    if not AcumStatInZ then _TAX;   //Update Z, if needed.
-    //Here, we have Z updated with the value of A
-    _BEQ_post(sale0);  //p1=0
-    _LDX(parA.add);
-_LABEL_post(sale0);
-    Copy_Z_to_A;  //Logic inverted
-  end;
-  stExpres_Const: begin   //Expresion p1 evaluated in A
-    if parB.value.valBool = false then begin  //Special case.
-      SetFunConst_bool(fun, false);
-      exit;
-    end else if parB.value.valBool = true then begin  //Special case.
-      SetFunExpres(fun);  //No needed do anything. Result already in A
-      exit;
+    stRegister, stRegistA: begin
+      SetFunExpres(fun, logNormal);
+      //parB already in A
+      _ORA(parA.add)
     end;
-  end;
-  stExpres_Variab:begin  //Expresion p1 evaluated in A
-    //Algorith like in "stVariab_Variab"
-    SetFunExpres(fun, logInverted);
-    //Obviously, the last ORT was what generates the expression, so we can check "AcumStatInZ".
-    if not AcumStatInZ then _TAX;   //Update Z, if needed.
-    //Here, we have Z updated with the value of A
-    _BEQ_post(sale0);  //p1=0
-    _LDX(parB.add);
-_LABEL_post(sale0);
-    Copy_Z_to_A;  //Logic inverted
-  end;
-//  stExpres_Expres:begin
-//    SetResultExpres(fun);
-//    //p1 está en la pila y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-//    _AND(rVar.adrByte0);
-//    FreeStkRegisterByte;   //libera pila porque ya se uso
-//  end;
-  else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    else
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    end;
+  end else if parA.Sto in [stRegister, stRegistA] then begin
+    case parB.Sto of
+    stConst: begin
+      if parB.value.valBool = true then begin  //Special case.
+        SetFunConst_bool(fun, true);
+      end else begin  //Special case.
+        SetFunExpres(fun);  //No needed do anything. Result already in A
+      end;
+    end;
+    stRamFix: begin
+      SetFunExpres(fun, logNormal);
+      //parA already in A
+      _ORA(parB.add);
+    end;
+    else
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    end;
+  end else begin
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.BOR_bool_equal_bool(fun: TEleExpress);
@@ -1996,94 +2129,192 @@ var
 begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
-  case stoOperation(parA, parB) of
-  stConst_Const: begin  //Special case. Comapares constants.
-    SetFunConst_bool(fun, parA.value.valBool = parB.value.valBool);
-  end;
-  stConst_Variab: begin
-    if parA.value.valBool = false then begin  //Special case.
-      SetFunExpres(fun);
-      _LDA(parB.add);  //if equals Z=1
-      Copy_Z_to_A;
-    end else begin  //Special case.
-      SetFunExpres(fun, logInverted);
-      _LDA(parB.add);  //if equals Z=0
-      Copy_Z_to_A;
+  //Process special modes of the compiler.
+  if compMod = cmRequire then begin
+    exit;  //We don't need more registers or temporal variables.
+  end else if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      SetFunConst_bool(fun, parA.value.valBool = parB.value.valBool);
     end;
+    exit;
   end;
-  stConst_Expres: begin  //Expression p2 evaluated in A
-    if parA.value.valBool = false then begin  //Special case.
-      SetFunExpres(fun);
-      if not AcumStatInZ then _TAX;   //Update Z, if needed.
-      //if equals Z=1
-      Copy_Z_to_A;
-    end else begin  //Special case.
-      SetFunExpres(fun, logInverted);
-      if not AcumStatInZ then _TAX;   //Update Z, if needed.
-      //if equals Z=0
-      Copy_Z_to_A;
+  //Code generation
+  if parA.Sto = stConst then begin
+     case parB.Sto of
+     stConst: begin
+       SetFunConst_bool(fun, parA.value.valBool = parB.value.valBool);
+     end;
+     stRamFix: begin
+       if parA.value.valBool = false then begin  //Special case.
+         SetFunExpres(fun);
+         _LDA(parB.add);  // (A = false) is not A
+         Invert_A_to_A;
+       end else begin  //Special case: parA = True
+         SetFunExpres(fun);
+         _LDA(parB.add);  //if parB=0 then regA = 0
+       end;
+     end;
+     stRegister, stRegistA: begin
+       if parA.value.valBool = false then begin  //Special case.
+         if not AcumStatInZ then _TAX;   //Update Z, if needed.
+         SetFunExpres(fun);
+         Invert_A_to_A;
+       end else begin  //Special case: parA = True
+         if not AcumStatInZ then _TAX;   //Update Z, if needed.
+         SetFunExpres(fun);  //The same
+       end;
+     end;
+     else
+       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+     end;
+  end else if parA.Sto = stRamFix then begin
+    case parB.Sto of
+    stConst: begin
+      if parB.value.valBool = false then begin  //Special case.
+        SetFunExpres(fun);
+        _LDA(parA.add);  // (A = false) is not A
+        Invert_A_to_A;
+      end else begin  //Special case.
+        SetFunExpres(fun);
+        _LDA(parA.add);   // (A = true) is A
+      end;
     end;
-  end;
-  stVariab_Const: begin
-    if parB.value.valBool = false then begin  //Special case.
+    stRamFix: begin
       SetFunExpres(fun);
-      _LDA(parA.add);  //if equals Z=1
-      Copy_Z_to_A;
-    end else begin  //Special case.
-      SetFunExpres(fun, logInverted);
-      _LDA(parA.add);  //if equals Z=0
-      Copy_Z_to_A;
+      _LDA(parB.add);
+      _EOR(parA.add);  //Compare OperA with OperB. Result in A, inverted.
+      Invert_A_to_A;
     end;
-  end;
-  stVariab_Variab: begin
-    SetFunExpres(fun, logInverted);
-    _LDA(parB.add);  //p2 in A.1
-    _EOR(parA.add);  //Compare Oper1.1 with Oper2.1. Result in A, inverted.
-  end;
-  stVariab_Expres:begin   //Expresion p2 evaluated in A
-    if parB.logic = logNormal then SetFunExpres(fun, logInverted)
-    else SetFunExpres(fun, logNormal);
-    //p2 in A.1
-    _EOR(parA.add);  //Compare Oper1.1 with Oper2.1
-    {Can be demonstrated the bit Z returns the operation "=" inverted. But if p2 is
-    inverted, the result will have the correct logic.}
-  end;
-  stExpres_Const: begin   //Expresion p1 evaluated in A
-    if parB.value.valBool = false then begin  //Special case.
+    stRegister, stRegistA: begin
+      { TODO : We should check "lastASMcode" in order to optimize. }
       SetFunExpres(fun);
-      if not AcumStatInZ then _TAX;   //Update Z, if needed.
-      //if equals Z=1
-      Copy_Z_to_A;
-    end else begin  //Special case.
-      SetFunExpres(fun, logInverted);
-      if not AcumStatInZ then _TAX;   //Update Z, if needed.
-      //if equals Z=0
-      Copy_Z_to_A;
+      //parA in regA
+      _EOR(parA.add);  //Compare OperA with OperB. Result in A, inverted.
+      Invert_A_to_A;
     end;
-  end;
-  stExpres_Variab:begin  //Expresion p1 evaluated in A
-    if parA.logic = logNormal then SetFunExpres(fun, logInverted)
-    else SetFunExpres(fun, logNormal);
-    //p1 in A.1
-    _EOR(parB.add);  //Compare Oper1.1 with Oper2.1
-    {Can be demonstrated the bit Z returns the operation "=" inverted. But if p1 is
-    inverted, the result will have the correct logic.}
-  end;
-//  stExpres_Expres:begin
-//    SetResultExpres(fun);
-//    //p1 está en la pila y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-//    _AND(rVar.adrByte0);
-//    FreeStkRegisterByte;   //libera pila porque ya se uso
-//  end;
-  else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    else
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    end;
+  end else if parA.Sto in [stRegister, stRegistA] then begin
+    case parB.Sto of
+    stConst: begin
+      if parB.value.valBool = false then begin  //Special case.
+        SetFunExpres(fun);
+        if not AcumStatInZ then _TAX;   //Update Z, if needed.
+        Invert_A_to_A;
+      end else begin  //Special case.
+        SetFunExpres(fun);
+        if not AcumStatInZ then _TAX;   //Update Z, if needed.
+      end;
+    end;
+    stRamFix: begin
+        SetFunExpres(fun);
+        //parA in regA
+        _EOR(parB.add);  //Compare OperA with OperB
+        Invert_A_to_A;
+    end;
+    else
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    end;
+  end else begin
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
-procedure TGenCod.BOR_bool_difer_bool(fun: TEleExpress);
+procedure TGenCod.BOR_bool_xor_bool(fun: TEleExpress);
+var
+  parA, parB: TEleExpress;
 begin
-  BOR_bool_equal_bool(fun);
-  fun.Invert;
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmRequire then begin
+    exit;  //We don't need more registers or temporal variables.
+  end else if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      SetFunConst_bool(fun, parA.value.valBool xor parB.value.valBool);
+    end;
+    exit;
+  end;
+  //Code generation
+  if parA.Sto = stConst then begin
+     case parB.Sto of
+     stConst: begin
+       SetFunConst_bool(fun, parA.value.valBool xor parB.value.valBool);
+     end;
+     stRamFix: begin
+       if parA.value.valBool = false then begin  //Special case.
+         SetFunExpres(fun);
+         _LDA(parB.add);
+       end else begin  //Special case: parA = True
+         SetFunExpres(fun);
+         _LDA(parB.add);
+         Invert_A_to_A;
+       end;
+     end;
+     stRegister, stRegistA: begin
+       if parA.value.valBool = false then begin  //Special case.
+         if not AcumStatInZ then _TAX;   //Update Z, if needed.
+         SetFunExpres(fun);
+       end else begin  //Special case: parA = True
+         if not AcumStatInZ then _TAX;   //Update Z, if needed.
+         SetFunExpres(fun);  //The same
+         Invert_A_to_A;
+       end;
+     end;
+     else
+       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+     end;
+  end else if parA.Sto = stRamFix then begin
+    case parB.Sto of
+    stConst: begin
+      if parB.value.valBool = false then begin  //Special case.
+        SetFunExpres(fun);
+        _LDA(parA.add);
+      end else begin  //Special case.
+        SetFunExpres(fun);
+        _LDA(parA.add);
+        Invert_A_to_A;
+      end;
+    end;
+    stRamFix: begin
+      SetFunExpres(fun);
+      _LDA(parB.add);
+      _EOR(parA.add);
+    end;
+    stRegister, stRegistA: begin
+      { TODO : We should check "lastASMcode" in order to optimize. }
+      SetFunExpres(fun);
+      //parA in regA
+      _EOR(parA.add);  //Compare OperA with OperB. Result in A, inverted.
+    end;
+    else
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    end;
+  end else if parA.Sto in [stRegister, stRegistA] then begin
+    case parB.Sto of
+    stConst: begin
+      if parB.value.valBool = false then begin  //Special case.
+        SetFunExpres(fun);
+        if not AcumStatInZ then _TAX;   //Update Z, if needed.
+      end else begin  //Special case.
+        SetFunExpres(fun);
+        if not AcumStatInZ then _TAX;   //Update Z, if needed.
+        Invert_A_to_A;
+      end;
+    end;
+    stRamFix: begin
+        SetFunExpres(fun);
+        //parA in regA
+        _EOR(parB.add);  //Compare OperA with OperB
+    end;
+    else
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    end;
+  end else begin
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+  end;
 end;
 ////////////operaciones con Word
 procedure TGenCod.BOR_word_asig_word(fun: TEleExpress);
@@ -2463,7 +2694,7 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
     //Form 2: (Very similar)
 //    _LDA(parB.addH);  //parB.add->H
 //    _STA(H.addr);
@@ -2483,7 +2714,7 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stVariab_Const: begin
     SetFunExpres(fun);
@@ -2495,7 +2726,7 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stVariab_Variab:begin
     SetFunExpres(fun);
@@ -2507,7 +2738,7 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stVariab_Expres:begin   //la expresión p2 se evaluó y esta en (_H,A)
     SetFunExpres(fun);
@@ -2518,7 +2749,7 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stExpres_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
     SetFunExpres(fun);
@@ -2529,7 +2760,7 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stExpres_Variab:begin  //la expresión p1 se evaluó y esta en (H,A)
     SetFunExpres(fun);
@@ -2540,7 +2771,7 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
 //  stExpres_Expres:begin
 //    SetResultExpres(fun);
@@ -2577,7 +2808,7 @@ begin
     _ADC(parB.addH);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stConst_Expres: begin  //la expresión p2 se evaluó y esta en (A)
     SetFunExpres(fun);
@@ -2588,7 +2819,7 @@ begin
     _ADC(H.addr);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stVariab_Const: begin
     if parB.val = 0 then begin  //Special case
@@ -2609,7 +2840,7 @@ begin
       _ADCi(parB.valH);
       _STA(H.addr);
       _TXA;  //Restore A
-      LastIsTXA := true;
+      lastASMcode := lacLastIsTXA;  //Set flag
     end;
   end;
   stVariab_Variab:begin
@@ -2622,7 +2853,7 @@ begin
     _ADC(parB.addH);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stVariab_Expres:begin  //La expresión B se evaluó y esta en (H,A)
     SetFunExpres(fun);
@@ -2633,7 +2864,7 @@ begin
     _ADC(H.addr);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stExpres_Const: begin  //La expresión A se evaluó y esta en (H,A)
     SetFunExpres(fun);
@@ -2644,7 +2875,7 @@ begin
     _ADCi(parB.valH);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stExpres_Variab:begin  //La expresión A se evaluó y esta en (H,A)
     SetFunExpres(fun);
@@ -2655,7 +2886,7 @@ begin
     _ADC(parB.addH);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
 //  stExpres_Expres:begin
 //    SetResultExpres(fun);
@@ -2690,7 +2921,7 @@ begin
     _SBCi(0);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
 //    SetResultExpres(fun);
@@ -2710,7 +2941,7 @@ begin
     _SBCi(0);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stVariab_Variab:begin
     SetFunExpres(fun);
@@ -2722,7 +2953,7 @@ begin
     _SBCi(0);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
 //    SetResultExpres(fun);
@@ -2776,7 +3007,7 @@ begin
     _SBC(parB.addH);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
 //  stConst_Expres: begin  //la expresión p2 se evaluó y esta en A
 //    SetResultExpres(fun);
@@ -2796,7 +3027,7 @@ begin
     _SBCi(parB.valH);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stVariab_Variab:begin
     SetFunExpres(fun);
@@ -2808,7 +3039,7 @@ begin
     _SBC(parB.addH);
     _STA(H.addr);
     _TXA;  //Restore A
-    LastIsTXA := true;
+    lastASMcode := lacLastIsTXA;  //Set flag
   end;
 //  stVariab_Expres:begin   //la expresión p2 se evaluó y esta en A
 //    SetResultExpres(fun);
@@ -5003,9 +5234,13 @@ begin
   f:=CreateUOMethod(typBool, 'NOT', '_not', typBool, @UOR_not_bool, opkUnaryPre);
   f:=CreateBOMethod(typBool, 'AND', '_and', typBool, typBool, @BOR_bool_and_bool);
   f.fConmutat := true;
+  f:=CreateBOMethod(typBool, 'OR' , '_or' , typBool, typBool, @BOR_bool_or_bool);
+  f.fConmutat := true;
+  f:=CreateBOMethod(typBool, 'XOR' , '_xor' , typBool, typBool, @BOR_bool_xor_bool);
+  f.fConmutat := true;
   f:=CreateBOMethod(typBool, '=' ,  '_equ', typBool, typBool, @BOR_bool_equal_bool);
   f.fConmutat := true;
-  f:=CreateBOMethod(typBool, '<>',  '_dif', typBool, typBool, @BOR_bool_difer_bool);
+  f:=CreateBOMethod(typBool, '<>',  '_dif', typBool, typBool, @BOR_bool_xor_bool);
   f.fConmutat := true;
   TreeElems.CloseElement;   //Close Type
   /////////////// Byte type ////////////////////

@@ -40,7 +40,7 @@ type
     function GetTypeDeclarSimple(): TEleTypeDec;
 
     function VerifyEND: boolean;
-    function GetExpressionBool(out ex: TEleExpress): boolean;
+    function GetCondition(out ex: TEleExpress; ConstBool: boolean = false): boolean;
     function OpenContextFrom(filePath: string): boolean;
     function CompileStructBody: boolean;
     procedure CompileSentence;
@@ -1441,18 +1441,35 @@ begin
     if not CaptureStr('END') then exit(false);
   end;
 end;
-function TCompMain.GetExpressionBool(out ex: TEleExpress): boolean;
-{Read a boolean expression in "ex". If there is some error, returns FALSE.}
+function TCompMain.GetCondition(out ex: TEleExpress; ConstBool: boolean=false): boolean;
+{Create a Condition Block and read a boolean expression in "ex".
+If parameter ConstBool is activated, a constant expression, evaluated to TRUE, is
+inserted.
+If there is some error, returns FALSE.}
+var
+  elem: TEleCondit;
 begin
-  OnExprStart;
-  ex := GetExpression(0);
-  if HayError then exit(false);
-  OnExprEnd(pexSTRUC);
-  if ex.Typ <> typBool then begin
-    GenError(ER_BOOL_EXPECT);
-    exit(false);
+  //Create condition block
+  elem := TEleCondit.Create;
+  elem.name := 'cond';
+  elem.srcDec := GetSrcPos;
+  TreeElems.AddElementAndOpen(elem);
+  if ConstBool then begin
+    //Generates a boolean constant.
+    GenExpressionConstBool('else', true, GetSrcPos);
+  end else begin
+    //Get the boolean expression
+    OnExprStart;
+    ex := GetExpression(0);
+    if HayError then exit(false);
+    OnExprEnd(pexSTRUC);
+    if ex.Typ <> typBool then begin
+      GenError(ER_BOOL_EXPECT);
+      exit(false);
+    end;
+    ProcComments;
   end;
-  ProcComments;
+  TreeElems.CloseElement;  //Close condition block
   exit(true);  //No hay error
 end;
 function TCompMain.OpenContextFrom(filePath: string): boolean;
@@ -1504,7 +1521,7 @@ procedure TCompMain.AnalyzeIF;
 var
   ex: TEleExpress;
 begin
-  if not GetExpressionBool(ex) then exit;
+  if not GetCondition(ex) then exit;
   if not CaptureStr('THEN') then exit; //toma "then"
   //Compile the THEN part.
   TreeElems.AddElementBlockAndOpen(GetSrcPos);  //Open block
@@ -1513,7 +1530,7 @@ begin
   //Compila los ELSIF que pudieran haber
   while UpCase(token) = 'ELSIF' do begin
     Next;   //toma "elsif"
-    if not GetExpressionBool(ex) then exit;
+    if not GetCondition(ex) then exit;
     if not CaptureStr('THEN') then exit;  //toma "then"
     //Compila el cuerpo pero sin código
     TreeElems.AddElementBlockAndOpen(GetSrcPos);  //Open block
@@ -1523,8 +1540,9 @@ begin
   //Compila el ELSE final, si existe.
   if Upcase(token) = 'ELSE' then begin
     //Hay bloque ELSE, pero no se ejecutará nunca
-    Next;   //toma "else"
-    GenExpressionConstBool('else', true, GetSrcPos);  //An "else" is similar to a ELSIF true
+    Next;   //Takes  "else"
+    //An "else" is similar to a ELSIF true
+    GetCondition(ex, true);  //Create condiiton block with a fixed TRUE constant.
     TreeElems.AddElementBlockAndOpen(GetSrcPos);  //Open block
     if not CompileStructBody then exit;
     TreeElems.CloseElement;  //Close block
@@ -1538,7 +1556,7 @@ procedure TCompMain.AnalyzeWHILE;
 var
   ex: TEleExpress;
 begin
-  if not GetExpressionBool(ex) then exit;  //Condición
+  if not GetCondition(ex) then exit;  //Condición
   if not CaptureStr('DO') then exit;  //toma "do"
   //Aquí debe estar el cuerpo del "while"
   TreeElems.AddElementBlockAndOpen(GetSrcPos);  //Open block
@@ -1557,7 +1575,7 @@ begin
   if HayError then exit;
   SkipWhites;
   if not CaptureStr('UNTIL') then exit; //toma "until"
-  if not GetExpressionBool(ex) then exit;
+  if not GetCondition(ex) then exit;
 end;
 procedure TCompMain.AnalyzeFOR;
 {Compila uan extructura FOR}

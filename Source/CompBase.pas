@@ -24,6 +24,20 @@ TPosExpres = (pexINDEP,  //Expresión independiente
 TOperType = (operUnary,  //Operación Unaria
              operBinary  //Operación Binaria
              );
+//Information about the las ASM code generated. Used for optimization.
+TLastASMcode = (
+             lacNone,    //No special code generated.
+             lacLastIsTXA, {Last instruction is TXA, and it's used only
+                           to move result from X to acumulator. ***** ¿Es necesario? ¿Se usa? ¿No bastaría leer la última instrucción en RAM?}
+             //Flags applied to boolean expression results.
+             lacCopyCtoA, {Expression result was obtained, in the last
+                           expression, using the bit C and copied to A. }
+             lacCopyZtoA, {Last ASM code is for obtaining boolean expression in regA
+                           from Z.}
+             lacNotZtoA,  {Last ASM code is for obtaining boolean expression in regA
+                           from Z (inverted).}
+             lacNotAtoA   {Value of regA is inverted in all bits to regA}
+             );
 { TCompilerBase }
 {Clase base para crear a los objetos compiladores.
 Esta clase debe ser el ancestro común de todos los compialdores a usar en PicPas.
@@ -44,18 +58,12 @@ protected  //Parser routines
   function CaptureStr(cstr: string): boolean;
   procedure CaptureParams(out funPars: TxpParFuncArray);
 protected  //Flags for boolean type.
-  {This variables are reset at the begginig of each UOR or BOR. They contains the state
-  of the Register/Satus-flags if the last UOR or BOR is executed.  }
-  BooleanFromC: integer; {Flag and index. When <>0, indicates the boolean expression result
-                          was obtained, in the last expression, using the bit C and moved
-                          to A. Used for code optimization.}
-  BooleanFromZ: integer; {Flag and index. When <>0, indicates the boolean expression result
-                          was obtained, in the last expression, using the bit Z and moved
-                          to A. Used for code optimization.}
-  AcumStatInZ: boolean;  {Indicates the Z flag contains the status of the value in A
-                          register. For example if A = 0, Z wil be 1.}
-  LastIsTXA  : boolean;  {Last instruction of ORT or expresion is TXA, and it's used only
-                          to move result from X to acumulator.}
+  {These variables are reset in the procedures: SetFun<XXX>. They contains the state of
+  the Register/Status-flags if the last UOR or BOR is executed. }
+  lastASMcode : TLastASMcode;  //ASM code generated for last the UOR or BOR.
+  lastASMaddr : integer;  //Memory address for the last code indicated by lastASMoper.
+  AcumStatInZ : boolean;  {Indicates the Z flag contains the status of the value in A
+                          register. For example if regA = 0, Z wil be 1.}
 protected  //Elements creation
   function NameExistsIn(eName: string; list: TxpElements): boolean;
   function CreateVar(varName: string; eleTyp: TEleTypeDec): TEleVarDec;

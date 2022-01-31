@@ -193,12 +193,12 @@ begin
   end else if elem.idClass = eleSenten then begin
     sen := TxpEleSentence(elem);
     txtEleType.Caption := 'Sentence ('+elem.ClassName+')';
-    ImageList1.GetBitmap(1, Image1.Picture.Bitmap);
+    ImageList1.GetBitmap(12, Image1.Picture.Bitmap);
     adicInformation := 'Sentence type: ' + sen.sntTypeAsStr;
   end else if elem.idClass = eleExpress then begin
     xexp := TEleExpress(elem);
     txtEleType.Caption := 'Expression ('+elem.ClassName+')';
-    ImageList1.GetBitmap(1, Image1.Picture.Bitmap);
+    ImageList1.GetBitmap(3, Image1.Picture.Bitmap);
     adicInformation :=
            'Expression type: ' + xexp.opTypeAsStr +
            ' --> ' + xexp.Typ.name + LineEnding +
@@ -228,6 +228,16 @@ begin
            'Cat. Type: '  + xtyp.catTypeStr + LineEnding +
            'Size: ' + IntToStr(xtyp.size) + LineEnding +
            '' ;
+  end else if elem.idClass = eleCondit then begin
+    sen := TxpEleSentence(elem);
+    txtEleType.Caption := 'Condition';
+    ImageList1.GetBitmap(21, Image1.Picture.Bitmap);
+    adicInformation := '';
+  end else if elem.idClass = eleBlock then begin
+    //sen := TxpEleSentence(elem);
+    txtEleType.Caption := 'Block';
+    ImageList1.GetBitmap(0, Image1.Picture.Bitmap);
+    adicInformation := '';
   end else begin
     txtEleType.Caption := 'Unknown';
     ImageList1.GetBitmap(13, Image1.Picture.Bitmap);

@@ -175,7 +175,7 @@ begin
     nod.ImageIndex := 20;
     nod.SelectedIndex := 20;
   end else if elem.idClass = eleExpress then begin
-eleExp := TEleExpress(elem);
+    eleExp := TEleExpress(elem);
     if eleExp.opType = otFunct then begin
       nod.ImageIndex := 3;
       nod.SelectedIndex := 3;
@@ -189,6 +189,11 @@ eleExp := TEleExpress(elem);
       nod.ImageIndex := 17;
       nod.SelectedIndex := 17;
     end;
+  end else if elem.idClass = eleCondit then begin
+    //sen := TxpEleSentence(elem);
+    nod.Text :=   'condit';
+    nod.ImageIndex := 21;
+    nod.SelectedIndex := 21;
   end else begin
     nod.ImageIndex := 0;
     nod.SelectedIndex := 0;

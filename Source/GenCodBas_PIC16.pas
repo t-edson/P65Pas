@@ -526,9 +526,7 @@ procedure TGenCodBas.SetFunNull(fun: TEleExpress);
 begin
   fun.Typ := typNull;
   fun.Sto := stNone;
-  BooleanFromC:=0;   //para limpiar el estado
-  BooleanFromZ:=0;
-  LastIsTXA:= false;
+  lastASMcode := lacNone;
   AcumStatInZ := true;
   fun.logic := logNormal;
 end;
@@ -538,10 +536,7 @@ siempre antes de evaluar cada subexpresión.}
 begin
   fun.opType := otConst;
   fun.Sto := stConst;  //La única opción es esta.
-
-  BooleanFromC:=0;       //Para limpiar el estado
-  BooleanFromZ:=0;
-  LastIsTXA := false;
+  lastASMcode := lacNone;
   AcumStatInZ := true;
   {Se asume que no se necesita invertir la lógica, en una constante (booleana o bit), ya
   que en este caso, tenemos control pleno de su valor}
@@ -551,9 +546,7 @@ procedure TGenCodBas.SetFunVariab(fun: TEleExpress; rVar: TEleVarDec);
 {Set an operand TxpEleExpress to type otVariab and storage stRamFix.}
 begin
   fun.SetVariab(rVar);
-  BooleanFromC:=0;   //para limpiar el estado
-  BooleanFromZ:=0;
-  LastIsTXA := false;
+  lastASMcode := lacNone;
   AcumStatInZ := true;   //Default TRUE is explained in Documentation.
   //"logic" is not used in this storage.
   fun.logic := logNormal;
@@ -563,10 +556,7 @@ procedure TGenCodBas.SetFunVariab(fun: TEleExpress; addr: word);
 siempre antes de evaluar cada subexpresión.}
 begin
   fun.SetVariab(addr);
-
-  BooleanFromC:=0;   //para limpiar el estado
-  BooleanFromZ:=0;
-  LastIsTXA := false;
+  lastASMcode := lacNone;
   AcumStatInZ := true;   //Default TRUE is explained in Documentation.
   //"logic" is not used in this storage.
   fun.logic := logNormal;
@@ -576,9 +566,7 @@ procedure TGenCodBas.SetFunVariab_RamVarOf(fun: TEleExpress; rVar: TEleVarDec;
 {Set an operand TxpEleExpress to type otVariab and storage stRamVarOf.}
 begin
   fun.SetVariab_RamVarOf(rVar, offset);
-  BooleanFromC:=0;   //para limpiar el estado
-  BooleanFromZ:=0;
-  LastIsTXA := false;
+  lastASMcode := lacNone;
   AcumStatInZ := true;   //Default TRUE is explained in Documentation.
   //"logic" is not used in this storage.
   fun.logic := logNormal;
@@ -591,11 +579,9 @@ begin
   fun.Sto := stRegister; //Almacenamiento por defecto
 
   //Limpia el estado. Esto es útil que se haga antes de generar el código para una operación
-  BooleanFromC:=0;
-  BooleanFromZ:=0;
-  LastIsTXA := false;
+  lastASMcode := lacNone;
   AcumStatInZ := true;
-  fun.logic := logic;  //Fija la lógica
+  fun.logic   := logic;  //Fija la lógica
 end;
 //Fija el resultado de ROP como constante
 procedure TGenCodBas.SetFunConst_bool(fun: TEleExpress; valBool: Boolean);
@@ -1073,14 +1059,14 @@ begin
     JumpIfZero(OpRes.logic = logInverted);
   end else if OpRes.Sto = stRegister then begin
     {We first evaluate the case when it could be done an optimization}
-    if BooleanFromC<>0 then begin
+    if lastASMcode = lacCopyCtoA then begin
       //Expression result has been copied from C to A
-      pic.iRam := BooleanFromC;   //Delete last instructions
+      pic.iRam := lastASMaddr;   //Delete last instructions
       //Check C flag
       JumpIfZeroC(OpRes.logic <> logInverted);
-    end else if BooleanFromZ<>0 then begin
+    end else if lastASMcode = lacCopyZtoA then begin
       //Expression result has been copied from Z to A
-      pic.iRam := BooleanFromZ;   //Delete last instructions
+      pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
       JumpIfZero(OpRes.logic <> logInverted);  //Logic is inverted wheb checking Z directly
     end else begin
@@ -1801,9 +1787,9 @@ begin
 end;
 procedure TGenCodBas.GenCondeIF(sen: TxpEleSentence);
 var
-  expCond: TEleExpress;
+  expBool, expSet: TEleExpress;
   i: Integer;
-  cond: TxpElement;
+  cond, ele: TxpElement;
   lbl1: TIfInfo;
   //Variables for jumps completion.
   njumps: integer;
@@ -1815,11 +1801,15 @@ begin
   while i<sen.elements.Count do begin
     //Takes condition
     cond := sen.elements[i];
-    expCond := TEleExpress(cond);  //Takes condition
-    GenCodeExpr(expCond);
-    if (expCond.opType = otConst) then begin
+    //The last expression should be the boolean condition
+    expBool := TEleExpress(cond.elements[cond.elements.Count-1]);
+    for ele in cond.elements do begin
+      expSet := TEleExpress(ele);  //Takes assigment function or the last expression.
+      GenCodeExpr(expSet);
+    end;
+    if (expBool.opType = otConst) then begin
       //Constant conditions have special behaviour.
-      if (expCond.value.ValBool=false) then begin
+      if (expBool.value.ValBool=false) then begin
         i+=2;  //Not processed
       end else begin
         //True expressions are the last executed.
@@ -1828,7 +1818,7 @@ begin
       end;
     end else begin
       //Not constant expressions.
-      IF_TRUE(expCond, lbl1);
+      IF_TRUE(expBool, lbl1);
       GenCodeBlock(TEleBlock(sen.elements[i+1]));
       //Check if there is more conditions
       if i+2<sen.elements.Count then begin
