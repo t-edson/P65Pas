@@ -1,42 +1,55 @@
-P65PAS 0.8.6
+P65PAS 0.8.7
 ============
 COMENTARIOS
-Esta versión es una versión experimental. probablemente se deseche.
+Esta versión es una versión de avance hacia una versión funcional.
+Los cambios realizados en la versión 0.8.6 demostraron que los cambios ensayados eran
+apropiadas, que eran un diseño sólido y suceptible de mejora. Inclusive se logró 
+compilar algunos códigos que habían fallado con la versión anterior. Ahora en esta 
+versión se continuarán implementando mejoras siguiendo la misma línea del diseño 
+planteado en la versión 0.8.6. Estas mejoras son:
+- Incluir rutina que separe las expresiones de asignación con expresiones complejas en 
+varias asignaciones simples.
+- Implementar un mecanismo sólido para que las expresiones soliciten variables 
+auxiliares.
 
-OBJETIVOS
-1. La idea es modificar la generación del AST, de modo que 
-las expresiones no se guarden como árboles sino como conjunto de operaciones simples de
-tipo: A = oper(B,C). --> CUMPLIDO
-2. Establecer claramente el mecanismo para que las BOR y UOR permitan permita evaluar
-constantes y detectar las variables auxiliares que va a necesitar.
+OBJETIVOS:
+- Modificar las estructuras condicionales para soportar mejor a las condiciones.
+- Avanzar en la modificaciones de las rutinas de operación para trabajar en los modos
+de evaluación de constantes y solicitud de variables.
+- Mejoras en la documentación.
+- Quitar el uso de la propiedad TxpElement.logic y pasar a usar las opciones de 
+optimización que se pueden lograr con "lastASMcode".
 
-CAMBIOS
-- IDE: Se define que el árbol de sintaxis expanda siempre los nodos "Body" y "Sentence"
-(unidad FrameSyntaxTree).
-- Se modifica la definición de tipo de sentencias (se separa las asignaciones de las 
-llamadas a procedimientos), tanto en la documentación:
-Documentación – Fundamentos y Análisis.docm - Sección 11, como en el código fuente, en 
-la unidad XpresElemP65.
-- Se quita la vista en modo "Por grupos" del Panel "Árbol de sintaxis", porque no se
-usa y se espera simplificar este panel.
-- Se modifica el "Árbol de sintaxis", para que muestre información del tipo de nodo 
-para los nodos de tipo sentencia.
-- Se incluye código para reconocer (y procesar) las sentencias de tipo "sntProcCal" y 
-diferenciarlas de las de tipo "sntAssigm".
-- Se cambia el nombre de la etiqueta "TopType.otExpres" por "TopType.otFunct" para 
-hacerla más consistente con su definición.
-- Se implementa rutina SplitAssigments() para separar las expresiones de asignación 
-con expresiones complejas a múltiples asignaciones con dos operandos y un operador. 
-- Se reordena y actualiza el documento "Documentación – Fundamentos y Análisis" con 
-información sobre el Árbol de Sintaxis.
-- Se mueven las rutinas: ConstantFoldBody() y ConstantFoldExpr() de la unidad 
-GenCodBas_PIC16 a Compiler_PIC16.
-- Se modifica TGenCodBas.GenCodeSentences() para que genere el código adecuadamente
-considerando que en una sentencia de asignación puede haber más de una instrucción.
+CAMBIOS:
+- Se crea un nuevo tipo de elemento "eleCondit" y se usa para albergar a la condición
+de las condicionales.
+- Se crea la función TCompMain.GetCondition() y se usa para todas las estructuras
+condicionales y repetitivas.
+- Se modifica el panel del árbol de sintaxis y el formulario de propiedades de 
+elementos para reconocer el nuevo tipo de elemento "eleCondit".
+- Se modifica la rutina TCompMain.AnalyzeIF para definir sus condiciones dentro de
+un bloque "eleCondit".
+- Se modifica la rutina TGenCodBas.GenCondeIF() para adaptarse a la nueva estructura 
+de las condicionales en el AST.
+- Se modifican las rutinas de operación con Booleanos para adpatarse a la nueva 
+representación interna de los valores booleanos.
+- Se implementa el operador OR para booleanos.
+- Se unifican las banderas "lacBooleanFromC", "BooleanFromZ", y "LastIsTXA" en un solo
+enumerado y una variable de dirección: lastASMcode y lastASMaddr
+- Se crea la función Invert_Z_to_A() con miras a eliminar la bandera "Inverted"
+- Se simplifica la rutina TGenCod.BOR_bool_equal_bool() y se le quitan todas las 
+llamadas a Copy_Z_to_A() porque ya no son necesarias.
+- Se implementa las operaciones XOR y "<>" para el tipo booleano.
+- Se quita el uso de la bandera "logic" en todas las operaciones con booleanos.
+- Se logra que el compilador pase el test de pruebas para tipos booleanos, aunque 
+usando muchas variables temporales porque aún no se optimiza el reuso de variables
+temporales.
 
 TAREAS PLANIFICADAS 
-Definir la sección de las BOR y UOR que permita evaluar constantes y detectar las
-variables auxiliares que va a necesitar.
+- Analizar el uso de la bandera de lógica (logNormal, logInvert) para validar que funciona
+bien en todos los casos.
+- Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
+- Reviar Copy_Z_to_A() ¿Se usa? ¿SIrve?
 
 TAREAS PLANIFICADAS ANTERIORES
 - Documentar detalladamente el estado en que se encuentran los nodos del AST después de 
@@ -101,6 +114,44 @@ octeto = object
     
     end;
   end;
+
+
+
+P65PAS 0.8.6
+============
+COMENTARIOS
+Esta versión es una versión experimental. probablemente se deseche.
+
+OBJETIVOS
+1. La idea es modificar la generación del AST, de modo que 
+las expresiones no se guarden como árboles sino como conjunto de operaciones simples de
+tipo: A = oper(B,C). --> CUMPLIDO
+2. Establecer claramente el mecanismo para que las BOR y UOR permitan permita evaluar
+constantes y detectar las variables auxiliares que va a necesitar. --> CUMPLIDO.
+
+CAMBIOS
+- IDE: Se define que el árbol de sintaxis expanda siempre los nodos "Body" y "Sentence"
+(unidad FrameSyntaxTree).
+- Se modifica la definición de tipo de sentencias (se separa las asignaciones de las 
+llamadas a procedimientos), tanto en la documentación:
+Documentación – Fundamentos y Análisis.docm - Sección 11, como en el código fuente, en 
+la unidad XpresElemP65.
+- Se quita la vista en modo "Por grupos" del Panel "Árbol de sintaxis", porque no se
+usa y se espera simplificar este panel.
+- Se modifica el "Árbol de sintaxis", para que muestre información del tipo de nodo 
+para los nodos de tipo sentencia.
+- Se incluye código para reconocer (y procesar) las sentencias de tipo "sntProcCal" y 
+diferenciarlas de las de tipo "sntAssigm".
+- Se cambia el nombre de la etiqueta "TopType.otExpres" por "TopType.otFunct" para 
+hacerla más consistente con su definición.
+- Se implementa rutina SplitAssigments() para separar las expresiones de asignación 
+con expresiones complejas a múltiples asignaciones con dos operandos y un operador. 
+- Se reordena y actualiza el documento "Documentación – Fundamentos y Análisis" con 
+información sobre el Árbol de Sintaxis.
+- Se mueven las rutinas: ConstantFoldBody() y ConstantFoldExpr() de la unidad 
+GenCodBas_PIC16 a Compiler_PIC16.
+- Se modifica TGenCodBas.GenCodeSentences() para que genere el código adecuadamente
+considerando que en una sentencia de asignación puede haber más de una instrucción.
 
 
 P65PAS 0.8.5
