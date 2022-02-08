@@ -13,12 +13,14 @@ varias asignaciones simples.
 auxiliares.
 
 OBJETIVOS:
-- Modificar las estructuras condicionales para soportar mejor a las condiciones.
+- Modificar las estructuras condicionales para soportar mejor a las condiciones. -> 
+HECHO para IF.
 - Avanzar en la modificaciones de las rutinas de operación para trabajar en los modos
-de evaluación de constantes y solicitud de variables.
-- Mejoras en la documentación.
+de evaluación de constantes y solicitud de variables. -> HECHO
+- Mejoras en la documentación. -> HECHO.
 - Quitar el uso de la propiedad TxpElement.logic y pasar a usar las opciones de 
-optimización que se pueden lograr con "lastASMcode".
+optimización que se pueden lograr con "lastASMcode". --> HECHO.
+- Eliminar o modificar TEleExpress.Invert; --> MODIFICADO.
 
 CAMBIOS:
 - Se crea un nuevo tipo de elemento "eleCondit" y se usa para albergar a la condición
@@ -31,7 +33,7 @@ elementos para reconocer el nuevo tipo de elemento "eleCondit".
 un bloque "eleCondit".
 - Se modifica la rutina TGenCodBas.GenCondeIF() para adaptarse a la nueva estructura 
 de las condicionales en el AST.
-- Se modifican las rutinas de operación con Booleanos para adpatarse a la nueva 
+- Se modifican las rutinas de operación con Booleanos para adaptarse a la nueva 
 representación interna de los valores booleanos.
 - Se implementa el operador OR para booleanos.
 - Se unifican las banderas "lacBooleanFromC", "BooleanFromZ", y "LastIsTXA" en un solo
@@ -44,12 +46,29 @@ llamadas a Copy_Z_to_A() porque ya no son necesarias.
 - Se logra que el compilador pase el test de pruebas para tipos booleanos, aunque 
 usando muchas variables temporales porque aún no se optimiza el reuso de variables
 temporales.
+- Se modifica el procedimiento TGenCod.Copy_C_to_A() y se crea TGenCod.Invert_C_to_A().
+- Se elimina TEleExpress.logic y todas las referencias existentes a ese campo.
+- Se actualiza la rutina TGenCodBas.IF_TRUE() para adaptarse a la eliminación de
+TEleExpress.logic.
+- Se renombran los enumerados: 
+	stConst_Variab a stConst_RamFix
+	stVariab_Variab a stRamFix_RamFix
+	stExpres_Variab a stExpres_RamFix
+- Se modifica TEleExpress.Invert() para adecuarla a la nueva forma de trabajo de los
+operandos.
+- Se corrige la rutina de la función del sistema byte().
+- Se crea la función BOR_word_equal_byte().
+- Se mejora la documentación y se actualiza a los nuevos cambios.
+- Se incluyen rutinas de verifiación de los modos del compilador (cmConsEval y cmRequire)
+en todas las BOR y UOR.
+
 
 TAREAS PLANIFICADAS 
 - Analizar el uso de la bandera de lógica (logNormal, logInvert) para validar que funciona
-bien en todos los casos.
+bien en todos los casos. -> HECHO.
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
-- Reviar Copy_Z_to_A() ¿Se usa? ¿SIrve?
+- Revisar Copy_Z_to_A() ¿Se usa? ¿SIrve? -> SÍ. HECHO
+- Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr().
 
 TAREAS PLANIFICADAS ANTERIORES
 - Documentar detalladamente el estado en que se encuentran los nodos del AST después de 
