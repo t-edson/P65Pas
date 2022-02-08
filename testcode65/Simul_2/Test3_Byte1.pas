@@ -1,20 +1,25 @@
 {Rutina de verificación para operaciones con datos de tipo byte.
-Se debe simular el programa en el circuito "Test3.DSN". Se debe 
-escuchar, una serie de pitidos cortos. Si se escucha un pitido 
-largo, es que hubo algún error en el resultado de alguna operación.
 Por: Tito Hinostroza
 Modificado: 01/03/2018}
-{$PROCESSOR PIC16F877A}
-{$FREQUENCY 8Mhz}
-{$OUTPUTHEX 'output.hex'}
-uses UnitTest, PIC16F877A;
+uses Commodore64;
+procedure good;
+begin
+  CHROUT('O');
+  CHROUT('K');
+  CHROUT(chr(13));
+end;
+procedure bad;
+begin
+  CHROUT('E');
+  CHROUT('R');
+  CHROUT('R');
+  CHROUT('O');
+  CHROUT('R');
+  CHROUT(chr(13));
+end;
 var
   a, b: byte;
-
 begin
-  SetAsOutput(pinLed);
-  pinLed := 0;
-
 	//Pruebas con IF
 	if true then good else bad end;
 	if false then bad else good end;
@@ -342,13 +347,7 @@ begin
   if (a+1)<<3 = $18 then good else bad end;
   if (a+1)<<4 = $30 then good else bad end;
   if (a+1)<<5 = $60 then good else bad end;
-  
-  //////////////////////////////////////////////////////////
-	/////////////////////  FIN DE PRUEBAS  ///////////////////
-  //////////////////////////////////////////////////////////
-  pinLed := 0;
-  delay_ms(50);
-  pinLed := 1;
-  delay_ms(70);
-  pinLed := 0;
+
+  asm RTS end 
+ 
 end.
