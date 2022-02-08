@@ -78,7 +78,7 @@ type
     procedure codRTS(isInterrupt: boolean);
     procedure GenCodeExpr(eleExp: TEleExpress);
     procedure GenCodeSentences(sentList: TxpElements);
-    procedure GenCodeBody(body: TEleBody);
+//    procedure GenCodeBody(body: TEleBody);
     procedure GenCodeBlock(block: TEleBlock);
   protected  //Memory managing routines for variables
     procedure WriteVaLueToRAM(target: PtrTCPURam; add: word; typ: TEleTypeDec;
@@ -92,7 +92,7 @@ type
     procedure SetFunVariab(fun: TEleExpress; addr: word);
     procedure SetFunVariab_RamVarOf(fun: TEleExpress; rVar: TEleVarDec;
       offset: integer);
-    procedure SetFunExpres(fun: TEleExpress; logic: TLogicType = logNormal);
+    procedure SetFunExpres(fun: TEleExpress);
     //Set result as a constant.
     procedure SetFunConst_bool(fun: TEleExpress; valBool: Boolean);
     procedure SetFunConst_byte(fun: TEleExpress; valByte: integer);
@@ -171,7 +171,7 @@ type
     procedure _TYA;
     procedure _TXA;
     procedure IF_TRUE(OpRes: TEleExpress; out info: TIfInfo);
-    procedure IF_FALSE(OpRes: TEleExpress; out info: TIfInfo);
+//    procedure IF_FALSE(OpRes: TEleExpress; out info: TIfInfo);
     procedure IF_END(const info: TIfInfo);
   protected  //Functions for types
     //////////////// Tipo Boolean /////////////
@@ -528,7 +528,6 @@ begin
   fun.Sto := stNone;
   lastASMcode := lacNone;
   AcumStatInZ := true;
-  fun.logic := logNormal;
 end;
 procedure TGenCodBas.SetFunConst(fun: TEleExpress);
 {Fija los parámetros del resultado de una subexpresion. Este método se debe ejcutar,
@@ -538,9 +537,6 @@ begin
   fun.Sto := stConst;  //La única opción es esta.
   lastASMcode := lacNone;
   AcumStatInZ := true;
-  {Se asume que no se necesita invertir la lógica, en una constante (booleana o bit), ya
-  que en este caso, tenemos control pleno de su valor}
-  fun.logic := logNormal;
 end;
 procedure TGenCodBas.SetFunVariab(fun: TEleExpress; rVar: TEleVarDec);
 {Set an operand TxpEleExpress to type otVariab and storage stRamFix.}
@@ -548,8 +544,6 @@ begin
   fun.SetVariab(rVar);
   lastASMcode := lacNone;
   AcumStatInZ := true;   //Default TRUE is explained in Documentation.
-  //"logic" is not used in this storage.
-  fun.logic := logNormal;
 end;
 procedure TGenCodBas.SetFunVariab(fun: TEleExpress; addr: word);
 {Fija los parámetros del resultado de una subexpresion. Este método se debe ejecutar,
@@ -558,8 +552,6 @@ begin
   fun.SetVariab(addr);
   lastASMcode := lacNone;
   AcumStatInZ := true;   //Default TRUE is explained in Documentation.
-  //"logic" is not used in this storage.
-  fun.logic := logNormal;
 end;
 procedure TGenCodBas.SetFunVariab_RamVarOf(fun: TEleExpress; rVar: TEleVarDec;
   offset: integer);
@@ -568,10 +560,8 @@ begin
   fun.SetVariab_RamVarOf(rVar, offset);
   lastASMcode := lacNone;
   AcumStatInZ := true;   //Default TRUE is explained in Documentation.
-  //"logic" is not used in this storage.
-  fun.logic := logNormal;
 end;
-procedure TGenCodBas.SetFunExpres(fun: TEleExpress; logic: TLogicType = logNormal);
+procedure TGenCodBas.SetFunExpres(fun: TEleExpress);
 {Fija los parámetros del resultado de una subexpresion. Este método se debe
 ejecutar, siempre antes de evaluar cada subexpresión.}
 begin
@@ -581,7 +571,6 @@ begin
   //Limpia el estado. Esto es útil que se haga antes de generar el código para una operación
   lastASMcode := lacNone;
   AcumStatInZ := true;
-  fun.logic   := logic;  //Fija la lógica
 end;
 //Fija el resultado de ROP como constante
 procedure TGenCodBas.SetFunConst_bool(fun: TEleExpress; valBool: Boolean);
@@ -1056,41 +1045,56 @@ begin
   if OpRes.Sto = stRamFix then begin
     //Result in variable
     _LDA(OpRes.rVar.addr);
-    JumpIfZero(OpRes.logic = logInverted);
+    JumpIfZero(false);  //We cannot apply optimization
   end else if OpRes.Sto = stRegister then begin
     {We first evaluate the case when it could be done an optimization}
     if lastASMcode = lacCopyCtoA then begin
       //Expression result has been copied from C to A
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check C flag
-      JumpIfZeroC(OpRes.logic <> logInverted);
+      JumpIfZeroC(true);
+    end else if lastASMcode = lacInvCtoA then begin
+      //Expression result has been copied from C to A inverted
+      pic.iRam := lastASMaddr;   //Delete last instructions
+      //Check C flag
+      JumpIfZeroC(false);
     end else if lastASMcode = lacCopyZtoA then begin
       //Expression result has been copied from Z to A
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
-      JumpIfZero(OpRes.logic <> logInverted);  //Logic is inverted wheb checking Z directly
+      JumpIfZero(true);
+    end else if lastASMcode = lacInvZtoA then begin
+      //Expression result has been copied from Z to A inverted
+      pic.iRam := lastASMaddr;   //Delete last instructions
+      //Check Z flag
+      JumpIfZero(false);
+    end else if lastASMcode = lacInvAtoA then begin
+      //Expression result has been copied from A to A inverted, and Z reflect the regA value.
+      pic.iRam := lastASMaddr;   //Delete last instructions
+      //Check Z flag
+      JumpIfZero(true);
     end else begin
       {Cannot be (or should be) optimized }
       if AcumStatInZ then begin
         //Still we can use the optimizaction of testing Z flag
-        JumpIfZero(OpRes.logic = logInverted);
+        JumpIfZero(false);
       end else begin
         //Operand value in A but not always in Z
         _TAX;  //To update Z
-        JumpIfZero(OpRes.logic = logInverted);
+        JumpIfZero(false);
       end;
     end;
   end else begin
     genError('Expression storage not supported.');
   end;
 end;
-procedure TGenCodBas.IF_FALSE(OpRes: TEleExpress; out info: TIfInfo);
-//Negated version of IF_TRUE()
-begin
-  OpRes.Invert;   //Change logic
-  IF_TRUE(OpRes, info);
-  OpRes.Invert;   //Restore logic
-end;
+//procedure TGenCodBas.IF_FALSE(OpRes: TEleExpress; out info: TIfInfo);
+////Negated version of IF_TRUE()
+//begin
+//  OpRes.Invert;   //Change logic
+//  IF_TRUE(OpRes, info);
+//  OpRes.Invert;   //Restore logic
+//end;
 procedure TGenCodBas.IF_END(const info: TIfInfo);
 {Define the End of the block, created with IF_TRUE().}
 begin
@@ -1806,6 +1810,7 @@ begin
     for ele in cond.elements do begin
       expSet := TEleExpress(ele);  //Takes assigment function or the last expression.
       GenCodeExpr(expSet);
+      if HayError then exit;
     end;
     if (expBool.opType = otConst) then begin
       //Constant conditions have special behaviour.
@@ -1877,14 +1882,15 @@ begin
       GenError('Unknown sentence type.', sen.srcDec);
       exit;
     end;
+    if HayError then exit;
   end;
 end;
-procedure TGenCodBas.GenCodeBody(body: TEleBody);
-{Do code generation for the body element specified. }
-begin
-  TreeElems.OpenElement(body);
-  GenCodeSentences(TreeElems.curNode.elements);
-end;
+//procedure TGenCodBas.GenCodeBody(body: TEleBody);
+//{Do code generation for the body element specified. }
+//begin
+//  TreeElems.OpenElement(body);
+//  GenCodeSentences(TreeElems.curNode.elements);
+//end;
 procedure TGenCodBas.GenCodeBlock(block: TEleBlock);
 {Do code generation for the body element specified. }
 begin

@@ -30,13 +30,15 @@ TLastASMcode = (
              lacLastIsTXA, {Last instruction is TXA, and it's used only
                            to move result from X to acumulator. ***** ¿Es necesario? ¿Se usa? ¿No bastaría leer la última instrucción en RAM?}
              //Flags applied to boolean expression results.
-             lacCopyCtoA, {Expression result was obtained, in the last
-                           expression, using the bit C and copied to A. }
              lacCopyZtoA, {Last ASM code is for obtaining boolean expression in regA
                            from Z.}
-             lacNotZtoA,  {Last ASM code is for obtaining boolean expression in regA
+             lacInvZtoA,  {Last ASM code is for obtaining boolean expression in regA
                            from Z (inverted).}
-             lacNotAtoA   {Value of regA is inverted in all bits to regA}
+             lacCopyCtoA, {Las ASM code if for obtaining, boolean expression in regA,
+                          using the bit C and copied to A. }
+             lacInvCtoA,  {Last ASM code is for obtaining boolean expression in regA
+                           from C (inverted).}
+             lacInvAtoA   {Value of regA is inverted in all bits to regA}
              );
 { TCompilerBase }
 {Clase base para crear a los objetos compiladores.

@@ -364,17 +364,17 @@ type  //Declaration elements
   represent two TStorage values in a simple byte constant (joining bits), in order to
   facilitate the use in a CASE ... OF structure.}
   TStoOperandsBOR =(
-    stConst_Const    = %00010001,   //stConst - stConst
-    stConst_Variab   = %00010010,   //stConst - stRamFix
-    stConst_Expres   = %00011000,   //stConst - stRegister
+    stConst_Const    = %00010001,
+    stConst_RamFix   = %00010010,
+    stConst_Regist   = %00011000,
 
-    stVariab_Const   = %00100001,
-    stVariab_Variab  = %00100010,
-    stVariab_Expres  = %00101000,
+    stRamFix_Const   = %00100001,
+    stRamFix_RamFix  = %00100010,
+    stRamFix_Regist  = %00101000,
 
-    stExpres_Const   = %10000001,
-    stExpres_Variab  = %10000010,
-    stExpres_Expres  = %10001000
+    stRegist_Const   = %10000001,
+    stRegist_RamFix  = %10000010,
+    stRegist_Regist  = %10001000
   );
 
   //Operand type
@@ -391,7 +391,7 @@ type  //Declaration elements
                }
     otConst,   {Operand is constant. Only for read.
                Support storages:
-                - stConsta
+                - stConst
                 - stRamFix   //Special case
                }
     otFunct    {Operand is a function/method or expression result. Only for read.
@@ -464,12 +464,6 @@ type  //Expression elements
     constructor Create; override;
   end;
 
-  //Logic level type.
-  TLogicType = (
-    logNormal,   //Normal logic
-    logInverted  //Inverted logic
-  );
-
   TEleFunBase = class;
 
   { TEleExpress }
@@ -479,11 +473,8 @@ type  //Expression elements
     opType : TopType;     //Operand type: otVariab, otConst, otFunct.
     Sto    : TStorage;    //Storage of the value (memory, register, value)
     Typ    : TEleTypeDec;  //Data type for the operand.
-    logic  : TLogicType;  {Used when operand is Boolean type. Indicates the type of logic
-                          of the operand value.}
     function opTypeAsStr: string; //"opType" as string
     function StoAsStr: string;  //Storage as string
-    procedure Invert;  //Invierte la lógica del operando
     procedure StringToArrayOfChar(str: string);
     function ValueIsZero: boolean;
   public  //Temporal variables required for evaluating expression.
@@ -853,16 +844,6 @@ function TEleExpress.StoAsStr: string;
 //Resturns storage as string.
 begin
   WriteStr(Result, Sto);
-end;
-procedure TEleExpress.Invert;
-begin
-  if Sto = stConst then begin
-    //In constants, logic is not used. We can change teh value
-    value.ValBool := not value.valBool;
-  end else begin
-    //Variables and expresions, yes.
-    if logic = logNormal then logic := logInverted else logic := logNormal;
-  end;
 end;
 procedure TEleExpress.StringToArrayOfChar(str: string);
 {Init the constant value as array of char from a string.}

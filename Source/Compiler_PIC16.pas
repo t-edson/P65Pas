@@ -224,6 +224,15 @@ procedure TCompiler_PIC16.ScanForRegsRequired;
 code) in order to:
 - Detect Registers and Temporal variables required to evaluate expressions.
 }
+  procedure GenCodeBody(body: TEleBody);
+  {Do code generation for the body element specified. }
+  begin
+    if body=nil then exit;  //An INLINE function.
+    TreeElems.OpenElement(body);   //Set "curNode"
+    TreeElems.curCodCont := body;  //Set "curCodCont" to be able to use AddCallerTo<XXX>
+    GenCodeSentences(TreeElems.curNode.elements);
+  end;
+
 var
   fun : TEleFun;
   bod: TEleBody;
@@ -233,7 +242,8 @@ begin
   pic.disableCodegen := true;  //Disable the code generation
   pic.iRam := 0;  //Clear RAM position
   //Code subroutines
-  for fun in usedFuncs do begin
+  //for fun in usedFuncs do begin
+  for fun in TreeElems.AllFuncs do begin
     if fun.IsInterrupt then continue;
     GenCodeBody(fun.BodyNode);
     if HayError then exit;   //Puede haber error
@@ -385,6 +395,8 @@ begin
   ResetRAM;    //2ms aprox.
   ClearError;
   pic.MsjError := '';
+  //Look for new requirements
+  ScanForRegsRequired;
   //Detecting unused elements
   RefreshAllElementLists; //Actualiza lista de elementos
   RemoveUnusedFunc;       //Se debe empezar con las funciones. 1ms aprox.
@@ -395,7 +407,7 @@ begin
   UpdateFunLstCalled;     //Actualiza lista "lstCalled" de las funciones usadas.
   if HayError then exit;
   SeparateUsedFunctions;
-  //Evaluate constant declarated
+  //Evaluate declared constants
   EvaluateConstantDeclare;
   if HayError then exit;
   //Simplify assigment sentences
@@ -405,8 +417,6 @@ begin
   might not be evaluated. So it should be needed to do other Code folding again.}
   ConstantFolding;
   if HayError then exit;
-  //{Realiza la simplificación del AST, realizando una primera compilación.}
-  //ScanForRegsRequired;
 end;
 procedure TCompiler_PIC16.DoGenerateCode;
 {Generates the final binary code using information from the AST as input.
