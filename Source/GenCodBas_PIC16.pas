@@ -1519,15 +1519,15 @@ var
   Op2: TEleExpress;
 begin
   //////// Generates paremeters assignment
-  if expFun<>nil then begin
-    funcBase := expFun.rfun;
-    for i := 0 to High(funcBase.pars) do begin
-      par := funcBase.pars[i];
-      elePar2 := expFun.elements[i];   //Get parameter from AST.
-      Op2 := TEleExpress(elePar2);
-      CodAsigmentToVar(par.pvar, Op2);  //Code par := Op2.
-    end;
-  end;
+  //if expFun<>nil then begin
+  //  funcBase := expFun.rfun;
+  //  for i := 0 to High(funcBase.pars) do begin
+  //    par := funcBase.pars[i];
+  //    elePar2 := expFun.elements[i];   //Get parameter from AST.
+  //    Op2 := TEleExpress(elePar2);
+  //    CodAsigmentToVar(par.pvar, Op2);  //Code par := Op2.
+  //  end;
+  //end;
   //////// Make the CALL
   AddrUndef := false;
   //In linking, it's supposed all functions are implemented ?????
@@ -1865,8 +1865,10 @@ begin
       end;
     end;
     sntProcCal: begin  //Call to function or method
-      expSet := TEleExpress(sen.elements[0]);  //Takes root node.
-      GenCodeExpr(expSet);
+      for ele in sen.elements do begin
+        expSet := TEleExpress(ele);  //Takes assigment function.
+        GenCodeExpr(expSet);
+      end;
     end;
     sntAsmBlock: begin
       expAsm := TEleExpress(sen.elements[0]);  //Takes root node.

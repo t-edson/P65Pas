@@ -5723,6 +5723,7 @@ begin
   f:=CreateBOMethod(typByte, '-' , '_sub', typByte, typByte, @BOR_byte_sub_byte);
   f:=CreateBOMethod(typByte, '*' , '_mul', typByte, typWord, @BOR_byte_mul_byte);
   f.fConmutat := true;
+
   f:=CreateBOMethod(typByte, 'AND','_and', typByte, typByte, @BOR_byte_and_byte);
   f.fConmutat := true;
   f:=CreateBOMethod(typByte, 'OR' ,'_or' , typByte, typByte, @BOR_byte_or_byte);

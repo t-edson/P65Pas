@@ -14,7 +14,7 @@ type
   private   //Funciones básicas
     procedure cInNewLine(lin: string);
     procedure ConstantFoldExpr(eleExp: TEleExpress);
-    procedure SplitAssigments(body: TEleBody);
+    procedure SplitExpressions(body: TEleBody);
   private //Compilación de secciones
     procedure EvaluateConstantDeclare;
     procedure ConstantFolding;
@@ -253,8 +253,8 @@ begin
   GenCodeBody(bod);
   //if HayError then exit;   //Puede haber error
 end;
-procedure TCompiler_PIC16.SplitAssigments(body: TEleBody);
-{Do a separation for assigmente sentences in order to have the three-address code" form
+procedure TCompiler_PIC16.SplitExpressions(body: TEleBody);
+{Do a separation for assigmente sentences in order to have the "three-address code" form
 like used in several compilers.}
   function MoveNodeToAssign(curContainer: TxpElement; Op: TEleExpress): TEleExpress;
   {Mueve el nodo especificado "Op" a una nueva instruccion de asignación (que es creada
@@ -305,6 +305,47 @@ like used in several compilers.}
     Op2aux := CreateExpression(_varaux.name, _varaux.typ, otVariab, Op.srcDec);
     Op2aux.SetVariab(_varaux);
     TreeElems.addElement(Op2aux, OpPos);
+    exit(_setaux);
+  end;
+  function MoveParamToAssign(curContainer: TxpElement; Op: TEleExpress;
+                             parvar: TEleVarDec): TEleExpress;
+  {Mueve el nodo especificado "Op", que representa a un parámetro de la función, a una
+  nueva instruccion de asignación (que es creada al inicio del bloque "curContainer") y
+  reemplaza el nodo faltante por una variable temporal que es la que se crea en la
+  instrucción de asignación.
+  Es similar a MoveNodeToAssign() pero no reemplaza el nodo movido y no crea una variable
+  auxiliar, sino que usa "parvar".
+  Retorna la instrucción de asignación creada.
+  }
+  var
+    _setaux: TEleExpress;
+    Op1aux: TEleExpress;
+    funSet: TEleFunBase;
+  begin
+    //Create the new _set() expression.
+    _setaux := CreateExpression('_set', typNull, otFunct, Op.srcDec);
+    funSet := MethodFromBinOperator(Op.Typ, ':=', Op.Typ);
+    if funSet = nil then begin   //Operator not found
+      GenError('Undefined operation: %s %s %s', [Op.Typ.name, ':=', Op.Typ.name]);
+      exit(nil);
+    end;
+    _setaux.rfun := funSet;
+
+    //Add the new assigment before the main
+    TreeElems.openElement(curContainer);
+    TreeElems.AddElement(_setaux, 0);    //Add a new assigmente before
+    _setaux.elements := TxpElements.Create(true);  //Create list
+    TreeElems.openElement(_setaux);
+
+    //Add first operand (variable) of the assignment.
+    Op1aux := CreateExpression(parvar.name, parvar.typ, otVariab, Op.srcDec);
+    Op1aux.SetVariab(parvar);
+    TreeElems.addElement(Op1aux);
+    AddCallerToFromCurr(parvar); //Add reference to auxiliar variable.
+
+    //Move the second operand to the previous _set created
+    TreeElems.ChangeParentTo(_setaux, Op);
+
     exit(_setaux);
   end;
   function SplitSet(curContainer: TxpElement; setMethod: TxpElement): boolean;
@@ -361,9 +402,35 @@ like used in several compilers.}
       end;
     end;
   end;
+  function SplitProcCall(curContainer: TxpElement; expMethod: TEleExpress): boolean;
+  {Split a procedure (not INLINE) call instruction, inserting an assigment instruction
+  for each parameter.}
+  var
+    parExp, new_set: TEleExpress;
+    funcBase: TEleFunBase;
+    ipar: Integer;
+    par: TxpParFunc;
+  begin
+    Result := false;
+    if expMethod.opType <> otFunct then exit;   //Not a fucntion call
+    funcBase := expMethod.rfun;    //Base function reference
+    if funcBase.codInline=nil then begin   //Not INLINE
+      {Move all parameters (children nodes) to a separate assigment}
+      ipar := 0;  //Parameter index
+      while expMethod.elements.Count>0 do begin  //While remain parameters.
+        parExp := TEleExpress(expMethod.elements[0]);  //Take parameter element
+        par := funcBase.pars[ipar];
+        new_set := MoveParamToAssign(curContainer, parExp, par.pvar);
+        if HayError then exit;
+        SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
+        Result := true;
+        inc(ipar);
+      end;
+    end;
+  end;
 var
   sen: TxpEleSentence;
-  eleSen, _set, ele: TxpElement;
+  eleSen, _set, ele, _proc: TxpElement;
   _exp: TEleExpress;
 begin
   for eleSen in body.elements do begin
@@ -373,6 +440,9 @@ begin
     if sen.sntType = sntAssign then begin  //Assignment
       _set := sen.elements[0];  //Takes the one _set method.
       SplitSet(sen, _set)  //Might generate additional assigments sentences
+    end else if sen.sntType = sntProcCal then begin  //Procedure call
+      _proc := sen.elements[0];  //Takes the proc.
+      SplitProcCall(sen, TEleExpress(_proc))
     end else if sen.sntType = sntIF then begin  //IF sentence
       //There are expressions inside conditions in a IF block
       for ele in sen.elements do begin
@@ -396,7 +466,7 @@ begin
   ClearError;
   pic.MsjError := '';
   //Look for new requirements
-  ScanForRegsRequired;
+//  ScanForRegsRequired;
   //Detecting unused elements
   RefreshAllElementLists; //Actualiza lista de elementos
   RemoveUnusedFunc;       //Se debe empezar con las funciones. 1ms aprox.
@@ -410,9 +480,9 @@ begin
   //Evaluate declared constants
   EvaluateConstantDeclare;
   if HayError then exit;
-  //Simplify assigment sentences
+  //Simplify expressions
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
-  SplitAssigments(bod);
+  SplitExpressions(bod);
   {Do a first folding in nodes. Some constants (like those that depend on addresses)
   might not be evaluated. So it should be needed to do other Code folding again.}
   ConstantFolding;

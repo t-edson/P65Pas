@@ -1,9 +1,14 @@
-{Description of the program.}
-program nombre;
+
+procedure proc1(m, n: byte): byte;
+begin
+  m:=1;  
+end;
+ 
 var
   x: byte;
-  y: word;
 begin
-  x := 5;
-  y := 1 + x;
+  proc1(5, 3+x); 
 end.
+
+
+

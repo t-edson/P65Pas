@@ -1,5 +1,96 @@
 P65PAS 0.8.7
 ============
+COMENTARIOS 
+La versión anterior siguió la línea de grandes mejoras en el diseño del compilador, 
+sobre todo en lo que a la optimización se refiere.
+Quedó pendiente definir la forma en que se manejarían las dependencias de las rutinas
+BOR y UOR en cuanto a funciones llamadas y variables auxiliares.
+Esta versión pretende acercarse, finalmente, a tener un compilador funcional para el 
+6502, al menos pasando las pruebas básicas del patrón de pruebas.
+
+OBJETIVOS
+- Terminar de Implementar un mecanismo sólido para que las BOR y UOR soliciten 
+variables auxiliares.
+- Implementar la simplificación para las sentencias sntProcCal en el AST y eliminar 
+CodAsigmentToVar() y el método antiguo de llamadas a procedimientos.
+
+CAMBIOS:
+- Se prcoede a usar Git para el control de cambios del proyecto localmente y en Github.
+- Se cambia la forma como se genera el código de llamada a los procedimientos en el AST.
+Ahora la rutina de optimización genera instrucciones adicionales de asignación de los
+parámetros en el AST.
+
+TAREAS PLANIFICADAS 
+- Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
+- Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
+- Revisar las instrucciones TGenCodBas.Exchange(), porque, al parecer, no tienen el 
+efecto deseado.
+- Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
+globales, locales) y los registros de trabajo.
+
+TAREAS PLANIFICADAS ANTERIORES
+-Debe existir un mecanismo confiable para que un procedimiento pueda pedir variables 
+adicionales para cálculos intermedios.
+- Implementar la obligatoriedad de localizar el registro IX en la página cero.
+- Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
+- Implementra la sintaxis de arreglos: VAR str: TAByte = (1,2,3); Se sugiere implementar 
+en TCompilerBase.GetOperand() el reconcimiento de arreglos de la forma: ('a', 'b') y así 
+se facilitará la creación de literales constantes.  numb: TAByte = (1, 2); 
+Se puede empezar creando la función array(1,2,3).
+- Revisar la instrucción exit. No funciona con parámetros;
+- Revisar el llenado del campo TxpExitCall.IsObligat porque en el nuevo esquema de 
+trabajo no se está llenando apropiadamente.
+- Crear una referencia en todos los elementos a su arbol de sintaxis correspondiente y 
+crear también una referencia del arbol de sintaxis a su compilador. La idea es que el 
+elemento pueda interpretar el campo idCtx de los registros TSrcPos, para poder obtener 
+información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde se lee 
+esta información.
+- Crear estructura para almacenar información de los diferentes archivos que componen el 
+proyecto para gestionar el uso de unidades.
+
+PENDIENTES
+- Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
+-Generar bloques IF (o de otro tipo), de más de 128 bytes.
+-Revisar y adaptar los programas de prueba para el compilador.
+
+Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
+implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
+hace realmente en Pascal.
+
+Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
+desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
+
+Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
+De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
+almacenar la lista de los posibles tipos creados.
+
+Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
+
+inline func1(var x: byte; const y: word; expr z: char);
+begin
+end;
+
+La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
+considerando el tipo de almacenamiento del operando.
+Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
+codificar operaciones sobre tipos objeto:
+
+octeto = object
+    value: byte;
+  public 
+    inline assign(var x: byte) operator ":="  precedence 5;
+    
+    end;
+    inline assign(x: byte) operator ":=";
+    
+    end;
+  end;
+
+
+
+
+P65PAS 0.8.7
+============
 COMENTARIOS
 Esta versión es una versión de avance hacia una versión funcional.
 Los cambios realizados en la versión 0.8.6 demostraron que los cambios ensayados eran
@@ -61,78 +152,6 @@ operandos.
 - Se mejora la documentación y se actualiza a los nuevos cambios.
 - Se incluyen rutinas de verifiación de los modos del compilador (cmConsEval y cmRequire)
 en todas las BOR y UOR.
-
-
-TAREAS PLANIFICADAS 
-- Analizar el uso de la bandera de lógica (logNormal, logInvert) para validar que funciona
-bien en todos los casos. -> HECHO.
-- Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
-- Revisar Copy_Z_to_A() ¿Se usa? ¿SIrve? -> SÍ. HECHO
-- Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr().
-
-TAREAS PLANIFICADAS ANTERIORES
-- Documentar detalladamente el estado en que se encuentran los nodos del AST después de 
-cada fase del análisis y síntesis.
--Pasar a usar más variables auxiliares en lugar de registros. Debe existir un mecanismo 
-confiable para que un procedimiento pueda pedir variables adicionales para cálculos 
-intermedios. La idea es: 
-- Implementar la obligatoriedad de localizar el registro IX en la página cero.
-- Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
-- Implementra la sintaxis de arreglos: VAR str: TAByte = (1,2,3); Se sugiere implementar 
-en TCompilerBase.GetOperand() el reconcimiento de arreglos de la forma: ('a', 'b') y así 
-se facilitará la creación de literales constantes.  numb: TAByte = (1, 2); 
-Se puede empezar creando la función array(1,2,3).
-- Revisar las instrucciones TGenCodBas.Exchange(), porque no tienen el efecto deseado.
-- Revisar la instrucción exit. No funciona con parámetros;
-- Revisar el llenado del campo TxpExitCall.IsObligat porque en el nuevo esquema de 
-trabajo no se está llenando apropiadamente.
-- Crear una referencia en todos los elementos a su arbol de sintaxis correspondiente y 
-crear también una referencia del arbol de sintaxis a su compilador. La idea es que el 
-elemento pueda interpretar el campo idCtx de los registros TSrcPos, para poder obtener 
-información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde se lee 
-esta información.
-- Crear estructura para almacenar información de los diferentes archivos que componen el 
-proyecto para gestionar el uso de unidades.
-
-PENDIENTES
-- Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
-- Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
-globales, locales) y los registros de trabajo.
--Generar bloques IF (o de otro tipo), de más de 128 bytes.
--Revisar y adaptar los programas de prueba para el compilador.
-
-Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
-implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
-hace realmente en Pascal.
-
-Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
-desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
-
-Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
-De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
-almacenar la lista de los posibles tipos creados.
-
-Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
-
-inline func1(var x: byte; const y: word; expr z: char);
-begin
-end;
-
-La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
-considerando el tipo de almacenamiento del operando.
-Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
-codificar operaciones sobre tipos objeto:
-
-octeto = object
-    value: byte;
-  public 
-    inline assign(var x: byte) operator ":="  precedence 5;
-    
-    end;
-    inline assign(x: byte) operator ":=";
-    
-    end;
-  end;
 
 
 
