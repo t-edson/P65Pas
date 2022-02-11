@@ -1483,7 +1483,7 @@ begin
       //Loop
       _LDXi(3);  //Counter
 //      AddCallerToFromCurr(f_word_shift_l);  //Declare use
-      functCall(nil, f_word_shift_l, AddrUndef);  //Use
+      functCall(f_word_shift_l, AddrUndef);  //Use
       exit;
     end else if parA.val = 16 then begin
       //Caso especial
@@ -1494,7 +1494,7 @@ begin
       //Loop
       _LDXi(4);  //Counter
 //      AddCallerToFromCurr(f_word_shift_l);  //Declare use
-      functCall(nil, f_word_shift_l, AddrUndef);  //Use
+      functCall(f_word_shift_l, AddrUndef);  //Use
       exit;
     end else if parA.val = 32 then begin
       //Caso especial
@@ -1505,7 +1505,7 @@ begin
       //Loop
       _LDXi(5);  //Counter
 //      AddCallerToFromCurr(f_word_shift_l);  //Declare use
-      functCall(nil, f_word_shift_l, AddrUndef);  //Use
+      functCall(f_word_shift_l, AddrUndef);  //Use
       exit;
     end;
     //General case
@@ -1517,7 +1517,7 @@ begin
 //    AddCallerToFromCurr(fmul);  //Declare use
 //    AddCallerToFromCurr(fmul.pars[0].pvar);  //Declare use
 //    AddCallerToFromCurr(fmul.pars[1].pvar);  //Declare use
-    functCall(nil, fmul, AddrUndef);   //Code the "JSR"
+    functCall(fmul, AddrUndef);   //Code the "JSR"
   end;
   stConst_Regist: begin  //la expresión p2 se evaluó y esta en A
     //Es casi el mismo código de stConst_RamFix
@@ -1558,7 +1558,7 @@ begin
       //Loop
       _LDXi(3);  //Counter
 //      AddCallerToFromCurr(f_word_shift_l);  //Declare use
-      functCall(nil, f_word_shift_l, AddrUndef);  //Use
+      functCall(f_word_shift_l, AddrUndef);  //Use
       exit;
     end else if parA.val = 16 then begin
       //Caso especial
@@ -1569,7 +1569,7 @@ begin
       //Loop
       _LDXi(4);  //Counter
 //      AddCallerToFromCurr(f_word_shift_l);  //Declare use
-      functCall(nil, f_word_shift_l, AddrUndef);  //Use
+      functCall(f_word_shift_l, AddrUndef);  //Use
       exit;
     end else if parA.val = 32 then begin
       //Caso especial
@@ -1580,7 +1580,7 @@ begin
       //Loop
       _LDXi(5);  //Counter
 //      AddCallerToFromCurr(f_word_shift_l);  //Declare use
-      functCall(nil, f_word_shift_l, AddrUndef);  //Use
+      functCall(f_word_shift_l, AddrUndef);  //Use
       exit;
     end;
     //General case
@@ -1592,7 +1592,7 @@ begin
 //    AddCallerToFromCurr(fmul);  //Declare use
 //    AddCallerToFromCurr(fmul.pars[0].pvar);  //Declare use
 //    AddCallerToFromCurr(fmul.pars[1].pvar);  //Declare use
-    functCall(nil, fmul, AddrUndef);   //Code the "JSR"
+    functCall(fmul, AddrUndef);   //Code the "JSR"
   end;
   stRamFix_Const: begin
     fun.elements.Exchange(0,1);
@@ -1608,7 +1608,7 @@ begin
 //    AddCallerToFromCurr(fmul);  //Declare use
 //    AddCallerToFromCurr(fmul.pars[0].pvar);  //Declare use
 //    AddCallerToFromCurr(fmul.pars[1].pvar);  //Declare use
-    functCall(nil, fmul, AddrUndef);   //Code the "JSR"
+    functCall(fmul, AddrUndef);   //Code the "JSR"
   end;
   stRamFix_Regist:begin   //la expresión p2 se evaluó y esta en A
     SetFunExpres(fun);
@@ -1619,7 +1619,7 @@ begin
 //    AddCallerToFromCurr(fmul);  //Declare use
 //    AddCallerToFromCurr(fmul.pars[0].pvar);  //Declare use
 //    AddCallerToFromCurr(fmul.pars[1].pvar);  //Declare use
-    functCall(nil, fmul, AddrUndef);   //Code the "JSR"
+    functCall(fmul, AddrUndef);   //Code the "JSR"
   end;
   stRegist_Const: begin   //la expresión p1 se evaluó y esta en A
     fun.elements.Exchange(0,1);
@@ -4156,7 +4156,7 @@ begin
 //      _DEX;
 //    _BNE_pre(L1);
     AddCallerToFromCurr(f_word_shift_l);  //Declare use
-    functCall(nil, f_word_shift_l, AddrUndef);  //Use
+    functCall(f_word_shift_l, AddrUndef);  //Use
 _LABEL_post(L2);
   end;
   stRamFix_Const: begin
@@ -4183,7 +4183,7 @@ _LABEL_pre(L1);
         _BNE_pre(L1);
       end else begin
         AddCallerToFromCurr(f_word_shift_l);  //Declare use
-        functCall(nil, f_word_shift_l, AddrUndef);  //Use
+        functCall(f_word_shift_l, AddrUndef);  //Use
       end;
     end;
   end;
@@ -4203,7 +4203,7 @@ _LABEL_pre(L1);
       _BNE_pre(L1);
     end else begin
       AddCallerToFromCurr(f_word_shift_l);  //Declare use
-      functCall(nil, f_word_shift_l, AddrUndef);  //Use
+      functCall(f_word_shift_l, AddrUndef);  //Use
     end;
 _LABEL_post(L2);
   end;
@@ -4223,7 +4223,7 @@ _LABEL_pre(L1);
       _BNE_pre(L1);
     end else begin
       AddCallerToFromCurr(f_word_shift_l);  //Declare use
-      functCall(nil, f_word_shift_l, AddrUndef);  //Use
+      functCall(f_word_shift_l, AddrUndef);  //Use
     end;
 _LABEL_post(L2);
   end;
@@ -4244,7 +4244,7 @@ _LABEL_post(L2);
         _BNE_pre(L1);
       end else begin
         AddCallerToFromCurr(f_word_shift_l);  //Declare use
-        functCall(nil, f_word_shift_l, AddrUndef);  //Use
+        functCall(f_word_shift_l, AddrUndef);  //Use
       end;
     end;
   end;
@@ -4258,7 +4258,7 @@ _LABEL_pre(L1);
       _BNE_pre(L1);
     end else begin
       AddCallerToFromCurr(f_word_shift_l);  //Declare use
-      functCall(nil, f_word_shift_l, AddrUndef);  //Use
+      functCall(f_word_shift_l, AddrUndef);  //Use
     end;
   end;
 //  stRegist_Regist:begin

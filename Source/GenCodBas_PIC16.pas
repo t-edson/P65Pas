@@ -34,7 +34,6 @@ type
   private
     linRep : string;   //línea para generar de reporte
     posFlash: Integer;
-    procedure CodAsigmentToVar(pvar: TEleVarDec; Op2: TEleExpress);
     procedure GenCodeASMline(inst: TxpEleAsmLine);
     procedure GenCodLoadToA(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToX(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
@@ -73,7 +72,7 @@ type
       rvar: TEleVarDec): boolean;
   protected
     procedure ResetRAM;
-    procedure functCall(expFun: TEleExpress; fun: TEleFunBase; out AddrUndef: boolean);
+    procedure functCall(fun: TEleFunBase; out AddrUndef: boolean);
     procedure CreateVarsAndPars;
     procedure codRTS(isInterrupt: boolean);
     procedure GenCodeExpr(eleExp: TEleExpress);
@@ -203,9 +202,6 @@ var
   MSG_STACK_OVERF, MSG_NOT_IMPLEM, WA_UNUSED_VAR_, ER_NOT_IMPLEM_ ,
   ER_ASIG_EXPECT
   : string;
-  //Global variables of CodAsigmentToVar().
-  _Op1, _eleMeth: TEleExpress;
-  _opr1: TEleFunBase;
 
 procedure SetLanguage;
 begin
@@ -1486,48 +1482,11 @@ function TGenCodBas.RAMmax: integer;
 begin
    Result := high(pic.ram);
 end;
-procedure TGenCodBas.CodAsigmentToVar(pvar: TEleVarDec; Op2: TEleExpress);
-{Generate code for the assignment to the variable "pvar" from the node "Op2".
-"Op2" must exist (in the AST or not) and contain all the expression to be asigned.}
-begin
-  //_Op1.name := pvar.name;  No needed
-  //_Op1.srcDec := pvar.srcDec;  No needed
-  _Op1.Typ := pvar.typ;
-  _Op1.SetVariab(pvar);
-  //Look for the asignment method.
-  _opr1 := MethodFromBinOperator(_Op1.Typ, ':=', Op2.Typ);
-  if _opr1 = nil then begin   //Operator not found
-    GenError('Undefined operation: %s %s %s', [_Op1.Typ.name, ':=', Op2.Typ.name]);
-    exit;
-  end;
-  //Set node Op2
-  _eleMeth.elements[1] := Op2;
-  _opr1.codInline(_eleMeth);  //Code the asignment
-end;
-procedure TGenCodBas.functCall(expFun: TEleExpress; fun: TEleFunBase; out
-  AddrUndef: boolean);
-{General routine to make the call to a Normal function.
-Parameters "expFun" is used to generate assignment of parameters, before
-make the call.
-}
+procedure TGenCodBas.functCall(fun: TEleFunBase; out AddrUndef: boolean);
+{General routine to make the call to a Normal function.}
 var
   xfun: TEleFun;
-  funcBase: TEleFunBase;
-  i: Integer;
-  par: TxpParFunc;
-  elePar2: TxpElement;
-  Op2: TEleExpress;
 begin
-  //////// Generates paremeters assignment
-  //if expFun<>nil then begin
-  //  funcBase := expFun.rfun;
-  //  for i := 0 to High(funcBase.pars) do begin
-  //    par := funcBase.pars[i];
-  //    elePar2 := expFun.elements[i];   //Get parameter from AST.
-  //    Op2 := TEleExpress(elePar2);
-  //    CodAsigmentToVar(par.pvar, Op2);  //Code par := Op2.
-  //  end;
-  //end;
   //////// Make the CALL
   AddrUndef := false;
   //In linking, it's supposed all functions are implemented ?????
@@ -1672,17 +1631,11 @@ begin
         GenError('No supported unimplemented INLINE functions.');
       end;
     end else begin
-      //Should be a Normal subroutine.
-      //First we evaluate the parameters
-      for ele in eleExp.elements do begin
-        parExpr := TEleExpress(ele);
-        GenCodeExpr(parExpr);
-      end;
-      //Generates the CALL instruction.
+      //Should be a Normal subroutine. Generates the CALL instruction.
       {Even though this is a Normal function, we can consider functCall() like the
-      INLINE routine callback to this function (like codInline), even more if we consider
-      that extra code can be added (parameters assignment) before the final JSR.}
-      functCall(eleExp, funcBase, AddrUndef);
+      INLINE routine callback to this function, like codInline.}
+      functCall(funcBase, AddrUndef);
+      SetFunExpres(eleExp);
     end;
   end else if eleExp.opType = otConst then begin
     //A constant expression. We have to evaluate it, if not already evaluated.
@@ -1908,22 +1861,9 @@ begin
   devicesPath := patDevices16;
   pic := TP6502.Create;
   picCore := pic;   //Referencia picCore
-  //Prepare a node function, ready to make fast asignments with CodAsigmentToVar()
-  {This nodes are created here once and keeps available when an assignment to a variable
-  is needed to be coded, using CodAsigmentToVar(). In this way we avoid to create
-  nodes every time an assignment is needed.}
-  srcPosNull.idCtx := -1;   //Null position
-  _Op1 := CreateExpression('', typNull, otVariab, srcPosNull);
-  _eleMeth := CreateExpression('_set', typNull, otFunct, srcPosNull);
-  _eleMeth.elements := TxpElements.Create(false);  //Without control because we want to destroy "eleMeth" without destroy Op2
-  //Add elements (parameter) of the _set method. Note
-  _eleMeth.elements.Add(_Op1);  //Won't change
-  _eleMeth.elements.Add(nil);   //Will be set later
 end;
 destructor TGenCodBas.Destroy;
 begin
-  _Op1.Destroy;
-  _eleMeth.Destroy;
   pic.Destroy;
   inherited Destroy;
 end;

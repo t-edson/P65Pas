@@ -1,14 +1,17 @@
-
-procedure proc1(m, n: byte): byte;
+procedure proc1;
 begin
-  m:=1;  
-end;
- 
+  
+end; 
 var
   x: byte;
+  w: word;  
 begin
-  proc1(5, 3+x); 
+//  proc1;
+  w := 5*x;
 end.
+
+
+
 
 
 

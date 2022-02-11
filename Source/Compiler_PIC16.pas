@@ -212,6 +212,7 @@ begin
   pic.iRam := 0;  //Clear RAM position
   //Code subroutines
   for fun in usedFuncs do begin
+    if fun.codInline <> nil then continue;  //No INLINE
     ConstantFoldBody(fun.BodyNode);
     if HayError then exit;   //Puede haber error
   end;
@@ -348,6 +349,7 @@ like used in several compilers.}
 
     exit(_setaux);
   end;
+  function SplitProcCall(curContainer: TxpElement; expMethod: TEleExpress): boolean; forward;
   function SplitSet(curContainer: TxpElement; setMethod: TxpElement): boolean;
   {Verify if a set expression has more than three operands. If so then
   it's splitted adding one or more aditional set sentences, at the beggining of
@@ -359,22 +361,32 @@ like used in several compilers.}
   begin
     Result := false;
     Op2 := TEleExpress(setMethod.elements[1]);  //Takes assigment source.
-    if (Op2.opType = otFunct) and Op2.fcallOp then begin
-      {IT's the form:
-           x := A + B
-                \___/
-                 Op2
-      or:
-           x := A++        }
-      {We expect parameters A, B should be simple operands (Constant or variables)
-      otherwise we will move them to a separate assigment}
-      for par in Op2.elements do begin
-        parExp := TEleExpress(par);
-        if parExp.opType = otFunct then begin
-          new_set := MoveNodeToAssign(curContainer, parExp);
-          if HayError then exit;
-          SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
-          Result := true;
+    if (Op2.opType = otFunct) then begin
+      if Op2.rfun.codInline = nil then begin  //Normal function
+        {IT's the form:
+             x := func(x,y);
+                  \_______/
+                     Op2
+        }
+        //¿Conviene mover nodo OP2 a asignación previa?
+        SplitProcCall(curContainer, Op2);
+      end else begin          //INLINE function
+        {IT's the form:
+             x := A + B
+                  \___/
+                   Op2
+        or:
+             x := A++        }
+        {We expect parameters A, B should be simple operands (Constant or variables)
+        otherwise we will move them to a separate assigment}
+        for par in Op2.elements do begin
+          parExp := TEleExpress(par);
+          if parExp.opType = otFunct then begin
+            new_set := MoveNodeToAssign(curContainer, parExp);
+            if HayError then exit;
+            SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
+            Result := true;
+          end;
         end;
       end;
     end;
@@ -602,6 +614,7 @@ begin
   //Codifica las subrutinas usadas
   for fun in usedFuncs do begin
     if fun.IsInterrupt then continue;
+    if fun.codInline <> nil then continue;  //No INLINE
 //debugln('---Función usada: ' + fun.name);
     {According the method we use to add callers (See TCompilerBase.AddCallerTo() ),
     condition "fun.nCalled>0" ensures we have here the first ocurrence of a function. So

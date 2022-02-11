@@ -12,21 +12,27 @@ OBJETIVOS
 - Terminar de Implementar un mecanismo sólido para que las BOR y UOR soliciten 
 variables auxiliares.
 - Implementar la simplificación para las sentencias sntProcCal en el AST y eliminar 
-CodAsigmentToVar() y el método antiguo de llamadas a procedimientos.
+CodAsigmentToVar() y el método antiguo de llamadas a procedimientos. -> HECHO.
 
 CAMBIOS:
-- Se prcoede a usar Git para el control de cambios del proyecto localmente y en Github.
+- Se procede a usar Git para el control de cambios del proyecto localmente y en Github.
 - Se cambia la forma como se genera el código de llamada a los procedimientos en el AST.
 Ahora la rutina de optimización genera instrucciones adicionales de asignación de los
 parámetros en el AST.
+- Se elimina la función TGenCodBas.CodAsigmentToVar() y los elementos asociados. Además
+se simplifica TGenCodBas.functCall().
+- Se corrige TGenCodBas.GenCodeExpr() para adapatarse a la nueva forma de llamadas a 
+funciones comunes.
+- Se modifica TCompiler_PIC16.SplitExpressions() para manejar funciones comunes, además
+de las funciones INLINE que ya soportaba.
+- Se incluye la generación de "Calller" a las funciones INLINE de la unidad System.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
 - Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
-- Revisar las instrucciones TGenCodBas.Exchange(), porque, al parecer, no tienen el 
-efecto deseado.
 - Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
 globales, locales) y los registros de trabajo.
+- Simplificar el uso de variables temporales.
 
 TAREAS PLANIFICADAS ANTERIORES
 -Debe existir un mecanismo confiable para que un procedimiento pueda pedir variables 

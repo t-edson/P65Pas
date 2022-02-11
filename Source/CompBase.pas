@@ -1581,6 +1581,7 @@ begin
     eleMeth.name := opr1.name;
     eleMeth.rfun := opr1;  //Method for operator.
     eleMeth.Typ  := opr1.retType;  //Complete returning type.
+    AddCallerToFromCurr(opr1);   //Mark as used.
     //Prepare next operation.
     Op1 := eleMeth;   //Set new operand 1
     TreeElems.OpenElement(Op1.Parent);  //Returns to parent (sentence).
