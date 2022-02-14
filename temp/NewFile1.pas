@@ -3,11 +3,12 @@ begin
   
 end; 
 var
-  x: byte;
-  w: word;  
+  xx: byte;
+//  ww: word;  
 begin
+  xx := 1;
 //  proc1;
-  w := 5*x;
+//  ww := 5*xx;
 end.
 
 

@@ -5515,45 +5515,11 @@ begin
 end;
 procedure TGenCod.DefCompiler;
 {}
-//var
-//  opr: TxpOperator;
 begin
   //Define métodos a usar
   OnExprStart := @expr_start;
-  OnExprEnd := @expr_End;
+  OnExprEnd   := @expr_End;
 
-  ///////////Crea tipos
-//  ClearSystemTypes;
-//  //////////////// Boolean type /////////////
-//  typBool := CreateSysType('boolean',t_uinteger,1);   //de 1 byte
-//  typBool.OnLoadToWR   := @bool_LoadToRT;
-//  typBool.OnDefRegister:= @byte_DefineRegisters;
-//  typBool.OnSaveToStk  := @byte_SaveToStk;
-//  //typBool.OnReadFromStk :=
-//  //////////////// Byte type /////////////
-//  typByte := CreateSysType('byte',t_uinteger,1);   //de 1 byte
-//  typByte.OnLoadToWR   := @byte_LoadToRT;
-//  typByte.OnDefRegister:= @byte_DefineRegisters;
-//  typByte.OnSaveToStk  := @byte_SaveToStk;
-//  //typByte.OnReadFromStk :=
-//
-//  //////////////// Char type /////////////
-//  //Tipo caracter
-//  typChar := CreateSysType('char',t_uinteger,1);   //de 1 byte. Se crea como uinteger para leer/escribir su valor como número
-//  typChar.OnLoadToWR   := @byte_LoadToRT;  //Es lo mismo
-//  typChar.OnDefRegister:= @byte_DefineRegisters;  //Es lo mismo
-//  typChar.OnSaveToStk  := @byte_SaveToStk; //Es lo mismo
-//
-//  //////////////// Word type /////////////
-//  //Tipo numérico de dos bytes
-//  typWord := CreateSysType('word',t_uinteger,2);   //de 2 bytes
-//  typWord.OnLoadToWR   := @word_LoadToRT;
-//  typWord.OnDefRegister:= @word_DefineRegisters;
-//  typWord.OnSaveToStk  := @word_SaveToStk;
-//
-//  typWord.CreateField('Low' , @word_Low , @word_Low);
-//  typWord.CreateField('High', @word_High, @word_High);
-//
 end;
 procedure TGenCod.AddParam(var pars: TxpParFuncArray; parName: string; const srcPos: TSrcPos;
                    typ0: TEleTypeDec; adicDec: TxpAdicDeclar);
@@ -5581,6 +5547,7 @@ begin
   //Add declaration
   curLocation := locInterface;
   fundec := AddFunctionDEC(name, retType, srcPos, pars, false);
+  fundec.callType := ctSysInline; //INLINE function
   //Implementation
   {Note that implementation is added always after declarartion. It's not the usual
   in common units, where all declarations are first}
@@ -5590,7 +5557,8 @@ begin
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
   TreeElems.AddElementBodyAndOpen(SrcPos);  //Create body
-  Result.codInline := pCompile;  //Set routine to geenrate code
+  Result.callType := ctSysInline; //INLINE function
+  Result.codInline := pCompile;  //Set routine to generate code
   TreeElems.CloseElement;  //Close body
   TreeElems.CloseElement;  //Close function implementation
 end;
@@ -5613,13 +5581,16 @@ begin
   //Add declaration
   curLocation := locInterface;   { TODO : Does it is neccesary to specify location for a method? }
   Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false);
+  TreeElems.AddElementBodyAndOpen(srcPosNull);  //Create body
   //Here variables can be added
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
+  Result.callType := ctSysInline; //INLINE function
   Result.codInline := pCompile; //Set routine to generate code
   Result.oper := UpCase(opr); //Set operator as UpperCase to speed search.
   if opr = '' then Result.operTyp := opkNone
   else Result.operTyp := opkBinary;
+  TreeElems.CloseElement;  //Close body
   TreeElems.CloseElement;    //Close function implementation
 end;
 function TGenCod.CreateUOMethod(
@@ -5643,6 +5614,7 @@ begin
   //Here variables can be added
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
+  Result.callType := ctSysInline; //INLINE function
   Result.codInline := pCompile; //Set routine to generate code
   Result.oper := UpCase(opr); //Set operator as UpperCase to speed searching.
   if opr = '' then Result.operTyp := opkNone
@@ -5654,7 +5626,7 @@ procedure TGenCod.CreateSystemElements;
 var
   uni: TEleUnit;
   pars: TxpParFuncArray;  //Array of parameters
-  f: TEleFun;
+  f, f_byte_mul_byte: TEleFun;
 begin
   //////// Funciones del sistema ////////////
   //Implement calls to Code Generator
@@ -5723,7 +5695,7 @@ begin
   f:=CreateBOMethod(typByte, '-' , '_sub', typByte, typByte, @BOR_byte_sub_byte);
   f:=CreateBOMethod(typByte, '*' , '_mul', typByte, typWord, @BOR_byte_mul_byte);
   f.fConmutat := true;
-
+  f_byte_mul_byte := f;
   f:=CreateBOMethod(typByte, 'AND','_and', typByte, typByte, @BOR_byte_and_byte);
   f.fConmutat := true;
   f:=CreateBOMethod(typByte, 'OR' ,'_or' , typByte, typByte, @BOR_byte_or_byte);
@@ -5879,7 +5851,10 @@ begin
   AddParam(pars, 'n', srcPosNull, typByte, decRegisX);   //Parameter counter shift
   f_word_shift_l := CreateSystemFunction('word_shift_l', typWord, srcPosNull, pars, @word_shift_l);
 
-  TreeElems.CloseElement; //Close Unit
+  //Add dependencies
+  AddCallerToFrom(f_byte_mul_byte_16, f_byte_mul_byte.bodyNode);
+  //Close Unit
+  TreeElems.CloseElement;
 end;
 end.
 //5186

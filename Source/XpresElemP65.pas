@@ -677,7 +677,13 @@ type  //Declaration elements (functions)
     opkUnaryPost,  //Unary Post operator
     opkBinary      //Binary operator
   );
-
+  TCallType = (
+    ctUsrNormal,   //Common user function
+    ctUsrInline,   //Inline user function
+    ctSysNormal,   //Common system function
+    ctSysInline,   //Inline system function
+    ctUsrExtern    //External fucntion
+  );
   { TxpEleFunBase }
   TEleFunBase = class(TEleProgFrame)
     retType     : TEleTypeDec;   //Type returned
@@ -690,8 +696,9 @@ type  //Declaration elements (functions)
   public //Flags for operators
     fConmutat : boolean; //Represents a conmutative binary operator.
   public //References
-    {Call to routine that generate code for the function, when the function is defined as
-    INLINE like used in many system functions.}
+    callType  : TCallType;  //How to call the function
+    {Routine that generates code for the function, when callType is ctSysNormal or
+    ctSysInline.}
     codInline : TxpCodInline;
   public //Parameters manage
     pars   : TxpParFuncArray;  //parámetros de entrada
@@ -749,12 +756,12 @@ type  //Declaration elements (functions)
     function IsTerminal2: boolean;
   private //Manage of pending calls
     curSize: integer;
-  public //Manage of pending calls
+  public  //Manage of pending calls
     {Address of pending calls (JSR) made when the function was not still implemented }
     nAddresPend : integer;
     addrsPend   : array of word;
     procedure AddAddresPend(ad: word);
-  public //Initialization
+  public  //Initialization
     constructor Create; override;
     destructor Destroy; override;
   end;

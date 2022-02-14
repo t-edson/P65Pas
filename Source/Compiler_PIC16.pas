@@ -614,32 +614,30 @@ begin
   //Codifica las subrutinas usadas
   for fun in usedFuncs do begin
     if fun.IsInterrupt then continue;
-    if fun.codInline <> nil then continue;  //No INLINE
-//debugln('---Función usada: ' + fun.name);
-    {According the method we use to add callers (See TCompilerBase.AddCallerTo() ),
-    condition "fun.nCalled>0" ensures we have here the first ocurrence of a function. So
-    it can be:
-      - A common function/procedure in the main program.
-      - A INTERFACE function.
-      - A private IMPLEMENTATION function (without previous declaration).
-    }
-    //Compile used function in the current address.
-    fun.adrr := pic.iRam;     //Actualiza la dirección final
-    //Is a common function with body.
-    GenCodeFunction(fun.BodyNode);
-    if HayError then exit;   //Puede haber error
-    fun.coded := true;       //Marca como ya codficada en memoria.
-    //Verifica si hace falta completar llamadas
-    if fun.nAddresPend>0 then begin
-        //Hay llamadas pendientes que completar a esta función
-        for i:=0 to fun.nAddresPend -1 do begin
-          debugln('Completando lllamadas pendientes a %s en %d', [fun.name, fun.addrsPend[i]]);
-          //Completa la instrucción JSR $0000
-          add := fun.addrsPend[i];
-          pic.ram[add].value   := fun.adrr and $ff;
-          pic.ram[add+1].value := (fun.adrr >> 8) and $ff;
-        end;
+    //debugln('---Función usada: ' + fun.name);
+    case fun.callType of
+    ctUsrNormal: begin
+      if fun.codInline <> nil then continue;  //No INLINE
+      //Compile used function in the current address.
+      fun.adrr := pic.iRam;     //Actualiza la dirección final
+      //Is a common function with body.
+      GenCodeFunction(fun.BodyNode);
+      if HayError then exit;   //Puede haber error
+      fun.coded := true;       //Marca como ya codficada en memoria.
+      //Verifica si hace falta completar llamadas
+      if fun.nAddresPend>0 then begin
+          //Hay llamadas pendientes que completar a esta función
+          for i:=0 to fun.nAddresPend -1 do begin
+            debugln('Completando lllamadas pendientes a %s en %d', [fun.name, fun.addrsPend[i]]);
+            //Completa la instrucción JSR $0000
+            add := fun.addrsPend[i];
+            pic.ram[add].value   := fun.adrr and $ff;
+            pic.ram[add+1].value := (fun.adrr >> 8) and $ff;
+          end;
       end;
+    end;
+
+    end;
   end;
   for fun in unusedFuncs do begin
     //Esta función no se usa.
@@ -656,7 +654,6 @@ begin
     exit;
   end;
   bod.adrr := pic.iRam;  //guarda la dirección de codificación
-//  bod.nCalled := 1;    //Actualiza
   GenCodeMainBody(bod);
   //if HayError then exit;     //Puede haber error
   {No es necesario hacer más validaciones, porque ya se hicieron en la primera pasada}

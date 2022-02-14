@@ -4,7 +4,6 @@
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
   <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-0.8\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.8\temp\NewFile1.lst
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -46,10 +45,10 @@ D:\Proyectos_Software\Lazarus\P65Pas-0.8\temp\NewFile1.lst
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
     <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-0.8\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-0.8\temp\NewFile1.lst
 D:\Proyectos_Software\Lazarus\P65Pas-0.8\temp\newfile-1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-0.8.7\testcode65\Simul_2\Test3_Byte2.pas
 D:\Proyectos_Software\Lazarus\P65Pas-0.8.5\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-0.8.7\testcode65\Simul_2\Test3_Byte1.pas
 "/>
   </Edit>
   <IncDecVar Val="True"/>

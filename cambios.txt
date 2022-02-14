@@ -26,6 +26,10 @@ funciones comunes.
 - Se modifica TCompiler_PIC16.SplitExpressions() para manejar funciones comunes, además
 de las funciones INLINE que ya soportaba.
 - Se incluye la generación de "Calller" a las funciones INLINE de la unidad System.
+- Se incluye elemento Body a los métodos de los tipos declarados en System.
+- Se incluye información adicional en la documentación técnica acerca de las funciones.
+- Se agrega el campo TEleFunBase.callType, el enumerado TCallType y se modifican las 
+rutinas de creación de funciones para inicializar este campo.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
