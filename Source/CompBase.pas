@@ -85,12 +85,13 @@ protected  //Elements creation
   function AddTypeAndOpen(typName: string; typeSize: integer; catType: TxpCatType;
     group: TTypeGroup; srcPos: TSrcPos): TEleTypeDec;
   procedure CreateFunctionParams(var funPars: TxpParFuncArray);
-  function AddFunctionUNI(funName: string; retTyp: TEleTypeDec; const srcPos: TSrcPos;
-                          const pars: TxpParFuncArray; Interrup: boolean): TEleFun;
+  function AddFunctionUNI(funName: string; retTyp: TEleTypeDec;
+    const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean;
+  addParam: boolean): TEleFun;
   function AddFunctionDEC(funName: string; retTyp: TEleTypeDec; const srcPos: TSrcPos;
                           const pars: TxpParFuncArray; Interrup: boolean): TEleFunDec;
   function AddFunctionIMP(funName: string; retTyp: TEleTypeDec;
-                          const srcPos: TSrcPos; functDeclar: TEleFunDec): TEleFun;
+    const srcPos: TSrcPos; functDeclar: TEleFunDec; addParam: boolean): TEleFun;
 protected  //Containers
   procedure RefreshAllElementLists;
   procedure RemoveUnusedFunc;
@@ -678,10 +679,11 @@ begin
   end;
 end;
 function TCompilerBase.AddFunctionUNI(funName: string; retTyp: TEleTypeDec;
-  const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean
-  ): TEleFun;
+  const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean;
+  addParam: boolean): TEleFun;
 {Create a new function, in normal mode (In the Main program or a like a private function
-in Implementation section) and add it to the Syntax Tree in the current node.}
+in Implementation section) and add it to the Syntax Tree in the current node.
+- addParam -> Indicates whether the parameters will be created as variables. }
 var
   xfun: TEleFun;
 begin
@@ -694,7 +696,7 @@ begin
   TreeElems.AddElementAndOpen(xfun);  //Se abre un nuevo espacio de nombres
   Result := xfun;
   //Crea parámetros en el nuevo espacio de nombres de la función
-  CreateFunctionParams(xfun.pars);
+  if addParam then CreateFunctionParams(xfun.pars);
 end;
 function TCompilerBase.AddFunctionDEC(funName: string; retTyp: TEleTypeDec;
   const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean): TEleFunDec;
@@ -717,7 +719,7 @@ begin
   //Note that variables for parameters are not created here.
 end;
 function TCompilerBase.AddFunctionIMP(funName: string; retTyp: TEleTypeDec;
-  const srcPos: TSrcPos; functDeclar: TEleFunDec): TEleFun;
+  const srcPos: TSrcPos; functDeclar: TEleFunDec; addParam: boolean): TEleFun;
 {Create a new function, in IMPLEMENTATION mode (Forward or Interface) and add it
 to the Syntax Tree in the current node. }
 var
@@ -734,7 +736,7 @@ begin
   TreeElems.AddElementAndOpen(xfun);  //Se abre un nuevo espacio de nombres
   Result := xfun;
   //Crea parámetros en el nuevo espacio de nombres de la función
-  CreateFunctionParams(xfun.pars);
+  if addParam then CreateFunctionParams(xfun.pars);
   //Pass calls list form declaration to implementation.
   tmp := functDeclar.lstCallers;
   functDeclar.lstCallers := xfun.lstCallers;

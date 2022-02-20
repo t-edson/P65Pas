@@ -1,12 +1,15 @@
-////////////////////////////////////////////
-// New program created in 12/11/2020}
-////////////////////////////////////////////
-program NewProgram;
-uses Commodore64;
-//Declarations here
-  
+procedure proc1;
 begin
-  
-  //Code here
-  
+ 
+end; 
+
+begin
+//  byte_mul_byte_16(1,2);
+  proc1;
 end.
+
+
+
+
+
+

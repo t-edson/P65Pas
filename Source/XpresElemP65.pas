@@ -129,7 +129,7 @@ type  //Previous definitions for elements
     absAddr  : integer;       //ABSOLUTE address
     absOff   : integer;       //Offset to variable when ABSOLUTE.
     hasInit  : boolean;       //Indicate if variable is initialized
-    constDec: TEleConsDec;    //Reference to the const declaration for init value.
+    constDec : TEleConsDec;   //Reference to the const declaration for init value.
   end;
 type  //Type categories and declaration styles
   //Type categories
@@ -659,17 +659,17 @@ type  //Instructions relative elements
 type  //Declaration elements (functions)
   //Function parameter
   TxpParFunc = record
-    name   : string;     //Nombre de parámetro
+    name   : string;      //Nombre de parámetro
     typ    : TEleTypeDec; //Referencia al tipo
     pvar   : TEleVarDec;  //Referencia a la variable que se usa para el parámetro
-    srcPos : TSrcPos;    //Posición del parámetro.
+    srcPos : TSrcPos;     //Posición del parámetro.
     adicVar: TAdicVarDec; //Parámetros adicionales
   end;
   TxpParFuncArray = array of TxpParFunc;
 
   //Clase para almacenar información de las funciones
-  TxpCodCall  = procedure(fun: TEleFunBase; out AddrUndef: boolean) of object;
-  TxpCodInline = procedure(funEleExp: TEleExpress) of object;
+  TCodSysInline = procedure(funEleExp: TEleExpress) of object;
+  TCodSysNormal = procedure(funEleExp: TEleFunBase) of object;
 
   TOperatorType = (
     opkNone,       //Not an operator
@@ -682,7 +682,7 @@ type  //Declaration elements (functions)
     ctUsrInline,   //Inline user function
     ctSysNormal,   //Common system function
     ctSysInline,   //Inline system function
-    ctUsrExtern    //External fucntion
+    ctUsrExtern    //External function
   );
   { TxpEleFunBase }
   TEleFunBase = class(TEleProgFrame)
@@ -696,10 +696,11 @@ type  //Declaration elements (functions)
   public //Flags for operators
     fConmutat : boolean; //Represents a conmutative binary operator.
   public //References
-    callType  : TCallType;  //How to call the function
-    {Routine that generates code for the function, when callType is ctSysNormal or
-    ctSysInline.}
-    codInline : TxpCodInline;
+    callType: TCallType;  //How to call the function.
+    //Routine BOR o UOR, when callType is ctSysInline.
+    codSysInline: TCodSysInline;
+    //Routine that generates code for the function, when callType is ctSysNormal.
+    codSysNormal: TCodSysNormal;
   public //Parameters manage
     pars   : TxpParFuncArray;  //parámetros de entrada
     procedure ClearParams;

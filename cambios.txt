@@ -10,7 +10,7 @@ Esta versión pretende acercarse, finalmente, a tener un compilador funcional par
 
 OBJETIVOS
 - Terminar de Implementar un mecanismo sólido para que las BOR y UOR soliciten 
-variables auxiliares.
+variables auxiliares. -> HECHO
 - Implementar la simplificación para las sentencias sntProcCal en el AST y eliminar 
 CodAsigmentToVar() y el método antiguo de llamadas a procedimientos. -> HECHO.
 
@@ -30,6 +30,16 @@ de las funciones INLINE que ya soportaba.
 - Se incluye información adicional en la documentación técnica acerca de las funciones.
 - Se agrega el campo TEleFunBase.callType, el enumerado TCallType y se modifican las 
 rutinas de creación de funciones para inicializar este campo.
+- Se agrega el parámetro "addParam" a TCompilerBase.AddFunctionUNI() y a 
+TCompilerBase.AddFunctionIMP().
+- Se modifica TCompiler_PIC16.SplitExpressions para cubrir a todas las subrutinas y se 
+crea TCompiler_PIC16.SplitExpresBody().
+- Se cambia el nobre de TEleFunBase.codInline a TEleFunBase.codSysInline y se crea 
+codSysNormal.
+- Se crea AddSysNormalFunction() y se logra que las funciones del sistema se codifiquen
+adecuadamente como si fueran funciones normales.
+- Se reordena y actualiza la documentación técnica con información referente a los tipos
+de función.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?

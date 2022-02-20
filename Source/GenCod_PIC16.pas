@@ -56,15 +56,18 @@ type
     TGenCod = class(TGenCodBas)
     private
 //      f_byteXbyte_byte: TxpEleFun;  //índice para función
-      f_byte_mul_byte_16: TEleFun;
+      f_byt_mul_byt_16: TEleFun;
       f_word_shift_l: TEleFun;
       procedure AddParam(var pars: TxpParFuncArray; parName: string;
         const srcPos: TSrcPos; typ0: TEleTypeDec; adicDec: TxpAdicDeclar);
+      function AddSysNormalFunction(name: string; retType: TEleTypeDec;
+        const srcPos: TSrcPos; const pars: TxpParFuncArray;
+  codSys: TCodSysNormal): TEleFun;
       procedure arrayHigh(fun: TEleExpress);
       procedure arrayLength(fun: TEleExpress);
       procedure arrayLow(fun: TEleExpress);
       procedure BOR_bool_or_bool(fun: TEleExpress);
-      procedure byte_mul_byte_16(fun: TEleExpress);
+      procedure byte_mul_byte_16(fun: TEleFunBase);
       procedure Invert_A_to_A;
       procedure Copy_Z_to_A;
       procedure Invert_Z_to_A;
@@ -72,14 +75,14 @@ type
       procedure Invert_C_to_A;
       function Invert(fun: TEleExpress): boolean;
       function CreateBOMethod(clsType: TEleTypeDec; opr: string; name: string;
-        parType: TEleTypeDec; retType: TEleTypeDec; pCompile: TxpCodInline
+        parType: TEleTypeDec; retType: TEleTypeDec; pCompile: TCodSysInline
   ): TEleFun;
       function CreateUOMethod(clsType: TEleTypeDec; opr: string; name: string;
-        retType: TEleTypeDec; pCompile: TxpCodInline; operTyp: TOperatorType =
+        retType: TEleTypeDec; pCompile: TCodSysInline; operTyp: TOperatorType =
   opkUnaryPre): TEleFun;
-      function CreateSystemFunction(name: string; retType: TEleTypeDec;
+      function AddSysInlineFunction(name: string; retType: TEleTypeDec;
         const srcPos: TSrcPos; const pars: TxpParFuncArray;
-        pCompile: TxpCodInline): TEleFun;
+  codSys: TCodSysInline): TEleFun;
       procedure DefineArray(etyp: TEleTypeDec);
       procedure DefinePointer(etyp: TEleTypeDec);
       procedure DefineShortPointer(etyp: TEleTypeDec);
@@ -97,7 +100,7 @@ type
       procedure UOR_address(fun: TEleExpress);
 
       procedure BOR_word_and_byte(fun: TEleExpress);
-      procedure word_shift_l(fun: TEleExpress);
+      procedure word_shift_l(fun: TEleFunBase);
     protected //Boolean operations
       procedure BOR_bool_asig_bool(fun: TEleExpress);
       procedure BOR_bool_and_bool(fun: TEleExpress);
@@ -1389,7 +1392,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.byte_mul_byte_16(fun: TEleExpress);
+procedure TGenCod.byte_mul_byte_16(fun: TEleFunBase);
 //Routine to multiply 8 bits X 8 bits
 //pasA * parB -> [H:A]  Usa registros: A,H,E,U
 //Based on https://codebase64.org/doku.php?id=base:short_8bit_multiplication_16bit_product
@@ -1397,8 +1400,8 @@ var
   m0, m1: integer;
   fac1,  fac2: TEleVarDec;
 begin
-    fac1 := fun.rfun.pars[0].pvar;
-    fac2 := fun.rfun.pars[1].pvar;
+    fac1 := fun.pars[0].pvar;
+    fac2 := fun.pars[1].pvar;
     requireH;
     //A*256 + X = FAC1 * FAC2
     _ldai($00);
@@ -1426,7 +1429,7 @@ var
 begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
-  fmul := f_byte_mul_byte_16;
+  fmul := f_byt_mul_byt_16;
   //Process special modes of the compiler.
   if compMod = cmRequire then begin
     //Could be optimized.
@@ -4099,7 +4102,7 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-procedure TGenCod.word_shift_l(fun: TEleExpress);
+procedure TGenCod.word_shift_l(fun: TEleFunBase);
 {Routine to left shift.
 Input:
   (H,A) -> Value to be shifted
@@ -4603,7 +4606,7 @@ begin
     if fun.idClass = eleFunc then begin
       _JSR(TEleFun(fun).adrr);
     end else begin
-      GenError('Cannot get address of %s' + fun.name);
+      GenError('Cannot get address of %s', [fun.name]);
       //_JSR($1234);
     end;
   end else if par.Typ = typWord then begin
@@ -4611,7 +4614,7 @@ begin
     if fun.idClass = eleFunc then begin
       _JSR(TEleFun(fun.rfun).adrr2);
     end else begin
-      GenError('Cannot get address of %s' + fun.name);
+      GenError('Cannot get address of %s', [fun.name]);
       //_JSR($1234);
     end;
   end else begin
@@ -4677,6 +4680,7 @@ var
   par: TEleExpress;
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
+  //Validations
   case par.opType of
   otConst: begin GenError('Cannot increase a constant.');exit; end;
   otFunct: begin GenError('Cannot increase a function/procedure or expression result.'); exit; end;
@@ -4684,7 +4688,7 @@ begin
   else  //Not expected to happen
     GenError('Unimplemented.'); exit;
   end;
-  //otVariab
+  //Code generation
   case par.Sto of
   stConst: begin
     GenError('Cannot increase a constant.'); exit;
@@ -5536,11 +5540,13 @@ begin
   pars[n].adicVar.hasAdic := adicDec;
   pars[n].adicVar.hasInit := false;
 end;
-function TGenCod.CreateSystemFunction(name: string; retType: TEleTypeDec; const srcPos: TSrcPos;
-                              const pars: TxpParFuncArray;
-                              pCompile: TxpCodInline): TEleFun;
+function TGenCod.AddSysInlineFunction(name: string; retType: TEleTypeDec; const srcPos: TSrcPos;
+               const pars: TxpParFuncArray; codSys: TCodSysInline): TEleFun;
 {Create a new system function in the current element of the Syntax Tree.
- Returns the reference to the function created.}
+ Returns the reference to the function created.
+   pars   -> Array of parameters for the function to be created.
+   codSys -> Routine BOR/UOR or the the routine to generate de code.
+}
 var
    fundec: TEleFunDec;
 begin
@@ -5552,13 +5558,41 @@ begin
   {Note that implementation is added always after declarartion. It's not the usual
   in common units, where all declarations are first}
   curLocation := locImplement;
-  Result := AddFunctionIMP(name, retType, srcPos, fundec);
+  Result := AddFunctionIMP(name, retType, srcPos, fundec, true);
   //Here variables can be added
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
   TreeElems.AddElementBodyAndOpen(SrcPos);  //Create body
-  Result.callType := ctSysInline; //INLINE function
-  Result.codInline := pCompile;  //Set routine to generate code
+  Result.callType     := ctSysInline; //INLINE function
+  Result.codSysInline := codSys;  //Set routine to generate code o BOR or UOR.
+  TreeElems.CloseElement;  //Close body
+  TreeElems.CloseElement;  //Close function implementation
+end;
+function TGenCod.AddSysNormalFunction(name: string; retType: TEleTypeDec; const srcPos: TSrcPos;
+               const pars: TxpParFuncArray; codSys: TCodSysNormal): TEleFun;
+{Create a new system function in the current element of the Syntax Tree.
+ Returns the reference to the function created.
+   pars   -> Array of parameters for the function to be created.
+   codSys -> Routine BOR/UOR or the the routine to generate de code.
+}
+var
+   fundec: TEleFunDec;
+begin
+  //Add declaration
+  curLocation := locInterface;
+  fundec := AddFunctionDEC(name, retType, srcPos, pars, false);
+  fundec.callType := ctSysNormal;
+  //Implementation
+  {Note that implementation is added always after declarartion. It's not the usual
+  in common units, where all declarations are first}
+  curLocation := locImplement;
+  Result := AddFunctionIMP(name, retType, srcPos, fundec, true);
+  //Here variables can be added
+  {Create a body, to be uniform with normal function and for have a space where
+  compile code and access to posible variables or other elements.}
+  TreeElems.AddElementBodyAndOpen(SrcPos);  //Create body
+  Result.callType     := ctSysNormal;
+  Result.codSysNormal := codSys;  //Set routine to generate code o BOR or UOR.
   TreeElems.CloseElement;  //Close body
   TreeElems.CloseElement;  //Close function implementation
 end;
@@ -5568,7 +5602,7 @@ function TGenCod.CreateBOMethod(
                       name    : string;      //Name of the method
                       parType : TEleTypeDec;  //Parameter type
                       retType : TEleTypeDec;  //Type returned by the method.
-                      pCompile: TxpCodInline): TEleFun;
+                      pCompile: TCodSysInline): TEleFun;
 {Create a new system function (associated to a binary operator) in the current element of
  the AST. If "opr" is null, just create a method without operator.
  Returns the reference to the function created.}
@@ -5580,13 +5614,14 @@ begin
   AddParam(pars, 'n', srcPosNull, parType, decNone);  //Parameter
   //Add declaration
   curLocation := locInterface;   { TODO : Does it is neccesary to specify location for a method? }
-  Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false);
+  Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false,
+                      false);  //Don't include variables to don't ask for RAM.
   TreeElems.AddElementBodyAndOpen(srcPosNull);  //Create body
   //Here variables can be added
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
   Result.callType := ctSysInline; //INLINE function
-  Result.codInline := pCompile; //Set routine to generate code
+  Result.codSysInline := pCompile; //Set routine to generate code
   Result.oper := UpCase(opr); //Set operator as UpperCase to speed search.
   if opr = '' then Result.operTyp := opkNone
   else Result.operTyp := opkBinary;
@@ -5598,7 +5633,7 @@ function TGenCod.CreateUOMethod(
                       opr     : string;      //Opertaor associated to the method
                       name    : string;      //Name of the method
                       retType : TEleTypeDec;  //Type returned by the method.
-                      pCompile: TxpCodInline;
+                      pCompile: TCodSysInline;
                       operTyp: TOperatorType = opkUnaryPre): TEleFun;
 {Create a new system function (associated to a unary operator) in the current element of
  the AST.
@@ -5610,12 +5645,12 @@ begin
   AddParam(pars, 'b', srcPosNull, clsType, decNone);  //Base object
   //Add declaration
   curLocation := locInterface;   { TODO : Does it is neccesary to specify location for a method? }
-  Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false);
+  Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false, true);
   //Here variables can be added
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
   Result.callType := ctSysInline; //INLINE function
-  Result.codInline := pCompile; //Set routine to generate code
+  Result.codSysInline := pCompile; //Set routine to generate code
   Result.oper := UpCase(opr); //Set operator as UpperCase to speed searching.
   if opr = '' then Result.operTyp := opkNone
   else Result.operTyp := operTyp; //Must be pre or post
@@ -5793,66 +5828,66 @@ begin
   //Create system function "delay_ms"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'ms', srcPosNull, typWord, decRegis);  //Add parameter
-  CreateSystemFunction('delay_ms', typNull, srcPosNull, pars, @fun_delay_ms);
+  AddSysInlineFunction('delay_ms', typNull, srcPosNull, pars, @fun_delay_ms);
 
   //Create system function "inc"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  CreateSystemFunction('exit', typNull, srcPosNull, pars, @fun_Exit);
+  AddSysInlineFunction('exit', typNull, srcPosNull, pars, @fun_Exit);
 
   //Create system function "inc"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  CreateSystemFunction('inc', typNull, srcPosNull, pars, @fun_Inc);
+  AddSysInlineFunction('inc', typNull, srcPosNull, pars, @fun_Inc);
 
   //Create system function "dec"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  CreateSystemFunction('dec', typNull, srcPosNull, pars, @fun_Dec);
+  AddSysInlineFunction('dec', typNull, srcPosNull, pars, @fun_Dec);
 
   //Create system function "SetOrig"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typWord, decNone);
-  CreateSystemFunction('SetOrig', typNull, srcPosNull, pars, @SetOrig);
+  AddSysInlineFunction('SetOrig', typNull, srcPosNull, pars, @SetOrig);
 
   //Create system function "ord"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);
-  CreateSystemFunction('ord', typByte, srcPosNull, pars, @fun_ord);
+  AddSysInlineFunction('ord', typByte, srcPosNull, pars, @fun_ord);
 
   //Create system function "chr"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);
-  CreateSystemFunction('chr', typChar, srcPosNull, pars, @fun_chr);
+  AddSysInlineFunction('chr', typChar, srcPosNull, pars, @fun_chr);
 
   //Create system function "byte"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  CreateSystemFunction('byte', typByte, srcPosNull, pars, @fun_Byte);
+  AddSysInlineFunction('byte', typByte, srcPosNull, pars, @fun_Byte);
 
   //Create system function "word"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  CreateSystemFunction('word', typWord, srcPosNull, pars, @fun_Word);
+  AddSysInlineFunction('word', typWord, srcPosNull, pars, @fun_Word);
 
   //Create system function "word"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  CreateSystemFunction('addr', typWord, srcPosNull, pars, @fun_Addr);
+  AddSysInlineFunction('addr', typWord, srcPosNull, pars, @fun_Addr);
 
   //Multiply system function
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'A', srcPosNull, typByte, decNone);  //Add parameter
   AddParam(pars, 'B', srcPosNull, typByte, decNone);  //Add parameter
-  f_byte_mul_byte_16 := CreateSystemFunction('byte_mul_byte_16', typWord, srcPosNull, pars, @byte_mul_byte_16);
-
+  f_byt_mul_byt_16 := AddSysNormalFunction('byte_mul_byte_16', typWord, srcPosNull, pars, @byte_mul_byte_16);
   //Word shift left
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typByte, decRegisX);   //Parameter counter shift
-  f_word_shift_l := CreateSystemFunction('word_shift_l', typWord, srcPosNull, pars, @word_shift_l);
+  f_word_shift_l := AddSysNormalFunction('word_shift_l', typWord, srcPosNull, pars, @word_shift_l);
 
-  //Add dependencies
-  AddCallerToFrom(f_byte_mul_byte_16, f_byte_mul_byte.bodyNode);
+  //Add dependencies of TByte._mul.
+  AddCallerToFrom(f_byt_mul_byt_16, f_byte_mul_byte.bodyNode);
+  AddCallerToFrom(H, f_byte_mul_byte.bodyNode);
   //Close Unit
   TreeElems.CloseElement;
 end;

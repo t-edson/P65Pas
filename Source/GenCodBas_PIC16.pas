@@ -17,7 +17,7 @@ type
   //Modes the compiler can call to the Code Generation routines
   TCompMod = (
     cmGenCode,   //Generating code
-    cmConsEval,  //Evaluating constant
+    cmConsEval,   //Evaluating constant
     cmRequire    //Checking register and variables requirement
   );
   {Información sobre los saltos con la instrucción kIF_TRUE}
@@ -1592,7 +1592,7 @@ begin
   if eleExp.opType = otFunct then begin
     //It's an expression. There should be a function
     funcBase := eleExp.rfun;
-    if funcBase.codInline<>nil then begin
+    if funcBase.callType = ctSysInline then begin
       //It's an INLINE function. It could be already implemented or not.
       if funcBase.idClass = eleFunc then begin
         //It's the implementation. No problem.
@@ -1613,7 +1613,7 @@ begin
             end;
           end;
         end;
-        funcBase.codInline(eleExp);   //Process function
+        funcBase.codSysInline(eleExp);   //Process function
         //Check if we can simplify
         if eleExp.opType = otConst then begin
           //Node resulted as a constant.
@@ -1628,14 +1628,16 @@ begin
         //Should be the declaration. Maybe it's already implemented, or maybe not.
         //funcDec := TxpEleFunDec(funcBase);
         { TODO : Completar este caso. Por ahora no lo permitiremos. }
-        GenError('No supported unimplemented INLINE functions.');
+        GenError('No support for unimplemented INLINE functions.');
       end;
-    end else begin
+    end else if funcBase.callType in [ctSysNormal, ctUsrNormal] then begin
       //Should be a Normal subroutine. Generates the CALL instruction.
       {Even though this is a Normal function, we can consider functCall() like the
       INLINE routine callback to this function, like codInline.}
       functCall(funcBase, AddrUndef);
       SetFunExpres(eleExp);
+    end else begin
+      GenError('Unsupported.');
     end;
   end else if eleExp.opType = otConst then begin
     //A constant expression. We have to evaluate it, if not already evaluated.

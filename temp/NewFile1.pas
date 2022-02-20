@@ -1,14 +1,8 @@
-procedure proc1;
-begin
-  
-end; 
 var
-  xx: byte;
-//  ww: word;  
+  a,b: byte;
 begin
-  xx := 1;
-//  proc1;
-//  ww := 5*xx;
+  a := a + b;
+  a := a._add(b);
 end.
 
 

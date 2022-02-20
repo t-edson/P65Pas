@@ -1221,6 +1221,7 @@ begin
     end;
     funDec := AddFunctionDEC(procName, retType, srcPos, pars, IsInterrupt);
     funDec.location := curLocation;  //Set location
+    funDec.callType := ctUsrNormal;  //Normal function
     exit;  //No more task required.
   end;
   locImplement:  begin
@@ -1235,13 +1236,14 @@ begin
     if HayError then exit;
     if funInterface<>nil then begin
       //Es una implementación normal
-      fun := AddFunctionIMP(procName, retType, srcPos, funInterface);
+      fun := AddFunctionIMP(procName, retType, srcPos, funInterface, true);
     end else begin
       //Debe ser una función privada. No declarada en INTERFACE.
       //Ya verificamos que no hay conflicto en IMPLEMENTATION.
-      fun := AddFunctionUNI(procName, retType, srcPos, pars, IsInterrupt);
+      fun := AddFunctionUNI(procName, retType, srcPos, pars, IsInterrupt, true);
     end;
     fun.location := curLocation;
+    fun.callType := ctUsrNormal;  //Normal function
   end;
   locMain: begin
     //Es una compilación en el programa principal. ¿Y si es FORWARD?
@@ -1254,6 +1256,7 @@ begin
       end;
       funDec := AddFunctionDEC(procName, retType, srcPos, pars, IsInterrupt);
       funDec.location := locMain;  //Set location
+      funDec.callType := ctUsrNormal;  //Normal function
       funDec.IsForward := true;    //Mark as Forward
       exit;  //No more task required.
     end;
@@ -1262,12 +1265,13 @@ begin
     if HayError then exit;
     if funForward<>nil then begin
       //It's an implementation
-      fun := AddFunctionIMP(procName, retType, srcPos, funForward);
+      fun := AddFunctionIMP(procName, retType, srcPos, funForward, true);
     end else begin
       //It's a common function
-      fun := AddFunctionUNI(procName, retType, srcPos, pars, IsInterrupt);
+      fun := AddFunctionUNI(procName, retType, srcPos, pars, IsInterrupt, true);
     end;
     fun.location := curLocation;
+    fun.callType := ctUsrNormal;  //Normal function
   end;
   else
     GenError(ER_NOT_IMPLEM_, ['locMain in TCompMain.CompileProcDeclar()']);

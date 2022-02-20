@@ -14,7 +14,8 @@ type
   private   //Funciones básicas
     procedure cInNewLine(lin: string);
     procedure ConstantFoldExpr(eleExp: TEleExpress);
-    procedure SplitExpressions(body: TEleBody);
+    procedure SplitExpresBody(body: TEleBody);
+    procedure SplitExpressions;
   private //Compilación de secciones
     procedure EvaluateConstantDeclare;
     procedure ConstantFolding;
@@ -71,7 +72,7 @@ begin
   if eleExp.opType = otFunct then begin
     //It's an expression. There should be a function
     funcBase := eleExp.rfun;
-    if funcBase.codInline<>nil then begin
+    if funcBase.callType = ctSysInline then begin
       //Only INLINE functions can returns constants.
       if funcBase.idClass = eleFunc then begin
         //It's the implementation. No problem.
@@ -81,8 +82,8 @@ begin
           ConstantFoldExpr(parExpr);  //Try to evaluate constant.
           if HayError then exit;
         end;
-        { TODO : Tal vez sea posible que por optimización, solo llamar a funcBase.codInline() cuando los parámetros (o alguno) sean constante, para evitar muchas llamadas }
-        funcBase.codInline(eleExp);  //We don't expect this generates code.
+        { TODO : Tal vez sea posible que por optimización, solo llamar a funcBase.codSysInline() cuando los parámetros (o alguno) sean constante, para evitar muchas llamadas }
+        funcBase.codSysInline(eleExp);  //We don't expect this generates code.
         //Check if we can simplify
         if eleExp.opType = otConst then begin
           //Node resulted as a constant.
@@ -212,7 +213,7 @@ begin
   pic.iRam := 0;  //Clear RAM position
   //Code subroutines
   for fun in usedFuncs do begin
-    if fun.codInline <> nil then continue;  //No INLINE
+    if fun.codSysInline <> nil then continue;  //No INLINE
     ConstantFoldBody(fun.BodyNode);
     if HayError then exit;   //Puede haber error
   end;
@@ -254,7 +255,7 @@ begin
   GenCodeBody(bod);
   //if HayError then exit;   //Puede haber error
 end;
-procedure TCompiler_PIC16.SplitExpressions(body: TEleBody);
+procedure TCompiler_PIC16.SplitExpresBody(body: TEleBody);
 {Do a separation for assigmente sentences in order to have the "three-address code" form
 like used in several compilers.}
   function MoveNodeToAssign(curContainer: TxpElement; Op: TEleExpress): TEleExpress;
@@ -362,7 +363,7 @@ like used in several compilers.}
     Result := false;
     Op2 := TEleExpress(setMethod.elements[1]);  //Takes assigment source.
     if (Op2.opType = otFunct) then begin
-      if Op2.rfun.codInline = nil then begin  //Normal function
+      if Op2.rfun.codSysInline = nil then begin  //Normal function
         {IT's the form:
              x := func(x,y);
                   \_______/
@@ -426,7 +427,7 @@ like used in several compilers.}
     Result := false;
     if expMethod.opType <> otFunct then exit;   //Not a fucntion call
     funcBase := expMethod.rfun;    //Base function reference
-    if funcBase.codInline=nil then begin   //Not INLINE
+    if funcBase.codSysInline=nil then begin   //Not INLINE
       {Move all parameters (children nodes) to a separate assigment}
       ipar := 0;  //Parameter index
       while expMethod.elements.Count>0 do begin  //While remain parameters.
@@ -466,12 +467,26 @@ begin
     end;
   end;
 end;
+procedure TCompiler_PIC16.SplitExpressions;
+var
+  fun : TEleFun;
+  bod: TEleBody;
+begin
+  //Split subroutines
+  for fun in usedFuncs do begin
+    if fun.callType = ctUsrNormal then begin
+      SplitExpresBody(fun.BodyNode);
+      if HayError then exit;   //Puede haber error
+    end;
+  end;
+  //Split body
+  bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
+  SplitExpresBody(bod);
+end;
 procedure TCompiler_PIC16.DoOptimize;
 {Usa la información del árbol de sintaxis, para optimizar su estructura con
 miras a la síntesis.
 Se debe llamar después de llamar a DoAnalyzeProgram().}
-var
-  bod: TEleBody;
 begin
   ExprLevel := 0;
   ResetRAM;    //2ms aprox.
@@ -493,8 +508,7 @@ begin
   EvaluateConstantDeclare;
   if HayError then exit;
   //Simplify expressions
-  bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
-  SplitExpressions(bod);
+  SplitExpressions;
   {Do a first folding in nodes. Some constants (like those that depend on addresses)
   might not be evaluated. So it should be needed to do other Code folding again.}
   ConstantFolding;
@@ -616,8 +630,7 @@ begin
     if fun.IsInterrupt then continue;
     //debugln('---Función usada: ' + fun.name);
     case fun.callType of
-    ctUsrNormal: begin
-      if fun.codInline <> nil then continue;  //No INLINE
+    ctUsrNormal: begin  //Función normal de usuario
       //Compile used function in the current address.
       fun.adrr := pic.iRam;     //Actualiza la dirección final
       //Is a common function with body.
@@ -636,7 +649,14 @@ begin
           end;
       end;
     end;
-
+    ctSysNormal: begin  //Función normal del systema.
+      //Compile used function in the current address.
+      fun.adrr := pic.iRam;    //Actualiza la dirección final
+      fun.codSysNormal(fun);   //Rutina para generar código
+      if HayError then exit;   //Puede haber error
+      fun.coded := true;       //Marca como ya codficada en memoria.
+      { TODO : ¿Hace falta completar llamadas? }
+    end;
     end;
   end;
   for fun in unusedFuncs do begin
