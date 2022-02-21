@@ -17,10 +17,9 @@ type
   //Modes the compiler can call to the Code Generation routines
   TCompMod = (
     cmGenCode,   //Generating code
-    cmConsEval,   //Evaluating constant
-    cmRequire    //Checking register and variables requirement
+    cmConsEval   //Evaluating constant
   );
-  {Información sobre los saltos con la instrucción kIF_TRUE}
+  {Información sobre los saltos con la instrucción IF_TRUE}
   TIfInfo = record
     igoto  : integer;   //Address where is GOTO
   end;
@@ -1665,7 +1664,6 @@ var
   i: Integer;
   operat: TEleAsmOperat;
 begin
-  if compMod = cmRequire then exit;  //We don't require anything to generate an ASM instruction.
   if inst.inst>=0 then begin
     cpu_inst := TP6502Inst(inst.inst);
     cpu_amod := TP6502AddMode(inst.addMode);

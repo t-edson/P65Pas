@@ -1,8 +1,8 @@
 var
-  a,b: byte;
+  aa: byte;
+  ww: word;
 begin
-  a := a + b;
-  a := a._add(b);
+  ww := 2*aa;
 end.
 
 

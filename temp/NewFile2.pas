@@ -1,11 +1,15 @@
+var 
+  a: byte;
+  
 procedure proc1;
 begin
- 
+  a := 1; 
 end; 
 
 begin
-//  byte_mul_byte_16(1,2);
-  proc1;
+  if false then 
+    proc1;
+  end;
 end.
 
 

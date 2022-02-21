@@ -317,9 +317,7 @@ var
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     if par.Sto = stConst then SetFunConst_byte(fun, (not par.value.valInt) and $FF);
     exit;
   end;
@@ -345,10 +343,8 @@ var
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
-    //*** Ver si es necsario Completar
+  if compMod = cmConsEval then begin
+    //*** Ver si es necesario Completar
     exit;
   end;
   //Code generation
@@ -393,9 +389,7 @@ var
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     if par.Sto = stConst then SetFunConst_bool(fun, not par.value.valBool);
     exit;
   end;
@@ -428,9 +422,7 @@ begin
   requireA;
   requireH;
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //**** Completar
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     if par.Sto = stConst then SetFunConst_word(fun, (not par.value.valInt) and $FFFF);
     exit;
   end;
@@ -464,22 +456,16 @@ begin
   SetFunNull(fun);  //In Pascal an assigment doesn't return type.
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    exit;  //We don't calculate constant here.
+  end;
   //Simplify parB
   parBsto := parB.Sto;  //Save storage
   if parB.Sto = stRamVarOf then begin
      LoadToWR(parB);  //Could require IX
      if HayError then exit;
      parB.Sto := stRegister;
-  end;
-  //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-     {We can exit here because LoadToWR() defined is IX is used or not.
-     and the remain code doesn't need more registers or temporal variables.}
-    parB.Sto := parBsto;  //Restore storage just in case it has changed.
-    exit;
-  end else if compMod = cmConsEval then begin
-    //We don't calculate constant here.
-    exit;
   end;
   //Validates parA.
   if parA.opType<>otVariab then begin //The only valid type.
@@ -622,9 +608,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_byte(fun, parA.val and parB.val);
@@ -717,9 +701,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_byte(fun, parA.val or parB.val);
@@ -809,9 +791,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_byte(fun, parA.val xor parB.val);
@@ -873,9 +853,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_bool(fun, parA.val = parB.val);
@@ -974,9 +952,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     exit;  //We don't calculate constant here.
   end;
   //Special assigment
@@ -1101,9 +1077,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     exit;  //We don't calculate constant here.
   end;
   //Caso especial de asignación
@@ -1234,9 +1208,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_byte(fun, parA.val + parB.val);
@@ -1320,9 +1292,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_byte(fun, parA.val-parB.val);
@@ -1431,12 +1401,7 @@ begin
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   fmul := f_byt_mul_byt_16;
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    //Could be optimized.
-    AddCallerToFromCurr(f_word_shift_l);  //Declare use
-    AddCallerToFromCurr(fmul);  //Declare use
-    exit;
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_word(fun, parA.val * parB.val);
@@ -1653,9 +1618,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_bool(fun, parA.value.valBool > parB.value.valBool);
@@ -1789,9 +1752,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_byte(fun, parA.val >> parB.val);
@@ -1930,9 +1891,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_byte(fun, parA.val << parB.val);
@@ -2072,9 +2031,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     exit;  //We don't calculate constant here.
   end;
   //Validates parA.
@@ -2198,9 +2155,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_bool(fun, parA.value.valBool and parB.value.valBool);
@@ -2287,9 +2242,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_bool(fun, parA.value.valBool or parB.value.valBool);
@@ -2375,9 +2328,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_bool(fun, parA.value.valBool = parB.value.valBool);
@@ -2473,9 +2424,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_bool(fun, parA.value.valBool xor parB.value.valBool);
@@ -2571,9 +2520,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     exit;  //We don't calculate constant here.
   end;
   //Validates parA.
@@ -2746,9 +2693,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     exit;   //We don't calculate constant here.
   end;
   if parA.Sto = stRamFix then begin
@@ -2841,9 +2786,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_bool(fun, parA.val = parB.val);
@@ -2938,9 +2881,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_bool(fun, parA.val = parB.val);
@@ -3048,9 +2989,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_word(fun, parA.val + parB.val);
@@ -3171,9 +3110,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_word(fun, parA.val + parB.val);
@@ -3297,9 +3234,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_word(fun, parA.val-parB.val);  //puede generar error
@@ -3394,9 +3329,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_word(fun, parA.val-parB.val);  //puede generar error
@@ -3492,9 +3425,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     exit;  //We don't calculate constant here.
   end;
   //Special assigment
@@ -3554,9 +3485,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     exit;  //We don't calculate constant here.
   end;
   //Special assigment
@@ -3634,9 +3563,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     exit;  //We don't calculate constant here.
   end;
   //Caso especial de asignación
@@ -3770,9 +3697,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_bool(fun, parA.val >= parB.val);
@@ -3946,9 +3871,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_byte(fun, parA.val and parB.val);
@@ -4011,9 +3934,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_word(fun, parA.val and parB.val);
@@ -4130,9 +4051,7 @@ begin
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   fInLine := false;
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_byte(fun, parA.val << parB.val);
@@ -4278,9 +4197,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
       SetFunConst_byte(fun, parA.val >> parB.val);
@@ -4351,9 +4268,7 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //Process special modes of the compiler.
-  if compMod = cmRequire then begin
-    exit;  //We don't need more registers or temporal variables.
-  end else if compMod = cmConsEval then begin
+  if compMod = cmConsEval then begin
     exit;
   end;
   //Code generation
@@ -4892,7 +4807,6 @@ var
   par: TEleExpress;
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
-  if compMod = cmRequire  then exit;  //We don't require anything.
   case par.Sto of
   stConst : begin
     if par.Typ = typByte then begin
@@ -5887,6 +5801,7 @@ begin
 
   //Add dependencies of TByte._mul.
   AddCallerToFrom(f_byt_mul_byt_16, f_byte_mul_byte.bodyNode);
+  AddCallerToFrom(f_word_shift_l, f_byte_mul_byte.bodyNode);
   AddCallerToFrom(H, f_byte_mul_byte.bodyNode);
   //Close Unit
   TreeElems.CloseElement;

@@ -19,7 +19,6 @@ type
   private //Compilación de secciones
     procedure EvaluateConstantDeclare;
     procedure ConstantFolding;
-    procedure ScanForRegsRequired;
     procedure DoOptimize;
     procedure DoGenerateCode;
   public
@@ -220,40 +219,6 @@ begin
   //Code body
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   ConstantFoldBody(bod);
-end;
-procedure TCompiler_PIC16.ScanForRegsRequired;
-{Do an exploration to the AST, callin to the code generation (without generates
-code) in order to:
-- Detect Registers and Temporal variables required to evaluate expressions.
-}
-  procedure GenCodeBody(body: TEleBody);
-  {Do code generation for the body element specified. }
-  begin
-    if body=nil then exit;  //An INLINE function.
-    TreeElems.OpenElement(body);   //Set "curNode"
-    TreeElems.curCodCont := body;  //Set "curCodCont" to be able to use AddCallerTo<XXX>
-    GenCodeSentences(TreeElems.curNode.elements);
-  end;
-
-var
-  fun : TEleFun;
-  bod: TEleBody;
-begin
-  //Set flags to enable routines requireA(), requireH(), ...
-  compMod := cmRequire;  //Mode to only detect required register or variables uses.
-  pic.disableCodegen := true;  //Disable the code generation
-  pic.iRam := 0;  //Clear RAM position
-  //Code subroutines
-  //for fun in usedFuncs do begin
-  for fun in TreeElems.AllFuncs do begin
-    if fun.IsInterrupt then continue;
-    GenCodeBody(fun.BodyNode);
-    if HayError then exit;   //Puede haber error
-  end;
-  //Code body
-  bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
-  GenCodeBody(bod);
-  //if HayError then exit;   //Puede haber error
 end;
 procedure TCompiler_PIC16.SplitExpresBody(body: TEleBody);
 {Do a separation for assigmente sentences in order to have the "three-address code" form
@@ -492,8 +457,6 @@ begin
   ResetRAM;    //2ms aprox.
   ClearError;
   pic.MsjError := '';
-  //Look for new requirements
-//  ScanForRegsRequired;
   //Detecting unused elements
   RefreshAllElementLists; //Actualiza lista de elementos
   RemoveUnusedFunc;       //Se debe empezar con las funciones. 1ms aprox.

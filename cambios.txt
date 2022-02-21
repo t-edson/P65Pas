@@ -1,4 +1,4 @@
-P65PAS 0.8.7
+P65PAS 0.8.8
 ============
 COMENTARIOS 
 La versión anterior siguió la línea de grandes mejoras en el diseño del compilador, 
@@ -40,6 +40,9 @@ codSysNormal.
 adecuadamente como si fueran funciones normales.
 - Se reordena y actualiza la documentación técnica con información referente a los tipos
 de función.
+- Se elimina el modo del compilador "cmRequire" de TCompMod, porque ahora ya no se 
+necesita. Las dependencias se crearán al momento de crear las funciones de la unidad 
+System.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
@@ -48,9 +51,6 @@ TAREAS PLANIFICADAS
 globales, locales) y los registros de trabajo.
 - Simplificar el uso de variables temporales.
 
-TAREAS PLANIFICADAS ANTERIORES
--Debe existir un mecanismo confiable para que un procedimiento pueda pedir variables 
-adicionales para cálculos intermedios.
 - Implementar la obligatoriedad de localizar el registro IX en la página cero.
 - Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
 - Implementra la sintaxis de arreglos: VAR str: TAByte = (1,2,3); Se sugiere implementar 
