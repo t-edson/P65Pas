@@ -105,8 +105,8 @@ public     //Containers
   TreeElems  : TXpTreeElements; //Árbol de sintaxis del lenguaje
   TreeDirec  : TXpTreeElements; //Árbol de sinatxis para directivas
 
-  usedFuncs  : TxpEleFuns;    //Store only used functions
-  unusedFuncs: TxpEleFuns;    //Store only unused functions
+  usedFuncs  : TEleFuns;    //Store only used functions
+  unusedFuncs: TEleFuns;    //Store only unused functions
   interruptFunct: TEleFun;  //Store ths only Interrupt function
 protected //Compiler events
   {This is one way the Parser can communicate with the Code Generator, considering this
@@ -1760,8 +1760,8 @@ begin
   TreeDirec  := TXpTreeElements.Create;
   ejecProg := false;
   //Containers for functions
-  usedFuncs := TxpEleFuns.Create(false);     //Only references
-  unusedFuncs:= TxpEleFuns.Create(false);
+  usedFuncs := TEleFuns.Create(false);     //Only references
+  unusedFuncs:= TEleFuns.Create(false);
 end;
 destructor TCompilerBase.Destroy;
 begin

@@ -1,48 +1,55 @@
-P65PAS 0.8.8
+P65PAS 0.8.9
 ============
-COMENTARIOS 
-La versión anterior siguió la línea de grandes mejoras en el diseño del compilador, 
-sobre todo en lo que a la optimización se refiere.
-Quedó pendiente definir la forma en que se manejarían las dependencias de las rutinas
-BOR y UOR en cuanto a funciones llamadas y variables auxiliares.
-Esta versión pretende acercarse, finalmente, a tener un compilador funcional para el 
-6502, al menos pasando las pruebas básicas del patrón de pruebas.
+COMENTARIOS
+Inicio de una nueva versión. 
+La versión anterior dejó bien establecidos los mecanismos para que la funciones de sistema 
+puedan incluir dependencias de funciones y variables auxiliares. Lo mejor de todo es que
+esos mecanismos están, ahora, bien documentados.
+Además, ya se tiene el mecanismo para dividir las expresiones en el formato TAC (Cödigo de
+tres direcciones) lo que ha eliminado completamente el problema de registros de trbajo 
+ocupado. Queda ahora pendiente diseñar el mecanismo para poder reutilizar las variables 
+requeridas en esta transformación.
+Es de resaltar el avance de la actualización de la documentación que cuenta ahora con más
+páginas y solo quedan algunas porciones por actualizar o corregir.
+
+Se espera ahora avanzar en la implementación de un compilador funcional.
 
 OBJETIVOS
-- Terminar de Implementar un mecanismo sólido para que las BOR y UOR soliciten 
-variables auxiliares. -> HECHO
-- Implementar la simplificación para las sentencias sntProcCal en el AST y eliminar 
-CodAsigmentToVar() y el método antiguo de llamadas a procedimientos. -> HECHO.
+- Avanzar en la implementación de las funciones INLINE de usuario.
+- Simplificar el uso de variables temporales.
+
 
 CAMBIOS:
-- Se procede a usar Git para el control de cambios del proyecto localmente y en Github.
-- Se cambia la forma como se genera el código de llamada a los procedimientos en el AST.
-Ahora la rutina de optimización genera instrucciones adicionales de asignación de los
-parámetros en el AST.
-- Se elimina la función TGenCodBas.CodAsigmentToVar() y los elementos asociados. Además
-se simplifica TGenCodBas.functCall().
-- Se corrige TGenCodBas.GenCodeExpr() para adapatarse a la nueva forma de llamadas a 
-funciones comunes.
-- Se modifica TCompiler_PIC16.SplitExpressions() para manejar funciones comunes, además
-de las funciones INLINE que ya soportaba.
-- Se incluye la generación de "Calller" a las funciones INLINE de la unidad System.
-- Se incluye elemento Body a los métodos de los tipos declarados en System.
-- Se incluye información adicional en la documentación técnica acerca de las funciones.
-- Se agrega el campo TEleFunBase.callType, el enumerado TCallType y se modifican las 
-rutinas de creación de funciones para inicializar este campo.
-- Se agrega el parámetro "addParam" a TCompilerBase.AddFunctionUNI() y a 
-TCompilerBase.AddFunctionIMP().
-- Se modifica TCompiler_PIC16.SplitExpressions para cubrir a todas las subrutinas y se 
-crea TCompiler_PIC16.SplitExpresBody().
-- Se cambia el nobre de TEleFunBase.codInline a TEleFunBase.codSysInline y se crea 
-codSysNormal.
-- Se crea AddSysNormalFunction() y se logra que las funciones del sistema se codifiquen
-adecuadamente como si fueran funciones normales.
-- Se reordena y actualiza la documentación técnica con información referente a los tipos
-de función.
-- Se elimina el modo del compilador "cmRequire" de TCompMod, porque ahora ya no se 
-necesita. Las dependencias se crearán al momento de crear las funciones de la unidad 
-System.
+- Se modifica el lexer (rutina TParserAsm_6502.DecodeNext) de la unidad ParserASM_6502 para
+reconocer a los operadores ">", "<" y al símbolo ":".
+- Se corrige TParserAsm_6502.ProcInstrASM() de la unidad ParserASM_6502 para que trabaje 
+correctamente con TParserAsm_6502.CaptureParam().
+- Se modifica TParserAsm_6502.CaptureParam() para que reconozca los operadores ">" y "<"
+como parte de la sintaxis en ensamblador.
+- Se cambia de nombre a TCompMain.CompileCurBlock por TCompMain.AnalyzeCurBlock().
+- Se cambia de nombre a TCompMain.CompileSentence por TCompMain.AnalyzeSentence().
+- Se modifica TGenCodBas.GenCodeASMline() para procesar de forma diferente las operaciones
+de posición en variables o funciones.
+- Se implementa la detección de etiquetas no definidas en los bloques ASM.
+- Se completa la documentación técnica con información sobre los bloques ASM.
+- Se cambia de nombre a TxpEleAsmLine por TEleAsmLine.
+- Se cambia de nombre a TxpEleAsmBlock por TEleAsmBlock.
+- Se cambia de nombre a TxpEleFuns por TEleFuns.
+- Se reemplaza el campo TEleAsmLine.alabel por TEleAsmLine.addr.
+- Se eliminan los tipos TPicLabel y TPicLabel_list de la unidad ParserASM_6502 y se define
+a TParserAsm_6502.labels de tipo TEleAsmLines.
+- Se define undJumps de tipo TEleAsmLines y se eliminan definiciones adicionales.
+- Se define una nueva forma de definir etiquetas y parámetros etiqueta en los bloques ASM.
+- Se habilita la rutina de detección de saltos o etiquetas indefinidas en bloques ASM.
+- Se corrige el error generado cuando se coloca un nemónico después de una etiqueta en los
+bloques ASM.
+- Se cambia de nombre a TEleAsmLine por TEleAsmInstr.
+- Se cambia de nombre a eleAsmLine por eleAsmInstr.
+- Se agregan llamadas (Caller) a las instrucciones etiqueta en los bloques ASM.
+- Se modifica el examinador de objetos para dar mayor información sobre las instrucciones 
+ASM.
+
+ 
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
@@ -105,6 +112,54 @@ octeto = object
     
     end;
   end;
+
+
+
+P65PAS 0.8.8
+============
+COMENTARIOS 
+La versión anterior siguió la línea de grandes mejoras en el diseño del compilador, 
+sobre todo en lo que a la optimización se refiere.
+Quedó pendiente definir la forma en que se manejarían las dependencias de las rutinas
+BOR y UOR en cuanto a funciones llamadas y variables auxiliares.
+Esta versión pretende acercarse, finalmente, a tener un compilador funcional para el 
+6502, al menos pasando las pruebas básicas del patrón de pruebas.
+
+OBJETIVOS
+- Terminar de Implementar un mecanismo sólido para que las BOR y UOR soliciten 
+variables auxiliares. -> HECHO
+- Implementar la simplificación para las sentencias sntProcCal en el AST y eliminar 
+CodAsigmentToVar() y el método antiguo de llamadas a procedimientos. -> HECHO.
+
+CAMBIOS:
+- Se procede a usar Git para el control de cambios del proyecto localmente y en Github.
+- Se cambia la forma como se genera el código de llamada a los procedimientos en el AST.
+Ahora la rutina de optimización genera instrucciones adicionales de asignación de los
+parámetros en el AST.
+- Se elimina la función TGenCodBas.CodAsigmentToVar() y los elementos asociados. Además
+se simplifica TGenCodBas.functCall().
+- Se corrige TGenCodBas.GenCodeExpr() para adapatarse a la nueva forma de llamadas a 
+funciones comunes.
+- Se modifica TCompiler_PIC16.SplitExpressions() para manejar funciones comunes, además
+de las funciones INLINE que ya soportaba.
+- Se incluye la generación de "Calller" a las funciones INLINE de la unidad System.
+- Se incluye elemento Body a los métodos de los tipos declarados en System.
+- Se incluye información adicional en la documentación técnica acerca de las funciones.
+- Se agrega el campo TEleFunBase.callType, el enumerado TCallType y se modifican las 
+rutinas de creación de funciones para inicializar este campo.
+- Se agrega el parámetro "addParam" a TCompilerBase.AddFunctionUNI() y a 
+TCompilerBase.AddFunctionIMP().
+- Se modifica TCompiler_PIC16.SplitExpressions para cubrir a todas las subrutinas y se 
+crea TCompiler_PIC16.SplitExpresBody().
+- Se cambia el nobre de TEleFunBase.codInline a TEleFunBase.codSysInline y se crea 
+codSysNormal.
+- Se crea AddSysNormalFunction() y se logra que las funciones del sistema se codifiquen
+adecuadamente como si fueran funciones normales.
+- Se reordena y actualiza la documentación técnica con información referente a los tipos
+de función.
+- Se elimina el modo del compilador "cmRequire" de TCompMod, porque ahora ya no se 
+necesita. Las dependencias se crearán al momento de crear las funciones de la unidad 
+System.
 
 
 

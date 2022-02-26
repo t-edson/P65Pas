@@ -33,7 +33,7 @@ type
   private
     linRep : string;   //línea para generar de reporte
     posFlash: Integer;
-    procedure GenCodeASMline(inst: TxpEleAsmLine);
+    procedure GenCodeASMline(inst: TEleAsmInstr);
     procedure GenCodLoadToA(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToX(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToY(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
@@ -1651,20 +1651,47 @@ begin
     GenError('Design error.');
   end;
 end;
-procedure TGenCodBas.GenCodeASMline(inst: TxpEleAsmLine);
-{Generate code for an ASM instruction.}
+procedure TGenCodBas.GenCodeASMline(inst: TEleAsmInstr);
+{Generate code for an ASM instruction (element TEleAsmInstr).}
+  procedure WriteInstruction(cpu_inst: TP6502Inst; cpu_amod: TP6502AddMode; inst: TEleAsmInstr);
+  {Codifica la instrucción a partir de la posiicón actual de la RAM.
+  Se debe haber ya definido: "inst.param" }
+  var
+    addressModes: TP6502AddModes;
+    offset: Integer;
+  begin
+    addressModes := PIC16InstName[cpu_inst].addressModes;
+    if cpu_amod = aRelative then begin  //Instrucciones de salto relativo
+      offset := inst.param-pic.iRam-2;
+      { TODO : Validar si el salto es mayor a 127 o menor a -128 }
+      pic.codAsm(cpu_inst, aRelative, word(offset));
+    end else if (inst.param<256) then begin
+      //It could be expressed as zero-page instruction
+      if (cpu_amod = aAbsolute) and (aZeroPage in addressModes) then begin
+        pic.codAsm(cpu_inst, aZeroPage, inst.param);
+      end else if (cpu_amod = aAbsolutX) and (aZeroPagX in addressModes) then begin
+        pic.codAsm(cpu_inst, aZeroPagX, inst.param);
+      end else if (cpu_amod = aAbsolutY) and (aZeroPagY in addressModes) then begin
+        pic.codAsm(cpu_inst, aZeroPagY, inst.param);
+      end else begin
+        pic.codAsm(cpu_inst, cpu_amod, inst.param);
+      end;
+    end else begin
+      pic.codAsm(cpu_inst, cpu_amod, inst.param);
+    end;
+  end;
 var
   xvar: TEleVarDec;
   cpu_inst: TP6502Inst;
   cpu_amod: TP6502AddMode;
   elem, opdo: TxpElement;
-  addressModes: TP6502AddModes;
   xfun: TEleFun;
   xcon: TEleConsDec;
-  i: Integer;
+  i   : Integer;
   operat: TEleAsmOperat;
+  instTarget: TEleAsmInstr;
 begin
-  if inst.inst>=0 then begin
+  if inst.inst>=0 then begin   //Instrucción normal.
     cpu_inst := TP6502Inst(inst.inst);
     cpu_amod := TP6502AddMode(inst.addMode);
     if (inst.param = -1) then begin
@@ -1699,8 +1726,21 @@ begin
           exit;
         end;
         inst.param := xfun.adrr;
+      end else if elem.idClass = eleAsmInstr then begin
+        //Referencia a una instrucción ASM. Tal vez una etiqueta o DB, DW
+        instTarget := TEleAsmInstr(elem);  //Instrucción destino
+        if instTarget.addr=-1 then begin
+          //La etiqueta aún no ha sido mapeada en memoria
+          {Define una posición tentativa, considerando que la etiqueta referenciada debe
+          estar más adelante. Luego se completará cuando se defina la etiqueta.}
+          inst.param := pic.iRam+3;
+          //Guarda la instrucción, para completarla más adelante.
+          //instTarget.elements.Add(inst);  //!!! lo puede destruir
+        end else begin
+          inst.param := instTarget.addr;  //Toma su dirección.
+        end;
       end else begin
-        GenError('Operand not evaluated.', elem.srcDec);
+        GenError('Inalid Opcode operand.', elem.srcDec);
         exit;
       end;
       //Validates possible operations
@@ -1716,28 +1756,20 @@ begin
         aopSelByte: begin
           case operat.value of
           0: inst.param := inst.param and $ff;
-          1: inst.param := (inst.param and $ff00)>>8;
+          1: if elem.idClass=eleConsDec then  //En constantes tomamos el byte alto
+               inst.param := (inst.param and $ff00)>>8
+             else  //Para variables o funciones, tomamos la siguiente dirección
+               inst.param := (inst.param+1);
           end ;
         end;
         end;
       end;
     end;
+    inst.addr := pic.iRam;   //Set address
     //Write the instruction
-    addressModes := PIC16InstName[cpu_inst].addressModes;
-    if (inst.param<256) then begin
-       //It could be expressed as zero-page instruction
-       if (cpu_amod = aAbsolute) and (aZeroPage in addressModes) then begin
-         pic.codAsm(cpu_inst, aZeroPage, inst.param);
-       end else if (cpu_amod = aAbsolutX) and (aZeroPagX in addressModes) then begin
-         pic.codAsm(cpu_inst, aZeroPagX, inst.param);
-       end else if (cpu_amod = aAbsolutY) and (aZeroPagY in addressModes) then begin
-         pic.codAsm(cpu_inst, aZeroPagY, inst.param);
-       end else begin
-         pic.codAsm(cpu_inst, cpu_amod, inst.param);
-       end;
-    end else begin
-      pic.codAsm(cpu_inst, cpu_amod, inst.param);
-    end;
+    WriteInstruction(cpu_inst, cpu_amod, inst);
+  end else if inst.inst = -1 then begin  //Instrucción etiqueta.
+    inst.addr := pic.iRam;   //Actualiza dirección actual
   end else begin
     //It's not an instruction
   end;
@@ -1801,7 +1833,7 @@ var
   eleSen, ele: TxpElement;
   sen: TxpEleSentence;
   expSet, expAsm: TEleExpress;
-  inst: TxpEleAsmLine;
+  inst: TEleAsmInstr;
 begin
   for eleSen in sentList do begin
     if eleSen.idClass <> eleSenten then begin
@@ -1826,7 +1858,7 @@ begin
     sntAsmBlock: begin
       expAsm := TEleExpress(sen.elements[0]);  //Takes root node.
       for ele in expAsm.elements do begin
-        inst := TxpEleAsmLine(ele);
+        inst := TEleAsmInstr(ele);
         GenCodeASMline(inst);
       end;
     end;

@@ -37,7 +37,7 @@ type  //Abstract Syntax Tree
     AllCons  : TEleConsDecs;
     AllVars  : TEleVarDecs;
     AllUnits : TEleUnits;
-    AllFuncs : TxpEleFuns;
+    AllFuncs : TEleFuns;
     AllTypes : TEleTypeDecs;
     procedure Clear;
     procedure RefreshAllUnits;
@@ -693,7 +693,7 @@ begin
   main.elements := TxpElements.Create(true);  //debe tener lista
   AllCons  := TEleConsDecs.Create(false);   //Crea lista
   AllVars  := TEleVarDecs.Create(false);   //Crea lista
-  AllFuncs := TxpEleFuns.Create(false);   //Crea lista
+  AllFuncs := TEleFuns.Create(false);   //Crea lista
   AllUnits := TEleUnits.Create(false);  //Crea lista
   AllTypes := TEleTypeDecs.Create(false);  //Crea lista
   curNode := main;  //empieza con el nodo principal como espacio de nombres actual

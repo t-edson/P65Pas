@@ -211,7 +211,7 @@ type  //TxpElement class
                 eleCondit,    //Condition
                 //Instructions relative
                 eleSenten,    //Sentence/Instruction
-                eleAsmLine,   //ASM line
+                eleAsmInstr,  //ASM instruction
                 eleAsmBlock   //ASM block
                 );
   TxpEleCodeCont = class;
@@ -614,22 +614,22 @@ type  //Instructions relative elements
     constructor Create; override;
   end;
 
-  { TxpEleAsmLine }
+  { TEleAsmInstr }
   {Represents a line of assembler inside an ASM block.
   Consider this is a hardware dependent format}
-  TxpEleAsmLine = class(TxpElement)
-    //Label field, if the instruction includes a label.
-    alabel : string;
+  TEleAsmInstr = class(TxpElement)
+    addr   : integer; //Starting Address. Used only in code generation.
     //Fields to generate instructions, using TP6502.codAsm() or similar.
-    inst   : integer;  {Formally should be TP6502Inst or similar. Defined as integer
-                        because:
-                        - We don't want to depend of unit P6502Utils here. This unit should
-                          be agnostic of hardware if possible.
-                        - Negative can allow negative values, so we can include other
-                          "instructions" like:
-                          -1 -> Represents a simple byte, like defined in instructions DB, DW, ...
-                          -2 -> Represents an instruction "ORG <param>". In this case the
-                          offset is defined by "param" field.}
+    inst   : integer; {Formally should be TP6502Inst or similar. Defined as integer
+                       because:
+                       - We don't want to depend of unit P6502Utils here. This unit should
+                         be agnostic of hardware if possible.
+                       - Negative can allow negative values, so we can include other
+                         "instructions" like:
+                         -1 -> Represents a label.
+                         -2 -> Represents an instruction "ORG <param>". In this case the
+                         offset is defined by "param" field.
+                         -3 -> Represents a simple byte, like defined in instructions DB, DW, ...}
     addMode: byte;    {Formally should be TP6502AddMode or similar. Defined as integer
                         because:
                         - We don't want to depend of unit P6502Utils here. This unit should
@@ -641,10 +641,11 @@ type  //Instructions relative elements
                        described in documentation.}
     constructor Create; override;
   end;
+  TEleAsmInstrs = specialize TFPGObjectList<TEleAsmInstr>;
 
-  { TxpEleAsmBlock }
+  { TEleAsmBlock }
   {Represents an ASM block. An ASM block contains several ASM lines ()}
-  TxpEleAsmBlock = class(TxpElement)
+  TEleAsmBlock = class(TxpElement)
     //addr  : integer;  //Starting Address. Set to -1 if is the current address (like $)
     constructor Create; override;
   end;
@@ -766,7 +767,7 @@ type  //Declaration elements (functions)
     constructor Create; override;
     destructor Destroy; override;
   end;
-  TxpEleFuns = specialize TFPGObjectList<TEleFun>;
+  TEleFuns = specialize TFPGObjectList<TEleFun>;
 
 var
   // Tipo nulo. Usado para elementos sin tipo.
@@ -974,14 +975,14 @@ begin
   sntType := sntNull;
   idClass := eleSenten;
 end;
-{ TxpEleAsmLine }
-constructor TxpEleAsmLine.Create;
+{ TEleAsmInstr }
+constructor TEleAsmInstr.Create;
 begin
   inherited Create;
-  idClass := eleAsmLine;
+  idClass := eleAsmInstr;
 end;
-{ TxpEleAsmBlock }
-constructor TxpEleAsmBlock.Create;
+{ TEleAsmBlock }
+constructor TEleAsmBlock.Create;
 begin
   inherited Create;
   idClass := eleAsmBlock;

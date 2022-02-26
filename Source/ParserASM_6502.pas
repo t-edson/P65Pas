@@ -11,41 +11,22 @@ interface
 uses
   Classes, SysUtils, fgl, LexPas, CompBase, P6502utils, Globales, XpresElemP65;
 type
-  //Datos de una etiqueta
-  TPicLabel = class
-    txt: string;   //nombre de la etiqueta
-    add: integer;  //dirección
-  end;
-  TPicLabel_list = specialize TFPGObjectList<TPicLabel>;
-
-  //Datos de una instrucción de salto, indefinido.
-  TPicUJump = class
-    txt: string;        //Nombre de la etiqueta
-    add: integer;       //Dirección donde inicia el salto
-    idInst: TP6502Inst; //Instrucción
-  end;
-  TPicUJump_list = specialize TFPGObjectList<TPicUJump>;
-
   { TParserAsm_6502 }
-
   TParserAsm_6502 = class
   private
-    cpx : TCompilerBase;   //Reference to compiler
-    labels : TPicLabel_list; //Lista de etiquetas
-    uJumps : TPicUJump_list; //Lista de instrucciones GOTO o i_CALL, indefinidas
+    cpx     : TCompilerBase;  //Reference to compiler
+    labels  : TEleAsmInstrs;   //Lista de etiquetas
+    undJumps: TEleAsmInstrs;   //Lista de instrucciones GOTO o i_CALL, indefinidas
     HayError: boolean;
-    curInst : TxpEleAsmLine;  //Current instruction
-    procedure AddLabel(name: string; addr: integer);
-    procedure AddUJump(name: string; addr: integer; idInst: TP6502Inst);
-    function CaptureAddress: boolean;
+    curInst : TEleAsmInstr;    //Current instruction
+    procedure AddInstructionLabel(lblName: string; srcDec: TSrcPos);
+    function CaptureParam: boolean;
     function CaptureParenthes: boolean;
     procedure EndASM;
     function GetFaddressByte(addr: integer): byte;
-    function IsLabel(txt: string; out dir: integer): boolean;
+    function IsLabelDeclared(txt: string; out lblEle: TEleAsmInstr): boolean;
     procedure ProcASMline(out blkEnd: boolean);
     procedure ProcInstrASM(idInst: TP6502Inst; var blkEnd: boolean);
-    procedure ScanOperations;
-
     procedure StartASM;
   protected
     procedure UpdateInstruction(const inst: TP6502Inst; addMode: TP6502AddMode;
@@ -89,37 +70,16 @@ begin
   end;
   Result := addr;
 end;
-procedure TParserAsm_6502.AddLabel(name: string; addr: integer);
-{Agrega una etiqueta a la lista}
+function TParserAsm_6502.IsLabelDeclared(txt: string; out lblEle: TEleAsmInstr): boolean;
+{Indica si un nombre es una etiqueta. Si lo es, devuelve TRUE, y devuelve en lblEle, la
+referencia a la instrucción de la etiqueta.}
 var
-  lbl: TPicLabel;
+  lbl: TEleAsmInstr;
 begin
-  lbl := TPicLabel.Create;
-  lbl.txt:= UpCase(name);
-  lbl.add := addr;
-  labels.Add(lbl);
-end;
-procedure TParserAsm_6502.AddUJump(name: string; addr: integer; idInst: TP6502Inst);
-{Agrega un salto indefinido a la lista}
-var
-  jmp: TPicUJump;
-begin
-  jmp := TPicUJump.Create;
-  jmp.txt:= UpCase(name);
-  jmp.add := addr;
-  jmp.idInst := idInst;
-  uJumps.Add(jmp);
-end;
-function TParserAsm_6502.IsLabel(txt: string; out dir: integer): boolean;
-{Indica si un nombre es una etiqueta. Si lo es, devuelve TRUE, y la dirección la retorna
-en "dir".}
-var
-  lbl: TPicLabel;
-begin
-  //No se espera procesar muchsa etiquetas
-  for lbl in labels do begin
-    if lbl.txt = upcase(txt) then begin
-      dir := lbl.add;
+  //No se espera procesar muchas etiquetas
+  for lbl in labels do begin  { TODO : ¿No se podría prescindir de "labels2 y usar solamente la lista de todas las instrucciones? }
+    if lbl.uname = upcase(txt) then begin
+      lblEle := lbl;
       exit(true);
     end;
   end;
@@ -138,9 +98,21 @@ begin
     exit(false);
   end;
 end;
-procedure TParserAsm_6502.ScanOperations;
+function TParserAsm_6502.CaptureParam: boolean;
+{Captura una dirección o parámetro de una instrucción. Reconoce los formatos:
+  $ [+|- <literal numñerico>]
+  <literal numérico>
+  <identificador> [+|- <literal numñerico>]
+
+Actualiza el atributo "curInst.param" y, si aplica, agrega los elementos:
+<operando> y <operación>, de acuerdo a como se indica en la documentación.
+Si no encuentra parametro, genera error y devuelve FALSE.}
+
+procedure ScanOperations(firstOperation: char);
 {Scan in the current line for ASM operations. If operations are found, they will be
-added as nodes in the current node of the AST.}
+added as nodes in the current node of the AST.
+"firstOperation" allows to indicate if a position operator, like '>' or '<' has been
+found before de parameter.}
   function ScanOperation(out operation: TAsmInstOperation;
                          out value: word; out opTxt: string): boolean;
   {Look for one operations, in the current context. Operatiosn valids are:
@@ -241,6 +213,21 @@ var
   opTxt: string;
   opr: TEleAsmOperat;
 begin
+  if firstOperation='>' then begin
+    //There is an operation
+    opr := TEleAsmOperat.Create;
+    opr.operation := aopSelByte;  //Select byte
+    opr.value := 1;          //Byte position
+    opr.name := '@1';
+    curInst.AddElement(opr);
+  end else if firstOperation='<' then begin
+    //There is an operation
+    opr := TEleAsmOperat.Create;
+    opr.operation := aopSelByte;  //Select byte
+    opr.value := 0;          //Byte position
+    opr.name := '@0';
+    curInst.AddElement(opr);
+  end;
   while ScanOperation(operation, value, opTxt) do begin
     //There is an operation
     opr := TEleAsmOperat.Create;
@@ -250,19 +237,33 @@ begin
     curInst.AddElement(opr);
   end;
 end;
-function TParserAsm_6502.CaptureAddress: boolean;
-{Captura una dirección a una instrucción. Si no encuentra genera
-error y devuelve FALSE.}
+function TestForPositionOperand: char;
+{Test if a position operand ('>' or '<') exist. If so return the operator,
+otherwise returns ' '.}
+begin
+  if cpx.token = '>' then begin
+    cpx.Next;
+    exit('>');
+  end else if cpx.token = '<' then begin
+    cpx.Next;
+    exit('<');
+  end else begin
+    //Other
+    exit(' ');
+  end;
+end;
 var
-  dir: integer;
   ele: TxpElement;
   xfun: TEleFun;
   xvar: TEleVarDec;
   xcon: TEleConsDec;
   opd: TEleAsmOperand;
+  posOper: char;
+  lblEle: TEleAsmInstr;
 begin
   Result := false;
   cpx.SkipWhitesNoEOL;
+  posOper := TestForPositionOperand();  //Check for ">" or "<"
   if cpx.token = '$' then begin
     //Es una dirección relativa
     cpx.Next;
@@ -274,7 +275,7 @@ begin
     opd.name := '$';
     curInst.AddElement(opd);
     //Check for operations
-   ScanOperations;
+    ScanOperations(posOper);
     if cpx.HayError then exit(false);
     exit(true);
   end else if cpx.tokType = tkLitNumber then begin
@@ -282,14 +283,34 @@ begin
     curInst.param := StrToInt(cpx.token);  //Simple number
     cpx.Next;
     exit(true);
-  end else if (cpx.tokType = tkIdentifier) and IsLabel(cpx.token, dir) then begin
-    //Es un identificador de etiqueta
-    curInst.param := dir;  //Simple number
-    cpx.Next;
-    exit(true);
   end else if cpx.tokType = tkIdentifier  then begin
+    if IsLabelDeclared(cpx.token, lblEle) then begin
+      //Es un identificador de etiqueta
+      curInst.param := -1;  //Create as expression
+      opd := TEleAsmOperand.Create;
+      opd.srcDec := cpx.GetSrcPos;
+      opd.name := cpx.token;  //Label name.
+      opd.elem := lblEle;     //Referencia a la etiqueta.
+      cpx.AddCallerToFromCurr(lblEle);  //Agrega referencia
+      curInst.AddElement(opd);
+
+      cpx.Next;
+      exit(true);
+    end;
     ele := cpx.TreeElems.FindFirst(cpx.token);  //identifica elemento
-    if ele<>nil then begin
+    if ele=nil then begin
+      //Es un identificador, no definido (como una etiqueta). Puede definirse luego.
+      curInst.param := -1;  //Create as expression
+      opd := TEleAsmOperand.Create;
+      opd.srcDec := cpx.GetSrcPos;
+      opd.name := cpx.token;  //Probably a label.
+      //opd.elem := nil;      //Will be later linked.
+      curInst.AddElement(opd);
+      //Los saltos indefinidos, se guardan en la lista "undJumps"
+      undJumps.Add(curInst);
+      cpx.Next;
+      exit(true);
+    end else begin
       //Se identifica un elemento del lenguaje
       if ele.idClass = eleFunc then begin
         //Es un identificador de función del árbol de sintaxis
@@ -303,7 +324,7 @@ begin
         opd.elem := xfun;
         curInst.AddElement(opd);  //Add operand
         //Check for operations
-        ScanOperations;
+        ScanOperations(posOper);
         if cpx.HayError then exit(false);
         exit(true);
       end else if ele.idClass = eleVarDec then begin
@@ -319,7 +340,7 @@ begin
         opd.elem := xvar;
         curInst.AddElement(opd);
         //Check for operations
-        ScanOperations;
+        ScanOperations(posOper);
         if cpx.HayError then exit(false);
         exit(true);
       end else if ele.idClass = eleConsDec then begin
@@ -342,20 +363,6 @@ begin
         cpx.GenError(ER_EXP_CON_VAL);
         exit(false);
       end;
-    end else begin
-      //Es un identificador, no definido. Puede definirse luego.
-      curInst.param := -1;  //Create as expression
-      opd := TEleAsmOperand.Create;
-      opd.srcDec := cpx.GetSrcPos;
-      opd.name := cpx.token;  //Probably a label. Will be later linked.
-      curInst.AddElement(opd);
-      cpx.Next;
-      exit(true);
-
-      ////Los saltos indefinidos, se guardan en la lista "uJumps"
-      //AddUJump(cpx.token, pic.iRam, idInst);
-      //cpx.Next;
-      //exit(true);
     end;
   end else begin
     cpx.GenError(ER_EXPECT_ADDR);
@@ -366,59 +373,47 @@ end;
 procedure TParserAsm_6502.StartASM; //Inicia el procesamiento de código ASM
 begin
   labels.Clear;   //limpia etiquetas
-  uJumps.Clear;
+  undJumps.Clear;
 end;
 procedure TParserAsm_6502.EndASM;  //Termina el procesamiento de código ASM
+  function CompleteUndefJump(operand : TEleAsmOperand): boolean;
+  {Completa la instrucción de salto, buscando en la lista de etiquetas.
+  Si no encuentra la etiqueta, devuelve FALSE.}
+  var
+    lblInstr: TEleAsmInstr;
+  begin
+    for lblInstr in labels do begin  //Ve si la etiqueta existe
+      if lblInstr.uname = operand.uname then begin
+        //Sí existe la etiqueta.
+        operand.elem := lblInstr;  //Actualiza la referencia a la etiqueta.
+        cpx.AddCallerToFromCurr(lblInstr);  //Agrega referencia
+        exit(true);  //Encontrado y actualizado.
+      end;
+    end;
+    exit(false);  //No se encontró.
+  end;
+var
+  jmpInst : TEleAsmInstr;
+  operand : TEleAsmOperand;
 begin
-  ////Completa los saltos indefinidos
-  //if uJumps.Count>0 then begin
-  //  for jmp in uJumps do begin
-  //    if IsLabel(jmp.txt, loc) then begin
-  //      //Sí existe la etiqueta
-  //      if jmp.idInst in [i_BPL, i_BMI, i_BVC, i_BVS, i_BCC, i_BCS, i_BNE, i_BEQ] then
-  //        //Salto relativo
-  //        pic.cod_REL_JMP_at(jmp.add, loc-jmp.add-2)
-  //      else  //Deberían ser JMP, JSR, LDA, STA ...
-  //        pic.cod_JMP_at(jmp.add, loc);
-  //    end else begin
-  //      //No se enuentra
-  //      GenErrorAsm(ER_UNDEF_LABEL_, [jmp.txt]);
-  //      exit;
-  //    end;
-  //  end;
-  //end;
+  //Completa los saltos indefinidos
+  for jmpInst in undJumps do begin
+    operand := TEleAsmOperand(jmpInst.elements[0]);  //Accede al operando
+    if not CompleteUndefJump(operand) then begin
+      //No se enuentra "jmpInst" en "labels".
+      cpx.GenError(ER_UNDEF_LABEL_, [jmpInst.name], jmpInst.srcDec);
+    end;
+  end;
 end;
 procedure TParserAsm_6502.ProcInstrASM(idInst: TP6502Inst; var blkEnd: boolean);
 {Proccess an 6502 ASM instruction. Instruction must be previously validated and
  identified in "idInst".
- Basically this procedure, add a new TxpEleAsmLine (including instruction, addresing
- mode and operamd) to the current TxpEleAsmBlock, that represents a 6502 instruction.
+ Basically this procedure, add a new TEleAsmInstr (including instruction, addresing
+ mode and operamd) to the current TEleAsmBlock, that represents a 6502 instruction.
  An instruction ends with the EOL token or the ASM delimiter "END".
  This procedure must not process the EOL token or the "END" delimiter.
  If the the "END" delimiter is found, the flag "blkEnd" is activated.
 }
-var
-  preOperator: Char;
-  procedure TestForByteOperator;
-  {Test if position operand exist, and updates "preOperator".}
-  begin
-    if cpx.token = '>' then begin
-      preOperator := '>';
-      cpx.Next;
-    end else if cpx.token = '<' then begin
-      preOperator := '<';
-      cpx.Next;
-    end else begin
-      preOperator := ' ';
-    end;
-  end;
-  function ApplyByteOperator(n: integer): integer;
-  {Apply operation defined in "preOperator"}
-  begin
-    if preOperator = '<' then exit(n and $FF)
-    else if preOperator = '>' then exit( (n and $ff00) >> 8)
-    else exit(n);
-  end;
 var
   tok: String;
   n: integer;
@@ -464,101 +459,22 @@ begin
     end;
     blkEnd := true;
   end else if tok = '#' then begin
-    //Inmediato
-    cpx.Next;
-    TestForByteOperator;
-    if cpx.tokType = tkLitNumber then begin
-      if not TryStrToInt(cpx.token, n) then begin
-        cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
-        exit;
-      end;
-      n := ApplyByteOperator(n);
-      if (n>255) then begin
-        cpx.GenError(ER_EXPECT_BYTE);
-        exit;
-      end;
-      cpx.Next;
-      cpx.SkipWhitesNoEOL;
-      //We assume there are not more text but We can process aditional text for expression
-      AddInstruction(idInst, aImmediat, n, srcInst);
-    end else if cpx.tokType = tkIdentifier then begin
-      //Identificador
-      ele := cpx.TreeElems.FindFirst(cpx.token);  //identifica elemento
-      if ele = nil then begin
-        cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
-        exit;
-      end else if ele.idClass = eleConsDec then begin
-        //Es un identificador de constante del árbol de sintaxis
-        xcon := TEleConsDec(ele);
-        cpx.AddCallerToFromCurr(xcon);  //lleva la cuenta
-        cpx.Next;
-        n := ApplyByteOperator(xcon.value.ValInt);
-        AddInstruction(idInst, aImmediat, n, srcInst);
-      end else if ele.idClass = eleVarDec then begin
-        //Es un identificador de variable del árbol de sintaxis
-        xvar := TEleVarDec(ele);
-        cpx.AddCallerToFromCurr(xvar);  //lleva la cuenta
-        cpx.Next;
-        n := ApplyByteOperator(xvar.addr);  //Lee dirección
-        AddInstruction(idInst, aImmediat, n, srcInst);
-      end else if ele.idClass = eleFunc then begin
-        //Es un identificador de variable del árbol de sintaxis
-        xfun := TEleFun(ele);
-        cpx.AddCallerToFromCurr(xfun);  //lleva la cuenta
-        cpx.Next;
-        n := ApplyByteOperator(xfun.adrr);  //Lee dirección
-        AddInstruction(idInst, aImmediat, n, srcInst);
-      end else begin
-        cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
-        exit;
-      end;
-    end else begin
-      cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
-      exit;
-    end;
-  end else if cpx.tokType in [tkLitNumber, tkIdentifier] then begin
-    //Puede ser absoluto o página cero, o sus versiones indexadas con X o Y.
-    AddInstruction(idInst, aImplicit, 0, srcInst);  //Add the instruction with "aImplicit" temporally. Later will be updated.
+    //Direccionamiento Inmediato
+    cpx.Next;      //Toma "#"
+    AddInstruction(idInst, aImmediat, 0, srcInst);
     //Complete the "param" of "curInst".
-    if not CaptureAddress then begin
+    if not CaptureParam then begin
       cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
       exit;
     end;
-    {Get the addressing mode, considering operand is 16bits. If it's 8 bits, the
-     addressing mode should be changed when linking.}
     cpx.SkipWhitesNoEOL;
-    //Verify is follows ,X o ,Y
-    if cpx.token = ',' then begin
-      cpx.Next;
-      cpx.SkipWhitesNoEOL;
-      if Upcase(cpx.token) = 'X' then begin
-        cpx.Next;
-        UpdateInstruction(idInst, aAbsolutX, curInst.param);
-      end else if Upcase(cpx.token) = 'Y' then begin
-        cpx.Next;
-        UpdateInstruction(idInst, aAbsolutY, curInst.param);
-      end else begin
-        cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
-        exit;
-      end;
-    end else begin
-      if addressModes = [aRelative] then begin
-        //Only accept "aRelative" address. Like BEQ, BNE, ...
-        UpdateInstruction(idInst, aRelative, curInst.param);
-      end else if addressModes = [aImplicit] then begin
-        //Only accept "aImplicit" address. Like CLC, CLD, ...
-        UpdateInstruction(idInst, aImplicit, curInst.param);
-      end else begin
-        UpdateInstruction(idInst, aAbsolute, curInst.param);
-      end;
-    end;
   end else if tok = '(' then begin
     //Direccionamiento Indirecto: (indirect), (indirect,X) o (indirect),Y
     AddInstruction(idInst, aIndirect, 0, srcInst);  //Add the instruction with "aImplicit" temporally. Later will be updated.
     cpx.Next;
     if cpx.tokType in [tkLitNumber, tkIdentifier] then begin
 //      n := StrToInt(cpx.token);
-      if not CaptureAddress then begin
+      if not CaptureParam then begin
         cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
         exit;
       end;
@@ -608,8 +524,41 @@ begin
       exit;
     end;
   end else begin
-    cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
-    exit;
+    //Puede ser absoluto o página cero, o sus versiones indexadas con X o Y.
+    AddInstruction(idInst, aImplicit, 0, srcInst);  //Add the instruction with "aImplicit" temporally. Later will be updated.
+    //Complete the "param" of "curInst".
+    if not CaptureParam then begin
+      cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
+      exit;
+    end;
+    {Get the addressing mode, considering operand is 16bits. If it's 8 bits, the
+     addressing mode should be changed when linking.}
+    cpx.SkipWhitesNoEOL;
+    //Verify is follows ,X o ,Y
+    if cpx.token = ',' then begin
+      cpx.Next;
+      cpx.SkipWhitesNoEOL;
+      if Upcase(cpx.token) = 'X' then begin
+        cpx.Next;
+        UpdateInstruction(idInst, aAbsolutX, curInst.param);
+      end else if Upcase(cpx.token) = 'Y' then begin
+        cpx.Next;
+        UpdateInstruction(idInst, aAbsolutY, curInst.param);
+      end else begin
+        cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
+        exit;
+      end;
+    end else begin
+      if addressModes = [aRelative] then begin
+        //Only accept "aRelative" address. Like BEQ, BNE, ...
+        UpdateInstruction(idInst, aRelative, curInst.param);
+      end else if addressModes = [aImplicit] then begin
+        //Only accept "aImplicit" address. Like CLC, CLD, ...
+        UpdateInstruction(idInst, aImplicit, curInst.param);
+      end else begin
+        UpdateInstruction(idInst, aAbsolute, curInst.param);
+      end;
+    end;
   end;
 end;
 procedure TParserAsm_6502.ProcASMline(out blkEnd: boolean);
@@ -621,7 +570,7 @@ procedure TParserAsm_6502.ProcASMline(out blkEnd: boolean);
 var
   idInst: TP6502Inst;
   tok, lbl: String;
-  d: integer;
+  lblEle: TEleAsmInstr;
 begin
   blkEnd := false;
   cpx.SkipWhitesNoEOL;
@@ -636,8 +585,8 @@ begin
     if tok = 'ORG' then begin
       //It's the ORG directive
       cpx.Next;
-      AddDirectiveORG(0);  //Operand of ORG will be updated with CaptureAddress().
-      if not CaptureAddress then exit;
+      AddDirectiveORG(0);  //Operand of ORG will be updated with CaptureParam().
+      if not CaptureParam then exit;
       exit;
 //    end else if tok = 'DB' then begin
 //      //Define a byte
@@ -662,15 +611,18 @@ begin
       cpx.Next;
       if cpx.token = ':' then begin
         //Definitivamente es una etiqueta
-        if IsLabel(lbl, d) then begin
+        if IsLabelDeclared(lbl, lblEle) then begin  //¿Ya existe?
           cpx.GenError(ER_DUPLIC_LBL_, [lbl]);
           exit;
         end;
-        cpx.Next;
+        //Crea la instrucción de etiqueta
+        cpx.Next;      //Toma ":"
+        AddInstructionLabel(lbl, cpx.getsrcPos);
+        //Verifica si sigue una instrucción
         cpx.SkipWhitesNoEOL;
         if cpx.tokType <> tkEol then begin
           //Hay algo más. Solo puede ser una instrucción
-          if FindOpcode(cpx.token, idInst) then begin
+          if not FindOpcode(cpx.token, idInst) then begin
             cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
             exit;
           end;
@@ -725,11 +677,30 @@ begin
     //We need to close the current instruction.
     cpx.TreeElems.CloseElement;
   end;
-  curInst := TxpEleAsmLine.Create;
+  curInst := TEleAsmInstr.Create;
   curInst.name := 'inst.';
   curInst.srcDec := srcDec;
+  curInst.addr := -1;   //Indica que la dirección física aún no ha sido fijada.
   cpx.TreeElems.AddElementAndOpen(curInst);
   UpdateInstruction(inst, addMode, param);
+end;
+procedure TParserAsm_6502.AddInstructionLabel(lblName: string; srcDec: TSrcPos);
+{Add a new instruction to the current ASM block element. Set "curInst" pointing
+to the instruction added.
+If operand of the instruction is expression, it mus be added in the child nodes.}
+begin
+  if curInst <> nil then begin
+    //We need to close the current instruction.
+    cpx.TreeElems.CloseElement;
+  end;
+  curInst := TEleAsmInstr.Create;
+  curInst.name := lblName;
+  curInst.srcDec := srcDec;
+  curInst.addr := -1;   //Indica que la dirección física aún no ha sido fijada.
+  cpx.TreeElems.AddElementAndOpen(curInst);
+  //UpdateInstruction(inst, addMode, param);
+  curInst.inst := -1;   //Marca como instrucción de salto.
+  labels.add(curInst);  //Agrega a la lista de etiquetas
 end;
 procedure TParserAsm_6502.AddDirectiveORG(param: word);
 begin
@@ -737,7 +708,7 @@ begin
     //We need to close the current instruction.
     cpx.TreeElems.CloseElement;
   end;
-  curInst := TxpEleAsmLine.Create;
+  curInst := TEleAsmInstr.Create;
   cpx.TreeElems.AddElementAndOpen(curInst);
   curInst.inst := -2;  //Represents ORG
   curInst.param := param;
@@ -745,13 +716,13 @@ end;
 procedure TParserAsm_6502.ProcessASMblock(cpx0: TCompilerBase);
 var
   blkEnd: boolean;
-  asmBlock: TxpEleAsmBlock;
+  asmBlock: TEleAsmBlock;
 begin
   cpx := cpx0;  //Reference to compiler.
   cpx.Next;     //Get ASM
   cpx.curCtx.OnDecodeNext := @DecodeNext;  //Set a new lexer
   StartASM;
-  asmBlock := TxpEleAsmBlock.Create;
+  asmBlock := TEleAsmBlock.Create;
   asmBlock.srcDec := cpx.GetSrcPos;
   asmBlock.name := 'ASMblk';
   cpx.TreeElems.AddElementAndOpen(asmBlock);
@@ -827,7 +798,7 @@ begin
     repeat inc(ctx.fcol); until ctx._Eol or not(ctx.curline[ctx.fcol] in ['_','a'..'z','A'..'Z','0'..'9']);
     ctx.tokType := tkIdentifier;
   end;
-  '+','-','*','/','\','=','^','@','.','#': begin
+  '+','-','*','/','\','=','^','@','.','#','>','<',':': begin
     ctx._NextChar;
     ctx.tokType := tkOperator;
   end;
@@ -851,7 +822,7 @@ begin
   end;
   else
     //Unkmown token.
-    ctx.tokType := tkNull;
+    ctx.tokType := tkNull;  //WARNING: This make the current token will read as empty.
     ctx._NextChar;
   end;
   exit(false);
@@ -859,12 +830,12 @@ end;
 constructor TParserAsm_6502.Create;
 begin
   inherited Create;
-  labels := TPicLabel_list.Create(true);
-  uJumps := TPicUJump_list.Create(true);
+  labels := TEleAsmInstrs.Create(false);
+  undJumps := TEleAsmInstrs.Create(false);
 end;
 destructor TParserAsm_6502.Destroy;
 begin
-  uJumps.Destroy;
+  undJumps.Destroy;
   labels.Destroy;
   inherited Destroy;
 end;

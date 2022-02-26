@@ -43,8 +43,8 @@ type
     function GetCondition(out ex: TEleExpress; ConstBool: boolean = false): boolean;
     function OpenContextFrom(filePath: string): boolean;
     function CompileStructBody: boolean;
-    procedure CompileSentence;
-    procedure CompileCurBlock;
+    procedure AnalyzeSentence;
+    procedure AnalyzeCurBlock;
     procedure CompileProcDeclar;
     procedure CompileInlineDeclar(elemLocat: TxpEleLocation);
     procedure CompileUsesDeclaration;
@@ -1307,7 +1307,7 @@ begin
   //Ahora empieza el cuerpo de la función o las declaraciones
   bod := TreeElems.AddElementBodyAndOpen(GetSrcPos);  //Open Body node
   Next;   //Takes "BEGIN"
-  CompileCurBlock;
+  AnalyzeCurBlock;
   TreeElems.CloseElement;  //Close Body node
   bod.srcEnd := GetSrcPos; //End of body
   if HayError then exit;
@@ -1511,10 +1511,10 @@ begin
   //Este es el modo normal. Genera código.
   if mode = modPascal then begin
     //En modo Pascal se espera una instrucción
-    CompileSentence;
+    AnalyzeSentence;
   end else begin
     //En modo normal
-    CompileCurBlock;
+    AnalyzeCurBlock;
   end;
   if HayError then exit(false);
   //Salió sin errores
@@ -1574,7 +1574,7 @@ var
   ex: TEleExpress;
 begin
   TreeElems.AddElementBlockAndOpen(GetSrcPos);  //Open block
-  CompileCurBlock;
+  AnalyzeCurBlock;
   TreeElems.CloseElement;  //Close block
   if HayError then exit;
   SkipWhites;
@@ -1587,7 +1587,7 @@ var
   Op1, Op2, idx: TEleExpress;
 begin
   {Get the first asignment: i:=0; }
-  //This section is similar to CompileSentence().
+  //This section is similar to AnalyzeSentence().
   Op1 := GetExpression(0);
   if HayError then exit;
   if Op1.name<>'_set' then begin
@@ -1640,7 +1640,7 @@ begin
     MoveInternalTypes(ele, declarSec, declarPos);
   end;
 end;
-procedure TCompMain.CompileSentence;
+procedure TCompMain.AnalyzeSentence;
 {Compile one Pascal sentence. One sentence can be:
  1. Assigment sentence.
  2. Procedure call.
@@ -1671,7 +1671,7 @@ begin
       //Es bloque
       Next;  //toma "begin"
       TreeElems.AddElementBlockAndOpen(GetSrcPos);  //Open block
-      CompileCurBlock;   //Recursive call
+      AnalyzeCurBlock;   //Recursive call
       TreeElems.CloseElement;  //Close block
       if HayError then exit;
       if not CaptureStr('END') then exit;
@@ -1783,14 +1783,14 @@ begin
   end;
   //Can terminate with error.
 end;
-procedure TCompMain.CompileCurBlock;
+procedure TCompMain.AnalyzeCurBlock;
 {Compila el bloque de código actual hasta encontrar un delimitador de bloque, o fin
 de archivo. }
 begin
   ProcComments;
   while not atEof and (tokType<>tkBlkDelim) do begin
     //se espera una expresión o estructura
-    CompileSentence;
+    AnalyzeSentence;
     if HayError then exit;   //aborta
     //se espera delimitador
     if atEof then break;  //sale por fin de archivo
@@ -2016,7 +2016,7 @@ begin
 //    //Guardamos la ubicación física, real, en el archivo, después del BEGIN
 //    bod.posCtx := PosAct;
 //    //codifica el contenido
-//    CompileCurBlock;   //compila el cuerpo
+//    AnalyzeCurBlock;   //compila el cuerpo
 //    if HayError then exit;
 
 //    _SLEEP();   //agrega instrucción final
@@ -2112,7 +2112,7 @@ begin
   end;
   bod := TreeElems.AddElementBodyAndOpen(GetSrcPos);  //Abre nodo Body
   Next;   //Takes "BEGIN"
-  CompileCurBlock;   //Compiles the body
+  AnalyzeCurBlock;   //Compiles the body
   TreeElems.CloseElement;   //No debería ser tan necesario.
   bod.srcEnd := GetSrcPos;
   if HayError then exit;

@@ -130,6 +130,7 @@ var
   nod: TTreeNode;
   eleExp: TEleExpress;
   sen: TxpEleSentence;
+  asmInst: TEleAsmInstr;
 begin
   if elem = nil then begin
     nod := TreeView1.Items.AddChild(nodParent, '???');
@@ -165,9 +166,15 @@ begin
     //nod.Text := '<sentence>';
     nod.ImageIndex := 12;
     nod.SelectedIndex := 12;
-  end else if elem.idClass = eleAsmLine then begin
-    nod.ImageIndex := 19;
-    nod.SelectedIndex := 19;
+  end else if elem.idClass = eleAsmInstr then begin
+    asmInst := TEleAsmInstr(elem);
+    if asmInst.inst = -1 then begin  //Etiquetas
+      nod.ImageIndex := 22;
+      nod.SelectedIndex := 22;
+    end else begin
+      nod.ImageIndex := 19;
+      nod.SelectedIndex := 19;
+    end;
   end else if elem.idClass = eleAsmOperand then begin
     nod.ImageIndex := 18;
     nod.SelectedIndex := 18;
