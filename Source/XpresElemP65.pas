@@ -458,9 +458,8 @@ type  //Expression elements
   { TxpEleOperator }
   {Represent an operation in ASM expressions.}
   TEleAsmOperat= class(TxpElement)
-    operation: TAsmInstOperation;   //Operation
-    value    : word;                //Value
-    //txt      : string;       //Text of the operator, if it's not an element.
+    operation : TAsmInstOperation;   //Operation
+    value     : word;                //Value
     constructor Create; override;
   end;
 
@@ -614,31 +613,31 @@ type  //Instructions relative elements
     constructor Create; override;
   end;
 
+  //ASM instruction type
+  TiType = (
+    itOpcode,     //Common instruction with an Opcode and Operand.
+    itLabel,      //An ASM label.
+    itOrgDir,     //Instrcution ORG
+    itDefByte     //Instruction DB
+  );
+
   { TEleAsmInstr }
   {Represents a line of assembler inside an ASM block.
   Consider this is a hardware dependent format}
   TEleAsmInstr = class(TxpElement)
-    addr   : integer; //Starting Address. Used only in code generation.
+    addr   : integer;  //Starting Address. Used only in code generation.
+    iType  : TiType;   //ASM instruction type
     //Fields to generate instructions, using TP6502.codAsm() or similar.
-    inst   : integer; {Formally should be TP6502Inst or similar. Defined as integer
-                       because:
-                       - We don't want to depend of unit P6502Utils here. This unit should
-                         be agnostic of hardware if possible.
-                       - Negative can allow negative values, so we can include other
-                         "instructions" like:
-                         -1 -> Represents a label.
-                         -2 -> Represents an instruction "ORG <param>". In this case the
-                         offset is defined by "param" field.
-                         -3 -> Represents a simple byte, like defined in instructions DB, DW, ...}
-    addMode: byte;    {Formally should be TP6502AddMode or similar. Defined as integer
-                        because:
-                        - We don't want to depend of unit P6502Utils here. This unit should
-                          be agnostic of hardware if possible.
-                        }
-    param: integer;   {Represents the operand of the instruction, when it's a simple
+    opcode : word;    {Formally should be TP6502Inst or similar. Defined as word because
+                       we don't want to depend on unit P6502Utils here. }
+    addMode: byte;    {Formally should be TP6502AddMode or similar. Defined as byte
+                       because we don't want to depend on unit P6502Utils here. }
+    param  : integer; {Represents the operand of the instruction, when it's a simple
                        number. When it's -1, this element have child elements, operand
                        is an expression and it's stored in child elements, in the format
                        described in documentation.}
+    operRef: TxpElement;  {Reference to element when operand refers to some Pascal or
+                           ASM element.}
     constructor Create; override;
   end;
   TEleAsmInstrs = specialize TFPGObjectList<TEleAsmInstr>;
@@ -646,8 +645,9 @@ type  //Instructions relative elements
   { TEleAsmBlock }
   {Represents an ASM block. An ASM block contains several ASM lines ()}
   TEleAsmBlock = class(TxpElement)
-    //addr  : integer;  //Starting Address. Set to -1 if is the current address (like $)
+    uncInstrucs: TEleAsmInstrs;   //List of instruction with operands undefined
     constructor Create; override;
+    destructor Destroy; override;
   end;
 
   { TxpEleDIREC }
@@ -986,7 +986,15 @@ constructor TEleAsmBlock.Create;
 begin
   inherited Create;
   idClass := eleAsmBlock;
+  uncInstrucs:= TEleAsmInstrs.Create(false);
 end;
+
+destructor TEleAsmBlock.Destroy;
+begin
+  uncInstrucs.Destroy;
+  inherited Destroy;
+end;
+
 { TxpEleDIREC }
 constructor TxpEleDIREC.Create;
 begin

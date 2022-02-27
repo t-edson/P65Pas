@@ -14,11 +14,11 @@ type
   { TParserAsm_6502 }
   TParserAsm_6502 = class
   private
-    cpx     : TCompilerBase;  //Reference to compiler
+    cpx     : TCompilerBase;   //Reference to compiler
     labels  : TEleAsmInstrs;   //Lista de etiquetas
-    undJumps: TEleAsmInstrs;   //Lista de instrucciones GOTO o i_CALL, indefinidas
     HayError: boolean;
-    curInst : TEleAsmInstr;    //Current instruction
+    curBlock: TEleAsmBlock;    //Bloque ASM actual.
+    curInst : TEleAsmInstr;    //Instruction ASM actual.
     procedure AddInstructionLabel(lblName: string; srcDec: TSrcPos);
     function CaptureParam: boolean;
     function CaptureParenthes: boolean;
@@ -269,11 +269,7 @@ begin
     cpx.Next;
     cpx.SkipWhitesNoEOL;
     //Creates node "Operand".
-    curInst.param := -1;  //Create as expression
-    opd := TEleAsmOperand.Create;
-    opd.srcDec := cpx.GetSrcPos;
-    opd.name := '$';
-    curInst.AddElement(opd);
+    curInst.param := -2;  //Create as expression
     //Check for operations
     ScanOperations(posOper);
     if cpx.HayError then exit(false);
@@ -307,7 +303,7 @@ begin
       //opd.elem := nil;      //Will be later linked.
       curInst.AddElement(opd);
       //Los saltos indefinidos, se guardan en la lista "undJumps"
-      undJumps.Add(curInst);
+      curBlock.uncInstrucs.Add(curInst);
       cpx.Next;
       exit(true);
     end else begin
@@ -373,7 +369,6 @@ end;
 procedure TParserAsm_6502.StartASM; //Inicia el procesamiento de código ASM
 begin
   labels.Clear;   //limpia etiquetas
-  undJumps.Clear;
 end;
 procedure TParserAsm_6502.EndASM;  //Termina el procesamiento de código ASM
   function CompleteUndefJump(operand : TEleAsmOperand): boolean;
@@ -397,7 +392,7 @@ var
   operand : TEleAsmOperand;
 begin
   //Completa los saltos indefinidos
-  for jmpInst in undJumps do begin
+  for jmpInst in curBlock.uncInstrucs do begin
     operand := TEleAsmOperand(jmpInst.elements[0]);  //Accede al operando
     if not CompleteUndefJump(operand) then begin
       //No se enuentra "jmpInst" en "labels".
@@ -663,7 +658,7 @@ procedure TParserAsm_6502.UpdateInstruction(const inst: TP6502Inst;
   addMode: TP6502AddMode; param: integer);
 {Update the current instruction.}
 begin
-  curInst.inst := ord(inst);
+  curInst.opcode := ord(inst);
   curInst.addMode := ord(addMode);
   curInst.param := param;
 end;
@@ -678,9 +673,10 @@ begin
     cpx.TreeElems.CloseElement;
   end;
   curInst := TEleAsmInstr.Create;
-  curInst.name := 'inst.';
+  curInst.name := '<inst>';
   curInst.srcDec := srcDec;
   curInst.addr := -1;   //Indica que la dirección física aún no ha sido fijada.
+  curInst.iType := itOpcode;   //Marca como instrucción de salto.
   cpx.TreeElems.AddElementAndOpen(curInst);
   UpdateInstruction(inst, addMode, param);
 end;
@@ -697,9 +693,9 @@ begin
   curInst.name := lblName;
   curInst.srcDec := srcDec;
   curInst.addr := -1;   //Indica que la dirección física aún no ha sido fijada.
+  curInst.iType := itLabel;   //Marca como instrucción de salto.
   cpx.TreeElems.AddElementAndOpen(curInst);
   //UpdateInstruction(inst, addMode, param);
-  curInst.inst := -1;   //Marca como instrucción de salto.
   labels.add(curInst);  //Agrega a la lista de etiquetas
 end;
 procedure TParserAsm_6502.AddDirectiveORG(param: word);
@@ -709,23 +705,24 @@ begin
     cpx.TreeElems.CloseElement;
   end;
   curInst := TEleAsmInstr.Create;
+  curInst.name := 'ORG';
+  curInst.addr := -1;   //Indica que la dirección física aún no ha sido fijada.
+  curInst.iType := itOrgDir;  //Represents ORG
   cpx.TreeElems.AddElementAndOpen(curInst);
-  curInst.inst := -2;  //Represents ORG
   curInst.param := param;
 end;
 procedure TParserAsm_6502.ProcessASMblock(cpx0: TCompilerBase);
 var
   blkEnd: boolean;
-  asmBlock: TEleAsmBlock;
 begin
   cpx := cpx0;  //Reference to compiler.
   cpx.Next;     //Get ASM
   cpx.curCtx.OnDecodeNext := @DecodeNext;  //Set a new lexer
+  curBlock := TEleAsmBlock.Create;
+  curBlock.srcDec := cpx.GetSrcPos;
+  curBlock.name := 'ASMblk';
+  cpx.TreeElems.AddElementAndOpen(curBlock);
   StartASM;
-  asmBlock := TEleAsmBlock.Create;
-  asmBlock.srcDec := cpx.GetSrcPos;
-  asmBlock.name := 'ASMblk';
-  cpx.TreeElems.AddElementAndOpen(asmBlock);
   curInst := nil;
   repeat
     ProcASMline(blkEnd);
@@ -831,11 +828,9 @@ constructor TParserAsm_6502.Create;
 begin
   inherited Create;
   labels := TEleAsmInstrs.Create(false);
-  undJumps := TEleAsmInstrs.Create(false);
 end;
 destructor TParserAsm_6502.Destroy;
 begin
-  undJumps.Destroy;
   labels.Destroy;
   inherited Destroy;
 end;

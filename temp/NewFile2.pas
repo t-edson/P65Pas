@@ -1,10 +1,9 @@
-begin
-  asm 
-  beq buffer
-buffer:
-  nop 
-  end; 
-end.
+
+ begin
+   asm 
+     LDA $
+   end; 
+ end.
 
 
 

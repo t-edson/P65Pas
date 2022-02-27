@@ -33,7 +33,7 @@ type
   private
     linRep : string;   //línea para generar de reporte
     posFlash: Integer;
-    procedure GenCodeASMline(inst: TEleAsmInstr);
+    procedure GenCodeASMline(asmInst: TEleAsmInstr);
     procedure GenCodLoadToA(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToX(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToY(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
@@ -1651,127 +1651,153 @@ begin
     GenError('Design error.');
   end;
 end;
-procedure TGenCodBas.GenCodeASMline(inst: TEleAsmInstr);
+procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
 {Generate code for an ASM instruction (element TEleAsmInstr).}
-  procedure WriteInstruction(cpu_inst: TP6502Inst; cpu_amod: TP6502AddMode; inst: TEleAsmInstr);
+  function ReadOperandValue(paramRef: TxpElement): integer;
+  {Read the value of a Operand when it's a reference to an element.}
+  var
+    xvar: TEleVarDec;
+    xcon: TEleConsDec;
+    xfun: TEleFun;
+    instTarget: TEleAsmInstr;
+  begin
+    Result := 0;
+    if paramRef.idClass = eleVarDec then begin
+      xvar := TEleVarDec(paramRef);
+      if not xvar.allocated then begin
+        GenError('Variable not allocated.', paramRef.srcDec);
+        exit;
+      end;
+      Result := xvar.addr;
+    end else if paramRef.idClass = eleConsDec then begin
+      xcon := TEleConsDec(paramRef);
+      if not xcon.evaluated then begin
+        GenError('Constant not evaluated.', paramRef.srcDec);
+        exit;
+      end;
+      Result := xcon.value.ValInt;
+    end else if paramRef.idClass = eleFunc then begin
+      xfun := TEleFun(paramRef);
+      if not xfun.coded then begin
+        GenError('Function not coded.', paramRef.srcDec);
+        exit;
+      end;
+      Result := xfun.adrr;
+    end else if paramRef.idClass = eleAsmInstr then begin
+      //Referencia a una instrucción ASM. Tal vez una etiqueta o DB, DW
+      instTarget := TEleAsmInstr(paramRef);  //Instrucción destino
+      if instTarget.addr=-1 then begin
+        //La etiqueta aún no ha sido mapeada en memoria
+        {Define una posición tentativa, considerando que la etiqueta referenciada debe
+        estar más adelante. Luego se completará cuando se defina la etiqueta.}
+        Result := pic.iRam+3;
+      end else begin
+        Result := instTarget.addr;  //Toma su dirección.
+      end;
+    end else begin
+      GenError('Invalid Opcode operand.', paramRef.srcDec);
+      exit;
+    end;
+  end;
+  procedure ApplyOperations(operandId: TxpIDClass; operations: TxpElements; var param: integer);
+  {Apply the operations to the parameter}
+  var
+    i: Integer;
+    operat: TEleAsmOperat;
+  begin
+    for i:=1 to operations.Count-1 do begin  //Doesn't include operand.
+      operat := TEleAsmOperat(operations[i]);
+      case operat.operation of
+      aopAddValue: begin
+        param += operat.value;
+      end;
+      aopSubValue: begin
+        param -= operat.value;
+      end;
+      aopSelByte: begin
+        case operat.value of
+        0:  //Low byte
+          param := param and $ff;
+        1:  //High byte
+          if operandId=eleConsDec then  begin
+            //En constantes tomamos el byte alto
+            param := (param and $ff00)>>8
+          end else begin
+            //Para variables o funciones, tomamos la siguiente dirección
+            param := param+1;
+          end;
+        end ;
+      end;
+      end;
+    end;
+  end;
+  procedure WriteInstruction(cpu_inst: TP6502Inst; cpu_amod: TP6502AddMode; param: integer);
   {Codifica la instrucción a partir de la posiicón actual de la RAM.
-  Se debe haber ya definido: "inst.param" }
+  Se debe haber ya definido: "param" }
   var
     addressModes: TP6502AddModes;
     offset: Integer;
   begin
     addressModes := PIC16InstName[cpu_inst].addressModes;
     if cpu_amod = aRelative then begin  //Instrucciones de salto relativo
-      offset := inst.param-pic.iRam-2;
+      offset := param-pic.iRam-2;
       { TODO : Validar si el salto es mayor a 127 o menor a -128 }
       pic.codAsm(cpu_inst, aRelative, word(offset));
-    end else if (inst.param<256) then begin
+    end else if (param<256) then begin
       //It could be expressed as zero-page instruction
       if (cpu_amod = aAbsolute) and (aZeroPage in addressModes) then begin
-        pic.codAsm(cpu_inst, aZeroPage, inst.param);
+        pic.codAsm(cpu_inst, aZeroPage, param);
       end else if (cpu_amod = aAbsolutX) and (aZeroPagX in addressModes) then begin
-        pic.codAsm(cpu_inst, aZeroPagX, inst.param);
+        pic.codAsm(cpu_inst, aZeroPagX, param);
       end else if (cpu_amod = aAbsolutY) and (aZeroPagY in addressModes) then begin
-        pic.codAsm(cpu_inst, aZeroPagY, inst.param);
+        pic.codAsm(cpu_inst, aZeroPagY, param);
       end else begin
-        pic.codAsm(cpu_inst, cpu_amod, inst.param);
+        pic.codAsm(cpu_inst, cpu_amod, param);
       end;
     end else begin
-      pic.codAsm(cpu_inst, cpu_amod, inst.param);
+      pic.codAsm(cpu_inst, cpu_amod, param);
     end;
   end;
 var
-  xvar: TEleVarDec;
   cpu_inst: TP6502Inst;
   cpu_amod: TP6502AddMode;
   elem, opdo: TxpElement;
-  xfun: TEleFun;
-  xcon: TEleConsDec;
-  i   : Integer;
-  operat: TEleAsmOperat;
-  instTarget: TEleAsmInstr;
+  finalParam: Integer;
 begin
-  if inst.inst>=0 then begin   //Instrucción normal.
-    cpu_inst := TP6502Inst(inst.inst);
-    cpu_amod := TP6502AddMode(inst.addMode);
-    if (inst.param = -1) then begin
+  if asmInst.iType = itOpcode then begin   //Instrucción normal.
+    //Calculate the final Opcode operand parameter.
+    if (asmInst.param = -1) then begin
       //There is an expresion for the operand. We need to solve the parameter.
-      opdo := inst.elements[0];  //Operand
+      opdo := asmInst.elements[0];  //Operand
       if opdo.idClass <> eleAsmOperand then begin
         //We don't expect this happens.
         GenError('Design error.', opdo.srcDec);
         exit;
       end;
       elem := TEleAsmOperand(opdo).elem;
-      if (elem=nil) and (opdo.name = '$') then begin
-        inst.param := pic.iRam;
-      end else if elem.idClass = eleVarDec then begin
-        xvar := TEleVarDec(elem);
-        if not xvar.allocated then begin
-          GenError('Variable not allocated.', elem.srcDec);
-          exit;
-        end;
-        inst.param := xvar.addr;
-      end else if elem.idClass = eleConsDec then begin
-        xcon := TEleConsDec(elem);
-        if not xcon.evaluated then begin
-          GenError('Constant not evaluated.', elem.srcDec);
-          exit;
-        end;
-        inst.param := xcon.value.ValInt;
-      end else if elem.idClass = eleFunc then begin
-        xfun := TEleFun(elem);
-        if not xfun.coded then begin
-          GenError('Function not coded.', elem.srcDec);
-          exit;
-        end;
-        inst.param := xfun.adrr;
-      end else if elem.idClass = eleAsmInstr then begin
-        //Referencia a una instrucción ASM. Tal vez una etiqueta o DB, DW
-        instTarget := TEleAsmInstr(elem);  //Instrucción destino
-        if instTarget.addr=-1 then begin
-          //La etiqueta aún no ha sido mapeada en memoria
-          {Define una posición tentativa, considerando que la etiqueta referenciada debe
-          estar más adelante. Luego se completará cuando se defina la etiqueta.}
-          inst.param := pic.iRam+3;
-          //Guarda la instrucción, para completarla más adelante.
-          //instTarget.elements.Add(inst);  //!!! lo puede destruir
-        end else begin
-          inst.param := instTarget.addr;  //Toma su dirección.
-        end;
-      end else begin
-        GenError('Inalid Opcode operand.', elem.srcDec);
-        exit;
-      end;
-      //Validates possible operations
-      for i:=1 to inst.elements.Count-1 do begin
-        operat := TEleAsmOperat(inst.elements[i]);
-        case operat.operation of
-        aopAddValue: begin
-          inst.param += operat.value;
-        end;
-        aopSubValue: begin
-          inst.param -= operat.value;
-        end;
-        aopSelByte: begin
-          case operat.value of
-          0: inst.param := inst.param and $ff;
-          1: if elem.idClass=eleConsDec then  //En constantes tomamos el byte alto
-               inst.param := (inst.param and $ff00)>>8
-             else  //Para variables o funciones, tomamos la siguiente dirección
-               inst.param := (inst.param+1);
-          end ;
-        end;
-        end;
-      end;
+      //Resolve operand value
+      finalParam := ReadOperandValue(elem);
+      if HayError then exit;
+    end else if (asmInst.param = -2) then begin
+      //Operand is '$'
+      finalParam :=  pic.iRam;
+    end else begin
+      //Operand can be read directly
+      finalParam := asmInst.param;
     end;
-    inst.addr := pic.iRam;   //Set address
+    //Validates possible operations to the operand
+    ApplyOperations(elem.idClass, asmInst.elements, finalParam);
     //Write the instruction
-    WriteInstruction(cpu_inst, cpu_amod, inst);
-  end else if inst.inst = -1 then begin  //Instrucción etiqueta.
-    inst.addr := pic.iRam;   //Actualiza dirección actual
+    asmInst.addr := pic.iRam;   //Set address
+    cpu_inst := TP6502Inst(asmInst.opcode);
+    cpu_amod := TP6502AddMode(asmInst.addMode);
+    WriteInstruction(cpu_inst, cpu_amod, finalParam);
+  end else if asmInst.iType = itLabel then begin  //Instrucción etiqueta.
+    asmInst.addr := pic.iRam;   //Actualiza dirección actual
   end else begin
     //It's not an instruction
+    GenError('Inalid ASM instruction.', elem.srcDec);
+    exit;
   end;
 end;
 procedure TGenCodBas.GenCondeIF(sen: TxpEleSentence);
@@ -1832,8 +1858,9 @@ procedure TGenCodBas.GenCodeSentences(sentList: TxpElements);
 var
   eleSen, ele: TxpElement;
   sen: TxpEleSentence;
-  expSet, expAsm: TEleExpress;
+  expSet: TEleExpress;
   inst: TEleAsmInstr;
+  asmBlock: TEleAsmBlock;
 begin
   for eleSen in sentList do begin
     if eleSen.idClass <> eleSenten then begin
@@ -1856,10 +1883,18 @@ begin
       end;
     end;
     sntAsmBlock: begin
-      expAsm := TEleExpress(sen.elements[0]);  //Takes root node.
-      for ele in expAsm.elements do begin
+      asmBlock := TEleAsmBlock(sen.elements[0]);  //Takes root node.
+      for ele in asmBlock.elements do begin
         inst := TEleAsmInstr(ele);
         GenCodeASMline(inst);
+      end;
+      //Remains to complete uncomplete instructions
+      for inst in asmBlock.uncInstrucs do begin
+        pic.iRam := inst.addr;   //Set at its original RAM position
+        GenCodeASMline(inst);    //Overwrite the code to complete
+        { TODO : Sería mejor analizar si podría darse el caso de que la nueva instrucción
+        tenga un tamaño diferente a la grabada anteriormente. De ser así, habría
+        un grave error. }
       end;
     end;
     sntIF: begin

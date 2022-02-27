@@ -1,5 +1,5 @@
 object frmPrincipal: TfrmPrincipal
-  Left = 409
+  Left = 563
   Height = 790
   Top = 122
   Width = 1166
@@ -18,11 +18,11 @@ object frmPrincipal: TfrmPrincipal
   OnKeyDown = FormKeyDown
   OnShow = FormShow
   Position = poScreenCenter
-  LCLVersion = '2.0.10.0'
+  LCLVersion = '2.0.12.0'
   object StatusBar1: TStatusBar
     Left = 0
-    Height = 28
-    Top = 737
+    Height = 29
+    Top = 736
     Width = 1166
     Panels = <    
       item
@@ -690,7 +690,7 @@ object frmPrincipal: TfrmPrincipal
   object panMessages: TPanel
     Left = 0
     Height = 102
-    Top = 635
+    Top = 634
     Width = 1166
     Align = alBottom
     ParentFont = False
@@ -700,7 +700,7 @@ object frmPrincipal: TfrmPrincipal
     Cursor = crVSplit
     Left = 0
     Height = 8
-    Top = 627
+    Top = 626
     Width = 1166
     Align = alBottom
     ResizeAnchor = akBottom

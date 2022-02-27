@@ -112,6 +112,7 @@ var
   xtyp: TEleTypeDec;
   xfundec: TEleFunDec;
   asmInst: TEleAsmInstr;
+  asmBlock: TEleAsmBlock;
 begin
   if elem0 = nil then exit;
   elem := elem0;
@@ -240,18 +241,18 @@ begin
     ImageList1.GetBitmap(0, Image1.Picture.Bitmap);
     adicInformation := '';
   end else if elem.idClass = eleAsmBlock then begin
-    //sen := TxpEleSentence(elem);
+    asmBlock := TEleAsmBlock(elem);
     txtEleType.Caption := 'ASM Block';
     ImageList1.GetBitmap(0, Image1.Picture.Bitmap);
-    adicInformation := '';
+    adicInformation := 'Instructions: ' + IntToStr(asmBlock.elements.Count) + LineEnding +
+                    'Incomplete instructions: ' + IntToStr(asmBlock.uncInstrucs.Count);
   end else if elem.idClass = eleAsmInstr then begin
-    //sen := TxpEleSentence(elem);
     asmInst := TEleAsmInstr(elem);
     txtEleType.Caption := 'ASM instruction';
     ImageList1.GetBitmap(19, Image1.Picture.Bitmap);
-    if asmInst.inst >=0 then begin
+    if asmInst.iType = itOpcode then begin
       adicInformation := 'Opcode instruction';
-    end else if asmInst.inst =-1 then begin
+    end else if asmInst.iType = itLabel then begin
       adicInformation := 'ASM label';
     end else begin
       adicInformation := '';

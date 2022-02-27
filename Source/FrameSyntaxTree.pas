@@ -168,7 +168,7 @@ begin
     nod.SelectedIndex := 12;
   end else if elem.idClass = eleAsmInstr then begin
     asmInst := TEleAsmInstr(elem);
-    if asmInst.inst = -1 then begin  //Etiquetas
+    if asmInst.iType = itLabel then begin  //Etiquetas
       nod.ImageIndex := 22;
       nod.SelectedIndex := 22;
     end else begin
