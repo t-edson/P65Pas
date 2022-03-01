@@ -245,7 +245,7 @@ begin
     txtEleType.Caption := 'ASM Block';
     ImageList1.GetBitmap(0, Image1.Picture.Bitmap);
     adicInformation := 'Instructions: ' + IntToStr(asmBlock.elements.Count) + LineEnding +
-                    'Incomplete instructions: ' + IntToStr(asmBlock.uncInstrucs.Count);
+                    'Incomplete instructions: ' + IntToStr(asmBlock.undefInstrucs.Count);
   end else if elem.idClass = eleAsmInstr then begin
     asmInst := TEleAsmInstr(elem);
     txtEleType.Caption := 'ASM instruction';

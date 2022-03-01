@@ -597,9 +597,8 @@ The next example shows how to access to a Pascal constant:
 ```
 const
   SMALL = $FF;
-  BIG   = $FF;
+  BIG   = $1234;
 begin
-  //Low level clear
   asm 
     LDA #SMALL
 	LDX #<BIG   ;low byte
@@ -615,13 +614,26 @@ It's possible to use the directive ORG inside a ASM block, too:
 ```
   asm 
     org $-2
-  end
+  end;
   vbit := 1;
 ```
 
 The address in ORG, can be absolute or relative. 
 
 WARNING: Changing the PC pointer with ORG, can generate errors in the compilation or in execution.
+
+The directive DB allows to define a byte in a specific position of the code:
+
+```
+  asm 
+    JMP code
+tmp_var:
+   DB $00  ;variable temporal
+code:
+  LDA tmp_var
+  end;
+```
+
 
 ## Directives
 

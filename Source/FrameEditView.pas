@@ -365,6 +365,11 @@ porque no se tiene acceso a los lexer que procesan los bloques ASM y Directivas.
       while (i<=length(lin)) and (lin[i] in ['A'..'Z','a'..'z','0'..'9','_']) do begin
         inc(i);
       end;
+    end else if lin[i] = ' ' then begin
+      //Es espacio. Ubica fin espacio
+      while (i<=length(lin)) and (lin[i]=' ') do begin
+        inc(i);
+      end;
     end else begin
       //Es otro token. Ubica espacio o fin de línea
       while (i<=length(lin)) and (lin[i]<>' ') do begin

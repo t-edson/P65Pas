@@ -1653,7 +1653,7 @@ begin
 end;
 procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
 {Generate code for an ASM instruction (element TEleAsmInstr).}
-  function ReadOperandValue(paramRef: TxpElement): integer;
+  function ReadOperandValueRef(paramRef: TxpElement): integer;
   {Read the value of a Operand when it's a reference to an element.}
   var
     xvar: TEleVarDec;
@@ -1699,34 +1699,58 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
       exit;
     end;
   end;
-  procedure ApplyOperations(operandId: TxpIDClass; operations: TxpElements; var param: integer);
-  {Apply the operations to the parameter}
+  procedure ReadOperandValue(out operRef: TxpElement; out operVal: integer);
+  {Read the value of an instruction Operand in "operVal".
+  "operRef" returns the reference to the element when operand is an "element operand",
+  otherwise returns NIL.}
+  begin
+    if (asmInst.operVal = -1) then begin
+      //There is an expresion for the operand. We need to solve the parameter.
+      operRef := asmInst.operRef;
+      //Resolve operand value
+      operVal := ReadOperandValueRef(operRef);
+      if HayError then exit;
+    end else if (asmInst.operVal = -2) then begin
+      //Operand is '$'
+      operRef := nil;
+      operVal :=  pic.iRam;
+    end else begin
+      //Operand can be read directly
+      operRef := nil;
+      operVal := asmInst.operVal;
+    end;
+  end;
+  procedure ApplyOperations(operRef: TxpElement; operations: TxpElements; var operVal: integer);
+  {Apply the operations to the parameter "operVal"}
   var
     i: Integer;
     operat: TEleAsmOperat;
   begin
-    for i:=1 to operations.Count-1 do begin  //Doesn't include operand.
+    for i:=0 to operations.Count-1 do begin
       operat := TEleAsmOperat(operations[i]);
       case operat.operation of
       aopAddValue: begin
-        param += operat.value;
+        operVal += operat.value;
       end;
       aopSubValue: begin
-        param -= operat.value;
+        operVal -= operat.value;
       end;
       aopSelByte: begin
         case operat.value of
         0:  //Low byte
-          param := param and $ff;
+          operVal := operVal and $ff;
         1:  //High byte
-          if operandId=eleConsDec then  begin
+          if operRef = nil then  begin
+            //No hay referencia a operando.
+            operVal := (operVal and $ff00)>>8
+          end else if operRef.idClass = eleConsDec then  begin
             //En constantes tomamos el byte alto
-            param := (param and $ff00)>>8
+            operVal := (operVal and $ff00)>>8
           end else begin
             //Para variables o funciones, tomamos la siguiente dirección
-            param := param+1;
+            operVal := operVal+1;
           end;
-        end ;
+        end;
       end;
       end;
     end;
@@ -1759,44 +1783,38 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
     end;
   end;
 var
-  cpu_inst: TP6502Inst;
-  cpu_amod: TP6502AddMode;
-  elem, opdo: TxpElement;
-  finalParam: Integer;
+  cpu_inst    : TP6502Inst;
+  cpu_amod    : TP6502AddMode;
+  operRef     : TxpElement;
+  finalOperVal: Integer;
 begin
   if asmInst.iType = itOpcode then begin   //Instrucción normal.
     //Calculate the final Opcode operand parameter.
-    if (asmInst.param = -1) then begin
-      //There is an expresion for the operand. We need to solve the parameter.
-      opdo := asmInst.elements[0];  //Operand
-      if opdo.idClass <> eleAsmOperand then begin
-        //We don't expect this happens.
-        GenError('Design error.', opdo.srcDec);
-        exit;
-      end;
-      elem := TEleAsmOperand(opdo).elem;
-      //Resolve operand value
-      finalParam := ReadOperandValue(elem);
-      if HayError then exit;
-    end else if (asmInst.param = -2) then begin
-      //Operand is '$'
-      finalParam :=  pic.iRam;
-    end else begin
-      //Operand can be read directly
-      finalParam := asmInst.param;
-    end;
+    ReadOperandValue(operRef, finalOperVal);
     //Validates possible operations to the operand
-    ApplyOperations(elem.idClass, asmInst.elements, finalParam);
+    ApplyOperations(operRef, asmInst.elements, finalOperVal);
     //Write the instruction
     asmInst.addr := pic.iRam;   //Set address
     cpu_inst := TP6502Inst(asmInst.opcode);
     cpu_amod := TP6502AddMode(asmInst.addMode);
-    WriteInstruction(cpu_inst, cpu_amod, finalParam);
+    WriteInstruction(cpu_inst, cpu_amod, finalOperVal);
   end else if asmInst.iType = itLabel then begin  //Instrucción etiqueta.
     asmInst.addr := pic.iRam;   //Actualiza dirección actual
+  end else if asmInst.iType = itOrgDir then begin  //Instrucción ORG.
+    //Calculate the final Opcode operand parameter.
+    ReadOperandValue(operRef, finalOperVal);
+    //Validates possible operations to the operand
+    ApplyOperations(operRef, asmInst.elements, finalOperVal);
+    pic.iRam := finalOperVal;   //Actualiza dirección actual
+  end else if asmInst.iType = itDefByte then begin  //Instrucción ORG.
+    //Calculate the final Opcode operand parameter.
+    ReadOperandValue(operRef, finalOperVal);
+    //Validates possible operations to the operand
+    ApplyOperations(operRef, asmInst.elements, finalOperVal);
+    pic.codByte(finalOperVal and $ff, true);
   end else begin
     //It's not an instruction
-    GenError('Inalid ASM instruction.', elem.srcDec);
+    GenError('Inalid ASM instruction.', asmInst.srcDec);
     exit;
   end;
 end;
@@ -1889,7 +1907,7 @@ begin
         GenCodeASMline(inst);
       end;
       //Remains to complete uncomplete instructions
-      for inst in asmBlock.uncInstrucs do begin
+      for inst in asmBlock.undefInstrucs do begin
         pic.iRam := inst.addr;   //Set at its original RAM position
         GenCodeASMline(inst);    //Overwrite the code to complete
         { TODO : Sería mejor analizar si podría darse el caso de que la nueva instrucción

@@ -388,6 +388,8 @@ var
   p: TSrcPos;
 begin
   //Debe haber parámetros
+  debugln('fila= ' + IntToStr(curCtx.row) + ',' + IntTostr(curctx.col) + ',' +
+      token + ',' + curctx.curLine);
   if token<>ctok then begin
     //No se encontró el token. Muestra mensaje de error.
     {Pero el error, debe estar antes, así que hacemos la magia de explorar hacia atrás,
@@ -395,8 +397,13 @@ begin
     p := GetSrcPos;   //posición actual
     x := p.col;   //lee posición actual
     if x>1 then begin
-      //Hay algo antes del token
-      lin := curCtx.CurLine;
+      //Hay algo antes del token. Tomamos la línea
+      if tokType = tkEol then begin
+        //Ya estamos apuntando a la siguiente línea
+        lin := curCtx.curLines[curCtx.row-2];  //Leemos la anterior
+      end else begin
+        lin := curCtx.CurLine;
+      end;
       repeat
         dec(x);
       until (x<=1) or (lin[x] <> ' ');

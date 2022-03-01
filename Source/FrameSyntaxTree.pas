@@ -175,9 +175,6 @@ begin
       nod.ImageIndex := 19;
       nod.SelectedIndex := 19;
     end;
-  end else if elem.idClass = eleAsmOperand then begin
-    nod.ImageIndex := 18;
-    nod.SelectedIndex := 18;
   end else if elem.idClass = eleAsmOperat then begin
     nod.ImageIndex := 20;
     nod.SelectedIndex := 20;

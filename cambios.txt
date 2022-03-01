@@ -48,10 +48,19 @@ bloques ASM.
 - Se agregan llamadas (Caller) a las instrucciones etiqueta en los bloques ASM.
 - Se modifica el examinador de objetos para dar mayor información sobre las instrucciones 
 ASM.
-- Se mueve la lista de uJumps (renombrada como undJumps) de la unidad ParserASM_6502 a
+- Se mueve la lista de uJumps (renombrada como undefInstrucs) de la unidad ParserASM_6502 a
 un campo de la clase TEleAsmBlock.
 - Se crea el campo TEleAsmInstr.iType para clasificar a las instrucciones.
-- Se cambia el campo TEleAsmInstr.inst por TEleAsmInstr.
+- Se cambia el campo TEleAsmInstr.inst por TEleAsmInstr.opcode.
+- Se elimina la clase TEleAsmOperand y se pasa a usar un campo nuevo en TEleAsmInstr.
+- Se cambia el campo TEleAsmInstr.param por TEleAsmInstr.operVal.
+- Se reordena TParserAsm_6502.CaptureParam() y se le incluye un parámetro de instrucción.
+- Se implementa la directiva ORG con opción de operandos con expresiones.
+- Se renombra TParserAsm_6502.CaptureParam a TParserAsm_6502.CaptureOperand().
+- Se implementa la directiva DB en los blqoues ensamblador.
+- Se corrige rutina de resaltado de errores TSynEditor.MarkError() para considerar tokens 
+de tipo espacio.
+- Se corrige la rutina TCompilerBase.CaptureTok() para cuando se produce un salto de línea.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?

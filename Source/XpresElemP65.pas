@@ -206,7 +206,7 @@ type  //TxpElement class
                 eleFinal,     //FINALIZATION section
                 //Expressions
                 eleExpress,   //Expression
-                eleAsmOperand,//ASM Operand
+                //eleAsmOperand,//ASM Operand
                 eleAsmOperat, //ASM Operation
                 eleCondit,    //Condition
                 //Instructions relative
@@ -448,13 +448,6 @@ type  //Expression elements
     aopSubValue  //Resta un valor
   );
 
-  { TxpEleOperand }
-  {Represent an operand in ASM expressions.}
-  TEleAsmOperand = class(TxpElement)
-    elem: TxpElement;  //Reference to element if apply.
-    constructor Create; override;
-  end;
-
   { TxpEleOperator }
   {Represent an operation in ASM expressions.}
   TEleAsmOperat= class(TxpElement)
@@ -628,16 +621,16 @@ type  //Instructions relative elements
     addr   : integer;  //Starting Address. Used only in code generation.
     iType  : TiType;   //ASM instruction type
     //Fields to generate instructions, using TP6502.codAsm() or similar.
-    opcode : word;    {Formally should be TP6502Inst or similar. Defined as word because
-                       we don't want to depend on unit P6502Utils here. }
-    addMode: byte;    {Formally should be TP6502AddMode or similar. Defined as byte
-                       because we don't want to depend on unit P6502Utils here. }
-    param  : integer; {Represents the operand of the instruction, when it's a simple
-                       number. When it's -1, this element have child elements, operand
-                       is an expression and it's stored in child elements, in the format
-                       described in documentation.}
-    operRef: TxpElement;  {Reference to element when operand refers to some Pascal or
-                           ASM element.}
+    opcode : word;     {Formally should be TP6502Inst or similar. Defined as word
+                        because we don't want to depend on unit P6502Utils here. }
+    addMode: byte;     {Formally should be TP6502AddMode or similar. Defined as byte
+                        because we don't want to depend on unit P6502Utils here. }
+    operVal: integer;  {The value of instruction operand, when it's a simple number.
+                        When it's -1, the operand is a reference to an element and
+                        should be read in "operRef".}
+    operRef: TxpElement; {Reference to element when operand refers to some Pascal or
+                          ASM element.}
+    operNam: string;  {Operand name. Used when operand is an unsolved reference}
     constructor Create; override;
   end;
   TEleAsmInstrs = specialize TFPGObjectList<TEleAsmInstr>;
@@ -645,7 +638,7 @@ type  //Instructions relative elements
   { TEleAsmBlock }
   {Represents an ASM block. An ASM block contains several ASM lines ()}
   TEleAsmBlock = class(TxpElement)
-    uncInstrucs: TEleAsmInstrs;   //List of instruction with operands undefined
+    undefInstrucs: TEleAsmInstrs;   //List of instruction with operands undefined
     constructor Create; override;
     destructor Destroy; override;
   end;
@@ -838,17 +831,11 @@ begin
   inherited Create;
   idClass := eleAsmOperat;
 end;
-{ TxpEleOperand }
-constructor TEleAsmOperand.Create;
-begin
-  inherited Create;
-  idClass := eleAsmOperand;
-end;
+{ TEleExpress }
 function TEleExpress.opTypeAsStr: string;
 begin
   WriteStr(Result, opType);
 end;
-{ TEleExpress }
 function TEleExpress.StoAsStr: string;
 //Resturns storage as string.
 begin
@@ -986,12 +973,12 @@ constructor TEleAsmBlock.Create;
 begin
   inherited Create;
   idClass := eleAsmBlock;
-  uncInstrucs:= TEleAsmInstrs.Create(false);
+  undefInstrucs:= TEleAsmInstrs.Create(false);
 end;
 
 destructor TEleAsmBlock.Destroy;
 begin
-  uncInstrucs.Destroy;
+  undefInstrucs.Destroy;
   inherited Destroy;
 end;
 
