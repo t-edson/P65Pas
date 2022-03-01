@@ -297,6 +297,9 @@ begin
       //Los saltos indefinidos, se guardan en la lista "undJumps"
       curBlock.undefInstrucs.Add(inst);
       cpx.Next;
+      //Check for operations
+      ScanOperations(positOper);
+      if cpx.HayError then exit(false);
       exit(true);
     end else begin
       //Se identifica un elemento del lenguaje

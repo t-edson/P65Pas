@@ -1,18 +1,19 @@
 P65PAS 0.8.9
 ============
 COMENTARIOS
-Inicio de una nueva versión. 
 La versión anterior dejó bien establecidos los mecanismos para que la funciones de sistema 
 puedan incluir dependencias de funciones y variables auxiliares. Lo mejor de todo es que
 esos mecanismos están, ahora, bien documentados.
 Además, ya se tiene el mecanismo para dividir las expresiones en el formato TAC (Cödigo de
-tres direcciones) lo que ha eliminado completamente el problema de registros de trbajo 
+tres direcciones) lo que ha eliminado completamente el problema de registros de trabajo 
 ocupado. Queda ahora pendiente diseñar el mecanismo para poder reutilizar las variables 
 requeridas en esta transformación.
 Es de resaltar el avance de la actualización de la documentación que cuenta ahora con más
 páginas y solo quedan algunas porciones por actualizar o corregir.
-
-Se espera ahora avanzar en la implementación de un compilador funcional.
+En esta versión se ha implementado completamente (con considerables mejoras) el 
+análisis y síntesis de los bloques ASM, rediseñando gran parte de las rutinas. Para 
+complementar las mejoras, se ha incluido información bastante completa en la documentación
+técnica.
 
 OBJETIVOS
 - Avanzar en la implementación de las funciones INLINE de usuario.
