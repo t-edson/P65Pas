@@ -1,187 +1,196 @@
 {Rutina de verificación de las rutinas en ensamblador.}
-{$FREQUENCY 8Mhz}
-{$OUTPUTHEX 'output.hex'}
 {$Mode Pascal}
-uses PIC16F84A;
+uses Commodore64;
 var
-  pinLed: bit absolute PORTB.0;
   vbyte: byte;
   vword: word;
 	vbool: boolean;
-  vbit: bit;
 var
-  abyte: byte absolute $20;
+  abyte: byte;
 const
 	CBYTE = 3;
 
-  procedure bien;
-  begin
-    pinLed := 1;
-    delay_ms(30);
-    pinLed := 0;
-    delay_ms(70);
-  end;
-  procedure Mal;
-  begin
-    pinLed := 1;
-    delay_ms(1500);
-    pinLed := 0;
-    asm SLEEP end
-  end;
+procedure bien;
+begin
+  CHROUT('O');
+  CHROUT('K');
+  CHROUT(chr(13));
+end;
+procedure Mal;
+begin
+  CHROUT('E');
+  CHROUT('R');
+  CHROUT('R');
+  CHROUT('O');
+  CHROUT('R');
+  CHROUT(chr(13));
+  //Aditional RTS to exit proc. and program.
+  asm RTS end   
+end;
 
   //Función para prueba de lectura y devolución de valores
   procedure SetTo8040: word;  //Devuelve $8040
   begin
     asm
-      ;El resultado de un word, se devuelve en _H (parte alta) y W (parte baja)
-      MOVLW $80
-      MOVWF _H
-      MOVLW $40
+      ;El resultado de un word, se devuelve en _H (parte alta) y A (parte baja)
+      LDA# $80
+      STA __H
+      LDA# $40
     end
   end; 
 
-  procedure Multiplicar (multiplicando, multiplicador : byte) : word;
+  procedure Multiplicar(fac1, fac2 : byte) : word;
   var
     resultado: word;
   begin
    ASM
    ;Inicializacion de Registros
-     BCF STATUS_RP0            ; RP0=0 / Trabajamos en el Banco de memoria 0.
-     CLRF resultado.LOW        ; Limpia el byte bajo de la variable global resultado.
-     CLRF resultado.HIGH       ; Limpia el byte alto de la variable global resultado.
-	   CLRF _H
-   ;Comprueba multiplicacion por cero.
-     MOVLW $00
-     SUBWF multiplicador,W
-     BTFSC STATUS_Z
-     GOTO MULT_FIN             ; Si multiplicador = 0 entonces acabar.
-   ;LOOP de multiplicacion
-   MULT_LOOP:
-     MOVF multiplicando,W      ; Carga el multiplicador en el registro W.
-     ADDWF resultado.LOW,F     ; Suma el valor de multiplicando al byte bajo de la variable global resultado
-     BTFSC STATUS_C        ; Comprueba el bit CARRY del registro STATUS.
-     INCF resultado.HIGH,F     ; Si CARRY es 0 resultado.LOW se ha desbordado se incrementa resultado.HIGH
-     DECFSZ multiplicador,F    ; Decrementa multiplicador y comprueba si ha llegado a cero.
-     GOTO MULT_LOOP            ; nuevo paso del bucle de multiplicacion.
-   MULT_FIN:
-   END
+        ; A*256 + X = FAC1 * FAC2
+MUL8:
+        lda #$00
+        ldx #$08
+        clc
+m0:     bcc m1
+        clc
+        adc FAC2
+m1:     ror
+        ror FAC1
+        dex
+        bpl m0
+        ldx FAC1
+        ;Devuelve en "resultado"
+        STA resultado+1
+        STX resultado 
+        rts
+   END;
    exit(resultado);
   end;
-
+procedure TestOpcodes;
 begin
-  SetAsOutput(pinLed);
-  pinLed := 0;
-
 asm
   ;Opcode test
-  ADDWF vbyte, w
-  ANDWF vbyte, w
-  CLRF vbyte
-  CLRW 
-  COMF vbyte, f
-  DECF vbyte, f
-  INCF vbyte, w
-
-  ;test jumps
-  DECFSZ vbyte, w
-	NOP
-  INCFSZ vbyte, w
-	NOP
- 
-  IORWF vbyte, w
-  MOVF vbyte, w
-  MOVWF vbyte
-  RLF vbyte, w
-  RRF vbyte, w
-  SUBWF vbyte, w
-  SWAPF vbyte, w
-  XORWF vbyte, w
-  BCF vbyte, 0
-  BSF vbyte, 0
-  BTFSC vbyte, 0
-	NOP
-  BTFSS vbyte, 0
+  ADC #0
+  AND abyte
+  ASL abyte, x
+  BCC endlabel
+  BCS endlabel
+  BEQ endlabel
+  BIT abyte
+  BMI endlabel
+  BNE endlabel
+  BPL endlabel
+  BRK 
+  BVC endlabel
+  BVS endlabel
+  CLC
+  CLD
+  CLI
+  CLV
+  CMP 255
+  CPX $10
+  CPY #123
+  DEC abyte
+  DEX
+  DEY
+  EOR abyte
+  INC abyte
+  INX 
+  INY
+  JMP endlabel
+  JSR endlabel
+  LDA 1
+  LDX 2
+  LDY 3
+  LSR abyte
   NOP
-  ADDLW 0
-  ANDLW 0
-  ;CALL 
-  CLRWDT 
-  GOTO $+1
-  IORLW 0
-  MOVLW 0
-  ;RETFIE
-  ;RETLW 
-	;RETURN 
-  ;SLEEP 
-	SUBLW 0
-	XORLW 0
-end
+  ORA abyte
+  PHA
+  PHP
+  PLA
+  PLP
+  ROL abyte
+  ROR abyte
+  RTI
+  RTS
+  SBC abyte
+  SEC 
+  SED
+  SEI
+  STA abyte 
+  STX abyte
+  STY abyte
+  TAX
+  TAY
+  TSX
+  TXA
+  TXS
+  TYA
+endlabel:
+end;
+end; 
+  
+begin
+
   //variable asigment
 	abyte := 66;
 	asm
-    MOVLW 65
-    MOVWF $20  ;absolute address
-  end
+    LDA# 65
+    STA abyte
+  end;
   if abyte = 65 then bien else mal; 
 
   vbyte := 0;
   asm
-    MOVLW 5
-	  MOVWF vbyte
-	end
+    LDX #5
+	  STX vbyte
+	end;
   if vbyte = 5 then bien else mal; 
 
   vbool := false;
-  asm BSF vbool end
+  asm 
+  LDA #$FF
+  STA vbool
+  end;
   if vbool then bien else mal; 
 
-  vbit := 1;
-  asm BCF vbit end
-  if vbit=0 then bien else mal; 
-
-  vbit := 1;
-  asm 
-    BTFSC vbit
-    BCF vbit 
-  end
-  if vbit=0 then bien else mal; 
-	
 	//constant access
   vbyte := 0;
   asm 
-    MOVLW CBYTE 
-    MOVWF vbyte
-  end
+    LDA # CBYTE 
+    STA vbyte
+  end;
   if vbyte = CBYTE then bien else mal; 
 
   vbyte := 0;
   asm 
-    BSF vbyte, CBYTE
-  end
+    LDA #$08
+    ORA VBYTE
+  end;
   if vbyte = 8 then bien else mal; 
 
 	//jumps
   asm 
-    GOTO $+2
-    SLEEP  ;stop if not jump
-  end
+    JMP $+1
+    BRK ;stop if not jump
+  end;
 
 	vbyte := 10;
   asm 
-    DECFSZ vbyte, f
-    GOTO $-1
-  end
-  if vbit=0 then bien else mal; 
+    DEC vbyte
+    BEQ $+2
+    JMP $-3
+  end;
 
 	vbyte := 10;
   asm 
   label1:
-    DECFSZ vbyte, f
-    GOTO label1
-  end
-  if vbit=0 then bien else mal; 
-  asm org $ end
-  vbit := 1;
+    DEC vbyte
+    BEQ salir
+    JMP label1
+salir:
+  end;
+
+  asm org $ end;
 
 	vword := SetTo8040;
 	if vword = $8040 then bien else mal;

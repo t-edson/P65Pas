@@ -597,6 +597,7 @@ begin
   //TreeElems.AddElement(xvar);
   //Result := xvar;
   Result := TreeElems.AddElementVarAndOpen(srcPos, varName, eleTyp);
+  Result.storage := stRamFix;
 end;
 function TCompilerBase.AddConstantAndOpen(conName: string; eleTyp: TEleTypeDec;
   srcPos: TSrcPos): TEleConsDec;

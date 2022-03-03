@@ -99,16 +99,19 @@ type  //Instructions set
   TP6502AddModes = set of TP6502AddMode;
   //Instruction Information for each Address Mode
   TInstructInform = record
-    Opcode: byte;   //Code for instruction
-    nBytes: byte;   //Num. of bytes of the instruction.
-    Cycles: byte;   //Num. of cycles the instruction takes.
-    optCycles: string;  //Extra options in Num. of cycles.
+    Opcode   : byte; //Code for instruction
+    nBytes   : byte; //Num. of bytes of the instruction.
+    Cycles   : byte; //Num. of cycles the instruction takes.
+    optCycles: byte; {Extra options in Num. of cycles:
+                      0 -> No aditional cycles.
+                      1 -> Add 1 to cycles if page boundery is crossed
+                      2 -> Add 1 to cycles if branch occurs on same page.
+                           Add 2 to cycles if branch occurs to different page.
+                     }
   end;
 
-  //Record for a 6502 instruction
-
   { TP6502Instruct }
-
+  //Record for a 6502 instruction
   TP6502Instruct = object
   public
     //Name of the instruction
@@ -120,7 +123,8 @@ type  //Instructions set
   public
     procedure Init(name0: string);
     procedure AddAddressMode(aMode: TP6502AddMode; Opcode, nBytes, nCycles: Byte;
-      optCycles: string);
+      optCycles: byte);
+    function HasOpcode(opc: byte; out adMod: TP6502AddMode): boolean;
   end;
 
 const  //Constants of address and bit positions for some registers
@@ -214,7 +218,7 @@ type
   end;
 
 var  //Global variables
-  //mnemónico de las instrucciones
+  //Instruction mnemonics.
   PIC16InstName: array[low(TP6502Inst)..high(TP6502Inst)] of TP6502Instruct;
 
 
@@ -252,14 +256,13 @@ begin
 end;
 procedure TP6502Instruct.AddAddressMode(aMode: TP6502AddMode;
           Opcode, nBytes, nCycles: Byte;
-          optCycles: string);
+          optCycles: byte);
 {Add a new Address Mode including additional information.
 "optCycles" is a flag and indicate aditional considerations on cycles:
-
-'*'  -> Add 1 to cycles if page boundery is crossed
-
-'**' -> Add 1 to cycles if branch occurs on same page
-        Add 2 to cycles if branch occurs to different page
+0 -> No aditional considerations.
+1 -> Add 1 to cycles if page boundery is crossed
+2 -> Add 1 to cycles if branch occurs on same page.
+     Add 2 to cycles if branch occurs to different page.
 }
 begin
   addressModes := addressModes + [aMode];  //Register Mode
@@ -269,7 +272,16 @@ begin
   instrInform[aMode].Cycles:= nCycles;
   instrInform[aMode].optCycles := optCycles;
 end;
-
+function TP6502Instruct.HasOpcode(opc: byte; out adMod: TP6502AddMode
+  ): boolean;
+{Indicates if the Opcode "opc" exits in this instruction. If so, returns TRUE and
+the address mode in "adMod".}
+begin
+  for adMod in addressModes do begin  //Test for all Address modes supported.
+    if instrInform[adMod].Opcode = opc then exit(true);
+  end;
+  exit(false);
+end;
 { TP6502 }
 procedure TP6502.useRAMCode;
 {Set current position as used and increase the index iRam. If error;update "MsjError"}
@@ -507,20 +519,12 @@ If not found, returns "i_Inval" in "idIns".
 }
 var
   i : TP6502Inst;
-  j : TP6502AddMode;
-  inst: TP6502Instruct;
-  iInfom: TInstructInform;
 begin
   //Search the Opcode
   for i := low(TP6502Inst) to high(TP6502Inst) do begin
-    inst := PIC16InstName[i];
-    for j := low(TP6502AddMode) to high(TP6502AddMode) do begin
-      iInfom := inst.instrInform[j];
-      if iInfom.Opcode = opCode then begin
-        idIns := i;
-        modIns := j;
-        exit;
-      end;
+    if PIC16InstName[i].HasOpcode(opCode, modIns) then begin
+      idIns := i;
+      exit;
     end;
   end;
   //Not found
@@ -1427,221 +1431,223 @@ begin
   inherited Destroy;
 end;
 procedure InitTables;
+var
+  i : TP6502Inst;
+  j : TP6502AddMode;
 begin
   ///////////////////////////////////////////////////////////////////
   ////////////////// Set instructions information ///////////////////
   // Based on the information from:
   //   http://www.masswerk.at/6502/6502_instruction_set.html
   ///////////////////////////////////////////////////////////////////
-
-  ////////////////////////////// ADC ////////////////////////////////
+  //////////////////////////////
   PIC16InstName[i_ADC].name := 'ADC';  //Add Memory to Accumulator with Carry
-  PIC16InstName[i_ADC].AddAddressMode(aImmediat,$69,2,2,'');
-  PIC16InstName[i_ADC].AddAddressMode(aZeroPage,$65,2,3,'');
-  PIC16InstName[i_ADC].AddAddressMode(aZeroPagX,$75,2,4,'');
-  PIC16InstName[i_ADC].AddAddressMode(aAbsolute,$6D,3,4,'');
-  PIC16InstName[i_ADC].AddAddressMode(aAbsolutX,$7D,3,4,'*');
-  PIC16InstName[i_ADC].AddAddressMode(aAbsolutY,$79,3,4,'*');
-  PIC16InstName[i_ADC].AddAddressMode(aIndirecX,$61,2,6,'');
-  PIC16InstName[i_ADC].AddAddressMode(aIndirecY,$71,2,5,'*');
+  PIC16InstName[i_ADC].AddAddressMode(aImmediat,$69,2,2,0);
+  PIC16InstName[i_ADC].AddAddressMode(aZeroPage,$65,2,3,0);
+  PIC16InstName[i_ADC].AddAddressMode(aZeroPagX,$75,2,4,0);
+  PIC16InstName[i_ADC].AddAddressMode(aAbsolute,$6D,3,4,0);
+  PIC16InstName[i_ADC].AddAddressMode(aAbsolutX,$7D,3,4,1);
+  PIC16InstName[i_ADC].AddAddressMode(aAbsolutY,$79,3,4,1);
+  PIC16InstName[i_ADC].AddAddressMode(aIndirecX,$61,2,6,0);
+  PIC16InstName[i_ADC].AddAddressMode(aIndirecY,$71,2,5,1);
   PIC16InstName[i_AND].name := 'AND';  //AND Memory with Accumulator
-  PIC16InstName[i_AND].AddAddressMode(aImmediat,$29,2,2,'');
-  PIC16InstName[i_AND].AddAddressMode(aZeroPage,$25,2,3,'');
-  PIC16InstName[i_AND].AddAddressMode(aZeroPagX,$35,2,4,'');
-  PIC16InstName[i_AND].AddAddressMode(aAbsolute,$2D,3,4,'');
-  PIC16InstName[i_AND].AddAddressMode(aAbsolutX,$3D,3,4,'*');
-  PIC16InstName[i_AND].AddAddressMode(aAbsolutY,$39,3,4,'*');
-  PIC16InstName[i_AND].AddAddressMode(aIndirecX,$21,2,6,'');
-  PIC16InstName[i_AND].AddAddressMode(aIndirecY,$31,2,5,'*');
+  PIC16InstName[i_AND].AddAddressMode(aImmediat,$29,2,2,0);
+  PIC16InstName[i_AND].AddAddressMode(aZeroPage,$25,2,3,0);
+  PIC16InstName[i_AND].AddAddressMode(aZeroPagX,$35,2,4,0);
+  PIC16InstName[i_AND].AddAddressMode(aAbsolute,$2D,3,4,0);
+  PIC16InstName[i_AND].AddAddressMode(aAbsolutX,$3D,3,4,1);
+  PIC16InstName[i_AND].AddAddressMode(aAbsolutY,$39,3,4,1);
+  PIC16InstName[i_AND].AddAddressMode(aIndirecX,$21,2,6,0);
+  PIC16InstName[i_AND].AddAddressMode(aIndirecY,$31,2,5,1);
   PIC16InstName[i_ASL].name := 'ASL';  //Shift Left One Bit (MemoryorAccumulator)
-  PIC16InstName[i_ASL].AddAddressMode(aAcumulat,$0A,1,2,'');
-  PIC16InstName[i_ASL].AddAddressMode(aZeroPage,$06,2,5,'');
-  PIC16InstName[i_ASL].AddAddressMode(aZeroPagX,$16,2,6,'');
-  PIC16InstName[i_ASL].AddAddressMode(aAbsolute,$0E,3,6,'');
-  PIC16InstName[i_ASL].AddAddressMode(aAbsolutX,$1E,3,7,'');
+  PIC16InstName[i_ASL].AddAddressMode(aAcumulat,$0A,1,2,0);
+  PIC16InstName[i_ASL].AddAddressMode(aZeroPage,$06,2,5,0);
+  PIC16InstName[i_ASL].AddAddressMode(aZeroPagX,$16,2,6,0);
+  PIC16InstName[i_ASL].AddAddressMode(aAbsolute,$0E,3,6,0);
+  PIC16InstName[i_ASL].AddAddressMode(aAbsolutX,$1E,3,7,0);
   PIC16InstName[i_BCC].name := 'BCC';  //Branch on Carry Clear
-  PIC16InstName[i_BCC].AddAddressMode(aRelative,$90,2,2,'**');
+  PIC16InstName[i_BCC].AddAddressMode(aRelative,$90,2,2,2);
   PIC16InstName[i_BCS].name := 'BCS';  //Branch on Carry Set
-  PIC16InstName[i_BCS].AddAddressMode(aRelative,$B0,2,2,'**');
+  PIC16InstName[i_BCS].AddAddressMode(aRelative,$B0,2,2,2);
   PIC16InstName[i_BEQ].name := 'BEQ';  //Branch on Result Zero
-  PIC16InstName[i_BEQ].AddAddressMode(aRelative,$F0,2,2,'**');
+  PIC16InstName[i_BEQ].AddAddressMode(aRelative,$F0,2,2,2);
   PIC16InstName[i_BIT].name := 'BIT';  //Test Bits in Memory with Accumulator
-  PIC16InstName[i_BIT].AddAddressMode(aZeroPage,$24,2,3,'');
-  PIC16InstName[i_BIT].AddAddressMode(aAbsolute,$2C,3,4,'');
+  PIC16InstName[i_BIT].AddAddressMode(aZeroPage,$24,2,3,0);
+  PIC16InstName[i_BIT].AddAddressMode(aAbsolute,$2C,3,4,0);
   PIC16InstName[i_BMI].name := 'BMI';  //Branch on Result Minus
-  PIC16InstName[i_BMI].AddAddressMode(aRelative,$30,2,2,'**');
+  PIC16InstName[i_BMI].AddAddressMode(aRelative,$30,2,2,2);
   PIC16InstName[i_BNE].name := 'BNE';  //Branch on Result not Zero
-  PIC16InstName[i_BNE].AddAddressMode(aRelative,$D0,2,2,'**');
+  PIC16InstName[i_BNE].AddAddressMode(aRelative,$D0,2,2,2);
   PIC16InstName[i_BPL].name := 'BPL';  //Branch on Result Plus
-  PIC16InstName[i_BPL].AddAddressMode(aRelative,$10,2,2,'**');
+  PIC16InstName[i_BPL].AddAddressMode(aRelative,$10,2,2,2);
   PIC16InstName[i_BRK].name := 'BRK';  //Force Break
-  PIC16InstName[i_BRK].AddAddressMode(aImplicit,$00,1,7,'');
+  PIC16InstName[i_BRK].AddAddressMode(aImplicit,$00,1,7,0);
   PIC16InstName[i_BVC].name := 'BVC';  //Branch on Overflow Clear
-  PIC16InstName[i_BVC].AddAddressMode(aRelative,$50,2,2,'**');
+  PIC16InstName[i_BVC].AddAddressMode(aRelative,$50,2,2,2);
   PIC16InstName[i_BVS].name := 'BVS';  //Branch on Overflow Set
-  PIC16InstName[i_BVS].AddAddressMode(aRelative,$70,2,2,'**');
+  PIC16InstName[i_BVS].AddAddressMode(aRelative,$70,2,2,2);
   PIC16InstName[i_CLC].name := 'CLC';  //Clear Carry Flag
-  PIC16InstName[i_CLC].AddAddressMode(aImplicit,$18,1,2,'');
+  PIC16InstName[i_CLC].AddAddressMode(aImplicit,$18,1,2,0);
   PIC16InstName[i_CLD].name := 'CLD';  //Clear Decimal Mode
-  PIC16InstName[i_CLD].AddAddressMode(aImplicit,$D8,1,2,'');
+  PIC16InstName[i_CLD].AddAddressMode(aImplicit,$D8,1,2,0);
   PIC16InstName[i_CLI].name := 'CLI';  //Clear Interrupt Disable Bit
-  PIC16InstName[i_CLI].AddAddressMode(aImplicit,$58,1,2,'');
+  PIC16InstName[i_CLI].AddAddressMode(aImplicit,$58,1,2,0);
   PIC16InstName[i_CLV].name := 'CLV';  //Clear Overflow Flag
-  PIC16InstName[i_CLV].AddAddressMode(aImplicit,$B8,1,2,'');
+  PIC16InstName[i_CLV].AddAddressMode(aImplicit,$B8,1,2,0);
   PIC16InstName[i_CMP].name := 'CMP';  //Compare Memory with Accumulator
-  PIC16InstName[i_CMP].AddAddressMode(aImmediat,$C9,2,2,'');
-  PIC16InstName[i_CMP].AddAddressMode(aZeroPage,$C5,2,3,'');
-  PIC16InstName[i_CMP].AddAddressMode(aZeroPagX,$D5,2,4,'');
-  PIC16InstName[i_CMP].AddAddressMode(aAbsolute,$CD,3,4,'');
-  PIC16InstName[i_CMP].AddAddressMode(aAbsolutX,$DD,3,4,'*');
-  PIC16InstName[i_CMP].AddAddressMode(aAbsolutY,$D9,3,4,'*');
-  PIC16InstName[i_CMP].AddAddressMode(aIndirecX,$C1,2,6,'');
-  PIC16InstName[i_CMP].AddAddressMode(aIndirecY,$D1,2,5,'*');
+  PIC16InstName[i_CMP].AddAddressMode(aImmediat,$C9,2,2,0);
+  PIC16InstName[i_CMP].AddAddressMode(aZeroPage,$C5,2,3,0);
+  PIC16InstName[i_CMP].AddAddressMode(aZeroPagX,$D5,2,4,0);
+  PIC16InstName[i_CMP].AddAddressMode(aAbsolute,$CD,3,4,0);
+  PIC16InstName[i_CMP].AddAddressMode(aAbsolutX,$DD,3,4,1);
+  PIC16InstName[i_CMP].AddAddressMode(aAbsolutY,$D9,3,4,1);
+  PIC16InstName[i_CMP].AddAddressMode(aIndirecX,$C1,2,6,0);
+  PIC16InstName[i_CMP].AddAddressMode(aIndirecY,$D1,2,5,1);
   PIC16InstName[i_CPX].name := 'CPX';  //Compare Memory and Index X
-  PIC16InstName[i_CPX].AddAddressMode(aImmediat,$E0,2,2,'');
-  PIC16InstName[i_CPX].AddAddressMode(aZeroPage,$E4,2,3,'');
-  PIC16InstName[i_CPX].AddAddressMode(aAbsolute,$EC,3,4,'');
+  PIC16InstName[i_CPX].AddAddressMode(aImmediat,$E0,2,2,0);
+  PIC16InstName[i_CPX].AddAddressMode(aZeroPage,$E4,2,3,0);
+  PIC16InstName[i_CPX].AddAddressMode(aAbsolute,$EC,3,4,0);
   PIC16InstName[i_CPY].name := 'CPY';  //Compare Memory and Index Y
-  PIC16InstName[i_CPY].AddAddressMode(aImmediat,$C0,2,2,'');
-  PIC16InstName[i_CPY].AddAddressMode(aZeroPage,$C4,2,3,'');
-  PIC16InstName[i_CPY].AddAddressMode(aAbsolute,$CC,3,4,'');
+  PIC16InstName[i_CPY].AddAddressMode(aImmediat,$C0,2,2,0);
+  PIC16InstName[i_CPY].AddAddressMode(aZeroPage,$C4,2,3,0);
+  PIC16InstName[i_CPY].AddAddressMode(aAbsolute,$CC,3,4,0);
   PIC16InstName[i_DEC].name := 'DEC';  //Decrement Memory by One
-  PIC16InstName[i_DEC].AddAddressMode(aZeroPage,$C6,2,5,'');
-  PIC16InstName[i_DEC].AddAddressMode(aZeroPagX,$D6,2,6,'');
-  PIC16InstName[i_DEC].AddAddressMode(aAbsolute,$CE,3,3,'');
-  PIC16InstName[i_DEC].AddAddressMode(aAbsolutX,$DE,3,7,'');
+  PIC16InstName[i_DEC].AddAddressMode(aZeroPage,$C6,2,5,0);
+  PIC16InstName[i_DEC].AddAddressMode(aZeroPagX,$D6,2,6,0);
+  PIC16InstName[i_DEC].AddAddressMode(aAbsolute,$CE,3,3,0);
+  PIC16InstName[i_DEC].AddAddressMode(aAbsolutX,$DE,3,7,0);
   PIC16InstName[i_DEX].name := 'DEX';  //Decrement Index X by One
-  PIC16InstName[i_DEX].AddAddressMode(aImplicit,$CA,1,2,'');
+  PIC16InstName[i_DEX].AddAddressMode(aImplicit,$CA,1,2,0);
   PIC16InstName[i_DEY].name := 'DEY';  //Decrement Index Y by One
-  PIC16InstName[i_DEY].AddAddressMode(aImplicit,$88,1,2,'');
+  PIC16InstName[i_DEY].AddAddressMode(aImplicit,$88,1,2,0);
   PIC16InstName[i_EOR].name := 'EOR';  //Exclusive-OR Memory with Accumulator
-  PIC16InstName[i_EOR].AddAddressMode(aImmediat,$49,2,2,'');
-  PIC16InstName[i_EOR].AddAddressMode(aZeroPage,$45,2,3,'');
-  PIC16InstName[i_EOR].AddAddressMode(aZeroPagX,$55,2,4,'');
-  PIC16InstName[i_EOR].AddAddressMode(aAbsolute,$4D,3,4,'');
-  PIC16InstName[i_EOR].AddAddressMode(aAbsolutX,$5D,3,4,'*');
-  PIC16InstName[i_EOR].AddAddressMode(aAbsolutY,$59,3,4,'*');
-  PIC16InstName[i_EOR].AddAddressMode(aIndirecX,$41,2,6,'');
-  PIC16InstName[i_EOR].AddAddressMode(aIndirecY,$51,2,5,'*');
+  PIC16InstName[i_EOR].AddAddressMode(aImmediat,$49,2,2,0);
+  PIC16InstName[i_EOR].AddAddressMode(aZeroPage,$45,2,3,0);
+  PIC16InstName[i_EOR].AddAddressMode(aZeroPagX,$55,2,4,0);
+  PIC16InstName[i_EOR].AddAddressMode(aAbsolute,$4D,3,4,0);
+  PIC16InstName[i_EOR].AddAddressMode(aAbsolutX,$5D,3,4,1);
+  PIC16InstName[i_EOR].AddAddressMode(aAbsolutY,$59,3,4,1);
+  PIC16InstName[i_EOR].AddAddressMode(aIndirecX,$41,2,6,0);
+  PIC16InstName[i_EOR].AddAddressMode(aIndirecY,$51,2,5,1);
   PIC16InstName[i_INC].name := 'INC';  //Increment Memory by One
-  PIC16InstName[i_INC].AddAddressMode(aZeroPage,$E6,2,5,'');
-  PIC16InstName[i_INC].AddAddressMode(aZeroPagX,$F6,2,6,'');
-  PIC16InstName[i_INC].AddAddressMode(aAbsolute,$EE,3,6,'');
-  PIC16InstName[i_INC].AddAddressMode(aAbsolutX,$FE,3,7,'');
+  PIC16InstName[i_INC].AddAddressMode(aZeroPage,$E6,2,5,0);
+  PIC16InstName[i_INC].AddAddressMode(aZeroPagX,$F6,2,6,0);
+  PIC16InstName[i_INC].AddAddressMode(aAbsolute,$EE,3,6,0);
+  PIC16InstName[i_INC].AddAddressMode(aAbsolutX,$FE,3,7,0);
   PIC16InstName[i_INX].name := 'INX';  //Increment Index X by One
-  PIC16InstName[i_INX].AddAddressMode(aImplicit,$E8,1,2,'');
+  PIC16InstName[i_INX].AddAddressMode(aImplicit,$E8,1,2,0);
   PIC16InstName[i_INY].name := 'INY';  //Increment Index Y by One
-  PIC16InstName[i_INY].AddAddressMode(aImplicit,$C8,1,2,'');
+  PIC16InstName[i_INY].AddAddressMode(aImplicit,$C8,1,2,0);
   PIC16InstName[i_JMP].name := 'JMP';  //Jump to New Location
-  PIC16InstName[i_JMP].AddAddressMode(aAbsolute,$4C,3,3,'');
-  PIC16InstName[i_JMP].AddAddressMode(aIndirect,$6C,3,5,'');
+  PIC16InstName[i_JMP].AddAddressMode(aAbsolute,$4C,3,3,0);
+  PIC16InstName[i_JMP].AddAddressMode(aIndirect,$6C,3,5,0);
   PIC16InstName[i_JSR].name := 'JSR';  //Jump to New Location Saving Return Address
-  PIC16InstName[i_JSR].AddAddressMode(aAbsolute,$20,3,6,'');
+  PIC16InstName[i_JSR].AddAddressMode(aAbsolute,$20,3,6,0);
   PIC16InstName[i_LDA].name := 'LDA';  //Load Accumulator with Memory
-  PIC16InstName[i_LDA].AddAddressMode(aImmediat,$A9,2,2,'');
-  PIC16InstName[i_LDA].AddAddressMode(aZeroPage,$A5,2,3,'');
-  PIC16InstName[i_LDA].AddAddressMode(aZeroPagX,$B5,2,4,'');
-  PIC16InstName[i_LDA].AddAddressMode(aAbsolute,$AD,3,4,'');
-  PIC16InstName[i_LDA].AddAddressMode(aAbsolutX,$BD,3,4,'*');
-  PIC16InstName[i_LDA].AddAddressMode(aAbsolutY,$B9,3,4,'*');
-  PIC16InstName[i_LDA].AddAddressMode(aIndirecX,$A1,2,6,'');
-  PIC16InstName[i_LDA].AddAddressMode(aIndirecY,$B1,2,5,'*');
+  PIC16InstName[i_LDA].AddAddressMode(aImmediat,$A9,2,2,0);
+  PIC16InstName[i_LDA].AddAddressMode(aZeroPage,$A5,2,3,0);
+  PIC16InstName[i_LDA].AddAddressMode(aZeroPagX,$B5,2,4,0);
+  PIC16InstName[i_LDA].AddAddressMode(aAbsolute,$AD,3,4,0);
+  PIC16InstName[i_LDA].AddAddressMode(aAbsolutX,$BD,3,4,1);
+  PIC16InstName[i_LDA].AddAddressMode(aAbsolutY,$B9,3,4,1);
+  PIC16InstName[i_LDA].AddAddressMode(aIndirecX,$A1,2,6,0);
+  PIC16InstName[i_LDA].AddAddressMode(aIndirecY,$B1,2,5,1);
   PIC16InstName[i_LDX].name := 'LDX';  //Load Index X with Memory
-  PIC16InstName[i_LDX].AddAddressMode(aImmediat,$A2,2,2,'');
-  PIC16InstName[i_LDX].AddAddressMode(aZeroPage,$A6,2,3,'');
-  PIC16InstName[i_LDX].AddAddressMode(aZeroPagY,$B6,2,4,'');
-  PIC16InstName[i_LDX].AddAddressMode(aAbsolute,$AE,3,4,'');
-  PIC16InstName[i_LDX].AddAddressMode(aAbsolutY,$BE,3,4,'*');
+  PIC16InstName[i_LDX].AddAddressMode(aImmediat,$A2,2,2,0);
+  PIC16InstName[i_LDX].AddAddressMode(aZeroPage,$A6,2,3,0);
+  PIC16InstName[i_LDX].AddAddressMode(aZeroPagY,$B6,2,4,0);
+  PIC16InstName[i_LDX].AddAddressMode(aAbsolute,$AE,3,4,0);
+  PIC16InstName[i_LDX].AddAddressMode(aAbsolutY,$BE,3,4,1);
   PIC16InstName[i_LDY].name := 'LDY';  //Load Index Y with Memory
-  PIC16InstName[i_LDY].AddAddressMode(aImmediat,$A0,2,2,'');
-  PIC16InstName[i_LDY].AddAddressMode(aZeroPage,$A4,2,3,'');
-  PIC16InstName[i_LDY].AddAddressMode(aZeroPagX,$B4,2,4,'');
-  PIC16InstName[i_LDY].AddAddressMode(aAbsolute,$AC,3,4,'');
-  PIC16InstName[i_LDY].AddAddressMode(aAbsolutX,$BC,3,4,'*');
+  PIC16InstName[i_LDY].AddAddressMode(aImmediat,$A0,2,2,0);
+  PIC16InstName[i_LDY].AddAddressMode(aZeroPage,$A4,2,3,0);
+  PIC16InstName[i_LDY].AddAddressMode(aZeroPagX,$B4,2,4,0);
+  PIC16InstName[i_LDY].AddAddressMode(aAbsolute,$AC,3,4,0);
+  PIC16InstName[i_LDY].AddAddressMode(aAbsolutX,$BC,3,4,1);
   PIC16InstName[i_LSR].name := 'LSR';  //Shift One Bit Right (Memory orAccumulator)
-  PIC16InstName[i_LSR].AddAddressMode(aAcumulat,$4A,1,2,'');
-  PIC16InstName[i_LSR].AddAddressMode(aZeroPage,$46,2,5,'');
-  PIC16InstName[i_LSR].AddAddressMode(aZeroPagX,$56,2,6,'');
-  PIC16InstName[i_LSR].AddAddressMode(aAbsolute,$4E,3,6,'');
-  PIC16InstName[i_LSR].AddAddressMode(aAbsolutX,$5E,3,7,'');
+  PIC16InstName[i_LSR].AddAddressMode(aAcumulat,$4A,1,2,0);
+  PIC16InstName[i_LSR].AddAddressMode(aZeroPage,$46,2,5,0);
+  PIC16InstName[i_LSR].AddAddressMode(aZeroPagX,$56,2,6,0);
+  PIC16InstName[i_LSR].AddAddressMode(aAbsolute,$4E,3,6,0);
+  PIC16InstName[i_LSR].AddAddressMode(aAbsolutX,$5E,3,7,0);
   PIC16InstName[i_NOP].name := 'NOP';  //No Operation
-  PIC16InstName[i_NOP].AddAddressMode(aImplicit,$EA,1,2,'');
+  PIC16InstName[i_NOP].AddAddressMode(aImplicit,$EA,1,2,0);
   PIC16InstName[i_ORA].name := 'ORA';  //OR Memory with Accumulator
-  PIC16InstName[i_ORA].AddAddressMode(aImmediat,$09,2,2,'');
-  PIC16InstName[i_ORA].AddAddressMode(aZeroPage,$05,2,3,'');
-  PIC16InstName[i_ORA].AddAddressMode(aZeroPagX,$15,2,4,'');
-  PIC16InstName[i_ORA].AddAddressMode(aAbsolute,$0D,3,4,'');
-  PIC16InstName[i_ORA].AddAddressMode(aAbsolutX,$1D,3,4,'*');
-  PIC16InstName[i_ORA].AddAddressMode(aAbsolutY,$19,3,4,'*');
-  PIC16InstName[i_ORA].AddAddressMode(aIndirecX,$01,2,6,'');
-  PIC16InstName[i_ORA].AddAddressMode(aIndirecY,$11,2,5,'*');
+  PIC16InstName[i_ORA].AddAddressMode(aImmediat,$09,2,2,0);
+  PIC16InstName[i_ORA].AddAddressMode(aZeroPage,$05,2,3,0);
+  PIC16InstName[i_ORA].AddAddressMode(aZeroPagX,$15,2,4,0);
+  PIC16InstName[i_ORA].AddAddressMode(aAbsolute,$0D,3,4,0);
+  PIC16InstName[i_ORA].AddAddressMode(aAbsolutX,$1D,3,4,1);
+  PIC16InstName[i_ORA].AddAddressMode(aAbsolutY,$19,3,4,1);
+  PIC16InstName[i_ORA].AddAddressMode(aIndirecX,$01,2,6,0);
+  PIC16InstName[i_ORA].AddAddressMode(aIndirecY,$11,2,5,1);
   PIC16InstName[i_PHA].name := 'PHA';  //Push Accumulator on Stack
-  PIC16InstName[i_PHA].AddAddressMode(aImplicit,$48,1,3,'');
+  PIC16InstName[i_PHA].AddAddressMode(aImplicit,$48,1,3,0);
   PIC16InstName[i_PHP].name := 'PHP';  //Push Processor Status on Stack
-  PIC16InstName[i_PHP].AddAddressMode(aImplicit,$08,1,3,'');
+  PIC16InstName[i_PHP].AddAddressMode(aImplicit,$08,1,3,0);
   PIC16InstName[i_PLA].name := 'PLA';  //Pull Accumulator from Stack
-  PIC16InstName[i_PLA].AddAddressMode(aImplicit,$68,1,4,'');
+  PIC16InstName[i_PLA].AddAddressMode(aImplicit,$68,1,4,0);
   PIC16InstName[i_PLP].name := 'PLP';  //Pull Processor Status fromStack
-  PIC16InstName[i_PLP].AddAddressMode(aImplicit,$28,1,4,'');
+  PIC16InstName[i_PLP].AddAddressMode(aImplicit,$28,1,4,0);
   PIC16InstName[i_ROL].name := 'ROL';  //Rotate One Bit Left (Memory orAccumulator)
-  PIC16InstName[i_ROL].AddAddressMode(aAcumulat,$2A,1,2,'');
-  PIC16InstName[i_ROL].AddAddressMode(aZeroPage,$26,2,5,'');
-  PIC16InstName[i_ROL].AddAddressMode(aZeroPagX,$36,2,6,'');
-  PIC16InstName[i_ROL].AddAddressMode(aAbsolute,$2E,3,6,'');
-  PIC16InstName[i_ROL].AddAddressMode(aAbsolutX,$3E,3,7,'');
+  PIC16InstName[i_ROL].AddAddressMode(aAcumulat,$2A,1,2,0);
+  PIC16InstName[i_ROL].AddAddressMode(aZeroPage,$26,2,5,0);
+  PIC16InstName[i_ROL].AddAddressMode(aZeroPagX,$36,2,6,0);
+  PIC16InstName[i_ROL].AddAddressMode(aAbsolute,$2E,3,6,0);
+  PIC16InstName[i_ROL].AddAddressMode(aAbsolutX,$3E,3,7,0);
   PIC16InstName[i_ROR].name := 'ROR';  //Rotate One Bit Right (Memory or Accumulator)
-  PIC16InstName[i_ROR].AddAddressMode(aAcumulat,$6A,1,2,'');
-  PIC16InstName[i_ROR].AddAddressMode(aZeroPage,$66,2,5,'');
-  PIC16InstName[i_ROR].AddAddressMode(aZeroPagX,$76,2,6,'');
-  PIC16InstName[i_ROR].AddAddressMode(aAbsolute,$6E,3,6,'');
-  PIC16InstName[i_ROR].AddAddressMode(aAbsolutX,$7E,3,7,'');
+  PIC16InstName[i_ROR].AddAddressMode(aAcumulat,$6A,1,2,0);
+  PIC16InstName[i_ROR].AddAddressMode(aZeroPage,$66,2,5,0);
+  PIC16InstName[i_ROR].AddAddressMode(aZeroPagX,$76,2,6,0);
+  PIC16InstName[i_ROR].AddAddressMode(aAbsolute,$6E,3,6,0);
+  PIC16InstName[i_ROR].AddAddressMode(aAbsolutX,$7E,3,7,0);
   PIC16InstName[i_RTI].name := 'RTI';  //Return from Interrupt
-  PIC16InstName[i_RTI].AddAddressMode(aImplicit,$40,1,6,'');
+  PIC16InstName[i_RTI].AddAddressMode(aImplicit,$40,1,6,0);
   PIC16InstName[i_RTS].name := 'RTS';  //Return from Subroutine
-  PIC16InstName[i_RTS].AddAddressMode(aImplicit,$60,1,6,'');
+  PIC16InstName[i_RTS].AddAddressMode(aImplicit,$60,1,6,0);
   PIC16InstName[i_SBC].name := 'SBC';  //Subtract Memory from Accumulator withBorrow
-  PIC16InstName[i_SBC].AddAddressMode(aImmediat,$E9,2,2,'');
-  PIC16InstName[i_SBC].AddAddressMode(aZeroPage,$E5,2,3,'');
-  PIC16InstName[i_SBC].AddAddressMode(aZeroPagX,$F5,2,4,'');
-  PIC16InstName[i_SBC].AddAddressMode(aAbsolute,$ED,3,4,'');
-  PIC16InstName[i_SBC].AddAddressMode(aAbsolutX,$FD,3,4,'*');
-  PIC16InstName[i_SBC].AddAddressMode(aAbsolutY,$F9,3,4,'*');
-  PIC16InstName[i_SBC].AddAddressMode(aIndirecX,$E1,2,6,'');
-  PIC16InstName[i_SBC].AddAddressMode(aIndirecY,$F1,2,5,'*');
+  PIC16InstName[i_SBC].AddAddressMode(aImmediat,$E9,2,2,0);
+  PIC16InstName[i_SBC].AddAddressMode(aZeroPage,$E5,2,3,0);
+  PIC16InstName[i_SBC].AddAddressMode(aZeroPagX,$F5,2,4,0);
+  PIC16InstName[i_SBC].AddAddressMode(aAbsolute,$ED,3,4,0);
+  PIC16InstName[i_SBC].AddAddressMode(aAbsolutX,$FD,3,4,1);
+  PIC16InstName[i_SBC].AddAddressMode(aAbsolutY,$F9,3,4,1);
+  PIC16InstName[i_SBC].AddAddressMode(aIndirecX,$E1,2,6,0);
+  PIC16InstName[i_SBC].AddAddressMode(aIndirecY,$F1,2,5,1);
   PIC16InstName[i_SEC].name := 'SEC';  //Set Carry Flag
-  PIC16InstName[i_SEC].AddAddressMode(aImplicit,$38,1,2,'');
+  PIC16InstName[i_SEC].AddAddressMode(aImplicit,$38,1,2,0);
   PIC16InstName[i_SED].name := 'SED';  //Set Decimal Flag
-  PIC16InstName[i_SED].AddAddressMode(aImplicit,$F8,1,2,'');
+  PIC16InstName[i_SED].AddAddressMode(aImplicit,$F8,1,2,0);
   PIC16InstName[i_SEI].name := 'SEI';  //Set Interrupt Disable Status
-  PIC16InstName[i_SEI].AddAddressMode(aImplicit,$78,1,2,'');
+  PIC16InstName[i_SEI].AddAddressMode(aImplicit,$78,1,2,0);
   PIC16InstName[i_STA].name := 'STA';  //Store Accumulator in Memory
-  PIC16InstName[i_STA].AddAddressMode(aZeroPage,$85,2,3,'');
-  PIC16InstName[i_STA].AddAddressMode(aZeroPagX,$95,2,4,'');
-  PIC16InstName[i_STA].AddAddressMode(aAbsolute,$8D,3,4,'');
-  PIC16InstName[i_STA].AddAddressMode(aAbsolutX,$9D,3,5,'');
-  PIC16InstName[i_STA].AddAddressMode(aAbsolutY,$99,3,5,'');
-  PIC16InstName[i_STA].AddAddressMode(aIndirecX,$81,2,6,'');
-  PIC16InstName[i_STA].AddAddressMode(aIndirecY,$91,2,6,'');
+  PIC16InstName[i_STA].AddAddressMode(aZeroPage,$85,2,3,0);
+  PIC16InstName[i_STA].AddAddressMode(aZeroPagX,$95,2,4,0);
+  PIC16InstName[i_STA].AddAddressMode(aAbsolute,$8D,3,4,0);
+  PIC16InstName[i_STA].AddAddressMode(aAbsolutX,$9D,3,5,0);
+  PIC16InstName[i_STA].AddAddressMode(aAbsolutY,$99,3,5,0);
+  PIC16InstName[i_STA].AddAddressMode(aIndirecX,$81,2,6,0);
+  PIC16InstName[i_STA].AddAddressMode(aIndirecY,$91,2,6,0);
   PIC16InstName[i_STX].name := 'STX';  //Store Index X in Memory
-  PIC16InstName[i_STX].AddAddressMode(aZeroPage,$86,2,3,'');
-  PIC16InstName[i_STX].AddAddressMode(aZeroPagY,$96,2,4,'');
-  PIC16InstName[i_STX].AddAddressMode(aAbsolute,$8E,3,4,'');
+  PIC16InstName[i_STX].AddAddressMode(aZeroPage,$86,2,3,0);
+  PIC16InstName[i_STX].AddAddressMode(aZeroPagY,$96,2,4,0);
+  PIC16InstName[i_STX].AddAddressMode(aAbsolute,$8E,3,4,0);
   PIC16InstName[i_STY].name := 'STY';  //Sore Index Y in Memory
-  PIC16InstName[i_STY].AddAddressMode(aZeroPage,$84,2,3,'');
-  PIC16InstName[i_STY].AddAddressMode(aZeroPagX,$94,2,4,'');
-  PIC16InstName[i_STY].AddAddressMode(aAbsolute,$8C,3,4,'');
+  PIC16InstName[i_STY].AddAddressMode(aZeroPage,$84,2,3,0);
+  PIC16InstName[i_STY].AddAddressMode(aZeroPagX,$94,2,4,0);
+  PIC16InstName[i_STY].AddAddressMode(aAbsolute,$8C,3,4,0);
   PIC16InstName[i_TAX].name := 'TAX';  //Transfer Accumulator to IndexX
-  PIC16InstName[i_TAX].AddAddressMode(aImplicit,$AA,1,2,'');
+  PIC16InstName[i_TAX].AddAddressMode(aImplicit,$AA,1,2,0);
   PIC16InstName[i_TAY].name := 'TAY';  //Transfer Accumulator to IndexY
-  PIC16InstName[i_TAY].AddAddressMode(aImplicit,$A8,1,2,'');
+  PIC16InstName[i_TAY].AddAddressMode(aImplicit,$A8,1,2,0);
   PIC16InstName[i_TSX].name := 'TSX';  //Transfer Stack Pointer toIndex X
-  PIC16InstName[i_TSX].AddAddressMode(aImplicit,$BA,1,2,'');
+  PIC16InstName[i_TSX].AddAddressMode(aImplicit,$BA,1,2,0);
   PIC16InstName[i_TXA].name := 'TXA';  //Transfer Index X to Accumulator
-  PIC16InstName[i_TXA].AddAddressMode(aImplicit,$8A,1,2,'');
+  PIC16InstName[i_TXA].AddAddressMode(aImplicit,$8A,1,2,0);
   PIC16InstName[i_TXS].name := 'TXS';  //Transfer Index X to StackRegister
-  PIC16InstName[i_TXS].AddAddressMode(aImplicit,$9A,1,2,'');
+  PIC16InstName[i_TXS].AddAddressMode(aImplicit,$9A,1,2,0);
   PIC16InstName[i_TYA].name := 'TYA';  //Transfer Index Y to Accumulator
-  PIC16InstName[i_TYA].AddAddressMode(aImplicit,$98,1,2,'');
+  PIC16InstName[i_TYA].AddAddressMode(aImplicit,$98,1,2,0);
 
   PIC16InstName[i_Inval].name := 'Inv';
 

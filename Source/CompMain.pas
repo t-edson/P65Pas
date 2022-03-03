@@ -45,7 +45,7 @@ type
     function CompileStructBody: boolean;
     procedure AnalyzeSentence;
     procedure AnalyzeCurBlock;
-    procedure CompileProcDeclar;
+    procedure AnalyzeProcDeclar;
     procedure CompileInlineDeclar(elemLocat: TxpEleLocation);
     procedure CompileUsesDeclaration;
     procedure DoAnalyzeUnit(uni: TxpElement);
@@ -640,7 +640,7 @@ If some problems happens, Error is generated and the NIL value is returned.
         if lowercase(token) = 'procedure' then begin
           //Es un método. ¿No se debería crear mejor dentro del nodo tipo?
           Next;    //lo toma
-          CompileProcDeclar;
+          AnalyzeProcDeclar;
           if HayError then exit;
         end else begin
           //Debe ser un campo
@@ -1095,7 +1095,7 @@ begin
   ProcComments;
   //Puede salir con error.
 end;
-procedure TCompMain.CompileProcDeclar;
+procedure TCompMain.AnalyzeProcDeclar;
 {Compila la declaración de procedimientos. Tanto procedimientos como funciones
  se manejan internamente como funciones.}
   function FindProcInInterface(procName: string; const pars: TxpParFuncArray;
@@ -1294,7 +1294,7 @@ begin
       end;
 //    end else if lowercase(token) = 'procedure' then begin
 //      Next;    //lo toma
-//      CompileProcDeclar;
+//      AnalyzeProcDeclar;
     end else begin
       GenError('Expected VAR, CONST or BEGIN.');
       exit;
@@ -1412,7 +1412,7 @@ begin
 //      end;
 ////    end else if tokL = 'procedure' then begin
 ////      Next;    //lo toma
-////      CompileProcDeclar;
+////      AnalyzeProcDeclar;
 //    end else begin
 //      GenError('Expected VAR, CONST or BEGIN.');
 //      exit;
@@ -1641,7 +1641,7 @@ begin
   end;
 end;
 procedure TCompMain.AnalyzeSentence;
-{Compile one Pascal sentence. One sentence can be:
+{Analyze one Pascal sentence. One sentence can be:
  1. Assigment sentence.
  2. Procedure call.
  3. Function operand.
@@ -1956,7 +1956,7 @@ begin
       end;
     end else if tokL = 'procedure' then begin
       Next;    //lo toma
-      CompileProcDeclar;
+      AnalyzeProcDeclar;
       if HayError then exit;
     end else begin
       GenError(ER_NOT_IMPLEM_, [token]);
@@ -1989,7 +1989,7 @@ begin
       end;
     end else if tokL = 'procedure' then begin
       Next;    //lo toma
-      CompileProcDeclar;  //Compila en IMPLEMENTATION
+      AnalyzeProcDeclar;  //Compila en IMPLEMENTATION
       if HayError then exit;
     end else begin
       GenError(ER_NOT_IMPLEM_, [token]);
@@ -2094,7 +2094,7 @@ begin
       end;
     end else if tokL = 'procedure' then begin
       Next;    //lo toma
-      CompileProcDeclar;
+      AnalyzeProcDeclar;
       if HayError then exit;
     end else if tokL = 'inline' then begin
       Next;    //lo toma

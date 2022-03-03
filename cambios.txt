@@ -62,7 +62,11 @@ un campo de la clase TEleAsmBlock.
 - Se corrige rutina de resaltado de errores TSynEditor.MarkError() para considerar tokens 
 de tipo espacio.
 - Se corrige la rutina TCompilerBase.CaptureTok() para cuando se produce un salto de línea.
-
+- Se cambia de nombre a CompileProcDeclar() por AnalyzeProcDeclar().
+- Se corrige un error en la creación de variables en TCompilerBase.AddVariableAndOpen().
+- Se modifica la librería P65utils to fix TP6502.Decode() It was failing in identifying the 
+Opcode $00.
+ 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
 - Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?

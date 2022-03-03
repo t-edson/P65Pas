@@ -5744,7 +5744,7 @@ begin
   AddParam(pars, 'ms', srcPosNull, typWord, decRegis);  //Add parameter
   AddSysInlineFunction('delay_ms', typNull, srcPosNull, pars, @fun_delay_ms);
 
-  //Create system function "inc"
+  //Create system function "exit"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
   AddSysInlineFunction('exit', typNull, srcPosNull, pars, @fun_Exit);
