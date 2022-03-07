@@ -45,6 +45,7 @@ TreeElems.curCodCont.
 - Se definió qu eel Timer de frmPrincipal se active en el evento OnShow(). Este
 cambio se implementó debido a un error encontrado al compilar para Mac.
 - Se corrige codigo de prueba Test4_Asm.pas.
+- Se cambia de nombre al repositorio. AHora es la 0.9.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
