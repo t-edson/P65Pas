@@ -5,7 +5,7 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Grids, ExtCtrls, StdCtrls,
   Buttons, Graphics, LCLType, Menus, LCLProc, P6502utils, MisUtils, UtilsGrilla,
   CibGrillas, CompBase, CPUCore, Globales,
-  XpresElemP65, CompMain;
+  XpresElemP65, Analyzer;
 type
 
   { TfraRegWatcher }
@@ -41,7 +41,7 @@ type
     TIT_VAL: string;
   private  //Índice de columnas
     pic: TCPUCore;
-    cxp: TCompMain;
+    cxp: TAnalyzer;
     //Columnas ocultas
     col_adr: word;  //Direción física
     col_bit: byte;  //Posición de bit
@@ -51,7 +51,7 @@ type
     COL_NAM: integer;  //Columna de nombre
     COL_VAL: integer;  //Columna de valor
   public
-    procedure SetCompiler(cxp0: TCompMain);
+    procedure SetCompiler(cxp0: TAnalyzer);
     procedure AddWatch(varName: string);
     procedure Refrescar;
     procedure SetLanguage;
@@ -259,7 +259,7 @@ begin
   Result := clWhite;
 end;
 
-procedure TfraRegWatcher.SetCompiler(cxp0: TCompMain);
+procedure TfraRegWatcher.SetCompiler(cxp0: TAnalyzer);
 begin
   cxp := cxp0;
   pic := cxp0.picCore;

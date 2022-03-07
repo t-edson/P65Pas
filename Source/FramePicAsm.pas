@@ -3,7 +3,7 @@ unit FramePicAsm;
 interface
 uses
   Classes, SysUtils, Types, FileUtil, Forms, Controls, StdCtrls, Grids, Graphics,
-  ExtCtrls, Buttons, Menus, LCLType, CompBase, CompMain, CPUCore, MisUtils;
+  ExtCtrls, Buttons, Menus, LCLType, CompBase, Analyzer, CPUCore, MisUtils;
 type
 
   { TfraPicAsm }
@@ -45,7 +45,7 @@ type
   public
     procedure Refrescar(SetGridRow: boolean);
     procedure ResizeRow(i: integer);
-    procedure SetCompiler(cxp0: TCompMain);
+    procedure SetCompiler(cxp0: TAnalyzer);
     constructor Create(AOwner: TComponent) ; override;
   end;
 
@@ -342,7 +342,7 @@ begin
     StringGrid1.RowHeights[i] := defHeight;
   end;
 end;
-procedure TfraPicAsm.SetCompiler(cxp0: TCompMain);
+procedure TfraPicAsm.SetCompiler(cxp0: TAnalyzer);
 var
   addr, f, minUsed: Integer;
   nBytes: byte;

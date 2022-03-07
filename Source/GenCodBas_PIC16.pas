@@ -34,10 +34,11 @@ type
     linRep : string;   //línea para generar de reporte
     posFlash: Integer;
     procedure GenCodeASMline(asmInst: TEleAsmInstr);
+    procedure GenCodeExit(sen: TEleSentence);
     procedure GenCodLoadToA(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToX(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToY(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
-    procedure GenCondeIF(sen: TxpEleSentence);
+    procedure GenCondeIF(sen: TEleSentence);
     procedure StartCodeGen;
     procedure StopCodeGen;
     procedure ProcByteUsed(offs: word; regPtr: TCPURamCellPtr);
@@ -175,11 +176,12 @@ type
     //////////////// Tipo Boolean /////////////
     procedure bool_LoadToRT(fun: TEleExpress);
     //////////////// Tipo Byte /////////////
-    procedure byte_LoadToRT(fun: TEleExpress);
+    procedure byte_LoadToWR(fun: TEleExpress);
     procedure byte_DefineRegisters;
     procedure byte_SaveToStk;
     //////////////// Tipo Word /////////////
-    procedure word_LoadToRT(fun: TEleExpress);
+    procedure word_RequireWR;
+    procedure word_LoadToWR(fun: TEleExpress);
     procedure word_DefineRegisters;
     procedure word_SaveToStk;
     procedure word_Low(fun: TEleExpress);
@@ -1120,7 +1122,7 @@ begin
   Result := pic.Model;
 end;
 //////////////// Tipo Byte /////////////
-procedure TGenCodBas.byte_LoadToRT(fun: TEleExpress);
+procedure TGenCodBas.byte_LoadToWR(fun: TEleExpress);
 {Load operand to WR. It's, convert storage to stRegister }
 begin
   case fun.Sto of  //el parámetro debe estar en "res"
@@ -1249,7 +1251,12 @@ begin
   _PHA;
 end;
 //////////////// Tipo Word /////////////
-procedure TGenCodBas.word_LoadToRT(fun: TEleExpress);
+procedure TGenCodBas.word_RequireWR;
+{Generate de callings to Work Register used when loading a Word in Work registers.}
+begin
+  AddCallerToFromCurr(H);
+end;
+procedure TGenCodBas.word_LoadToWR(fun: TEleExpress);
 {Carga el valor de una expresión a los registros de trabajo.}
 var
   idx: TEleVarDec;
@@ -1818,7 +1825,7 @@ begin
     exit;
   end;
 end;
-procedure TGenCodBas.GenCondeIF(sen: TxpEleSentence);
+procedure TGenCodBas.GenCondeIF(sen: TEleSentence);
 var
   expBool, expSet: TEleExpress;
   i: Integer;
@@ -1871,11 +1878,45 @@ begin
     _LABEL_post(jumps[i]);
   end;
 end;
+procedure TGenCodBas.GenCodeExit(sen: TEleSentence);
+{Se debe dejar en los registros de trabajo, el valor del parámetro indicado.}
+var
+  curFun: TEleFun;
+  par, expSet: TEleExpress;
+  parentNod: TxpElement;
+  ele: TxpElement;
+begin
+  //TreeElems.curNode, debe ser de tipo "Body".
+  if sen.elements.Count=0 then begin
+    //There isn't an expression.
+    _RTS;
+  end else begin
+    //There is an expression.
+    //It's supposed to be a function. We don't validate here. It's been done in Analyze.
+    parentNod := TreeElems.curCodCont.Parent;
+    if parentNod.idClass <> eleFunc then begin  //Shouldn't happen
+      GenError('Design error.');
+      exit;
+    end;
+    curFun := TEleFun(parentNod);
+    //Generate code for evaluating all possible expressions
+    for ele in sen.elements do begin
+      expSet := TEleExpress(ele);  //Takes assigment function or the last expression.
+      GenCodeExpr(expSet);
+      if HayError then exit;
+    end;
+    //par := TEleExpress(sen.elements[0]);  //Only one parameter
+    par := TEleExpress(sen.elements[sen.elements.Count-1]);  //The last expression
+    //El resultado de la expresión está en "par".
+    LoadToWR(par);  //Carga expresión en WR y genera RTS
+    _RTS;
+  end;
+end;
 procedure TGenCodBas.GenCodeSentences(sentList: TxpElements);
 {Generate code for a list of sentences.}
 var
   eleSen, ele: TxpElement;
-  sen: TxpEleSentence;
+  sen: TEleSentence;
   expSet: TEleExpress;
   inst: TEleAsmInstr;
   asmBlock: TEleAsmBlock;
@@ -1886,7 +1927,7 @@ begin
       exit;
     end;
     //Generates code to the sentence.
-    sen := TxpEleSentence(eleSen);
+    sen := TEleSentence(eleSen);
     case sen.sntType of
     sntAssign: begin  //Assignment
       for ele in sen.elements do begin
@@ -1917,7 +1958,10 @@ begin
     end;
     sntIF: begin
       GenCondeIF(sen);
-    end
+    end;
+    sntExit: begin
+      GenCodeExit(sen);
+    end;
     else
       GenError('Unknown sentence type.', sen.srcDec);
       exit;

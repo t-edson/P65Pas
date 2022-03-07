@@ -3,7 +3,7 @@ unit FrameRamExplorer;
 interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, StdCtrls, LCLProc,
-  LCLIntf, LCLType, ExtCtrls, Buttons, CPUCore, CompBase, CompMain;
+  LCLIntf, LCLType, ExtCtrls, Buttons, CPUCore, CompBase, Analyzer;
 type
   //Define a un bloque de RAM, que servirá para dibujo
   {Los bloques de RAM se usan para separar la memoria en bloques de acuerdo a
@@ -39,7 +39,7 @@ type
     procedure panGraphPaint(Sender: TObject);
   public
     OnCloseFrame: procedure of object;   //Evento de cierre
-    procedure SetCompiler(cxp0: TCompMain);
+    procedure SetCompiler(cxp0: TAnalyzer);
     constructor Create(AOwner: TComponent) ; override;
     destructor Destroy; override;
   end;
@@ -319,7 +319,7 @@ begin
 
   DrawRAMbank(Rect(x0, y0, x0+ancPag+1, y0+alto), true);
 end;
-procedure TfraRamExplorer.SetCompiler(cxp0: TCompMain);
+procedure TfraRamExplorer.SetCompiler(cxp0: TAnalyzer);
 begin
   pic := cxp0.picCore;
   cxp := cxp0;

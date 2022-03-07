@@ -5,7 +5,7 @@ unit ParserDirec;
 interface
 uses
   Classes, SysUtils, fgl, math, Graphics, CompBase, SynFacilHighlighter,
-  LexPas, MisUtils, Globales, CompMain,
+  LexPas, MisUtils, Globales, Analyzer,
   XpresElemP65;
 type  //Tipos para manejo de expresiones
   TDirDatType = (ddtNumber, ddtString);
@@ -74,7 +74,7 @@ type
 
 
   { TParserDirecBase }
-  TParserDirecBase = class(TCompMain)
+  TParserDirecBase = class(TAnalyzer)
   private  //Parser and Expressions evaluation
     tokIni : integer;  //Posición inicial del token actual
     dirOperator: Integer;
@@ -172,7 +172,7 @@ var
 
 procedure SetLanguage;
 begin
-  CompMain.SetLanguage;
+  Analyzer.SetLanguage;
 {$I ..\_language\tra_ParserDirec.pas}
 end;
 { TDirOperand }

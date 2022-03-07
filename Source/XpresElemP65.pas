@@ -61,24 +61,6 @@ type  //Previous definitions for elements
 //  end;
   TxpListCalled = specialize TFPGObjectList<TxpElement>;
 
-  //Identificadores para bloques de sintaxis { TODO : PAreciera que en el nuevo esquema, no es necesario }
-  TxpSynBlockId = (
-    sbiNULL,  //Sin bloque (en el mismo Body)
-    sbiIF,    //bloque IF
-    sbiFOR,   //bloque FOR
-    sbiWHILE, //bloque WHILE
-    sbiREPEAT //bloque REPEAT
-  );
-
-  { TxpExitCall }
-  //Clase que representa una llamada a la instrucción exit()
-  TxpExitCall = class
-    srcPos: TSrcPos;    //Posición en el código fuente
-    blkId : TxpSynBlockId; //Identificador del bloque desde donde se hizo la llamada
-    function IsObligat: boolean;
-  end;
-  TxpExitCalls = specialize TFPGObjectList<TxpExitCall>; //lista de variables
-
   //Groups of data types.
   TTypeGroup=(
     t_integer,  //Signed integer numbers
@@ -206,7 +188,6 @@ type  //TxpElement class
                 eleFinal,     //FINALIZATION section
                 //Expressions
                 eleExpress,   //Expression
-                //eleAsmOperand,//ASM Operand
                 eleAsmOperat, //ASM Operation
                 eleCondit,    //Condition
                 //Instructions relative
@@ -294,11 +275,11 @@ type  //Declaration elements
     {Estos eventos NO se generan automáticamente en TCompilerBase, sino que es la
     implementación del tipo, la que deberá llamarlos. Son como una ayuda para facilitar
     la implementación.}
-    OnSaveToStk  : procedure of object;  //Salva datos en reg. de Pila
-    OnLoadToWR   : TProcLoadOperand; {Se usa cuando se solicita cargar un operando
-                                 (de este tipo) en la pila. }
-    OnGlobalDef  : TProcDefineVar; {Es llamado cada vez que se encuentra la
-                                  declaración de una variable (de este tipo) en el ámbito global.}
+    OnSaveToStk : procedure of object; //Save data to stack.
+    OnGlobalDef : TProcDefineVar; {Es llamado cada vez que se encuentra la declaración
+                                  de una variable (de este tipo) en el ámbito global.}
+    OnLoadToWR  : TProcLoadOperand;    //Used when required to load an operand in Work Register.
+    OnRequireWR : procedure of object; //Used to detect dependencies on Work registers.
   public
     copyOf  : TEleTypeDec;  //Indicates this type is copy of other
     group   : TTypeGroup;   //Type group (numéric, string, etc)
@@ -518,6 +499,20 @@ type  //Expression elements
     constructor Create; override;
   end;
 type  //Structural elements
+
+  { TxpExitCall }
+//  //Clase que representa una llamada a la instrucción exit()
+//  TxpExitCall = class
+//    srcPos : TSrcPos;    //Posición en el código fuente
+//    codeBlk: TxpEleCodeCont; {Must refer to a:
+//                             - Body of a function/program.
+//                             - The block section of a sentence that can contain block of
+//                               code like: IF, FOR, WHILE, REPEAT.
+//                             Other cases are not yet analyzed if are valid.  }
+//    function IsObligat: boolean;
+//  end;
+//  TxpExitCalls = specialize TFPGObjectList<TxpExitCall>; //lista de variables
+
   { TxpEleBody }
   //Class to modelate the body of the main program or the procedures.
   TEleBody = class(TxpEleCodeCont)
@@ -528,12 +523,13 @@ type  //Structural elements
 
   { TxpEleBlock }
   //Class to modelate a block of code, like a BEGIN...END or the body of conditional.
-  TEleBlock = class(TxpElement)
+  TEleBlock = class(TxpEleCodeCont)
     //adrr   : integer;  //dirección física
     constructor Create; override;
     destructor Destroy; override;
   end;
 
+  TEleSentence = class;
   { TEleProgFrame }
   {Defines an element that have a strucure similar to a general Pascal program,
   including declaractions (VAR, CONST, PROCEDURE) and a Code container (BODY).
@@ -543,9 +539,21 @@ type  //Structural elements
   public
     function BodyNode: TEleBody;
   public //Manejo de llamadas a exit()
-    lstExitCalls: TxpExitCalls;
-    procedure AddExitCall(srcPos: TSrcPos; blkId: TxpSynBlockId);
-    function ObligatoryExit: TxpExitCall;
+    firstObligExit: TEleSentence;  {Referencia al primer exit(), en código obligatorio.
+                           Si es NIL, significa que no hay ningún exit() en código
+                           obligatorio, aunque podrían haber algunos en código condicional.
+                           Solo importa el primero, porque después de este, ya no se
+                           ejecutará ningún otro código.}
+    procedure RegisterExitCall(exitSent: TEleSentence);
+    {**************************************************************
+    De momento, no se están usando estos campos de abajo. Con los de arriba es
+    suficiente por ahora. No se necesita crear una estructura de bloques de sintaxis
+    porque el AST ya lo incluye. Además para optimización del RTS, solo basta con
+    saber si hay al menos un exit() en código obligatorio, que por fuerza será el
+    último en ejecutarse}
+    //lstExitCalls: TxpExitCalls;
+    //procedure AddExitCall(srcPos: TSrcPos; codeBlk: TxpEleCodeCont);
+    //function ObligatoryExit: TxpExitCall;
   public //Inicialización
     procedure Clear; override;
     constructor Create; override;
@@ -594,12 +602,13 @@ type  //Instructions relative elements
     sntREPEAT,     //REPEAT Loop
     sntWHILE,      //WHILE Loop
     sntFOR,        //FOR loop
-    sntCASE        //Conditional CASE
+    sntCASE,       //Conditional CASE
+    sntExit        //Exit instruction
   );
 
-  { TxpEleSentence }
+  { TEleSentence }
   {Represents a Pascal instruction.}
-  TxpEleSentence = class(TxpElement)
+  TEleSentence = class(TxpElement)
   public
     sntType: TxpSentence;  //Sentence type
     function sntTypeAsStr: string;
@@ -950,12 +959,12 @@ begin
   tempVars.Destroy;
   inherited Destroy;
 end;
-{ TxpEleSentence }
-function TxpEleSentence.sntTypeAsStr: string;
+{ TEleSentence }
+function TEleSentence.sntTypeAsStr: string;
 begin
   WriteStr(Result, sntType);
 end;
-constructor TxpEleSentence.Create;
+constructor TEleSentence.Create;
 begin
   inherited Create;
   //name := 'sent';  Don't give name to optimize
@@ -989,16 +998,16 @@ begin
   idClass := eleBody;
 end;
 { TxpExitCall }
-function TxpExitCall.IsObligat: boolean;
-{Indica si el exit se encuentra dentro de código obligatorio}
-begin
-  {Para detectar si el exit() está en código obligatorio, se verifica si se enceuntra
-  directamente en el Body, y no dentro de bloques de tipo
-  IF, WHILE, FOR, REPEAT. Este método no es del todo preciso si se considera que puede
-  haber también código obligatorio, también dentro de bloques REPEAT o códigos IF
-  definido en tiempo de compialción.}
-  Result := (blkId = sbiNULL);
-end;
+//function TxpExitCall.IsObligat: boolean;
+//{Indica si el exit se encuentra dentro de código obligatorio}
+//begin
+//  {Para detectar si el exit() está en código obligatorio, se verifica si se enceuntra
+//  directamente en el Body, y no dentro de bloques de tipo
+//  IF, WHILE, FOR, REPEAT. Este método no es del todo preciso si se considera que puede
+//  haber también código obligatorio, dentro de bloques REPEAT o códigos IF definido en
+//  tiempo de compilación. Se podrúa mejorar después.}
+//  Result := (codeBlk.idClass = eleBody);  //Cuerpo de una función o el programa principal
+//end;
 { TxpEleCaller }
 function TxpEleCaller.CallerUnit: TxpElement;
 {Devuelve el elemento unidad o programa principal, desde donde se hace esta llamada.}
@@ -1369,52 +1378,74 @@ begin
   //Devuelve referencia
   Result := TEleBody(elem);
 end;
-procedure TEleProgFrame.AddExitCall(srcPos: TSrcPos; blkId: TxpSynBlockId);
-var
-  exitCall: TxpExitCall;
+procedure TEleProgFrame.RegisterExitCall(exitSent: TEleSentence);
+{Registra una llamada a una instrucción exit(). De momento solo se usa para actualizar a
+"firstObligExit".
+"exitSent" es la instrucción exit() que queremos registrar. Debe haber sido ya incluida
+en el AST.}
 begin
-  exitCall := TxpExitCall.Create;
-  exitCall.srcPos := srcPos;
-  {Se guarda el ID, en lugar de la referencia al bloque, porque en el modo de trabajo
-   actual, los bloques se crean y destruyen, dinámicamente}
-  exitCall.blkId  := blkId;
-  lstExitCalls.Add(exitCall);
-end;
-function TEleProgFrame.ObligatoryExit: TxpExitCall;
-{Devuelve la referencia de una llamada a exit(), dentro de código obligatorio del Body.
-Esto ayuda a sabe si ya el usuario incluyó la salida dentro del código y no es necesario
-agregar un RETURN al final.
-Si no encuentra ninguna llamada a exit() en código obligatorio, devuelve NIL.
-Según la documentación, el exit() en código obligatorio, solo debe estar al final del
-código del procedimiento. Si estuviera antes, dejaría código "no-ejecutable".}
-var
-  exitCall: TxpExitCall;
-begin
-  if lstExitCalls.Count = 0 then exit(nil);  //No incluye exit()
-  for exitCall in lstExitCalls do begin
-    //Basta detectar un exit(), porque no se espera que haya más.
-    if exitCall.IsObligat then begin
-      exit(exitCall);  //tiene una llamada en código obligatorio
+  if firstObligExit = nil then begin
+    //Aún no ha sido inicializado. Este puede ser el primero.
+    //Verifica si está dentro de código obligatorio.
+    {Para detectar si el exit() está en código obligatorio, se verifica si se enceuntra
+     directamente en el Body, y no dentro de bloques de tipo
+     IF, WHILE, FOR, REPEAT. Este método no es del todo preciso si se considera que puede
+     haber también código obligatorio, dentro de bloques REPEAT o códigos IF definido en
+     tiempo de compilación. Se podrúa mejorar después.}
+    if exitSent.Parent.idClass = eleBody then begin
+      {Es código obligatorio, porque si estuviera dentro de estructuras IF o REPEAT o
+      WHILE; el "idClass" sería un elemento "eleBlock".}
+      firstObligExit := exitSent;
     end;
   end;
-  //No se encontró ningún exit en el mismo "body"
-  exit(nil);
 end;
+
+//procedure TEleProgFrame.AddExitCall(srcPos: TSrcPos; codeBlk: TxpEleCodeCont);
+//var
+//  exitCall: TxpExitCall;
+//begin
+//  exitCall := TxpExitCall.Create;
+//  exitCall.srcPos := srcPos;
+//  {Se guarda el ID, en lugar de la referencia al bloque, porque en el modo de trabajo
+//   actual, los bloques se crean y destruyen, dinámicamente}
+//  exitCall.codeBlk  := codeBlk;
+//  lstExitCalls.Add(exitCall);
+//end;
+//function TEleProgFrame.ObligatoryExit: TxpExitCall;
+//{Devuelve la referencia de una llamada a exit(), dentro de código obligatorio del Body.
+//Esto ayuda a saber si ya el usuario incluyó la salida dentro del código y no es necesario
+//agregar un RETURN al final.
+//Si no encuentra ninguna llamada a exit() en código obligatorio, devuelve NIL.
+//Según la documentación, el exit() en código obligatorio, solo debe estar al final del
+//código del procedimiento. Si estuviera antes, dejaría código "no-ejecutable".}
+//var
+//  exitCall: TxpExitCall;
+//begin
+//  if lstExitCalls.Count = 0 then exit(nil);  //No incluye exit()
+//  for exitCall in lstExitCalls do begin
+//    //Basta detectar un exit(), porque no se espera que haya más.
+//    if exitCall.IsObligat then begin
+//      exit(exitCall);  //tiene una llamada en código obligatorio
+//    end;
+//  end;
+//  //No se encontró ningún exit en el mismo "body"
+//  exit(nil);
+//end;
 //Inicialización
 procedure TEleProgFrame.Clear;
 begin
   inherited Clear;
-  lstExitCalls.Clear;
+  //lstExitCalls.Clear;
 end;
 constructor TEleProgFrame.Create;
 begin
   inherited Create;
   idClass := eleProgFrame;
-  lstExitCalls:= TxpExitCalls.Create(true);
+  //lstExitCalls:= TxpExitCalls.Create(true);
 end;
 destructor TEleProgFrame.Destroy;
 begin
-  lstExitCalls.Destroy;
+  //lstExitCalls.Destroy;
   inherited Destroy;
 end;
 { TxpEleCon }

@@ -1,8 +1,10 @@
-//  procedure proc2(x: byte);
-//  begin
-//    exit;
-//    //inc(x);
-//  end;
+var a: byte;       
+procedure simple: byte;
+begin
+  if a=1 then  end; 
+  exit(1); 
+end; 
+
 begin 
-  //proc2(1);
+//  simple;
 end.

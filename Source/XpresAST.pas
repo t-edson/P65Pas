@@ -31,7 +31,14 @@ type  //Abstract Syntax Tree
   public  //Tree definition/events
     main      : TEleProg;  //Root node
     curNode   : TxpElement;  //Reference to current node
-    curCodCont: TxpEleCodeCont;  //Reference to current body, constant or variable node opened.
+    curCodCont: TxpEleCodeCont;  {Reference to current code container, used to solve
+                                 identifiers. It could be:
+                                   - Body opened.
+                                   - Constant declaration opened.
+                                   - Variable declaration opened.
+                                   - Type declaration opened.
+                                  Note this don't consider TEleBlock elements.
+                                   }
     OnFindElement: procedure(elem: TxpElement) of object;  //Evento de búsqueda
   public  //Containers
     AllCons  : TEleConsDecs;
@@ -58,7 +65,7 @@ type  //Abstract Syntax Tree
     function AddElementTypeAndOpen(srcPos: TSrcPos; tname: string; tsize: integer;
       catType: TxpCatType; group: TTypeGroup): TEleTypeDec;
     function AddElementBlockAndOpen(srcPos: TSrcPos): TEleBlock;
-    function AddElementSentAndOpen(srcPos: TSrcPos; sntType: TxpSentence): TxpEleSentence;
+    function AddElementSentAndOpen(srcPos: TSrcPos; sntType: TxpSentence): TEleSentence;
   public  //Element resolution (FindFirst() - FindNext())
     curFind: TxpFindState; //State variables for searching
     function FindFirst(const name: string): TxpElement;
@@ -72,7 +79,6 @@ type  //Abstract Syntax Tree
     function LastNode: TxpElement;
     function BodyNode: TEleBody;
     function CurNodeName: string;
-    function CurCodeContainer: TEleProgFrame;
     function ExistsArrayType(itemType: TEleTypeDec; nEle: integer;
                              out typFound: TEleTypeDec): boolean;
     function ExistsPointerType(ptrType: TEleTypeDec;
@@ -99,6 +105,7 @@ begin
   main.Clear;
 
   curNode := main;      //retorna al nodo principal
+  curCodCont := nil;    //Important
   //ELimina lista internas
   AllCons.Clear;
   AllVars.Clear;
@@ -280,9 +287,9 @@ begin
   Result.srcDec := srcPos;
   AddElementAndOpen(Result);
 end;
-function TXpTreeElements.AddElementSentAndOpen(srcPos: TSrcPos; sntType: TxpSentence): TxpEleSentence;
+function TXpTreeElements.AddElementSentAndOpen(srcPos: TSrcPos; sntType: TxpSentence): TEleSentence;
 begin
-  Result := TxpEleSentence.Create;
+  Result := TEleSentence.Create;
   //Result.name := 'sent';
   Result.srcDec := srcPos;
   Result.sntType := sntType;
@@ -297,7 +304,7 @@ Esta rutina es quien define la resolución de nombres (alcance) en el lenguaje.}
 var
   elem: TxpElement;
 begin
-//  debugln(' Explorando nivel: [%s] en pos: %d', [curFindNode.name, curFindIdx - 1]);
+  //debugln(' Explorando nivel: [%s] desde pos: %d de %s', [curFind.name, curFind.Idx - 1, curFind.Node.name]);
   repeat
     curFind.Idx := curFind.Idx - 1;  //Siempre salta a la posición anterior
     if curFind.Idx<0 then begin
@@ -308,8 +315,8 @@ begin
         exit;  //aquí termina la búsqueda
       end;
       //Busca en el espacio padre
-      curFind.Idx := curFind.Node.Index;  //posición actual
-      curFind.Node := curFind.Node.Parent;  //apunta al padre
+      curFind.Idx := curFind.Node.Index;   //Posición actual
+      curFind.Node := curFind.Node.Parent; //Apunta al padre
       if curFind.inUnit then curFind.inUnit := false;   //Sale de una unidad
       Result := FindNext();  //Recursividad IMPORTANTE: Usar paréntesis.
 //      Result := nil;
@@ -458,26 +465,6 @@ function TXpTreeElements.CurNodeName: string;
 {Devuelve el nombre del nodo actual}
 begin
   Result := curNode.name;
-end;
-function TXpTreeElements.CurCodeContainer: TEleProgFrame;
-{Devuelve una referencia al Contenedor de Código actual. Si no lo identifica,
-devuelve NIL}
-begin
-  case curNode.idClass of
-  eleFunc, eleProg, eleUnit: begin
-    {Este es un caso directo, porque estamos directamente en un contenedor de código.
-    No es común proque en este ámbito solo están las declaraciones, no el código}
-    exit( TEleProgFrame(curNode) );
-  end;
-  eleBody: begin
-    {Este es el caso mas común porque aquí si estamos dentro de un bloque que incluye
-    código.}
-    //Se supone que nunca debería fallar, porque un Body siempre pertenece a un CodeCont
-    exit( TEleProgFrame(curNode.Parent) );
-  end;
-  else
-    exit(nil);
-  end;
 end;
 function TXpTreeElements.ExistsArrayType(itemType: TEleTypeDec; nEle: integer;
   out typFound: TEleTypeDec): boolean;

@@ -1,3 +1,113 @@
+P65PAS 0.9.0
+=============
+COMENTARIOS
+La versión anterior resolvio prácticamente todos los pendientes de los bloques ASM.
+En esta versión se espera seguir avanzando en una versión que pueda reemplazar,
+finalmente, a la versión 0.7.8 que es la más estable hasta ahora.
+
+OBJETIVOS
+- Terminar de implementar y pasar el código de prueba de bloques ASM.
+- Implementar, de la mejor forma, la instrucción exit() --> HECHO. 
+- Avanzar en la implementación de las funciones INLINE de usuario.
+- Simplificar el uso de variables temporales.
+- Generar una versión en Ubuntu.
+
+CAMBIOS:
+- Se quita la función EXIT() como función del sistema y se crea un nuevo tipo de 
+sentencia. Se crea AnalyzeEXIT().
+- Se cambia de nombre a TxpEleSentence por TEleSentence.
+- Se elimina TXpTreeElements.CurCodeContainer(). 
+- Se crea el evento TEleTypeDec.OnRequireWR para requerir dependencias de registros.
+- Se cambia el ancestro de la clase TEleBlock a TxpEleCodeCont.
+- Se quita el enumerado "TxpSynBlockId" y se modifica TxpExitCall para adaptarse a la
+forma de trabajo del nuevo AST de este compilador.
+- Se actualiza TEleProgFrame.AddExitCall() con los cambios hechos en TxpExitCall.
+- Se quita de la Doc. técnica, información sobre los bloques de sintaxis, porque ya no 
+se usan en este diesño de compilador.
+- Se eliminan lstExitCalls, AddExitCall() y ObligatoryExit() en TEleProgFrame porque 
+se descarta el mecanismo de guardar llamadas a las instrucciones exit(), porque esta
+información no es necesaria con el uso del AST.
+- Se crean los campos firstObligExit y RegisterExitCall() en TEleProgFrame, porque
+lo que nos interesa, para optimización de la instrucción RTS, es saber si hay una 
+instrucción exit() en código obligatorio. 
+- Se eliminan las clases TxpExitCall y TxpExitCalls porque ya no son necesarias.
+- Se renombra CompileUsesDeclaration a AnalyzeUsesDeclaration
+- Se renombra CompileStructBody a AnalyzeStructBody.
+- Se renombra CompileInlineDeclar a AnalyzeInlineDeclar.
+- Se renombran CompileConstDeclar y CompileVarDeclar a AnalyzeConstDeclar y 
+AnalyzeVarDeclar.
+- Se renombra CompileTypeDeclar a AnalyzeTypeDeclar.
+- Se cambia de nombre a la unidad CompMain por Analyzer.
+- Se cambia de nombre a la clase TCompMain por TAnalyzer.
+- Se corrige TGenCodBas.GenCodeExit() para que pueda trabajar expresiones complejas.
+- Se corrige un problema relacionado con la falta de inicialización de 
+TreeElems.curCodCont.
+- Se definió qu eel Timer de frmPrincipal se active en el evento OnShow(). Este
+cambio se implementó debido a un error encontrado al compilar para Mac.
+- Se corrige codigo de prueba Test4_Asm.pas.
+
+TAREAS PLANIFICADAS 
+- Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
+- Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
+- Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
+globales, locales) y los registros de trabajo.
+- Simplificar el uso de variables temporales.
+
+- Implementar la obligatoriedad de localizar el registro IX en la página cero.
+- Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
+- Implementra la sintaxis de arreglos: VAR str: TAByte = (1,2,3); Se sugiere implementar 
+en TCompilerBase.GetOperand() el reconcimiento de arreglos de la forma: ('a', 'b') y así 
+se facilitará la creación de literales constantes.  numb: TAByte = (1, 2); 
+Se puede empezar creando la función array(1,2,3).
+- Crear una referencia en todos los elementos a su arbol de sintaxis correspondiente y 
+crear también una referencia del arbol de sintaxis a su compilador. La idea es que el 
+elemento pueda interpretar el campo idCtx de los registros TSrcPos, para poder obtener 
+información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde se lee 
+esta información.
+- Crear estructura para almacenar información de los diferentes archivos que componen el 
+proyecto para gestionar el uso de unidades.
+
+PENDIENTES
+- Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
+-Generar bloques IF (o de otro tipo), de más de 128 bytes.
+-Revisar y adaptar los programas de prueba para el compilador.
+
+Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
+implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
+hace realmente en Pascal.
+
+Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
+desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
+
+Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
+De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
+almacenar la lista de los posibles tipos creados.
+
+Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
+
+inline func1(var x: byte; const y: word; expr z: char);
+begin
+end;
+
+La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
+considerando el tipo de almacenamiento del operando.
+Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
+codificar operaciones sobre tipos objeto:
+
+octeto = object
+    value: byte;
+  public 
+    inline assign(var x: byte) operator ":="  precedence 5;
+    
+    end;
+    inline assign(x: byte) operator ":=";
+    
+    end;
+  end;
+
+
+
+
 P65PAS 0.8.9
 ============
 COMENTARIOS
@@ -64,71 +174,9 @@ de tipo espacio.
 - Se corrige la rutina TCompilerBase.CaptureTok() para cuando se produce un salto de línea.
 - Se cambia de nombre a CompileProcDeclar() por AnalyzeProcDeclar().
 - Se corrige un error en la creación de variables en TCompilerBase.AddVariableAndOpen().
-- Se modifica la librería P65utils to fix TP6502.Decode() It was failing in identifying the 
-Opcode $00.
+- Se modifica la librería P65utils para arreglar TP6502.Decode() Estaba fallando en identificar
+el Opcode $00.
  
-TAREAS PLANIFICADAS 
-- Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
-- Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
-- Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
-globales, locales) y los registros de trabajo.
-- Simplificar el uso de variables temporales.
-
-- Implementar la obligatoriedad de localizar el registro IX en la página cero.
-- Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
-- Implementra la sintaxis de arreglos: VAR str: TAByte = (1,2,3); Se sugiere implementar 
-en TCompilerBase.GetOperand() el reconcimiento de arreglos de la forma: ('a', 'b') y así 
-se facilitará la creación de literales constantes.  numb: TAByte = (1, 2); 
-Se puede empezar creando la función array(1,2,3).
-- Revisar la instrucción exit. No funciona con parámetros;
-- Revisar el llenado del campo TxpExitCall.IsObligat porque en el nuevo esquema de 
-trabajo no se está llenando apropiadamente.
-- Crear una referencia en todos los elementos a su arbol de sintaxis correspondiente y 
-crear también una referencia del arbol de sintaxis a su compilador. La idea es que el 
-elemento pueda interpretar el campo idCtx de los registros TSrcPos, para poder obtener 
-información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde se lee 
-esta información.
-- Crear estructura para almacenar información de los diferentes archivos que componen el 
-proyecto para gestionar el uso de unidades.
-
-PENDIENTES
-- Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
--Generar bloques IF (o de otro tipo), de más de 128 bytes.
--Revisar y adaptar los programas de prueba para el compilador.
-
-Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
-implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
-hace realmente en Pascal.
-
-Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
-desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
-
-Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
-De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
-almacenar la lista de los posibles tipos creados.
-
-Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
-
-inline func1(var x: byte; const y: word; expr z: char);
-begin
-end;
-
-La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
-considerando el tipo de almacenamiento del operando.
-Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
-codificar operaciones sobre tipos objeto:
-
-octeto = object
-    value: byte;
-  public 
-    inline assign(var x: byte) operator ":="  precedence 5;
-    
-    end;
-    inline assign(x: byte) operator ":=";
-    
-    end;
-  end;
-
 
 
 P65PAS 0.8.8

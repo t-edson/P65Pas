@@ -36,6 +36,7 @@ end;
       LDA# $80
       STA __H
       LDA# $40
+      rts
     end
   end; 
 
@@ -165,22 +166,25 @@ begin
   asm 
     LDA #$08
     ORA VBYTE
+    STA VBYTE
   end;
   if vbyte = 8 then bien else mal; 
 
 	//jumps
   asm 
-    JMP $+1
+    JMP $+4
     BRK ;stop if not jump
   end;
 
+  //Test Loop 
 	vbyte := 10;
   asm 
     DEC vbyte
-    BEQ $+2
-    JMP $-3
+    BEQ $+2+3  ;2 bytes of BEQ and 3 of JMP
+    JMP $-4    ;Loop to DEC vbyte
   end;
 
+  //Test Loop with labels
 	vbyte := 10;
   asm 
   label1:
@@ -196,5 +200,7 @@ salir:
 	if vword = $8040 then bien else mal;
 
 	vword := multiplicar(5,10);
-	if vword = word(50) then bien else mal;
+//	if vword = word(50) then bien else mal;
+  
+  asm RTS end; 
 end.

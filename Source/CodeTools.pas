@@ -5,14 +5,14 @@ interface
 uses
   Classes, SysUtils, LCLType, LCLProc, SynEdit, SynEditHighlighter, LazUTF8,
   MisUtils, SynFacilCompletion, SynFacilHighlighter, SynFacilBasic,
-  FrameEditView, CompBase, Globales, XpresElemP65, LexPas, CompMain;
+  FrameEditView, CompBase, Globales, XpresElemP65, LexPas, Analyzer;
 type
   { TCodeTool }
   TCodeTool = class
   private
     //Referencias importantes
     fraEdit   : TfraEditView;
-    cxp       : TCompMain;
+    cxp       : TAnalyzer;
     opEve0: TFaOpenEvent;   //Para pasar parámetro a cxpTreeElemsFindElement´()
   public
     procedure ReadCurIdentif(out tok: string; out tokType: integer; out
@@ -38,7 +38,7 @@ type
   public
     procedure SetCompletion(ed: TSynEditor);
   public  //Inicialización
-    procedure SetCompiler(cxp0: TCompMain);
+    procedure SetCompiler(cxp0: TAnalyzer);
     constructor Create(fraEdit0: TfraEditView);
   end;
 
@@ -443,7 +443,7 @@ begin
 
 end;
 
-procedure TCodeTool.SetCompiler(cxp0: TCompMain);
+procedure TCodeTool.SetCompiler(cxp0: TAnalyzer);
 begin
   cxp     := cxp0;
   //Habría que cambiar algunas configuraciones de acuerdo al compilador usado

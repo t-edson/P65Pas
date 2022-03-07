@@ -106,9 +106,9 @@ var
   xfun: TEleFun;
   xbod: TEleBody;
   xvar: TEleVarDec;
-  ecall : TxpExitCall;
+  //ecall : TxpExitCall;
   xexp: TEleExpress;
-  sen: TxpEleSentence;
+  sen: TEleSentence;
   xtyp: TEleTypeDec;
   xfundec: TEleFunDec;
   asmInst: TEleAsmInstr;
@@ -151,10 +151,15 @@ begin
 
     ImageList1.GetBitmap(3, Image1.Picture.Bitmap);
     //Genera reporte de ExitCalls
-    tmp := '';
-    for ecall in xfun.lstExitCalls do begin
-      tmp := tmp + 'exit() in : ' + ecall.srcPos.RowColString + ' ' +
-             LineEnding;
+    //tmp := '';  *** Esta información se puede sacar del AST.
+    //for ecall in xfun.lstExitCalls do begin
+    //  tmp := tmp + 'exit() in : ' + ecall.srcPos.RowColString + ' ' +
+    //         LineEnding;
+    //end;
+    if xfun.firstObligExit=nil then begin
+      tmp := 'No obligatory exit().' + LineEnding;
+    end else begin
+      tmp := 'Obligatory exit() in: ' + xfun.firstObligExit.srcDec.RowColString + LineEnding;
     end;
     //Información adicional
     adicInformation :=
@@ -167,11 +172,16 @@ begin
 
     ImageList1.GetBitmap(16, Image1.Picture.Bitmap);
     //Genera reporte de ExitCalls
-    tmp := '';
-    for ecall in xfundec.lstExitCalls do begin
-      tmp := tmp + 'exit() in : ' + ecall.srcPos.RowColString + ' ' +
-             LineEnding;
-    end;
+    //tmp := '';
+    //for ecall in xfundec.lstExitCalls do begin
+    //  tmp := tmp + 'exit() in : ' + ecall.srcPos.RowColString + ' ' +
+    //         LineEnding;
+    //end;
+      if xfun.firstObligExit=nil then begin
+        tmp := 'No obligatory exit().' + LineEnding;
+      end else begin
+        tmp := 'Obligatory exit() in: ' + xfun.firstObligExit.srcDec.RowColString + LineEnding;
+      end;
     //Información adicional
     if xfundec.implem<>nil then implem := 'Yes' else implem := 'Not';
     adicInformation :=
@@ -193,7 +203,7 @@ begin
     ImageList1.GetBitmap(1, Image1.Picture.Bitmap);
     adicInformation := '';
   end else if elem.idClass = eleSenten then begin
-    sen := TxpEleSentence(elem);
+    sen := TEleSentence(elem);
     txtEleType.Caption := 'Sentence ('+elem.ClassName+')';
     ImageList1.GetBitmap(12, Image1.Picture.Bitmap);
     adicInformation := 'Sentence type: ' + sen.sntTypeAsStr;
@@ -231,12 +241,12 @@ begin
            'Size: ' + IntToStr(xtyp.size) + LineEnding +
            '' ;
   end else if elem.idClass = eleCondit then begin
-    sen := TxpEleSentence(elem);
+    sen := TEleSentence(elem);
     txtEleType.Caption := 'Condition';
     ImageList1.GetBitmap(21, Image1.Picture.Bitmap);
     adicInformation := '';
   end else if elem.idClass = eleBlock then begin
-    //sen := TxpEleSentence(elem);
+    //sen := TEleSentence(elem);
     txtEleType.Caption := 'Block';
     ImageList1.GetBitmap(0, Image1.Picture.Bitmap);
     adicInformation := '';

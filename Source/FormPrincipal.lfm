@@ -6948,10 +6948,11 @@ object frmPrincipal: TfrmPrincipal
     end
   end
   object Timer1: TTimer
+    Enabled = False
     Interval = 100
     OnTimer = Timer1Timer
     Left = 260
-    Top = 110
+    Top = 112
   end
   object FindDialog1: TFindDialog
     OnFind = FindDialog1Find

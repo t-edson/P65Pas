@@ -12,7 +12,7 @@ uses
   Compiler_PIC16,
   FrameSyntaxTree, FormConfig, Globales,
   PicPasProject, FrameEditView, FrameMessagesWin, CodeTools,
-  FrameCfgExtTool, FormDebugger, FormRAMExplorer, ParserASM_6502, CompMain;
+  FrameCfgExtTool, FormDebugger, FormRAMExplorer, ParserASM_6502, Analyzer;
 type
   { TfrmPrincipal }
   TfrmPrincipal = class(TForm)
@@ -213,7 +213,7 @@ type
     procedure butSelCompilerClick(Sender: TObject);
   private
     Compiler16  : TCompiler_PIC16;
-    Compiler    : TCompMain;
+    Compiler    : TAnalyzer;
     tic         : integer;  //Contador para temporización
     ticSynCheck : integer;  //Contador para temporizar la verifiación ed sintaxis
     curProj     : TPicPasProject; //Proyecto actual
@@ -487,6 +487,7 @@ begin
   //Carga último archivo
   if Config.LoadLast then fraEditView1.LoadListFiles(Config.filesClosed);
   acToolSelPIC16Execute(self);  //Fija compilador por defecto
+  Timer1.Enabled := true;
 end;
 procedure TfrmPrincipal.DoSelectSample(Sender: TObject);
 //Se ha seleccionado un archivo de ejemplo.

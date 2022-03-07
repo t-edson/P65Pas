@@ -239,14 +239,9 @@ begin
 
 end;
 procedure TCompilerBase.ProcComments;
-{Procesa comentarios, directivas y bloques ASM. Los bloques ASM, se processan también
-como comentarios o directivas, para poder ubicarlos dentro de instrucciones, y poder
-darle mayor poder, en el futuro.
+{Procesa comentarios y directivas.
 Notar que este procedimiento puede detectar varios errores en el mismo bloque, y que
-pasa al siguiente token, aún cuando detecta errores. Esto permite seguir proesando
-el texto, después de que ya se han generado errores dentro de este blqoue. Así, no
-sería necesario verificar error después de esta rutina, y se podrían detectar errores
-adicionales en el código fuente.}
+pasa al siguiente token, aún cuando detecta errores. }
 var
   ctxChanged: Boolean;  //Manejamos variables locales para permitir recursividad
 begin
@@ -387,9 +382,6 @@ var
   lin: String;
   p: TSrcPos;
 begin
-  //Debe haber parámetros
-  debugln('fila= ' + IntToStr(curCtx.row) + ',' + IntTostr(curctx.col) + ',' +
-      token + ',' + curctx.curLine);
   if token<>ctok then begin
     //No se encontró el token. Muestra mensaje de error.
     {Pero el error, debe estar antes, así que hacemos la magia de explorar hacia atrás,

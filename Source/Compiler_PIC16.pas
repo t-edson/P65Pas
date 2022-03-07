@@ -186,14 +186,14 @@ procedure TCompiler_PIC16.ConstantFolding;
   }
   var
     expFun: TEleExpress;
-    sen: TxpEleSentence;
+    sen: TEleSentence;
     eleSen: TxpElement;
   begin
     //Process body
     TreeElems.OpenElement(body);
     for eleSen in TreeElems.curNode.elements do begin
       if eleSen.idClass <> eleSenten then continue;
-      sen := TxpEleSentence(eleSen);
+      sen := TEleSentence(eleSen);
       //if sen.sntType = sntExpres then begin  //Call to function or method (including assignment)
       if sen.sntType = sntAssign then begin    //assignment)
         expFun := TEleExpress(sen.elements[0]);  //Takes root node.
@@ -407,14 +407,14 @@ like used in several compilers.}
     end;
   end;
 var
-  sen: TxpEleSentence;
+  sen: TEleSentence;
   eleSen, _set, ele, _proc: TxpElement;
   _exp: TEleExpress;
 begin
   for eleSen in body.elements do begin
     if eleSen.idClass <> eleSenten then continue;
     //We have a sentence here.
-    sen := TxpEleSentence(eleSen);
+    sen := TEleSentence(eleSen);
     if sen.sntType = sntAssign then begin  //Assignment
       _set := sen.elements[0];  //Takes the one _set method.
       SplitSet(sen, _set)  //Might generate additional assigments sentences
@@ -429,6 +429,9 @@ begin
           SplitExpress(ele, _exp)
         end;
       end;
+    end else if sen.sntType = sntExit then begin
+      _exp := TEleExpress(sen.elements[0]);  //The first item is a TEleExpress
+      SplitExpress(sen, _exp)
     end;
   end;
 end;
@@ -508,12 +511,13 @@ Must be called after DoOptimize().}
     isInt := funcPar.IsInterrupt;  //Update flag
     //Process body
     TreeElems.OpenElement(body); //Locate in the Body.
+    TreeElems.curCodCont := body;  //Needed because TreeElems.OpenElement() doesn't do it.
     GenCodeSentences(TreeElems.curNode.elements);
     TreeElems.CloseElement;              //Close the Body.
     //Includes the final RTS
     if OptRetProc then begin  //Optimize
       //Verifica es que ya se ha incluido exit().
-      if funcPar.ObligatoryExit<>nil then begin
+      if funcPar.firstObligExit<>nil then begin
         //Ya tiene un exit() obligatorio y en el final (al menos eso se espera)
         //No es necesario incluir el RTS().
       end else begin
@@ -828,7 +832,7 @@ var
   fun: TEleFun;
   caller : TxpEleCaller;
   called : TxpElement;
-  exitCall: TxpExitCall;
+  //exitCall: TxpExitCall;
 begin
   ////////////////////////////////////////////////////////////
   //////////// Reporte de uso de memeoria  ///////////
@@ -931,13 +935,14 @@ begin
       end;
       lins.Add('');
 
-      lins.Add('  Exit Instruction Calls:');
-      if fun.lstExitCalls.Count = 0 then begin
+      lins.Add('  Exit Instruction in obligatory code:');
+      if fun.firstObligExit = nil then begin
         lins.Add('    <none>');
       end else begin
-        for exitCall in fun.lstExitCalls do begin
-          lins.Add('    - Exit() in ' +exitCall.srcPos.RowColString);
-        end;
+        //for exitCall in fun.lstExitCalls do begin
+        //  lins.Add('    - Exit() in ' +exitCall.srcPos.RowColString);
+        //end;
+        lins.Add('    - Oblig. exit() in ' + fun.firstObligExit.srcDec.RowColString);
       end;
       lins.Add('');
 

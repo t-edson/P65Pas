@@ -1008,6 +1008,10 @@ Using $SET_DATA_ADDR with an empty string will disable the effect of a previous 
 
 Variables allocated in a separate block, are considered as ABSOLUTE variables, so they cannot be initialized in the declaration.
 
+## Libraries
+
+P65Pas is a new project and it's still in development and there are not dedicated libraries for the compiler. 
+
 ## P65Pas Limitations
 
 •	Only basic types are implemented: byte, char, boolean, word an dword(limited support).
@@ -1028,25 +1032,22 @@ There is still, much work for development or documentation, so any help will be 
 
 The source code of the compiler is in the folder /Source.
 
-To compile P65Pas, it's needed to have the following libraries:
-
-* SynFacilUtils
-* MisUtils
-* MiConfig
-* P65Utils 
-* t-Xpres 
-* UtilsGrilla
-* ogEditGraf
-
-All of them, must be availables on the GitHub. Check the versions used.
-
-These libraries don't include package. They are only files in folders that need to be included when compiling P65Pas.
-
-P65Pas has been compiled, using the version 1.8.0 of Lazarus. Tested in Windows, Ubuntu and Mac.
+P65Pas has been compiled, using the version 2.0.12 of Lazarus. Tested in Windows, Ubuntu and Mac.
 
 To have more information about the compiler, check the Technical Documentation (Only in spanish by now).
 
-## Libraries
+To compile P65Pas, it's needed to have the following libraries:
 
-P65Pas is a new project and it's still in development and there are not dedicated libraries for the compiler. 
+* MiConfig
+* MisUtils
+* P65Utils
+* SynFacilUtils
+* UtilsGrilla
 
+All of them, are include in the folder /_libraries located in the /Source folder. Additionally, these libraries are available on the GitHub too. 
+
+These libraries don't include package. They are only files in folders that are included when compiling P65Pas.
+
+### External Dependencies
+
+In the current version only the EpikTimer package is needed: https://wiki.freepascal.org/EpikTimer

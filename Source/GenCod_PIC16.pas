@@ -163,7 +163,6 @@ type
       procedure expr_end(posExpres: TPosExpres);
       procedure expr_start;
       procedure fun_delay_ms(fun: TEleExpress);
-      procedure fun_Exit(fun: TEleExpress);
       procedure fun_Inc(fun: TEleExpress);
       procedure fun_Dec(fun: TEleExpress);
       procedure SetOrig(fun: TEleExpress);
@@ -4538,57 +4537,6 @@ begin
   end;
 end;
 ///////////// INLINE system function
-procedure TGenCod.fun_Exit(fun: TEleExpress);
-{Se debe dejar en los registros de trabajo, el valor del parámetro indicado.}
-var
-  curFunTyp: TEleTypeDec;
-  parentNod: TEleProgFrame;
-  curFun: TEleFun;
-  posExit: TSrcPos;
-  par: TEleExpress;
-//  adrReturn: word;
-begin
-  par := TEleExpress(fun.elements[0]);  //Only one parameter
-  //TreeElems.curNode, debe ser de tipo "Body".
-  parentNod := TreeElems.CurCodeContainer;  //Se supone que nunca debería fallar
-  posExit := GetSrcPos;  //Guarda para el AddExitCall()
-  if parentNod.idClass = eleProg then begin
-    //Es el cuerpo del programa principal
-    _RTS;   //Así se termina un programa en PicPas
-  end else if parentNod.idClass = eleFunc then begin
-    //Es el caso común, un exit() en procedimientos.
-    //"parentNod" debe ser de tipo TxpEleFun
-    curFun := TEleFun(parentNod);
-    if curFun.IsInterrupt then begin
-      GenError('Cannot use exit() in an INTERRUPT.');
-      exit;
-    end;
-    //Codifica el retorno
-    curFunTyp := curFun.retType;
-    if curFunTyp = typNull then begin
-      //No retorna valores. Es solo procedimiento
-      _RTS;
-      //No hay nada, más que hacer
-    end else begin
-      //El resultado de la expresión está en "par".
-//***** Reemplazar "res" por "par".
-      if curFunTyp <> par.Typ then begin
-        GenError('Expected a "%s" expression.', [curFunTyp.name]);
-        exit;
-      end;
-      LoadToWR(fun);  //Carga expresión en WR y genera RTS
-      _RTS;
-    end;
-  end else begin
-    //Faltaría implementar en cuerpo de TxpEleUni
-    GenError('Syntax error.');
-  end;
-  //Lleva el registro de las llamadas a exit()
-//  if FirstPass then begin
-//    parentNod.AddExitCall(posExit, parentNod.CurrBlockID);  *** CurrBlockID se ha eliminado porque ya no debería ser necesario con el nueo AST
-//  end;
-  SetFunNull(fun);  //No es función
-end;
 procedure TGenCod.fun_Inc(fun: TEleExpress);
 var
   LABEL1: integer;
@@ -5595,22 +5543,23 @@ begin
   TreeElems.AddElementAndOpen(uni);  //Open Unit
   /////////////// System types ////////////////////
   typBool := CreateEleType('boolean', srcPosNull, 1, tctAtomic, t_boolean);
-  typBool.OnLoadToWR := @byte_LoadToRT;
+  typBool.OnLoadToWR := @byte_LoadToWR;
   typBool.location := locInterface;   //Location for type (Interface/Implementation/...)
   TreeElems.AddElementAndOpen(typBool);  //Open to create "elements" list.
   TreeElems.CloseElement;   //Close Type
   typByte := CreateEleType('byte', srcPosNull, 1, tctAtomic, t_uinteger);
-  typByte.OnLoadToWR := @byte_LoadToRT;
+  typByte.OnLoadToWR := @byte_LoadToWR;
   typByte.location := locInterface;
   TreeElems.AddElementAndOpen(typByte);  //Open to create "elements" list.
   TreeElems.CloseElement;
   typChar := CreateEleType('char', srcPosNull, 1, tctAtomic, t_string);
-  typChar.OnLoadToWR := @byte_LoadToRT;
+  typChar.OnLoadToWR := @byte_LoadToWR;
   typChar.location := locInterface;
   TreeElems.AddElementAndOpen(typChar);
   TreeElems.CloseElement;
   typWord := CreateEleType('word', srcPosNull, 2, tctAtomic, t_uinteger);
-  typWord.OnLoadToWR := @word_LoadToRT;
+  typWord.OnLoadToWR := @word_LoadToWR;
+  typWord.OnRequireWR := @word_RequireWR;
   typWord.location := locInterface;
   TreeElems.AddElementAndOpen(typWord);
   TreeElems.CloseElement;
@@ -5716,7 +5665,7 @@ begin
   accesible (and usable) from the code, because the name assigned is a common variable.}
   //Create register H as variable
   H := AddVariableAndOpen('__H', typByte, srcPosNull);
-  TreeElems.CloseElement;
+  TreeElems.CloseElement;  { TODO : ¿No sería mejor evitar abrir el elemento para no tener que cerrarlo? }
   H.adicPar.hasAdic := decNone;
   H.adicPar.hasInit := false;
   H.location := locInterface;  //make visible
@@ -5744,10 +5693,10 @@ begin
   AddParam(pars, 'ms', srcPosNull, typWord, decRegis);  //Add parameter
   AddSysInlineFunction('delay_ms', typNull, srcPosNull, pars, @fun_delay_ms);
 
-  //Create system function "exit"
-  setlength(pars, 0);  //Reset parameters
-  AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  AddSysInlineFunction('exit', typNull, srcPosNull, pars, @fun_Exit);
+//  //Create system function "exit"
+//  setlength(pars, 0);  //Reset parameters
+//  AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
+//  AddSysInlineFunction('exit', typNull, srcPosNull, pars, @fun_Exit);
 
   //Create system function "inc"
   setlength(pars, 0);  //Reset parameters

@@ -129,7 +129,7 @@ function TfraSyntaxTree.AddNodeTo(nodParent: TTreeNode; elem: TxpElement): TTree
 var
   nod: TTreeNode;
   eleExp: TEleExpress;
-  sen: TxpEleSentence;
+  sen: TEleSentence;
   asmInst: TEleAsmInstr;
 begin
   if elem = nil then begin
@@ -161,7 +161,7 @@ begin
     nod.ImageIndex := 5;
     nod.SelectedIndex := 5;
   end else if elem.idClass = eleSenten then begin
-    sen := TxpEleSentence(elem);
+    sen := TEleSentence(elem);
     nod.Text :=   '<sentnc: ' + sen.sntTypeAsStr + '>';
     //nod.Text := '<sentence>';
     nod.ImageIndex := 12;
@@ -194,7 +194,7 @@ begin
       nod.SelectedIndex := 17;
     end;
   end else if elem.idClass = eleCondit then begin
-    //sen := TxpEleSentence(elem);
+    //sen := TEleSentence(elem);
     nod.Text :=   'condit';
     nod.ImageIndex := 21;
     nod.SelectedIndex := 21;
