@@ -419,7 +419,6 @@ var
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
   requireA;
-  requireH;
   //Process special modes of the compiler.
   if compMod = cmConsEval then begin
     if par.Sto = stConst then SetFunConst_word(fun, (not par.value.valInt) and $FFFF);
@@ -1312,7 +1311,6 @@ begin
   end;
   stConst_Regist: begin  //la expresión p2 se evaluó y esta en A
     SetFunExpres(fun);
-    requireH;
     _STA(H.addr);
     _SEC;
     _LDAi(parA.val);
@@ -1371,7 +1369,6 @@ var
 begin
     fac1 := fun.pars[0].pvar;
     fac2 := fun.pars[1].pvar;
-    requireH;
     //A*256 + X = FAC1 * FAC2
     _ldai($00);
     _ldxi($08);
@@ -2562,7 +2559,6 @@ begin
     end;
   end else if parA.Sto = stRegister then begin
     requireA;
-    requireH;
     //Assignment to register H,A
     case parB.Sto of
     stConst : begin
@@ -3124,8 +3120,6 @@ begin
   end;
   stConst_RamFix: begin
     SetFunExpres(fun);
-    requireH;
-//    if ModeRequire then exit;
     _CLC;
     _LDAi(parA.valL);
     _ADC(parB.addL);
@@ -3729,7 +3723,6 @@ begin
   end;
   stConst_Regist: begin  //la expresión p2 se evaluó y esta en A
     SetFunExpres(fun);
-    requireE;
     _STA(E.addr);  //Sava LSB2
     //Compare MSB
     _LDAi(parA.valH);
@@ -3776,7 +3769,6 @@ _LABEL_post(L1B);
   end;
   stRamFix_Regist:begin   //la expresión p2 se evaluó y esta en A
     SetFunExpres(fun);
-    requireE;
     _STA(E.addr);  //Sava LSB2
     //Compare MSB
     _LDA(parA.addH);
@@ -3796,7 +3788,6 @@ _LABEL_post(L1B);
       GenWarn('Expression will always be FALSE or TRUE.');
     end else begin
       SetFunExpres(fun);
-      requireE;
       _STA(E.addr);  //Sava LSB1
       //Compare MSB
       _LDA(H.addr);
@@ -3812,7 +3803,6 @@ _LABEL_post(L1B);
   end;
   stRegist_RamFix:begin  //la expresión p1 se evaluó y esta en A
     SetFunExpres(fun);
-    requireE;
     _STA(E.addr);  //Sava LSB1
     //Compare MSB
     _LDA(H.addr);
@@ -4807,7 +4797,7 @@ var
   par: TEleExpress;
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
-  case par.Sto of  //el parámetro debe estar en "res"
+  case par.Sto of  //El parámetro debe estar en "res"
   stConst : begin
     if par.Typ = typByte then begin
       SetFunConst(fun);
@@ -4827,7 +4817,6 @@ begin
     end;
   end;
   stRamFix: begin
-    requireH;
     if par.Typ.IsByteSize then begin
       SetFunExpres(fun);  //No podemos devolver variable. Pero sí expresión
       _LDAi(0);
@@ -4847,7 +4836,6 @@ begin
     end;
   end;
   stRegister: begin  //se asume que ya está en (A)
-    requireH;
     if par.Typ = typByte then begin
       SetFunExpres(fun);
       //Ya está en A el byte bajo
@@ -5563,6 +5551,34 @@ begin
   typWord.location := locInterface;
   TreeElems.AddElementAndOpen(typWord);
   TreeElems.CloseElement;
+
+  {Create variables for aditional Working register. Note that this variables are
+  accesible (and usable) from the code, because the name assigned is a common variable.}
+  //Create register H as variable
+  H := AddVariableAndOpen('__H', typByte, srcPosNull);
+  TreeElems.CloseElement;  { TODO : ¿No sería mejor evitar abrir el elemento para no tener que cerrarlo? }
+  H.adicPar.hasAdic := decNone;
+  H.adicPar.hasInit := false;
+  H.location := locInterface;  //make visible
+  //Create register E as variable
+  E := AddVariableAndOpen('__E', typByte, srcPosNull);
+  TreeElems.CloseElement;
+  E.adicPar.hasAdic := decNone;
+  E.adicPar.hasInit := false;
+  E.location := locInterface;  //make visible
+  //Create register U as variable
+  U := AddVariableAndOpen('__U', typByte, srcPosNull);
+  TreeElems.CloseElement;
+  U.adicPar.hasAdic := decNone;
+  U.adicPar.hasInit := false;
+  U.location := locInterface;  //make visible
+  //Create register IX as variable
+  IX := AddVariableAndOpen('__IX', typWord, srcPosNull);
+  TreeElems.CloseElement;
+  IX.adicPar.hasAdic := decNone;
+  IX.adicPar.hasInit := false;
+  IX.location := locInterface;  //make visible
+
   /////////////// Boolean type ////////////////////
   //Methods-Operators
   TreeElems.OpenElement(typBool);
@@ -5591,9 +5607,12 @@ begin
   f:=CreateBOMethod(typByte, '+' , '_add', typWord, typWord, @BOR_byte_add_word);
   f.fConmutat := true;
   f:=CreateBOMethod(typByte, '-' , '_sub', typByte, typByte, @BOR_byte_sub_byte);
+  AddCallerToFrom(H, f.bodyNode);  //Dependency
   f:=CreateBOMethod(typByte, '*' , '_mul', typByte, typWord, @BOR_byte_mul_byte);
   f.fConmutat := true;
+  AddCallerToFrom(H, f.bodyNode);  //Dependency
   f_byte_mul_byte := f;
+
   f:=CreateBOMethod(typByte, 'AND','_and', typByte, typByte, @BOR_byte_and_byte);
   f.fConmutat := true;
   f:=CreateBOMethod(typByte, 'OR' ,'_or' , typByte, typByte, @BOR_byte_or_byte);
@@ -5627,6 +5646,7 @@ begin
   TreeElems.OpenElement(typWord);
   //opr:=typWord.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address);
   f:=CreateBOMethod(typWord, ':=' ,'_set' , typWord, typNull, @BOR_word_asig_word);
+  AddCallerToFrom(H, f.bodyNode);  //Dependency
   f:=CreateBOMethod(typWord, ':=' ,'_set' , typByte, typNull, @BOR_word_asig_byte);
   f:=CreateBOMethod(typWord, '+=' ,'_aadd', typByte, typNull, @BOR_word_aadd_byte);
   f:=CreateBOMethod(typWord, '+=' ,'_aadd', typWord, typNull, @BOR_word_aadd_word);
@@ -5635,6 +5655,7 @@ begin
   f.fConmutat := true;
   f:=CreateBOMethod(typWord, '+'  , '_add', typWord, typWord, @BOR_word_add_word);
   f.fConmutat := true;
+  AddCallerToFrom(H, f.bodyNode);  //Dependency
   f:=CreateBOMethod(typWord, '-'  , '_sub', typByte, typWord, @BOR_word_sub_byte);
   f:=CreateBOMethod(typWord, '-'  , '_sub', typWord, typWord, @BOR_word_sub_word);
   f:=CreateBOMethod(typWord, 'AND', '_and', typByte, typByte, @BOR_word_and_byte);
@@ -5652,6 +5673,7 @@ begin
   f:=CreateBOMethod(typWord, '<>', '_dif' , typWord, typBool, @BOR_word_difer_word);
   f.fConmutat := true;
   f:=CreateBOMethod(typWord, '>=', '_gequ', typWord, typBool, @BOR_word_gequ_word);
+  AddCallerToFrom(E, f.bodyNode);  //Dependency
   f:=CreateBOMethod(typWord, '<' , '_les' , typWord, typBool, @BOR_word_less_word);
   f:=CreateBOMethod(typWord, '>' , '_gre' , typWord, typBool, @BOR_word_great_word);
   f:=CreateBOMethod(typWord, '<=', '_lequ', typWord, typBool, @BOR_word_lequ_word);
@@ -5661,42 +5683,10 @@ begin
 
   TreeElems.CloseElement;   //Close Type
 
-  {Create variables for aditional Working register. Note that this variables are
-  accesible (and usable) from the code, because the name assigned is a common variable.}
-  //Create register H as variable
-  H := AddVariableAndOpen('__H', typByte, srcPosNull);
-  TreeElems.CloseElement;  { TODO : ¿No sería mejor evitar abrir el elemento para no tener que cerrarlo? }
-  H.adicPar.hasAdic := decNone;
-  H.adicPar.hasInit := false;
-  H.location := locInterface;  //make visible
-  //Create register E as variable
-  E := AddVariableAndOpen('__E', typByte, srcPosNull);
-  TreeElems.CloseElement;
-  E.adicPar.hasAdic := decNone;
-  E.adicPar.hasInit := false;
-  E.location := locInterface;  //make visible
-  //Create register U as variable
-  U := AddVariableAndOpen('__U', typByte, srcPosNull);
-  TreeElems.CloseElement;
-  U.adicPar.hasAdic := decNone;
-  U.adicPar.hasInit := false;
-  U.location := locInterface;  //make visible
-  //Create register IX as variable
-  IX := AddVariableAndOpen('__IX', typWord, srcPosNull);
-  TreeElems.CloseElement;
-  IX.adicPar.hasAdic := decNone;
-  IX.adicPar.hasInit := false;
-  IX.location := locInterface;  //make visible
-
   //Create system function "delay_ms"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'ms', srcPosNull, typWord, decRegis);  //Add parameter
   AddSysInlineFunction('delay_ms', typNull, srcPosNull, pars, @fun_delay_ms);
-
-//  //Create system function "exit"
-//  setlength(pars, 0);  //Reset parameters
-//  AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-//  AddSysInlineFunction('exit', typNull, srcPosNull, pars, @fun_Exit);
 
   //Create system function "inc"
   setlength(pars, 0);  //Reset parameters
@@ -5731,9 +5721,10 @@ begin
   //Create system function "word"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  AddSysInlineFunction('word', typWord, srcPosNull, pars, @fun_Word);
+  f := AddSysInlineFunction('word', typWord, srcPosNull, pars, @fun_Word);
+  AddCallerToFrom(H, f.BodyNode);  //Reqire H
 
-  //Create system function "word"
+  //Create system function "addr"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
   AddSysInlineFunction('addr', typWord, srcPosNull, pars, @fun_Addr);
@@ -5751,7 +5742,6 @@ begin
   //Add dependencies of TByte._mul.
   AddCallerToFrom(f_byt_mul_byt_16, f_byte_mul_byte.bodyNode);
   AddCallerToFrom(f_word_shift_l, f_byte_mul_byte.bodyNode);
-  AddCallerToFrom(H, f_byte_mul_byte.bodyNode);
   //Close Unit
   TreeElems.CloseElement;
 end;

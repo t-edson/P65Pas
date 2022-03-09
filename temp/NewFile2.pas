@@ -1,10 +1,10 @@
-var a: byte;       
-procedure simple: byte;
+procedure proc1;
 begin
-  if a=1 then  end; 
-  exit(1); 
+  
 end; 
-
 begin 
-//  simple;
+	if vword = word(50) then
+//    vbyte := 1;
+  end;
+//  asm RTS end; 
 end.

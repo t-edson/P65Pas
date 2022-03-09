@@ -62,7 +62,6 @@ m1:     ror
         ;Devuelve en "resultado"
         STA resultado+1
         STX resultado 
-        rts
    END;
    exit(resultado);
   end;
@@ -200,7 +199,7 @@ salir:
 	if vword = $8040 then bien else mal;
 
 	vword := multiplicar(5,10);
-//	if vword = word(50) then bien else mal;
+	if vword = word(50) then bien else mal;
   
   asm RTS end; 
 end.

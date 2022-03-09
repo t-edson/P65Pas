@@ -5,7 +5,8 @@ unit GenCodBas_PIC16;
 interface
 uses
   Classes, SysUtils, CPUCore, P6502utils, CompBase, ParserDirec, Globales,
-  XpresElemP65, XpresAST, LexPas, StrUtils, MisUtils, LCLType, LCLProc;
+  XpresElemP65, XpresAST, LexPas, FormConfig, StrUtils, MisUtils, LCLType,
+  LCLProc;
 const
   STACK_SIZE = 8;      //tamaño de pila para subrutinas en el PIC
   MAX_REGS_AUX_BYTE = 6;   //cantidad máxima de registros a usar
@@ -65,11 +66,6 @@ type
   protected  //Register and temporal variables requirement.
     compMod: TCompMod;  //Mode of the compiler
     function requireA: boolean;  //Declare use of register A
-    function requireH: boolean;  //Declare use of register H
-    function requireE: boolean;  //Declare use of register E
-    function requireU: boolean;  //Declare use of register U
-    function requireVar2(fun: TEleExpress; rname: string; rtype: TEleTypeDec; out
-      rvar: TEleVarDec): boolean;
   protected
     procedure ResetRAM;
     procedure functCall(fun: TEleFunBase; out AddrUndef: boolean);
@@ -326,57 +322,6 @@ function TGenCodBas.requireA: boolean;
 begin
   //if ModeRequire then a.used := True;
   exit(true);   //Always available
-end;
-function TGenCodBas.requireH: boolean;
-{Indicates the register H will be used in the code generation.
-Returns TRUE if the register is allocated in RAM.}
-begin
-  //if ModeRequire then H.regUsed := true;
-  H.required := true; //Mark to be allocated later
-  exit(H.allocated);   //Already allocated in memory.
-end;
-function TGenCodBas.requireE: boolean;
-begin
-  E.required := true;
-  exit(E.allocated);   //Already allocated in memory.
-end;
-function TGenCodBas.requireU: boolean;
-begin
-  U.required := true;
-  exit(U.allocated);   //Already allocated in memory.
-end;
-function TGenCodBas.requireVar2(fun: TEleExpress; rname: string; rtype: TEleTypeDec;
-         out rvar: TEleVarDec): boolean;
-{Indicates we are going to need a temporal variable of the type indicated.
-- Parameter "rname" is a name used to identify the variable. It's case sensitive. Must be
-  unique for the same TxpEleExpress. It's recommended to be short for quick searches.
-- Parameter "rtype" is the type of the variable required.
-- Parameter "rvar" is the reference to the variable required.
-So is we are going to require 2 temporal variables, we should use:
-    requireVar(fun, 'a', typByte, varA);
-    requireVar(fun, 'b', typWord, varB);
-Is the variable is available (created and allocated), returns TRUE.}
-var
-  v, exist: TEleVarDec;
-begin
-  //Test if requirement exist
-  exist := nil;
-  for v in fun.tempVars do begin
-    if v.name = rname then begin
-      exist := v;
-      break;
-    end;
-  end;
-  if exist<>nil then begin
-    //Exists
-    exit(exist.allocated);
-  end else begin
-    //No exists. We need to create requirement.
-    rvar := CreateVar('', rtype);
-    fun.tempVars.Add(rvar);
-    exit(false);
-  end;
-  //if ModeRequire then begin
 end;
 //Memory managing routines for variables.
 procedure TGenCodBas.WriteVaLueToRAM(target: PtrTCPURam; add: word; typ: TEleTypeDec;
@@ -1770,6 +1715,7 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
     offset: Integer;
   begin
     addressModes := PIC16InstName[cpu_inst].addressModes;
+debugln('iRam = ' + IntToStr(pic.iRam));
     if cpu_amod = aRelative then begin  //Instrucciones de salto relativo
       offset := param-pic.iRam-2;
       { TODO : Validar si el salto es mayor a 127 o menor a -128 }
@@ -1920,6 +1866,8 @@ var
   expSet: TEleExpress;
   inst: TEleAsmInstr;
   asmBlock: TEleAsmBlock;
+  idCtx, rowCtx, tmp: Integer;
+  srcLin: String;
 begin
   for eleSen in sentList do begin
     if eleSen.idClass <> eleSenten then begin
@@ -1928,6 +1876,18 @@ begin
     end;
     //Generates code to the sentence.
     sen := TEleSentence(eleSen);
+    if Config.IncComment then begin
+      {Genera los comentarios por instrucción, accediendo al contenido del
+      código fuente a través del contexto al que apunta cada instrucción. }
+      idCtx  := sen.srcDec.idCtx;
+      rowCtx := sen.srcDec.row-1;
+      srcLin := ctxList[idCtx].curLines[rowCtx];  {Podría fallar si el contenido del archivo
+                  no se encuentra en "curLines". El scanner podría usar otro almacenamiento.
+                  Habría que analizar mejor cuál es el acceso correcto al contenido fuente.}
+      pic.addTopComm('    ;' + trim(srcLin));
+      //MsgBox(srcLin);
+    end;
+    //Identifica a la sentencia
     case sen.sntType of
     sntAssign: begin  //Assignment
       for ele in sen.elements do begin
@@ -1948,6 +1908,7 @@ begin
         GenCodeASMline(inst);
       end;
       //Remains to complete uncomplete instructions
+      tmp := pic.iRam;  //Save
       for inst in asmBlock.undefInstrucs do begin
         pic.iRam := inst.addr;   //Set at its original RAM position
         GenCodeASMline(inst);    //Overwrite the code to complete
@@ -1955,6 +1916,7 @@ begin
         tenga un tamaño diferente a la grabada anteriormente. De ser así, habría
         un grave error. }
       end;
+      pic.iRam := tmp;   //Restore
     end;
     sntIF: begin
       GenCondeIF(sen);

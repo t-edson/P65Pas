@@ -1,7 +1,6 @@
 {Rutina de verificación del funcionamiento de los procedimientos y
 funciones.
 }
-{$OUTPUTHEX 'output.hex'}
 uses Commodore64;
 var
   vbyte: byte;
@@ -60,9 +59,9 @@ var
   end;
 
 	//Función con varios parámetros word, byte
-  procedure func3(par1: word; par2: byte): bit;
+  procedure func3(par1: word; par2: byte): boolean;
   begin
-    exit(bit(1));
+    exit(true);
   end;
 
   procedure func4(par1: boolean): boolean;
@@ -81,15 +80,8 @@ var
     exit(valor1+2);
   end;
 
-	//Función con acceso a otro banco
-  procedure fun6(valor1: byte): byte;
-  begin
-    TRISA := $FF;
-    exit(valor1);
-  end;
-
 	//Función con parámetros REGISTER
-  procedure fun7(register valor1: byte): byte;
+  procedure fun7(valor1: byte register): byte;
   begin
 	  exit(valor1 + 1);
   end; 
@@ -97,11 +89,8 @@ var
 var 
   xbyte : byte;
   xword : word;
-  xbit  : bit;
   xbool : boolean;
 begin
-  SetAsOutput(pinLed);
-  pinLed := 0;
   //Prueba de procedimiento
   vbyte := 0;
   Proc1;
@@ -150,10 +139,6 @@ begin
   if xword = word(10) then bien else mal end;
 
 	//Función con varios parámetros word, byte
-  xbit := 0;
-	xbit := func3(word(1), 2);
-  if xbit = 1 then bien else mal end;
-
   xbool := func4(false);
   if xbool then bien else mal end;
 
@@ -167,14 +152,6 @@ begin
   xword := fun5(5) + fun5(word(5));
   if xword = word(13) then bien else mal end;
 
-	//Función con acceso a otro banco
-  xbyte := fun6(6) + 1;  //fun6 accede al banco 1
-  if xbyte = 7 then bien else mal end;
-
-	TRISA := 1;
-  xbyte := func2(6);  //se accede a func2 desde en banco 1
-  if xbyte = 7 then bien else mal end;
-
 	//Función con parámetros REGISTER
   xbyte :=  fun7(1);
   if xbyte = 2 then bien else mal end;
@@ -182,5 +159,7 @@ begin
   //Función con llamada recursiva
   xbyte := func2(func2(200));
   if xbyte = 202 then bien else mal end;
-  
+
+  asm RTS end 
+ 
 end.

@@ -12,7 +12,6 @@ type
   { TCompiler_PIC16 }
   TCompiler_PIC16 = class(TParserDirec)
   private   //Funciones básicas
-    procedure cInNewLine(lin: string);
     procedure ConstantFoldExpr(eleExp: TEleExpress);
     procedure SplitExpresBody(body: TEleBody);
     procedure SplitExpressions;
@@ -50,13 +49,6 @@ procedure SetLanguage;
 begin
   ParserDirec_PIC16.SetLanguage;
   {$I ..\_language\tra_Compiler.pas}
-end;
-procedure TCompiler_PIC16.cInNewLine(lin: string);
-//Se pasa a una nueva _Línea en el contexto de entrada
-begin
-  if Config.IncComment then begin
-    pic.addTopComm('    ;'+trim(lin));  //agrega _Línea al código ensmblador
-  end;
 end;
 procedure TCompiler_PIC16.ConstantFoldExpr(eleExp: TEleExpress);
 {Performs:
@@ -238,7 +230,7 @@ like used in several compilers.}
     OpParent: TxpElement;
   begin
     //Create a new variable in the declaration section of this body.
-    _varaux := CreateVar('_x' + IntToStr(body.Index), typByte);  //Generate a unique name in this body
+    _varaux := CreateVar('_x' + IntToStr(body.Index), Op.typ);  //Generate a unique name in this body
     TreeElems.openElement(body.Parent);
     TreeElems.AddElement(_varaux, body.Index);  //Add before the body.
 
@@ -969,7 +961,7 @@ end;
 constructor TCompiler_PIC16.Create;
 begin
   inherited Create;
-  OnNewLine:=@cInNewLine;
+  //OnNewLine:=@cInNewLine;
   mode := modPicPas;   //Por defecto en sintaxis nueva
 end;
 destructor TCompiler_PIC16.Destroy;
