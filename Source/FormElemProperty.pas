@@ -242,23 +242,23 @@ begin
            '' ;
   end else if elem.idClass = eleCondit then begin
     sen := TEleSentence(elem);
-    txtEleType.Caption := 'Condition';
+    txtEleType.Caption := 'Condition ('+elem.ClassName+')';
     ImageList1.GetBitmap(21, Image1.Picture.Bitmap);
     adicInformation := '';
   end else if elem.idClass = eleBlock then begin
     //sen := TEleSentence(elem);
-    txtEleType.Caption := 'Block';
+    txtEleType.Caption := 'Block ('+elem.ClassName+')';
     ImageList1.GetBitmap(0, Image1.Picture.Bitmap);
     adicInformation := '';
   end else if elem.idClass = eleAsmBlock then begin
     asmBlock := TEleAsmBlock(elem);
-    txtEleType.Caption := 'ASM Block';
+    txtEleType.Caption := 'ASM Block ('+elem.ClassName+')';
     ImageList1.GetBitmap(0, Image1.Picture.Bitmap);
     adicInformation := 'Instructions: ' + IntToStr(asmBlock.elements.Count) + LineEnding +
                     'Incomplete instructions: ' + IntToStr(asmBlock.undefInstrucs.Count);
   end else if elem.idClass = eleAsmInstr then begin
     asmInst := TEleAsmInstr(elem);
-    txtEleType.Caption := 'ASM instruction';
+    txtEleType.Caption := 'ASM instruction ('+elem.ClassName+')';
     ImageList1.GetBitmap(19, Image1.Picture.Bitmap);
     if asmInst.iType = itOpcode then begin
       adicInformation := 'Opcode instruction';
@@ -268,7 +268,7 @@ begin
       adicInformation := '';
     end;
   end else begin
-    txtEleType.Caption := 'Unknown';
+    txtEleType.Caption := 'Unknown ('+elem.ClassName+')';
     ImageList1.GetBitmap(13, Image1.Picture.Bitmap);
     adicInformation := '';
   end;

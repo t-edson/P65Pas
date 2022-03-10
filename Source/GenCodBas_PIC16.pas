@@ -35,11 +35,21 @@ type
     linRep : string;   //línea para generar de reporte
     posFlash: Integer;
     procedure GenCodeASMline(asmInst: TEleAsmInstr);
+    function GenCodeCodition(cond: TxpElement): TEleExpress;
     procedure GenCodeExit(sen: TEleSentence);
     procedure GenCodLoadToA(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToX(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCodLoadToY(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCondeIF(sen: TEleSentence);
+    procedure GenCodeWHILE(sen: TEleSentence);
+    procedure GenCodeREPEAT(sen: TEleSentence);
+    procedure JUMP_IF_C_pre(Invert: boolean; igoto: integer);
+    procedure JUMP_IF_pre(OpRes: TEleExpress; boolVal: boolean; igoto: integer);
+    procedure JUMP_IF_Z_post(Invert: boolean; out curAddr: integer);
+    procedure JUMP_IF_C_post(Invert: boolean; out curAddr: integer);
+    procedure JUMP_IF_post(OpRes: TEleExpress; boolVal: boolean; out
+      curAddr: integer);
+    procedure JUMP_IF_Z_pre(Invert: boolean; igoto: integer);
     procedure StartCodeGen;
     procedure StopCodeGen;
     procedure ProcByteUsed(offs: word; regPtr: TCPURamCellPtr);
@@ -96,7 +106,7 @@ type
   protected  //Code instructions
     function _PC: word;
     function _CLOCK: integer;
-    procedure _LABEL_post(igot: integer);
+    procedure _LABEL_post(igoto: integer);
     procedure _LABEL_pre(out curAddr: integer);
     //Instrucciones simples
     procedure _ADCi(const k: word);  //immidiate
@@ -543,7 +553,7 @@ begin
   fun.evaluated := true;
   fun.value.valInt := valWord;
 end;
-//Codifición de instrucciones
+//Codificación de instrucciones
 function TGenCodBas._PC: word; inline;
 {Devuelve la dirección actual en Flash}
 begin
@@ -554,33 +564,33 @@ function TGenCodBas._CLOCK: integer; inline;
 begin
   Result := pic.frequen;
 end;
-procedure TGenCodBas._LABEL_post(igot: integer);
+procedure TGenCodBas._LABEL_post(igoto: integer);
 {Finish a previous JMP_lbl, BNE_post, BEQ_post, ... instructions.}
 var
   offset: integer;
 begin
-  if pic.ram[igot].value = 0 then begin
+  if pic.ram[igoto].value = 0 then begin
     //Es salto absoluto
-    pic.ram[igot].value   := lo(_PC);
-    pic.ram[igot+1].value := hi(_PC);
+    pic.ram[igoto].value   := lo(_PC);
+    pic.ram[igoto+1].value := hi(_PC);
   end else begin
     //Es salto relativo
-    if _PC > igot then begin
+    if _PC > igoto then begin
       //Salto hacia adelante
-      offset := _PC - igot-1;
+      offset := _PC - igoto-1;
       if offset>127 then begin
         GenError('Block to long.');
         exit;
       end;
-      pic.ram[igot].value := offset;
+      pic.ram[igoto].value := offset;
     end else begin
       //Backward jump. Does this really happens?
-      offset := _PC - igot;  //negative
+      offset := _PC - igoto;  //negative
       if offset<-128 then begin
         GenError('Block to long.');
         exit;
       end;
-      pic.ram[igot].value := 256 + offset;
+      pic.ram[igoto].value := 256 + offset;
     end;
   end;
 end;
@@ -589,7 +599,7 @@ procedure TGenCodBas._LABEL_pre(out curAddr: integer);
 begin
   curAddr := pic.iRam;
 end;
-//Instrucciones simples
+{%REGION Instrucciones simples}
 procedure TGenCodBas._ADCi(const k: word);
 begin
   pic.codAsm(i_ADC, aImmediat, k);
@@ -953,90 +963,160 @@ procedure TGenCodBas._TXA;
 begin
   pic.codAsm(i_TXA, aImplicit, 0);
 end;
-procedure TGenCodBas.IF_TRUE(OpRes: TEleExpress; out info: TIfInfo);
-{Conditional instruction. Test if last expression is TRUE. In this case, execute
-the following block. The syntax is:
-
-IF_TRUE(@OpRes, info)
-<block of code>
-IF_END(info)
-
-This instruction require to call to IF_END() to define the End of the block.
-
-The block of code can be one or more instructions.
-}
-  procedure JumpIfZero(Invert: boolean);
-  {Jump using the Z flag}
-  begin
-    if Invert then begin
-      _BNE_post(info.igoto);
-    end else begin
-      _BEQ_post(info.igoto);
-    end;
+{%ENDREGION}
+procedure TGenCodBas.JUMP_IF_Z_pre(Invert: boolean; igoto: integer);
+{Jump using the Z flag. Jump if Z is set.}
+begin
+  if Invert then begin
+    _BNE(igoto - _PC - 2);
+  end else begin
+    _BEQ(igoto - _PC - 2);
   end;
-  procedure JumpIfZeroC(Invert: boolean);
-  {Jump using the C flag}
-  begin
-    if Invert then begin
-      _BCC_post(info.igoto);
-    end else begin
-      _BCS_post(info.igoto);
-    end;
+end;
+procedure TGenCodBas.JUMP_IF_C_pre(Invert: boolean; igoto: integer);
+{Jump using the C flag. Jump if C is set.}
+begin
+  if Invert then begin
+    _BCC(igoto - _PC - 2);
+  end else begin
+    _BCS(igoto - _PC - 2);
   end;
+end;
+procedure TGenCodBas.JUMP_IF_Z_post(Invert: boolean; out curAddr: integer);
+{Jump using the Z flag. Jump if Z is set.}
+begin
+  if Invert then begin
+    _BNE_post(curAddr);
+  end else begin
+    _BEQ_post(curAddr);
+  end;
+end;
+procedure TGenCodBas.JUMP_IF_C_post(Invert: boolean; out curAddr: integer);
+{Jump using the C flag. Jump if C is set.}
+begin
+  if Invert then begin
+    _BCC_post(curAddr);
+  end else begin
+    _BCS_post(curAddr);
+  end;
+end;
+procedure TGenCodBas.JUMP_IF_pre(OpRes: TEleExpress; boolVal: boolean;
+                                 igoto: integer);
+{Jump to a pre label, if the last operand "OpRes" returned a boolean result equal to
+"boolVal".}
 begin
   if OpRes.Sto = stRamFix then begin
     //Result in variable
     _LDA(OpRes.rVar.addr);
-    JumpIfZero(false);  //We cannot apply optimization
+    JUMP_IF_Z_pre(boolVal, igoto);  //We cannot apply optimization
   end else if OpRes.Sto = stRegister then begin
     {We first evaluate the case when it could be done an optimization}
     if lastASMcode = lacCopyCtoA then begin
       //Expression result has been copied from C to A
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check C flag
-      JumpIfZeroC(true);
+      JUMP_IF_C_pre(not boolVal, igoto);
     end else if lastASMcode = lacInvCtoA then begin
       //Expression result has been copied from C to A inverted
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check C flag
-      JumpIfZeroC(false);
+      JUMP_IF_C_pre(boolVal, igoto);
     end else if lastASMcode = lacCopyZtoA then begin
       //Expression result has been copied from Z to A
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
-      JumpIfZero(true);
+      JUMP_IF_Z_pre(not boolVal, igoto);
     end else if lastASMcode = lacInvZtoA then begin
       //Expression result has been copied from Z to A inverted
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
-      JumpIfZero(false);
+      JUMP_IF_Z_pre(boolVal, igoto);
     end else if lastASMcode = lacInvAtoA then begin
-      //Expression result has been copied from A to A inverted, and Z reflect the regA value.
+      //Expression result has been copied from A to A inverted, and Z reflect the regA boolVal.
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
-      JumpIfZero(true);
+      JUMP_IF_Z_pre(not boolVal, igoto);
     end else begin
       {Cannot be (or should be) optimized }
       if AcumStatInZ then begin
         //Still we can use the optimizaction of testing Z flag
-        JumpIfZero(false);
+        JUMP_IF_Z_pre(boolVal, igoto);
       end else begin
-        //Operand value in A but not always in Z
+        //Operand boolVal in A but not always in Z
         _TAX;  //To update Z
-        JumpIfZero(false);
+        JUMP_IF_Z_pre(boolVal, igoto);
       end;
     end;
   end else begin
     genError('Expression storage not supported.');
   end;
 end;
-//procedure TGenCodBas.IF_FALSE(OpRes: TEleExpress; out info: TIfInfo);
-////Negated version of IF_TRUE()
-//begin
-//  OpRes.Invert;   //Change logic
-//  IF_TRUE(OpRes, info);
-//  OpRes.Invert;   //Restore logic
-//end;
+procedure TGenCodBas.JUMP_IF_post(OpRes: TEleExpress; boolVal: boolean;
+                                  out curAddr: integer);
+{Jump to a post label, if the last operand "OpRes" returned a boolean result equal to
+"boolVal".}
+begin
+  if OpRes.Sto = stRamFix then begin
+    //Result in variable
+    _LDA(OpRes.rVar.addr);
+    JUMP_IF_Z_post(boolVal, curAddr);  //We cannot apply optimization
+  end else if OpRes.Sto = stRegister then begin
+    {We first evaluate the case when it could be done an optimization}
+    if lastASMcode = lacCopyCtoA then begin
+      //Expression result has been copied from C to A
+      pic.iRam := lastASMaddr;   //Delete last instructions
+      //Check C flag
+      JUMP_IF_C_post(not boolVal, curAddr);
+    end else if lastASMcode = lacInvCtoA then begin
+      //Expression result has been copied from C to A inverted
+      pic.iRam := lastASMaddr;   //Delete last instructions
+      //Check C flag
+      JUMP_IF_C_post(boolVal, curAddr);
+    end else if lastASMcode = lacCopyZtoA then begin
+      //Expression result has been copied from Z to A
+      pic.iRam := lastASMaddr;   //Delete last instructions
+      //Check Z flag
+      JUMP_IF_Z_post(not boolVal, curAddr);
+    end else if lastASMcode = lacInvZtoA then begin
+      //Expression result has been copied from Z to A inverted
+      pic.iRam := lastASMaddr;   //Delete last instructions
+      //Check Z flag
+      JUMP_IF_Z_post(boolVal, curAddr);
+    end else if lastASMcode = lacInvAtoA then begin
+      //Expression result has been copied from A to A inverted, and Z reflect the regA boolVal.
+      pic.iRam := lastASMaddr;   //Delete last instructions
+      //Check Z flag
+      JUMP_IF_Z_post(not boolVal, curAddr);
+    end else begin
+      {Cannot be (or should be) optimized }
+      if AcumStatInZ then begin
+        //Still we can use the optimizaction of testing Z flag
+        JUMP_IF_Z_post(boolVal, curAddr);
+      end else begin
+        //Operand boolVal in A but not always in Z
+        _TAX;  //To update Z
+        JUMP_IF_Z_post(boolVal, curAddr);
+      end;
+    end;
+  end else begin
+    genError('Expression storage not supported.');
+  end;
+end;
+procedure TGenCodBas.IF_TRUE(OpRes: TEleExpress; out info: TIfInfo);
+{Conditional instruction. Test if last expression is TRUE. In this case, execute
+the following block. The syntax is:
+
+IF_TRUE(OpRes, info)
+  <block of code>
+IF_END(info)
+
+This instruction require to call to IF_END() to define the End of the block.
+
+The block of code can be one or more instructions.
+}
+begin
+  JUMP_IF_post(OpRes, false, info.igoto);
+end;
 procedure TGenCodBas.IF_END(const info: TIfInfo);
 {Define the End of the block, created with IF_TRUE().}
 begin
@@ -1771,11 +1851,29 @@ begin
     exit;
   end;
 end;
+function TGenCodBas.GenCodeCodition(cond: TxpElement): TEleExpress;
+{Generates code for a condition Block.
+Returns the boolean expression inside the condition.
+If an Error occurs returns FALSE.
+There should be at least one Expression in "cond" and "cond" must be a TEleCondit
+element. We won't check here.}
+var
+  expSet: TEleExpress;
+  ele: TxpElement;
+begin
+  //The last expression should be the boolean condition
+  Result := TEleExpress(cond.elements[cond.elements.Count-1]);
+  //Boolean type has been checked in Analysis.
+  for ele in cond.elements do begin
+    expSet := TEleExpress(ele);  //Takes assigment function or the last expression.
+    GenCodeExpr(expSet);
+    if HayError then exit;
+  end;
+end;
 procedure TGenCodBas.GenCondeIF(sen: TEleSentence);
 var
-  expBool, expSet: TEleExpress;
+  expBool: TEleExpress;
   i: Integer;
-  cond, ele: TxpElement;
   lbl1: TIfInfo;
   //Variables for jumps completion.
   njumps: integer;
@@ -1786,14 +1884,8 @@ begin
   i:=0;
   while i<sen.elements.Count do begin
     //Takes condition
-    cond := sen.elements[i];
-    //The last expression should be the boolean condition
-    expBool := TEleExpress(cond.elements[cond.elements.Count-1]);
-    for ele in cond.elements do begin
-      expSet := TEleExpress(ele);  //Takes assigment function or the last expression.
-      GenCodeExpr(expSet);
-      if HayError then exit;
-    end;
+    expBool := GenCodeCodition(sen.elements[i]);
+    if HayError then exit;
     if (expBool.opType = otConst) then begin
       //Constant conditions have special behaviour.
       if (expBool.value.ValBool=false) then begin
@@ -1822,6 +1914,57 @@ begin
   //Complete jumps
   for i:=0 to high(jumps) do begin
     _LABEL_post(jumps[i]);
+  end;
+end;
+procedure TGenCodBas.GenCodeWHILE(sen: TEleSentence);
+{Compila una extructura WHILE}
+var
+  lbl1: Word;
+  expBool: TEleExpress;
+  lbl2: TIfInfo;
+begin
+  lbl1 := _PC;        //guarda dirección de inicio
+  expBool := GenCodeCodition(sen.elements[0]);
+  if HayError then exit;
+  //Aquí debe estar el cuerpo del "while"
+  if (expBool.opType = otConst) then begin
+    if (expBool.value.ValBool=false) then begin
+      //We don't need to process body.
+    end else begin
+      //Infinite loop
+      GenCodeBlock(TEleBlock(sen.elements[1]));
+      _JMP(lbl1);
+    end;
+  end else begin  //otVariab. otFunct
+    IF_TRUE(expBool, lbl2);
+    //_JMP_post(dg);  //salto pendiente
+    GenCodeBlock(TEleBlock(sen.elements[1]));
+    _JMP(lbl1);   //salta a evaluar la condición
+    IF_END(lbl2);
+    //ya se tiene el destino del salto
+    //_LABEL_post(dg);   //Termina de codificar el salto
+  end;
+end;
+procedure TGenCodBas.GenCodeREPEAT(sen: TEleSentence);
+var
+  lbl1: Word;
+  expBool: TEleExpress;
+begin
+  lbl1 := _PC;        //guarda dirección de inicio
+  //Compile Body
+  GenCodeBlock(TEleBlock(sen.elements[0]));
+  //Compile condiiton
+  expBool := GenCodeCodition(sen.elements[1]);
+  if HayError then exit;
+  if (expBool.opType = otConst) then begin
+    if (expBool.value.ValBool=true) then begin
+      //A common block.
+    end else begin
+      //Infinite loop
+      _JMP(lbl1);
+    end;
+  end else begin  //otVariab. otFunct
+    JUMP_IF_pre(expBool, false, lbl1);
   end;
 end;
 procedure TGenCodBas.GenCodeExit(sen: TEleSentence);
@@ -1920,6 +2063,12 @@ begin
     end;
     sntIF: begin
       GenCondeIF(sen);
+    end;
+    sntWHILE: begin
+      GenCodeWHILE(sen);
+    end;
+    sntREPEAT: begin
+      GenCodeREPEAT(sen);
     end;
     sntExit: begin
       GenCodeExit(sen);
