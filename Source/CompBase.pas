@@ -68,7 +68,7 @@ protected  //Flags for boolean type.
                           register. For example if regA = 0, Z wil be 1.}
 protected  //Elements creation
   function NameExistsIn(eName: string; list: TxpElements): boolean;
-  function CreateVar(varName: string; eleTyp: TEleTypeDec): TEleVarDec;
+  function CreateEleVarDec(varName: string; eleTyp: TEleTypeDec): TEleVarDec;
   function CreateEleType(const typName: string; const srcPos: TSrcPos;
     size0: smallint; catType: TxpCatType; group: TTypeGroup): TEleTypeDec;
   function CreateEleTypePtr(const typName: string; const srcPos: TSrcPos;
@@ -499,7 +499,7 @@ begin
   end;
   exit(false);
 end;
-function TCompilerBase.CreateVar(varName: string; eleTyp: TEleTypeDec): TEleVarDec;
+function TCompilerBase.CreateEleVarDec(varName: string; eleTyp: TEleTypeDec): TEleVarDec;
 {Rutina para crear una variable. Devuelve referencia a la variable creada.}
 var
   xVar: TEleVarDec;
@@ -584,7 +584,7 @@ begin
     GenError(ER_DUPLIC_IDEN, [varName], srcPos);
     exit(nil);
   end;
-  //xvar := CreateVar(varName, eleTyp);
+  //xvar := CreateEleVarDec(varName, eleTyp);
   //xvar.srcDec := srcPos;  //Actualiza posición
   //TreeElems.AddElement(xvar);
   //Result := xvar;

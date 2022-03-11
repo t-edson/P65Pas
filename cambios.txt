@@ -64,6 +64,10 @@ TGenCodBas.requireVar2().
 - Se implementa la generación de código para la instrucción REPEAT.
 - Se simplifica TGenCodBas.IF_TRUE() y se crean los métodos JUMP_IF_Z_pre(),
 JUMP_IF_C_pre(), JUMP_IF_Z_post(), JUMP_IF_C_post(), JUMP_IF_pre() y JUMP_IF_post().
+- Se cambia de nombre TCompilerBase.CreateVar() a TCompilerBase.CreateEleVarDec().
+- Se crea referencia TAnalyzer.eleFunInc a la función del sistema Inc().
+- Se implementa la estructura FOR.
+- Se logra pasar el código de prueba Test3_Structs1.pas.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?

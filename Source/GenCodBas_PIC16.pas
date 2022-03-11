@@ -42,6 +42,7 @@ type
     procedure GenCodLoadToY(fun: TEleExpress);  { TODO : ¿Se necesita? No se usa }
     procedure GenCondeIF(sen: TEleSentence);
     procedure GenCodeWHILE(sen: TEleSentence);
+    procedure GenCodeFOR(sen: TEleSentence);
     procedure GenCodeREPEAT(sen: TEleSentence);
     procedure JUMP_IF_C_pre(Invert: boolean; igoto: integer);
     procedure JUMP_IF_pre(OpRes: TEleExpress; boolVal: boolean; igoto: integer);
@@ -1945,6 +1946,40 @@ begin
     //_LABEL_post(dg);   //Termina de codificar el salto
   end;
 end;
+procedure TGenCodBas.GenCodeFOR(sen: TEleSentence);
+var
+  assign, ele: TxpElement;
+  expSet, expBool: TEleExpress;
+  lbl1: Word;
+  lbl2: TIfInfo;
+begin
+  //Generate code for the assigment
+  assign := sen.elements[0];
+  for ele in assign.elements do begin
+    expSet := TEleExpress(ele);  //Takes assigment function.
+    GenCodeExpr(expSet);
+  end;
+  //Condition
+  lbl1 := _PC;        //guarda dirección de inicio
+  expBool := GenCodeCodition(sen.elements[1]);
+  if HayError then exit;
+  //Aquí debe estar el cuerpo del "for"
+  if (expBool.opType = otConst) then begin
+    if (expBool.value.ValBool=false) then begin
+      //We don't need to process body.
+    end else begin
+      //Infinite loop
+      GenCodeBlock(TEleBlock(sen.elements[2]));
+      _JMP(lbl1);
+    end;
+  end else begin  //otVariab. otFunct
+    IF_TRUE(expBool, lbl2);
+    GenCodeBlock(TEleBlock(sen.elements[2]));
+    _JMP(lbl1);   //salta a evaluar la condición
+    IF_END(lbl2);
+  end;
+
+end;
 procedure TGenCodBas.GenCodeREPEAT(sen: TEleSentence);
 var
   lbl1: Word;
@@ -2066,6 +2101,9 @@ begin
     end;
     sntWHILE: begin
       GenCodeWHILE(sen);
+    end;
+    sntFOR: begin
+      GenCodeFOR(sen);
     end;
     sntREPEAT: begin
       GenCodeREPEAT(sen);

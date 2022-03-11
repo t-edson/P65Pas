@@ -230,7 +230,7 @@ like used in several compilers.}
     OpParent: TxpElement;
   begin
     //Create a new variable in the declaration section of this body.
-    _varaux := CreateVar('_x' + IntToStr(body.Index), Op.typ);  //Generate a unique name in this body
+    _varaux := CreateEleVarDec('_x' + IntToStr(body.Index), Op.typ);  //Generate a unique name in this body
     TreeElems.openElement(body.Parent);
     TreeElems.AddElement(_varaux, body.Index);  //Add before the body.
 

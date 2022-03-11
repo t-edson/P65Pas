@@ -1,10 +1,7 @@
-procedure proc1;
-begin
-  
-end; 
+var i, a: byte;
 begin 
-	if vword = word(50) then
-//    vbyte := 1;
+  for i:=0 to 2 do 
+    inc(i);
   end;
-//  asm RTS end; 
+  inc(i);
 end.

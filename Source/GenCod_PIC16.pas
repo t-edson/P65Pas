@@ -127,7 +127,7 @@ type
       procedure BOR_byte_add_word(fun: TEleExpress);
       procedure BOR_byte_mul_byte(fun: TEleExpress);
       procedure UOR_not_byte(fun: TEleExpress);
-    private  //Operaciones con Word
+    private   //Operaciones con Word
       procedure BOR_word_asig_word(fun: TEleExpress);
       procedure BOR_word_asig_byte(fun: TEleExpress);
       procedure BOR_word_equal_word(fun: TEleExpress);
@@ -148,7 +148,7 @@ type
       procedure BOR_word_shl_byte(fun: TEleExpress);
       procedure BOR_word_shr_byte(fun: TEleExpress);
       procedure UOR_not_word(fun: TEleExpress);
-    private  //Operaciones con Char
+    private   //Operaciones con Char
       procedure BOR_char_asig_char(fun: TEleExpress);
       procedure BOR_char_asig_string(fun: TEleExpress);
       procedure BOR_char_equal_char(fun: TEleExpress);
@@ -157,7 +157,7 @@ type
       procedure BOR_pointer_add_byte(fun: TEleExpress);
       procedure BOR_pointer_sub_byte(fun: TEleExpress);
       procedure UOR_derefPointer(fun: TEleExpress; SetRes: boolean);
-    private  //Funciones internas.
+    private   //Funciones internas.
       procedure codif_1mseg;
       procedure codif_delay_ms(fun: TEleExpress);
       procedure expr_end(posExpres: TPosExpres);
@@ -5691,7 +5691,7 @@ begin
   //Create system function "inc"
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  AddSysInlineFunction('inc', typNull, srcPosNull, pars, @fun_Inc);
+  eleFunInc := AddSysInlineFunction('inc', typNull, srcPosNull, pars, @fun_Inc);
 
   //Create system function "dec"
   setlength(pars, 0);  //Reset parameters
