@@ -1186,7 +1186,7 @@ in this function.
   function OpenExpression(opName: string; dtType: TEleTypeDec; opType: TopType;
            srcPos: TSrcPos): TEleExpress;
   var
-    nodMain, expr: TEleExpress;
+    expr: TEleExpress;
   begin
     expr := CreateExpression(opName, dtType, opType, srcPos);
     if opType = otConst then expr.Sto := stConst;  //The only option.
@@ -1216,11 +1216,117 @@ in this function.
     {$IFDEF LogExpres} Op.txt:= cIn.tok; {$ENDIF} //Toma el texto
     Result := xfun;
   end;
-
+  function AddLengthFieldArray(nElem: integer): TEleConsDec;
+  {Add a constant declaration named "length" containing a constant element "n" set to
+  the value "nElem".
+  The constant declaration is added to the current node in the AST.}
+{***  Notar que este código es similar a los usados en TCompMain.GetTypeDeclar().
+  Deberían unificarse.}
+  var
+    consDec: TEleConsDec;
+    sizExp: TEleExpress;
+  begin
+    consDec := AddConstantAndOpen('length', typByte, GetSrcPos);
+    if HayError then exit;  //Can be duplicated?
+    sizExp := GenExpressionConstByte('n', nElem, GetSrcPos);
+    consDec.typ := sizExp.Typ;
+    consDec.value := sizExp.value;
+    consDec.evaluated := true;
+    TreeElems.CloseElement;  //Close constant.
+    exit(consDec);
+  end;
+  function GetConstantArray(): TEleExpress;
+  var
+    srcpos: TSrcPos;
+    ReadType, endWithComma: Boolean;
+    Op, Op1: TEleExpress;
+    itType, xtyp: TEleTypeDec;
+    nElem: Integer;
+    typName: String;
+    consDec: TEleConsDec;
+  begin
+    srcpos := GetSrcPos;
+    Next;  //Get '['
+    ProcComments;
+    //Start reading the items
+    ReadType := true;  //Set flag to read the item type
+    Op := OpenExpression(token, typNull, otConst, GetSrcPos);
+    Op.evaluated := true;  //We have the value directly.
+    Op.value.InitItems;
+    while not atEof and (token <> ']') do begin
+      //Must be an item
+      Op1 := GetExpression(0);  //read item
+      if HayError then exit;
+      if Op1.Sto <> stConst then begin
+        GenError('Expected constant item');
+        exit;
+      end;
+      if ReadType then begin
+         //First item
+         itType := Op1.Typ;  //Now We have the type of the item
+         ReadType := false;  //Already read
+      end;
+      //Asure all items have the same type
+      if Op1.Typ <> itType then begin
+        GenError('Expected item of type: %s', [itType.name]);
+        exit;
+      end;
+      //Add the item to the operand
+      Op.value.AddConsItem(Op1.Value);
+      //Verify delimiter
+      endWithComma := false;
+      if token = ',' then begin
+        Next;
+        ProcComments;
+        endWithComma := true;
+      end;
+    end;
+    if endWithComma then begin
+      GenError('Expected item.');
+      exit;
+    end;
+    if token = ']' then begin
+      //Raise the end of array. Now we can create new type.
+      Op.value.CloseItems;  //Resize
+      //Now we can know the type of the item and of the array
+      Next;  //Take ']'.
+      nElem := Op.Value.nItems;
+      if nElem = 0 then itType := typNull;  //Something like []
+      if not TreeElems.ExistsArrayType(itType, nElem, xtyp) then begin
+        //The type doesn't exist. We need to create.
+        typName := GenArrayTypeName(itType.name, nElem); //Op.nItems won't work
+        xtyp := AddTypeAndOpen(typName, -1, tctArray, t_object, srcPos);
+        //Crea campo "length".
+        consDec := AddLengthFieldArray(nElem);
+        //Termina definición
+        xtyp.consNitm := consDec;  //Update reference to the number of items.
+        xtyp.itmType := itType;  //Actualiza tipo
+        callDefineArray(xtyp);   //Define operations to array
+        TreeElems.CloseElement;  //Close type.
+        //Add to the syntax tree
+        xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
+//        if TreeElems.curNode.idClass = eleBody then begin
+//          //When the array is declared in some code-section.
+//          TreeElems.AddElementtoParent(xtyp, true);  //Add at the beginning
+//        end else begin
+//          //In declaration section.
+//          TreeElems.AddElement(xtyp);
+//        end;
+      end;
+      //Finally we set the operand type.
+      Op.Typ := xtyp;
+    end else if atEof then begin
+      GenError('Unexpected end of file');
+      exit;
+    end else begin  //Only happen when break loop
+      exit;
+    end;
+    exit(Op);
+  end;
 var
   xvar: TEleVarDec;
   xcon, consDec: TEleConsDec;
-  eleMeth, Op1, sizExp: TEleExpress;
+  eleMeth, Op1: TEleExpress;
   level, nElem: Integer;
   ele, att, field: TxpElement;
   posCall, srcpos: TSrcPos;
@@ -1347,17 +1453,10 @@ begin
         //There is not a similar type. We create a new type.
         typName := GenArrayTypeName('char', nElem); //Op.nItems won't work
         xtyp := AddTypeAndOpen(typName, -1, tctArray, t_object, srcPos);
-        //Crea campo "length". Este código es similar a TCompMain.GetTypeDeclar()
-        consDec := AddConstantAndOpen('length', typByte, GetSrcPos);
-        if HayError then exit;  //Can be duplicated
-        sizExp := GenExpressionConstByte('n', nElem, GetSrcPos);
-        consDec.typ := sizExp.Typ;
-        consDec.value := sizExp.value;
-        consDec.evaluated := true;
-        TreeElems.CloseElement;  //Close constant.
+        //Crea campo "length".
+        consDec := AddLengthFieldArray(nElem);
         //Termina definición
         xtyp.consNitm := consDec;  //Update reference to the number of items.
-
         xtyp.itmType := typChar; //Actualiza tipo
         callDefineArray(xtyp);   //Define operations to array
         TreeElems.CloseElement;  //Close type.
@@ -1386,10 +1485,14 @@ begin
        exit;
     end;
     Next;
+  end else if token = '[' then begin  //Constant array
+    //Here we only know the operand is an array
+    Op1 := GetConstantArray();
   end else begin
     //Operand expected
     Op1 := nil;
     GenError(ER_OPERAN_EXPEC);
+    exit;
   end;
   level := 1;   //Count the deeps of methods
   //Verify if has reference to fields with "."

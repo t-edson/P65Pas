@@ -69,6 +69,8 @@ JUMP_IF_C_pre(), JUMP_IF_Z_post(), JUMP_IF_C_post(), JUMP_IF_pre() y JUMP_IF_pos
 - Se implementa la estructura FOR.
 - Se logra pasar el código de prueba Test3_Structs1.pas.
 - Se logra pasar el código de prueba Test3_Structs2.pas.
+- Se corrige TCompilerBase.GetOperand() para que reconozca correctamente a arreglos
+constantes.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
@@ -90,6 +92,8 @@ información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde
 esta información.
 - Crear estructura para almacenar información de los diferentes archivos que componen el 
 proyecto para gestionar el uso de unidades.
+- Unificar las rutinas que crean el campo length() en TAnalyzer.GetTypeDeclar(), con la 
+rutina que crea 'length' en TCompilerBase.GetOperand() para el caso de arreglos.
 
 PENDIENTES
 - Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).

@@ -4,8 +4,6 @@
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
   <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs2.pas
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -46,11 +44,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs2.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test5_Types.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\libscreen.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\test2_pas.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile3.pas
 "/>
   </Edit>
   <IncDecVar Val="False"/>

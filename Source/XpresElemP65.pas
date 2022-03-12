@@ -72,6 +72,10 @@ type  //Previous definitions for elements
     t_object    //Object (contain fields)
   );
 
+const
+  CONS_ITEM_BLOCK = 20;
+
+type
   { TConsValue }
   {Structure to store all the possible values for a constant.
   Must have fields for all basic types defined in "TTypeGroup" and for composed
@@ -82,8 +86,13 @@ type  //Previous definitions for elements
     ValFloat: extended; //For values t_float
     ValBool : boolean;  //For values t_boolean
     ValStr  : string;   //For values t_string
+  public //Arrays
     items   : array of TConsValue;  //Ítems list
     nItems  : integer;  //Number of items
+    curSize : integer;
+    procedure InitItems;
+    procedure AddConsItem(const c: TConsValue);
+    procedure CloseItems;
   public  //Access to ValInt
     function LByte: byte; inline;  //Returns low byte of integer value.
     function HByte: byte; inline;  //Returns high byte of integer value.
@@ -802,6 +811,29 @@ begin
   inherited Create;
   idClass := eleCondit;
 end;
+
+procedure TConsValue.InitItems;
+begin
+  nItems := 0;
+  curSize := CONS_ITEM_BLOCK;   //Block size
+  setlength(items, curSize);  //initial size
+end;
+
+procedure TConsValue.AddConsItem(const c: TConsValue);
+begin
+  items[nItems] := c;
+  inc(nItems);
+  if nItems >= curSize then begin
+    curSize += CONS_ITEM_BLOCK;   //Increase size by block
+    setlength(items, curSize);  //make space
+  end;
+end;
+
+procedure TConsValue.CloseItems;
+begin
+  setlength(items, nItems);
+end;
+
 { TConsValue }
 function TConsValue.LByte: byte;
 begin
@@ -1740,7 +1772,6 @@ begin
     exit(false);
   end;
 end;
-const CONS_ITEM_BLOCK = 10;
 procedure TEleFun.AddAddresPend(ad: word);
 {Add a pending address to the function to be completed later.}
 begin

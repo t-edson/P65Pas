@@ -1,10 +1,11 @@
-{$Mode Pascal}
+const 
+//  C = 123;
+  D = [1,2,3];
 var
-  a: byte; 
-
+  a: byte = 1;
+//  b: []byte = [128, 64, 32, 16, 8, 4, 2, 1];
 begin
-	if a=1 then begin
-    inc(a);		//al fin del bloque
-  end; 
-
+  a := D.length;  
+  //D[0] := 1;
 end.
+
