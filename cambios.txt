@@ -4,8 +4,8 @@ COMENTARIOS
 La versión anterior resolvio prácticamente todos los pendientes de los bloques ASM.
 En esta versión se completa la implementación de la instrucción exit() y se corrigen 
 diversos errores.
-Se espera seguir avanzando en una versión que pueda reemplazar, finalmente, a la 
-versión 0.7.8 que es la más estable hasta ahora.
+Esta versión reemplaza, finalmente, a la versión 0.7.8 que era la más estable hasta 
+ahora.
 
 OBJETIVOS
 - Terminar de implementar y pasar el código de prueba de bloques ASM. --> HECHO
@@ -68,6 +68,7 @@ JUMP_IF_C_pre(), JUMP_IF_Z_post(), JUMP_IF_C_post(), JUMP_IF_pre() y JUMP_IF_pos
 - Se crea referencia TAnalyzer.eleFunInc a la función del sistema Inc().
 - Se implementa la estructura FOR.
 - Se logra pasar el código de prueba Test3_Structs1.pas.
+- Se logra pasar el código de prueba Test3_Structs2.pas.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?

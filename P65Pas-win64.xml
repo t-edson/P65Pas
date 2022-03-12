@@ -5,6 +5,7 @@
   <chkLoadLast Val="True"/>
   <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs2.pas
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -14,7 +15,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs1.pas
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="238"/>
   <ViewPanAssem Val="True"/>
-  <viewMode Val="1"/>
+  <viewMode Val="0"/>
   <MessPanBack Val="-2147483643"/>
   <MessPanText Val="536870912"/>
   <MessPanErr Val="255"/>
@@ -45,9 +46,9 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs1.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs2.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test5_Types.pas
 "/>

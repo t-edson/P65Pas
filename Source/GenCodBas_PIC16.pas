@@ -2046,76 +2046,81 @@ var
   asmBlock: TEleAsmBlock;
   idCtx, rowCtx, tmp: Integer;
   srcLin: String;
+  blk: TEleBlock;
 begin
   for eleSen in sentList do begin
-    if eleSen.idClass <> eleSenten then begin
+    if eleSen.idClass = eleSenten then begin
+      //Generates code to the sentence.
+      sen := TEleSentence(eleSen);
+      if Config.IncComment then begin
+        {Genera los comentarios por instrucción, accediendo al contenido del
+        código fuente a través del contexto al que apunta cada instrucción. }
+        idCtx  := sen.srcDec.idCtx;
+        rowCtx := sen.srcDec.row-1;
+        srcLin := ctxList[idCtx].curLines[rowCtx];  {Podría fallar si el contenido del archivo
+                    no se encuentra en "curLines". El scanner podría usar otro almacenamiento.
+                    Habría que analizar mejor cuál es el acceso correcto al contenido fuente.}
+        pic.addTopComm('    ;' + trim(srcLin));
+        //MsgBox(srcLin);
+      end;
+      //Identifica a la sentencia
+      case sen.sntType of
+      sntAssign: begin  //Assignment
+        for ele in sen.elements do begin
+          expSet := TEleExpress(ele);  //Takes assigment function.
+          GenCodeExpr(expSet);
+        end;
+      end;
+      sntProcCal: begin  //Call to function or method
+        for ele in sen.elements do begin
+          expSet := TEleExpress(ele);  //Takes assigment function.
+          GenCodeExpr(expSet);
+        end;
+      end;
+      sntAsmBlock: begin
+        asmBlock := TEleAsmBlock(sen.elements[0]);  //Takes root node.
+        for ele in asmBlock.elements do begin
+          inst := TEleAsmInstr(ele);
+          GenCodeASMline(inst);
+        end;
+        //Remains to complete uncomplete instructions
+        tmp := pic.iRam;  //Save
+        for inst in asmBlock.undefInstrucs do begin
+          pic.iRam := inst.addr;   //Set at its original RAM position
+          GenCodeASMline(inst);    //Overwrite the code to complete
+          { TODO : Sería mejor analizar si podría darse el caso de que la nueva instrucción
+          tenga un tamaño diferente a la grabada anteriormente. De ser así, habría
+          un grave error. }
+        end;
+        pic.iRam := tmp;   //Restore
+      end;
+      sntIF: begin
+        GenCondeIF(sen);
+      end;
+      sntWHILE: begin
+        GenCodeWHILE(sen);
+      end;
+      sntFOR: begin
+        GenCodeFOR(sen);
+      end;
+      sntREPEAT: begin
+        GenCodeREPEAT(sen);
+      end;
+      sntExit: begin
+        GenCodeExit(sen);
+      end;
+      else
+        GenError('Unknown sentence type.', sen.srcDec);
+        exit;
+      end;
+      if HayError then exit;
+    end else if eleSen.idClass = eleBlock then begin
+      blk := TEleBlock(eleSen);
+      GenCodeBlock(blk);
+    end else begin
       GenError('Sentence expected.');
       exit;
     end;
-    //Generates code to the sentence.
-    sen := TEleSentence(eleSen);
-    if Config.IncComment then begin
-      {Genera los comentarios por instrucción, accediendo al contenido del
-      código fuente a través del contexto al que apunta cada instrucción. }
-      idCtx  := sen.srcDec.idCtx;
-      rowCtx := sen.srcDec.row-1;
-      srcLin := ctxList[idCtx].curLines[rowCtx];  {Podría fallar si el contenido del archivo
-                  no se encuentra en "curLines". El scanner podría usar otro almacenamiento.
-                  Habría que analizar mejor cuál es el acceso correcto al contenido fuente.}
-      pic.addTopComm('    ;' + trim(srcLin));
-      //MsgBox(srcLin);
-    end;
-    //Identifica a la sentencia
-    case sen.sntType of
-    sntAssign: begin  //Assignment
-      for ele in sen.elements do begin
-        expSet := TEleExpress(ele);  //Takes assigment function.
-        GenCodeExpr(expSet);
-      end;
-    end;
-    sntProcCal: begin  //Call to function or method
-      for ele in sen.elements do begin
-        expSet := TEleExpress(ele);  //Takes assigment function.
-        GenCodeExpr(expSet);
-      end;
-    end;
-    sntAsmBlock: begin
-      asmBlock := TEleAsmBlock(sen.elements[0]);  //Takes root node.
-      for ele in asmBlock.elements do begin
-        inst := TEleAsmInstr(ele);
-        GenCodeASMline(inst);
-      end;
-      //Remains to complete uncomplete instructions
-      tmp := pic.iRam;  //Save
-      for inst in asmBlock.undefInstrucs do begin
-        pic.iRam := inst.addr;   //Set at its original RAM position
-        GenCodeASMline(inst);    //Overwrite the code to complete
-        { TODO : Sería mejor analizar si podría darse el caso de que la nueva instrucción
-        tenga un tamaño diferente a la grabada anteriormente. De ser así, habría
-        un grave error. }
-      end;
-      pic.iRam := tmp;   //Restore
-    end;
-    sntIF: begin
-      GenCondeIF(sen);
-    end;
-    sntWHILE: begin
-      GenCodeWHILE(sen);
-    end;
-    sntFOR: begin
-      GenCodeFOR(sen);
-    end;
-    sntREPEAT: begin
-      GenCodeREPEAT(sen);
-    end;
-    sntExit: begin
-      GenCodeExit(sen);
-    end;
-    else
-      GenError('Unknown sentence type.', sen.srcDec);
-      exit;
-    end;
-    if HayError then exit;
   end;
 end;
 //procedure TGenCodBas.GenCodeBody(body: TEleBody);

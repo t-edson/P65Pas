@@ -1,7 +1,10 @@
-var i, a: byte;
-begin 
-  for i:=0 to 2 do 
-    inc(i);
-  end;
-  inc(i);
+{$Mode Pascal}
+var
+  a: byte; 
+
+begin
+	if a=1 then begin
+    inc(a);		//al fin del bloque
+  end; 
+
 end.

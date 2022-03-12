@@ -3,32 +3,29 @@ lenguaje, en modo de compatibilidad.
 Se debe simular el programa en el circuito "Test1.DSN". Se debe 
 escuchar, una serie de pitidos cortos. Si se escucha un pitido 
 largo, es que hubo algún error en el resultado de alguna operación.}
-{$FREQUENCY 8Mhz}
-{$OUTPUTHEX 'output.hex'}
 {$Mode Pascal}
-uses PIC16F84A;
+uses Commodore64;
 var
-  pinLed: bit absolute PORTB.0;
   a: byte;
 	b,c: boolean;
+
   procedure bien;
   begin
-    pinLed := 1;
-    delay_ms(30);
-    pinLed := 0;
-    delay_ms(70);
+    CHROUT('O');
+    CHROUT('K');
+    CHROUT(chr(13));
   end;
   procedure Mal;
   begin
-    pinLed := 1;
-    delay_ms(1500);
-    pinLed := 0;
-    asm SLEEP end
+    CHROUT('E');
+    CHROUT('R');
+    CHROUT('R');
+    CHROUT('O');
+    CHROUT('R');
+    CHROUT(chr(13));
   end;
-begin
-  SetAsOutput(pinLed);
-  pinLed := 0;
 
+begin
   //////////////////////////////////////////////////////////
 	/////////////////////  IF-CONSTANTE //////////////////////
   //////////////////////////////////////////////////////////
@@ -170,4 +167,5 @@ begin
   end; 
   if a<>1 then mal; 
 
+  asm rts end; 
 end.
