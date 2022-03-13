@@ -13,7 +13,7 @@
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="238"/>
   <ViewPanAssem Val="True"/>
-  <viewMode Val="0"/>
+  <viewMode Val="1"/>
   <MessPanBack Val="-2147483643"/>
   <MessPanText Val="536870912"/>
   <MessPanErr Val="255"/>
@@ -44,11 +44,11 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test5_Types.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-0.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\libscreen.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\test2_pas.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile3.pas
 "/>
   </Edit>
   <IncDecVar Val="False"/>

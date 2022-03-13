@@ -1305,6 +1305,7 @@ in this function.
         TreeElems.CloseElement;  //Close type.
         //Add to the syntax tree
         xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
+{ TODO : Mover el tipo creado al lugar apropiado. }
 //        if TreeElems.curNode.idClass = eleBody then begin
 //          //When the array is declared in some code-section.
 //          TreeElems.AddElementtoParent(xtyp, true);  //Add at the beginning
