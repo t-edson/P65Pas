@@ -3,7 +3,7 @@
   <ProjectSession>
     <PathDelim Value="\"/>
     <Version Value="12"/>
-    <BuildModes Active="Release"/>
+    <BuildModes Active="Debug"/>
     <Units Count="38">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
@@ -48,10 +48,10 @@
       <Unit3>
         <Filename Value="GenCod_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="1"/>
         <WindowIndex Value="1"/>
-        <TopLine Value="159"/>
-        <CursorPos Y="173"/>
+        <TopLine Value="170"/>
+        <CursorPos X="26" Y="169"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -67,9 +67,11 @@
       <Unit4>
         <Filename Value="GenCodBas_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <WindowIndex Value="1"/>
-        <TopLine Value="1888"/>
-        <CursorPos X="19" Y="1902"/>
+        <TopLine Value="1443"/>
+        <CursorPos X="8" Y="1827"/>
+        <FoldState Value=" TL00105123111 p0sS]F11414[D4V]D21219]DtM[D4]c221]63[W4d812 T4503 T5906],lGlQ05 TMqP2[?4d]exb2203]\51I152C[)46810U]HB171 TCNC]!7SF}8 T8T237 pkCkN2D]N3lf04E piZjC084]Q2kH0HC]IYjO0TG]9aje03G[I5B03I[j5E07[R6I082 pjEjP0E[+4Fka033]I9jH046]aej90J6]ISkB0411[T4DlA2R[945kT0X3]uBlB052 T6m6025 pB.X02H T0nc73L]/bjgi5G piXlFB2p[94q1B2A[94i8B2[99B]9gigF2I pianSD2H]9cjJ:96 pifi6ib[j4Yi1D[a4jCj8J2C1[u4bkMT2[}@6PV42 pk8SWAE TH=AFF1]jTkXF{06 pj7s8QE1O"/>
         <ExtraEditorCount Value="2"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -100,7 +102,7 @@
         <CursorPos Y="1308"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
-          <EditorIndex Value="4"/>
+          <EditorIndex Value="3"/>
           <WindowIndex Value="1"/>
           <TopLine Value="1449"/>
           <CursorPos X="12" Y="1456"/>
@@ -226,15 +228,12 @@
         <ComponentName Value="fraCfgSynEdit"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="-1"/>
         <WindowIndex Value="1"/>
-        <TopLine Value="181"/>
-        <CursorPos X="34" Y="195"/>
+        <TopLine Value="167"/>
+        <CursorPos X="54" Y="179"/>
         <FoldState Value=" T8iS23 TMia01011 T3jc085Y"/>
         <UsageCount Value="200"/>
-        <Loaded Value="True"/>
-        <LoadedDesigner Value="True"/>
       </Unit16>
       <Unit17>
         <Filename Value="CodeTools.pas"/>
@@ -336,7 +335,7 @@
       <Unit27>
         <Filename Value="Analyzer.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="2"/>
         <WindowIndex Value="1"/>
         <TopLine Value="241"/>
         <CursorPos X="45" Y="286"/>
@@ -446,7 +445,7 @@
     <General>
       <ActiveWindowIndexAtStart Value="1"/>
     </General>
-    <JumpHistory Count="24" HistoryIndex="23">
+    <JumpHistory Count="21" HistoryIndex="20">
       <Position1>
         <Filename Value="CompBase.pas"/>
         <Caret Line="1662" TopLine="1477"/>
@@ -531,18 +530,6 @@
         <Filename Value="XpresAST.pas"/>
         <Caret Line="187" Column="7" TopLine="164"/>
       </Position21>
-      <Position22>
-        <Filename Value="FrameCfgSynEdit.pas"/>
-        <Caret Line="195" Column="28" TopLine="167"/>
-      </Position22>
-      <Position23>
-        <Filename Value="FrameCfgSynEdit.pas"/>
-        <Caret Line="195" Column="23" TopLine="167"/>
-      </Position23>
-      <Position24>
-        <Filename Value="FrameCfgSynEdit.pas"/>
-        <Caret Line="195" Column="34" TopLine="167"/>
-      </Position24>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>

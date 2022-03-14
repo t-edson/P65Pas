@@ -3,16 +3,19 @@
   <language Val="en - English"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val=""/>
+  <filesClosed Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_Vars.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_HelloWorld.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
+"/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="130"/>
+  <SynTreeWidth Val="250"/>
   <ViewPanAssem Val="True"/>
-  <viewMode Val="1"/>
+  <viewMode Val="0"/>
   <MessPanBack Val="-2147483643"/>
   <MessPanText Val="536870912"/>
   <MessPanErr Val="255"/>

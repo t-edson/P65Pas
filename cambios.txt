@@ -1,76 +1,10 @@
-P65PAS 0.9.0
+P65PAS 0.9.1
 =============
 COMENTARIOS
-La versión anterior resolvio prácticamente todos los pendientes de los bloques ASM.
-En esta versión se completa la implementación de la instrucción exit() y se corrigen 
-diversos errores.
-Esta versión reemplaza, finalmente, a la versión 0.7.8 que era la más estable hasta 
-ahora.
 
-OBJETIVOS
-- Terminar de implementar y pasar el código de prueba de bloques ASM. --> HECHO
-- Implementar, de la mejor forma, la instrucción exit() --> HECHO. 
-- Avanzar en la implementación de las funciones INLINE de usuario.
-- Simplificar el uso de variables temporales.
-- Generar una versión en Ubuntu.
-
-CAMBIOS:
-- Se quita la función EXIT() como función del sistema y se crea un nuevo tipo de 
-sentencia. Se crea AnalyzeEXIT().
-- Se cambia de nombre a TxpEleSentence por TEleSentence.
-- Se elimina TXpTreeElements.CurCodeContainer(). 
-- Se crea el evento TEleTypeDec.OnRequireWR para requerir dependencias de registros.
-- Se cambia el ancestro de la clase TEleBlock a TxpEleCodeCont.
-- Se quita el enumerado "TxpSynBlockId" y se modifica TxpExitCall para adaptarse a la
-forma de trabajo del nuevo AST de este compilador.
-- Se actualiza TEleProgFrame.AddExitCall() con los cambios hechos en TxpExitCall.
-- Se quita de la Doc. técnica, información sobre los bloques de sintaxis, porque ya no 
-se usan en este diesño de compilador.
-- Se eliminan lstExitCalls, AddExitCall() y ObligatoryExit() en TEleProgFrame porque 
-se descarta el mecanismo de guardar llamadas a las instrucciones exit(), porque esta
-información no es necesaria con el uso del AST.
-- Se crean los campos firstObligExit y RegisterExitCall() en TEleProgFrame, porque
-lo que nos interesa, para optimización de la instrucción RTS, es saber si hay una 
-instrucción exit() en código obligatorio. 
-- Se eliminan las clases TxpExitCall y TxpExitCalls porque ya no son necesarias.
-- Se renombra CompileUsesDeclaration a AnalyzeUsesDeclaration
-- Se renombra CompileStructBody a AnalyzeStructBody.
-- Se renombra CompileInlineDeclar a AnalyzeInlineDeclar.
-- Se renombran CompileConstDeclar y CompileVarDeclar a AnalyzeConstDeclar y 
-AnalyzeVarDeclar.
-- Se renombra CompileTypeDeclar a AnalyzeTypeDeclar.
-- Se cambia de nombre a la unidad CompMain por Analyzer.
-- Se cambia de nombre a la clase TCompMain por TAnalyzer.
-- Se corrige TGenCodBas.GenCodeExit() para que pueda trabajar expresiones complejas.
-- Se corrige un problema relacionado con la falta de inicialización de 
-TreeElems.curCodCont.
-- Se definió que el Timer de frmPrincipal se active en el evento OnShow(). Este
-cambio se implementó debido a un error encontrado al compilar para Mac.
-- Se corrige codigo de prueba Test4_Asm.pas.
-- Se cambia de nombre al repositorio. AHora es la 0.9.
-- Se corrige la inclusión de comentarios de instrucciones en el código ASM generado.
-- Se corrige error de cambio de puntero en RAM en subrutinas ASM con etiquetas 
-incompletas.
-- Se elimina TCompiler_PIC16.cInNewLine().
-- Se cambia el orden de creación de elementos en TGenCod.CreateSystemElements() para
-crear primero a los registros de trabajo y poder referenciarlos antes.
-- Se corrige la rutina MoveNodeToAssign() de TCompiler_PIC16.SplitExpresBody() en la
-elección del tipo de la variable temporal.
-- Se eliminan TGenCodBas.requireH(), TGenCodBas.requireE() y TGenCodBas.requireU() y 
-TGenCodBas.requireVar2().
-- Se logra pasar el código de prueba Test4_Asm.pas.
-- Se logra pasar el código de prueba Test3_Procedure.pas.
-- Se implementa la generación de código para la instrucción WHILE.
-- Se implementa la generación de código para la instrucción REPEAT.
-- Se simplifica TGenCodBas.IF_TRUE() y se crean los métodos JUMP_IF_Z_pre(),
-JUMP_IF_C_pre(), JUMP_IF_Z_post(), JUMP_IF_C_post(), JUMP_IF_pre() y JUMP_IF_post().
-- Se cambia de nombre TCompilerBase.CreateVar() a TCompilerBase.CreateEleVarDec().
-- Se crea referencia TAnalyzer.eleFunInc a la función del sistema Inc().
-- Se implementa la estructura FOR.
-- Se logra pasar el código de prueba Test3_Structs1.pas.
-- Se logra pasar el código de prueba Test3_Structs2.pas.
-- Se corrige TCompilerBase.GetOperand() para que reconozca correctamente a arreglos
-constantes.
+CAMBIOS
+- Se actualiza el código fuente para trabajar con la versión más reciente de Lazarus.
+- Se genera un ejecutable para Linux.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
@@ -132,6 +66,82 @@ octeto = object
     
     end;
   end;
+
+
+
+P65PAS 0.9.0
+=============
+COMENTARIOS
+La versión anterior resolvio prácticamente todos los pendientes de los bloques ASM.
+En esta versión se completa la implementación de la instrucción exit() y se corrigen 
+diversos errores incluyendo la definición de arreglos.
+Esta versión reemplaza, finalmente, a la versión 0.7.8 que era la más estable hasta 
+ahora.
+
+OBJETIVOS
+- Terminar de implementar y pasar el código de prueba de bloques ASM. --> HECHO
+- Implementar, de la mejor forma, la instrucción exit() --> HECHO. 
+- Avanzar en la implementación de las funciones INLINE de usuario.
+- Simplificar el uso de variables temporales.
+- Generar una versión en Ubuntu. ->
+
+CAMBIOS:
+- Se quita la función EXIT() como función del sistema y se crea un nuevo tipo de 
+sentencia. Se crea AnalyzeEXIT().
+- Se cambia de nombre a TxpEleSentence por TEleSentence.
+- Se elimina TXpTreeElements.CurCodeContainer(). 
+- Se crea el evento TEleTypeDec.OnRequireWR para requerir dependencias de registros.
+- Se cambia el ancestro de la clase TEleBlock a TxpEleCodeCont.
+- Se quita el enumerado "TxpSynBlockId" y se modifica TxpExitCall para adaptarse a la
+forma de trabajo del nuevo AST de este compilador.
+- Se actualiza TEleProgFrame.AddExitCall() con los cambios hechos en TxpExitCall.
+- Se quita de la Doc. técnica, información sobre los bloques de sintaxis, porque ya no 
+se usan en este diesño de compilador.
+- Se eliminan lstExitCalls, AddExitCall() y ObligatoryExit() en TEleProgFrame porque 
+se descarta el mecanismo de guardar llamadas a las instrucciones exit(), porque esta
+información no es necesaria con el uso del AST.
+- Se crean los campos firstObligExit y RegisterExitCall() en TEleProgFrame, porque
+lo que nos interesa, para optimización de la instrucción RTS, es saber si hay una 
+instrucción exit() en código obligatorio. 
+- Se eliminan las clases TxpExitCall y TxpExitCalls porque ya no son necesarias.
+- Se renombra CompileUsesDeclaration a AnalyzeUsesDeclaration
+- Se renombra CompileStructBody a AnalyzeStructBody.
+- Se renombra CompileInlineDeclar a AnalyzeInlineDeclar.
+- Se renombran CompileConstDeclar y CompileVarDeclar a AnalyzeConstDeclar y 
+AnalyzeVarDeclar.
+- Se renombra CompileTypeDeclar a AnalyzeTypeDeclar.
+- Se cambia de nombre a la unidad CompMain por Analyzer.
+- Se cambia de nombre a la clase TCompMain por TAnalyzer.
+- Se corrige TGenCodBas.GenCodeExit() para que pueda trabajar expresiones complejas.
+- Se corrige un problema relacionado con la falta de inicialización de 
+TreeElems.curCodCont.
+- Se definió que el Timer de frmPrincipal se active en el evento OnShow(). Este
+cambio se implementó debido a un error encontrado al compilar para Mac.
+- Se corrige codigo de prueba Test4_Asm.pas.
+- Se cambia de nombre al repositorio. AHora es la 0.9.
+- Se corrige la inclusión de comentarios de instrucciones en el código ASM generado.
+- Se corrige error de cambio de puntero en RAM en subrutinas ASM con etiquetas 
+incompletas.
+- Se elimina TCompiler_PIC16.cInNewLine().
+- Se cambia el orden de creación de elementos en TGenCod.CreateSystemElements() para
+crear primero a los registros de trabajo y poder referenciarlos antes.
+- Se corrige la rutina MoveNodeToAssign() de TCompiler_PIC16.SplitExpresBody() en la
+elección del tipo de la variable temporal.
+- Se eliminan TGenCodBas.requireH(), TGenCodBas.requireE() y TGenCodBas.requireU() y 
+TGenCodBas.requireVar2().
+- Se logra pasar el código de prueba Test4_Asm.pas.
+- Se logra pasar el código de prueba Test3_Procedure.pas.
+- Se implementa la generación de código para la instrucción WHILE.
+- Se implementa la generación de código para la instrucción REPEAT.
+- Se simplifica TGenCodBas.IF_TRUE() y se crean los métodos JUMP_IF_Z_pre(),
+JUMP_IF_C_pre(), JUMP_IF_Z_post(), JUMP_IF_C_post(), JUMP_IF_pre() y JUMP_IF_post().
+- Se cambia de nombre TCompilerBase.CreateVar() a TCompilerBase.CreateEleVarDec().
+- Se crea referencia TAnalyzer.eleFunInc a la función del sistema Inc().
+- Se implementa la estructura FOR.
+- Se logra pasar el código de prueba Test3_Structs1.pas.
+- Se logra pasar el código de prueba Test3_Structs2.pas.
+- Se corrige TCompilerBase.GetOperand() para que reconozca correctamente a arreglos
+constantes.
 
 
 
