@@ -2,9 +2,9 @@
 <CONFIG>
   <ProjectSession>
     <PathDelim Value="\"/>
-    <Version Value="11"/>
-    <BuildModes Active="Debug"/>
-    <Units Count="35">
+    <Version Value="12"/>
+    <BuildModes Active="Release"/>
+    <Units Count="38">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -48,8 +48,9 @@
       <Unit3>
         <Filename Value="GenCod_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="2"/>
         <WindowIndex Value="1"/>
+        <TopLine Value="159"/>
         <CursorPos Y="173"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
@@ -67,7 +68,7 @@
         <Filename Value="GenCodBas_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
         <WindowIndex Value="1"/>
-        <TopLine Value="1883"/>
+        <TopLine Value="1888"/>
         <CursorPos X="19" Y="1902"/>
         <ExtraEditorCount Value="2"/>
         <ExtraEditor1>
@@ -75,7 +76,7 @@
           <WindowIndex Value="1"/>
           <TopLine Value="519"/>
           <CursorPos Y="531"/>
-          <FoldState Value=" TL00107113 p0sd0111]342]Eze46033527]DtS0B1 T4502 T580601]FCHC]F8M231311]rj0kU22]QMr621]aP]ywH2202151414191I['4OA1161A]t81[?43lU04C]:2jK059 pkSl10H14A piYl007G]9ajH07I]9ZjI07J[R4[948]u8iH286]u2l8032 pj5jC046]afjA0J5]I0jP0642212 T6lc0111C p0^I02[}e50oe73L[{N5VL2N]9XnTG1d]9co3S4J piboWD2G2A piZl5k36413332C1712"/>
+          <FoldState Value=" TL00107113 p0sd0111]342]Eze46033527]DtS0B1 T4502 T580601]FCHC]F8M231311]rj0kU22]QMr621]aP]ywH2202151414191I[&apos;4OA1161A]t81[?43lU04C]:2jK059 pkSl10H14A piYl007G]9ajH07I]9ZjI07J[R4[948]u8iH286]u2l8032 pj5jC046]afjA0J5]I0jP0642212 T6lc0111C p0^I02[}e50oe73L[{N5VL2N]9XnTG1d]9co3S4J piboWD2G2A piZl5k36413332C1712"/>
         </ExtraEditor1>
         <ExtraEditor2>
           <EditorIndex Value="-1"/>
@@ -94,14 +95,12 @@
       <Unit5>
         <Filename Value="CompBase.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="1346"/>
+        <TopLine Value="1308"/>
         <CursorPos Y="1308"/>
-        <FoldState Value=" T4C02 T5F0}8 T8i40D11E T3lV036 pjbk60E2 pigib0A3]9cjA098]9fjG0+5]aDk82K2]94ig0=]9k8iW2.[s4ejc0g411 T0mGJ27]b0j2f5B]SXj4D3C[94lT@36]9ci3P[I7WbAC[;4idV88[I4iIXS6[+4i6)4B T6mT01T TFpK637 pe%Z2M THvXVeC"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
-          <EditorIndex Value="3"/>
+          <EditorIndex Value="4"/>
           <WindowIndex Value="1"/>
           <TopLine Value="1449"/>
           <CursorPos X="12" Y="1456"/>
@@ -133,8 +132,8 @@
         <Filename Value="XpresAST.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="4"/>
-        <TopLine Value="158"/>
-        <CursorPos Y="182"/>
+        <TopLine Value="169"/>
+        <CursorPos X="7" Y="187"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -227,11 +226,15 @@
         <ComponentName Value="fraCfgSynEdit"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="166"/>
-        <CursorPos X="11" Y="194"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="1"/>
+        <TopLine Value="181"/>
+        <CursorPos X="34" Y="195"/>
         <FoldState Value=" T8iS23 TMia01011 T3jc085Y"/>
         <UsageCount Value="200"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
       </Unit16>
       <Unit17>
         <Filename Value="CodeTools.pas"/>
@@ -333,12 +336,10 @@
       <Unit27>
         <Filename Value="Analyzer.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="3"/>
         <WindowIndex Value="1"/>
-        <TopLine Value="87"/>
+        <TopLine Value="241"/>
         <CursorPos X="45" Y="286"/>
-        <FoldState Value=" T4302 T560t1 TLiE4201213 T79Eq T8W2N]P3iU0421]g6ia015 T0j5G36 pj0iVYF7 piYbQCF2117 TMnS611119241F181513]=FpC6t p0^54p TEwc48 TH:TMD22"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -414,135 +415,138 @@
         <CursorPos Y="316"/>
         <UsageCount Value="34"/>
       </Unit34>
+      <Unit35>
+        <Filename Value="C:\lazarus\components\synedit\synedit.pp"/>
+        <UnitName Value="SynEdit"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="1"/>
+        <TopLine Value="1259"/>
+        <CursorPos X="14" Y="1277"/>
+        <UsageCount Value="10"/>
+      </Unit35>
+      <Unit36>
+        <Filename Value="C:\lazarus\components\synedit\syneditmiscclasses.pp"/>
+        <UnitName Value="SynEditMiscClasses"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="1"/>
+        <TopLine Value="321"/>
+        <CursorPos X="23" Y="338"/>
+        <UsageCount Value="10"/>
+      </Unit36>
+      <Unit37>
+        <Filename Value="C:\lazarus\components\synedit\synedittypes.pp"/>
+        <UnitName Value="SynEditTypes"/>
+        <EditorIndex Value="-1"/>
+        <WindowIndex Value="1"/>
+        <TopLine Value="114"/>
+        <CursorPos X="17" Y="133"/>
+        <UsageCount Value="10"/>
+      </Unit37>
     </Units>
     <General>
       <ActiveWindowIndexAtStart Value="1"/>
     </General>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="24" HistoryIndex="23">
       <Position1>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1246" TopLine="1228"/>
+        <Caret Line="1662" TopLine="1477"/>
       </Position1>
       <Position2>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1327" TopLine="1310"/>
+        <Caret Line="1697" Column="14" TopLine="1481"/>
       </Position2>
       <Position3>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1499" TopLine="1461"/>
+        <Caret Line="1698" TopLine="1481"/>
       </Position3>
       <Position4>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1501" TopLine="1461"/>
+        <Caret Line="1310" TopLine="1300"/>
       </Position4>
       <Position5>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1609" TopLine="1461"/>
+        <Caret Line="1320" TopLine="1300"/>
       </Position5>
       <Position6>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1342" TopLine="1324"/>
+        <Caret Line="1246" TopLine="1228"/>
       </Position6>
       <Position7>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1610" TopLine="1465"/>
+        <Caret Line="1327" TopLine="1310"/>
       </Position7>
       <Position8>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1656" TopLine="1467"/>
+        <Caret Line="1499" TopLine="1458"/>
       </Position8>
       <Position9>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1658" TopLine="1477"/>
+        <Caret Line="1501" TopLine="1458"/>
       </Position9>
       <Position10>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1659" TopLine="1477"/>
+        <Caret Line="1609" TopLine="1458"/>
       </Position10>
       <Position11>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1660" TopLine="1477"/>
+        <Caret Line="1342" TopLine="1324"/>
       </Position11>
       <Position12>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1662" TopLine="1477"/>
+        <Caret Line="1610" TopLine="1465"/>
       </Position12>
       <Position13>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1697" Column="14" TopLine="1481"/>
+        <Caret Line="1656" TopLine="1467"/>
       </Position13>
       <Position14>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1698" TopLine="1481"/>
+        <Caret Line="1310" TopLine="1294"/>
       </Position14>
       <Position15>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1310" TopLine="1300"/>
+        <Caret Line="1320" Column="8" TopLine="1297"/>
       </Position15>
       <Position16>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1320" TopLine="1300"/>
+        <Caret Line="1246" TopLine="1228"/>
       </Position16>
       <Position17>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1246" TopLine="1228"/>
+        <Caret Line="1327" TopLine="1310"/>
       </Position17>
       <Position18>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1327" TopLine="1310"/>
+        <Caret Line="1310" TopLine="1299"/>
       </Position18>
       <Position19>
         <Filename Value="CompBase.pas"/>
-        <Caret Line="1499" TopLine="1458"/>
+        <Caret Line="1186" Column="30" TopLine="786"/>
       </Position19>
       <Position20>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1501" TopLine="1458"/>
+        <Filename Value="GenCodBas_PIC16.pas"/>
+        <Caret Line="1902" Column="19" TopLine="1888"/>
       </Position20>
       <Position21>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1609" TopLine="1458"/>
+        <Filename Value="XpresAST.pas"/>
+        <Caret Line="187" Column="7" TopLine="164"/>
       </Position21>
       <Position22>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1342" TopLine="1324"/>
+        <Filename Value="FrameCfgSynEdit.pas"/>
+        <Caret Line="195" Column="28" TopLine="167"/>
       </Position22>
       <Position23>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1610" TopLine="1465"/>
+        <Filename Value="FrameCfgSynEdit.pas"/>
+        <Caret Line="195" Column="23" TopLine="167"/>
       </Position23>
       <Position24>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1656" TopLine="1467"/>
+        <Filename Value="FrameCfgSynEdit.pas"/>
+        <Caret Line="195" Column="34" TopLine="167"/>
       </Position24>
-      <Position25>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1310" TopLine="1294"/>
-      </Position25>
-      <Position26>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1320" Column="8" TopLine="1297"/>
-      </Position26>
-      <Position27>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1246" TopLine="1228"/>
-      </Position27>
-      <Position28>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1327" TopLine="1310"/>
-      </Position28>
-      <Position29>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1310" TopLine="1299"/>
-      </Position29>
-      <Position30>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="1186" Column="30" TopLine="786"/>
-      </Position30>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
-      <Modes Count="0" ActiveMode="default"/>
+      <Modes ActiveMode="default"/>
     </RunParams>
   </ProjectSession>
 </CONFIG>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <language Val="en - English"/>
+  <StateStatusbar Val="1"/>
+  <chkLoadLast Val="True"/>
+  <filesClosed Val=""/>
+  <SplitterCol Val="536870912"/>
+  <MessPanPan Val="536870912"/>
+  <VerPanMensaj Val="True"/>
+  <VerStatusbar Val="True"/>
+  <VerBarHerram Val="True"/>
+  <ViewSynTree Val="True"/>
+  <SynTreeWidth Val="130"/>
+  <ViewPanAssem Val="True"/>
+  <viewMode Val="1"/>
+  <MessPanBack Val="-2147483643"/>
+  <MessPanText Val="536870912"/>
+  <MessPanErr Val="255"/>
+  <MessPanSel Val="-2147483633"/>
+  <CodExplBack Val="-2147483643"/>
+  <CodExplText Val="536870912"/>
+  <grpFiltypes Val="0"/>
+  <TamLet Val="10"/>
+  <TipLet Val="Courier New"/>
+  <VerBarDesV Val="True"/>
+  <VerBarDesH Val="False"/>
+  <TabEdiState Val="0"/>
+  <AutSynChk Val="False"/>
+  <AutCompile Val="False"/>
+  <Edit>
+    <cTxtNor Val="0"/>
+    <cFonEdi Val="16777215"/>
+    <cLinAct Val="65535"/>
+    <Autoindent Val="True"/>
+    <MarLinAct Val="False"/>
+    <ResPalCur Val="True"/>
+    <ResPalCFon Val="15780518"/>
+    <ResPalCTxt Val="0"/>
+    <ResPalCBor Val="15780518"/>
+    <ResPalFWord Val="False"/>
+    <VerPanVer Val="True"/>
+    <VerNumLin Val="False"/>
+    <VerMarPle Val="True"/>
+    <cFonPan Val="16777215"/>
+    <cTxtPan Val="0"/>
+    <recient Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_Vars.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_HelloWorld.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
+"/>
+  </Edit>
+  <IncDecVar Val="True"/>
+  <VarDecType Val="0"/>
+  <IncAddress Val="True"/>
+  <IncComment Val="False"/>
+  <IncComment2 Val="False"/>
+  <ExcUnused Val="True"/>
+  <IncVarName Val="True"/>
+  <ShowErMsg Val="True"/>
+  <OptimLev Val="1"/>
+  <OptBnkAftIF Val="True"/>
+  <OptBnkBefPro Val="True"/>
+  <OptBnkAftPro Val="True"/>
+  <ReuProcVar Val="False"/>
+  <OptRetProc Val="True"/>
+  <ExternTool>
+    <extern_tools Val=""/>
+  </ExternTool>
+</CONFIG>
