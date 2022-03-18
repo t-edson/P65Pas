@@ -419,7 +419,7 @@ begin
   Compiler := Compiler16;  //Inicializa variable Compiler
   fraSynTree := TfraSyntaxTree.Create(self);
   fraSynTree.Parent := self;
-  //configura panel de mensajes
+  //Configura panel de mensajes
   fraMessages := TfraMessagesWin.Create(self);
   fraMessages.Parent := panMessages;  //Ubica
   fraMessages.Align := alClient;
@@ -521,6 +521,17 @@ begin
 end;
 procedure TfrmPrincipal.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
+  //Guarda posición y tamaño de ventana
+  Config.winState  := self.WindowState;
+  if Config.winState = wsNormal then begin
+    //Solo en este modo se actualizan las coordenadas
+    Config.winXpos   := self.Left;
+    Config.winYpos   := self.Top ;
+    Config.winHeight := self.Height;
+    Config.winWidth  := self.Width;
+  end;
+  Config.EditAsmWidth := edAsm.Width;
+
   Config.SynTreeWidth := fraSynTree.Width;   //Guarda ancho
   Config.SaveToFile;  //guarda la configuración actual
 end;
@@ -658,6 +669,18 @@ begin
   end else begin
     SetStateActionsProject(true);
   end;
+  //Posición y tamaño de ventana
+  self.WindowState := Config.winState;
+  if Config.winState = wsMinimized then begin
+    self.WindowState := wsNormal;
+  end;
+
+  if Config.winState = wsNormal then begin
+    self.Left   := Config.winXpos;
+    self.Top    := Config.winYpos;
+    self.Height := Config.winHeight;
+    self.Width  := Config.winWidth;
+  end;
   //Visibilidad del explorador de código
   fraSynTree.Visible := Config.ViewSynTree;
   fraSynTree.Width   := Config.SynTreeWidth;
@@ -681,6 +704,8 @@ begin
   edAsm.Visible      := Config.ViewPanAssem;
   splEdPas.Visible   := Config.ViewPanAssem;
   acViewAsmPan.Checked:= Config.ViewPanAssem;
+  edAsm.Width   := Config.EditAsmWidth;
+
   //Tamaño de la Barra de Herramientas
   case Config.StateToolbar of
   stb_SmallIcon: begin

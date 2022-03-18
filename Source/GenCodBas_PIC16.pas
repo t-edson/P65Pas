@@ -1781,7 +1781,8 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
             operVal := (operVal and $ff00)>>8
           end else begin
             //Para variables o funciones, tomamos la siguiente dirección
-            operVal := operVal+1;
+            //operVal := operVal+1;
+            operVal := (operVal and $ff00)>>8
           end;
         end;
       end;

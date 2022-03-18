@@ -62,19 +62,16 @@
         <Mode0 Name="default"/>
       </Modes>
     </RunParams>
-    <RequiredPackages Count="4">
+    <RequiredPackages Count="3">
       <Item1>
-        <PackageName Value="etpackage"/>
+        <PackageName Value="LazControls"/>
       </Item1>
       <Item2>
-        <PackageName Value="LazControls"/>
+        <PackageName Value="SynEdit"/>
       </Item2>
       <Item3>
-        <PackageName Value="SynEdit"/>
-      </Item3>
-      <Item4>
         <PackageName Value="LCL"/>
-      </Item4>
+      </Item3>
     </RequiredPackages>
     <Units Count="32">
       <Unit0>
@@ -263,7 +260,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="_libraries\SynFacilUtils-1.22;_libraries\MisUtils-0.6;_libraries\MiConfig-0.4;_libraries\P65Utils-0.5;_libraries\UtilsGrilla-0.8"/>
+      <OtherUnitFiles Value="_libraries\SynFacilUtils-1.22;_libraries\MisUtils-0.6;_libraries\MiConfig-0.4;_libraries\P65Utils-0.5;_libraries\UtilsGrilla-0.8;_libraries\epiktimer"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>

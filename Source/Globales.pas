@@ -21,10 +21,10 @@ var
    patTemp    : string;     //ruta para los archivos temporales
    patSyntax  : string;     //ruta de los archivos de sintaxis
    patThemes  : string;     //ruta de los archivos de temas
-   patDevices16 : string;     //ruta para guardar unidades
+   patDevices16: string;    //ruta para guardar unidades
 
    archivoEnt  : string;    //archivo de entrada
-   MostrarError: Boolean;   //Bandera para mostrar mensajesde error.
+   MostrarError: Boolean;   //Bandera para mostrar mensajes de error.
    ActConsSeg  : Boolean;   //Activa consultas en segundo plano
 
 /////////////// Campos para manejo del diccionario //////////

@@ -415,7 +415,7 @@ type  //Declaration elements
     property typ: TEleTypeDec read Gettyp write Settyp;
   public  //Campos para guardar las direcciones físicas asignadas en RAM.
     allocated: boolean;   //Activated when variable is allocated (RAM or register).
-    storage  : TStorage;  //Depende de adicPar.hasAdic.
+    storage  : TStorage;  //Depend on adicPar.hasAdic.
     addr     : word;      //Base address.
     function addrL: word; inline;  //Devuelve la dirección absoluta de la variable (LOW)
     function addrH: word; inline;  //Devuelve la dirección absoluta de la variable (HIGH)
@@ -424,7 +424,7 @@ type  //Declaration elements
     function AddrString: string; //Devuelve la dirección física como cadena
     procedure ResetAddress; //Limpia las direcciones físicas
     function stoStr: string;
-    //procedure SetRAMusedAsShared;
+  public
     constructor Create; override;
     destructor Destroy; override;
   end;

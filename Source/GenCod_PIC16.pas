@@ -5337,9 +5337,9 @@ begin
   //Create assigement method
   CreateBOMethod(etyp, ':=', '_set', etyp, typNull, @BOR_arr_asig_arr);
   //Create attribute "low" as constant.
-  cons := AddConstantAndOpen('low', typNull, GetSrcPos);  //No type defined here.
+  cons := AddConsDecAndOpen('low', typNull, GetSrcPos);  //No type defined here.
   if HayError then exit;   //Can be duplicated
-  expr := GenExpressionConstByte('0', 0, GetSrcPos);
+  expr := AddExpressionConstByte('0', 0, GetSrcPos);
   cons.typ := expr.Typ;
   cons.value.ValInt := 0;
   cons.evaluated := true;
@@ -5555,25 +5555,25 @@ begin
   {Create variables for aditional Working register. Note that this variables are
   accesible (and usable) from the code, because the name assigned is a common variable.}
   //Create register H as variable
-  H := AddVariableAndOpen('__H', typByte, srcPosNull);
+  H := AddVarDecAndOpen('__H', typByte, srcPosNull);
   TreeElems.CloseElement;  { TODO : ¿No sería mejor evitar abrir el elemento para no tener que cerrarlo? }
   H.adicPar.hasAdic := decNone;
   H.adicPar.hasInit := false;
   H.location := locInterface;  //make visible
   //Create register E as variable
-  E := AddVariableAndOpen('__E', typByte, srcPosNull);
+  E := AddVarDecAndOpen('__E', typByte, srcPosNull);
   TreeElems.CloseElement;
   E.adicPar.hasAdic := decNone;
   E.adicPar.hasInit := false;
   E.location := locInterface;  //make visible
   //Create register U as variable
-  U := AddVariableAndOpen('__U', typByte, srcPosNull);
+  U := AddVarDecAndOpen('__U', typByte, srcPosNull);
   TreeElems.CloseElement;
   U.adicPar.hasAdic := decNone;
   U.adicPar.hasInit := false;
   U.location := locInterface;  //make visible
   //Create register IX as variable
-  IX := AddVariableAndOpen('__IX', typWord, srcPosNull);
+  IX := AddVarDecAndOpen('__IX', typWord, srcPosNull);
   TreeElems.CloseElement;
   IX.adicPar.hasAdic := decNone;
   IX.adicPar.hasInit := false;

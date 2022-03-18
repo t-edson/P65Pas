@@ -4,7 +4,19 @@ COMENTARIOS
 
 CAMBIOS
 - Se actualiza el código fuente para trabajar con la versión más reciente de Lazarus.
-- Se genera un ejecutable para Linux.
+- Se genera un ejecutable para Linux y se corrige la falta de un Archivo en el Git.
+- Se corrige el resultado de los operadores "<" y ">" cuando se aplican a una variable o
+función dentro de los bloques ASM.
+- Se corrige uno de los ejemplos de código ASM en el archivo README.txt.
+- Se incluyen el estado, las coordenadas y tamaño de la pantalla principal, como 
+información a guardarse en el archivo de configuración.
+- Se agrega validación de tipos en la inicialización de variables de tipo arreglo.
+- Se incluye la librería EpikTimer como parte de las librerías en la carpeta /Source.
+- Se cambia de nombre a AddVariableAndOpen(), AddConstantAndOpen() y a AddTypeAndOpen().
+- Se mueven OpenExpression(), AddLengthFieldArray() y GetConstantArray() a nivel de 
+método de la clase 
+- Se renombra OpenExpression() a AddExpressAndOpen() y se reordena el código de la 
+unidad CompBase.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?

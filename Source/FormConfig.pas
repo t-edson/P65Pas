@@ -120,35 +120,41 @@ type
     procedure SetViewToolbar(AValue: boolean);
   public  //Configuraciones generales
     language  : string;   //Lenguaje
+    winXpos   : integer;  //Coordenada X de la ventana pricipal.
+    winYpos   : integer;  //Coordenada Y de la ventana pricipal.
+    winWidth  : integer;
+    winHeight : integer;
+    winState  : TWindowState;
+  public  //Configuraciones de entorno
+    StateToolbar: TStyleToolbar;
+    SynTreeWidth: integer;  //Ancho del panel del árbol de sintaxis.
+    EditAsmWidth: integer;  //Ancho del editor de ensamblador.
+    viewMode   : TTreeViewMode;
+    CodExplBack: TColor;
+    CodExplText: TColor;
+    cexpFiltype: integer;
+    MessPanBack: TColor;  //Color de fondo del panel de mensajes
+    MessPanText: TColor;  //Color del texto del panel de mensajes
+    MessPanErr : TColor;  //Color del texto de error del panel de mensajes
+    MessPanSel : TColor;  //Color del fonde de la selección del panel de mensajes
+    PanelsCol  : TColor;  //Color de los paneless del Panel de Mensages
+    SplitterCol: TColor;  //Color de separadores
+    LoadLast   : boolean; //Cargar el último archivo editado
+    filesClosed: string;  {Lista de archivos cargados. Usado para restaurar los archivos
+                          abiertos al abrir nuevamente el programa.}
   public //Configuraciones de Editor
-    TipLet     : string;    //tipo de letra
-    TamLet     : integer;   //tamaño de letra
-    VerBarDesV : boolean;   //ver barras de desplazamiento
-    VerBarDesH : boolean;   //ver barras de desplazamiento
-    TabEdiMode: integer;  //Estado de pestañas del editor
-    AutSynChk : boolean;  //Verificación automática de sintaxis
+    TipLet     : string;   //tipo de letra
+    TamLet     : integer;  //tamaño de letra
+    VerBarDesV : boolean;  //ver barras de desplazamiento
+    VerBarDesH : boolean;  //ver barras de desplazamiento
+    TabEdiMode : integer;  //Estado de pestañas del editor
+    AutSynChk  : boolean;  //Verificación automática de sintaxis
     AutCompile : boolean;  //Compilación automática
     property ViewStatusbar: Boolean read FViewStatusbar write SetViewStatusbar;
     property ViewToolbar: boolean read FViewToolbar write SetViewToolbar;
     property ViewPanMsg: boolean read FViewPanMsg write SetViewPanMsg;
     property ViewPanAssem: boolean read FViewPanAssem write SetViewPanAssem;
     property ViewSynTree: boolean read FViewSynTree write SetViewSynTree;
-  public  //Configuraciones de entorno
-    StateToolbar: TStyleToolbar;
-    SynTreeWidth: integer;   //Ancho del panel del árbol ed sintaxis
-    viewMode  : TTreeViewMode;
-    CodExplBack: TColor;
-    CodExplText: TColor;
-    cexpFiltype   : integer;
-    MessPanBack: TColor;  //Color de fondo del panel de mensajes
-    MessPanText: TColor;  //Color del texto del panel de mensajes
-    MessPanErr : TColor;  //Color del texto de error del panel de mensajes
-    MessPanSel : TColor;  //Color del fonde de la selección del panel de mensajes
-    PanelsCol : TColor;   //Color de los panels del Panel de Mensages
-    SplitterCol: TColor;  //Color de separadores
-    LoadLast   : boolean; //Cargar el último archivo editado
-    filesClosed: string;  {Lista de archivos cargados. Usado para restaurar los archivos
-                          abiertos al abrir nuevamente el programa.}
   public  //Configuraciones para ensamblador
     IncVarDec : boolean;  //Incluye declaración de varaibles
     AsmType   : TAsmType; //Tipo de Salida
@@ -351,8 +357,14 @@ procedure TConfig.Iniciar;
 var
   s: TParElem;
 begin
-  //Configuraciones de Entorno
+  //Configuraciones generales
   s:=cfgFile.Asoc_Str ('language'   , @language, ComboBox1, 'en - English');
+  s:=cfgFile.Asoc_Int ('winXpos'    , @winXpos, 50);
+  s:=cfgFile.Asoc_Int ('winYpos'    , @winYpos, 50);
+  s:=cfgFile.Asoc_Int ('winWidth'   , @winWidth, 800);
+  s:=cfgFile.Asoc_Int ('winHeight'  , @winHeight, 600);
+  s:=cfgFile.Asoc_Enum('winState'   , @winState, SizeOf(TWindowState), 0);
+  //Configuraciones de Entorno
   s:=cfgFile.Asoc_Enum('StateStatusbar', @StateToolbar, SizeOf(TStyleToolbar), RadioGroup1, 1);
   s:=cfgFile.Asoc_Bol ('chkLoadLast',@LoadLast   , chkLoadLast   , true);
   s:=cfgFile.Asoc_Str ('filesClosed', @filesClosed, '');
@@ -365,6 +377,7 @@ begin
   s:=cfgFile.Asoc_Bol('VerBarHerram', @FViewToolbar , true);
   s:=cfgFile.Asoc_Bol('ViewSynTree',  @FViewSynTree , true);
   s:=cfgFile.Asoc_Int('SynTreeWidth', @SynTreeWidth , 130);
+  s:=cfgFile.Asoc_Int('EditAsmWidth', @EditAsmWidth , 300);
   s:=cfgFile.Asoc_Bol('ViewPanAssem', @FViewPanAssem, true);
   s:=cfgFile.Asoc_Enum('viewMode',  @viewMode   , SizeOf(TTreeViewMode), 0);
   //Configuraciones del Panel de mensajes

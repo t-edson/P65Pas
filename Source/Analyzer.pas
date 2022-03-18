@@ -116,6 +116,55 @@ begin
 end;
 
 //Elements processing
+function TAnalyzer.AddConstDeclar(constName: string; srcPos:TSrcPos;
+                                 out typesCreated: integer): TEleConsDec;
+{Add a constant declaration, to the current node of the AST. Aditional types could be
+added first. Returns the declaration created.
+"typesCreated" returns the number of types created at the first level.
+If used in constant declaration, must be called after reading the "=" token.}
+var
+  cons: TEleConsDec;
+  ele: TxpElement;
+  posBefore: Integer;
+  init: TEleExpress;
+begin
+  cons := AddConsDecAndOpen(constName, typNull, srcPos);
+  if HayError then exit;  //Can be duplicated
+  //Debe seguir una expresión constante, que no genere código
+  init := GetExpression(0);
+  if HayError then exit;
+  cons.typ := init.Typ;   //Update constant type.
+  if init.opType = otConst then begin
+    //A simple value. We can initialize the constant.
+    cons.value := init.value;
+    cons.evaluated := init.evaluated;
+  end else begin
+    {Puede que siga una expresión "otFunct" como la llamada a una función que
+    devolverá a una constante, como en el caso:
+    CONST := word(1);
+    Pero como no podemos definir el resultado de esa expresión en este nivel, lo
+    dejamos pasar.
+    }
+    //GenError(ER_CON_EXP_EXP);
+    //exit;
+  end;
+  //Other types (no otConst) will be evaluated later.
+  TreeElems.CloseElement;  //Close constant.
+  //Move types created to this level
+  typesCreated := 0;  //Start count.
+  for ele in cons.elements do begin
+    //Only explore the first level.
+    if ele.idClass = eleTypeDec then begin  //It's a type, we need to move
+      //Position before of the last element (constant declaration).
+      posBefore := TreeElems.curNode.elements.Count - 1;
+      //Move the element to this level
+      TreeElems.ChangeParentTo(TreeElems.curNode, ele, posBefore);
+      inc(typesCreated);  //We expect no more than one type is created in this level.
+      { TODO : Hay que estudiar mejor este caso para ver si se pueden generar más de untipo nuevo en el primer nivel. }
+    end;
+  end;
+  exit(cons);
+end;
 procedure TAnalyzer.GetAdicVarDeclar(xType: TEleTypeDec; out aditVar: TAdicVarDec;
           out typesCreated: integer);
 {Verify aditional settings for var declarations, after the type definition. These settings
@@ -283,6 +332,11 @@ begin
   if aditVar.hasInit then begin
     consTyp := constDec.Typ;
     if (xType.catType = tctArray) then begin
+      //First validation
+      if consTyp <> xType then begin
+        GenError('Expected type "%s". Got "%s".', [xType.name, consTyp.name]);
+        exit;
+      end;
       nItems := consTyp.consNitm.value.ValInt;
       //Arrays have some particular behaviour
       //Validation for category
@@ -514,9 +568,9 @@ If some problems happens, Error is generated and the NIL value is returned.
   begin
     if dynam then begin  //Special case
       //Creates constant element "length" to returns array size
-      consDec := AddConstantAndOpen('length', typNull, GetSrcPos);  //No type defined here.
+      consDec := AddConsDecAndOpen('length', typNull, GetSrcPos);  //No type defined here.
       if HayError then exit;  //Can be duplicated
-      sizExp := GenExpressionConstByte('0', 0, GetSrcPos);
+      sizExp := AddExpressionConstByte('0', 0, GetSrcPos);
       consDec.typ := sizExp.Typ;
       consDec.value := sizExp.value;
       consDec.evaluated := true;
@@ -531,9 +585,9 @@ If some problems happens, Error is generated and the NIL value is returned.
       //Short declaration without size specified: []byte ;
       Next;
       //Creates constant element "length" to returns array size
-      consDec := AddConstantAndOpen('length', typNull, GetSrcPos);  //No type defined here.
+      consDec := AddConsDecAndOpen('length', typNull, GetSrcPos);  //No type defined here.
       if HayError then exit;  //Can be duplicated
-      sizExp := GenExpressionConstByte('0', 0, GetSrcPos);
+      sizExp := AddExpressionConstByte('0', 0, GetSrcPos);
       consDec.typ := sizExp.Typ;
       consDec.value := sizExp.value;
       consDec.evaluated := true;
@@ -543,7 +597,7 @@ If some problems happens, Error is generated and the NIL value is returned.
     end else begin
       {Note this section of code is similar to TAnalyzer.AnalyzeConstDeclar().}
       //Creates constant element "length" to returns array size
-      consDec := AddConstantAndOpen('length', typNull, GetSrcPos);  //No type defined here.
+      consDec := AddConsDecAndOpen('length', typNull, GetSrcPos);  //No type defined here.
       if HayError then exit;  //Can be duplicated
       //Debe seguir una expresión constante, que no genere código
       sizExp := GetExpression(0);  //Add expression to current node os AST
@@ -747,7 +801,7 @@ begin
   if (tokL = 'array') or (token = '[') then begin
     //Es declaración de arreglo
     decStyle := ttdDeclar;  //Es declaración elaborada
-    //typ := AddTypeAndOpen('!', -1, tctArray, t_object, srcPos);  //No name by now
+    //typ := AddTypeDecAndOpen('!', -1, tctArray, t_object, srcPos);  //No name by now
     typ := TreeElems.AddElementTypeAndOpen(srcPos, '<undef>', -1, tctArray, t_object);
     if HayError then exit;  //Can be duplicated
     TypeCreated := true;
@@ -777,7 +831,7 @@ begin
     ele := TreeElems.FindFirstType(typName);
     if ele = nil then begin
       //No identifica a este elemento
-      GenError('Unknown identifier: %s', [typName]);
+      GenError('Unknown idantifier: %s', [typName]);
       exit(nil);
     end;
     if ele.idClass = eleTypeDec then begin
@@ -883,55 +937,6 @@ begin
   if not CaptureDelExpres then exit;
   ProcComments;
 end;
-function TAnalyzer.AddConstDeclar(constName: string; srcPos:TSrcPos;
-                                 out typesCreated: integer): TEleConsDec;
-{Add a constant declaration, to the current node of the AST. Aditional types could be
-added first. Returns the declaration created.
-"typesCreated" returns the number of types created at the first level.
-If used in constant declaration, must be called after reading the "=" token.}
-var
-  cons: TEleConsDec;
-  ele: TxpElement;
-  posBefore: Integer;
-  init: TEleExpress;
-begin
-  cons := AddConstantAndOpen(constName, typNull, srcPos);
-  if HayError then exit;  //Can be duplicated
-  //Debe seguir una expresión constante, que no genere código
-  init := GetExpression(0);
-  if HayError then exit;
-  cons.typ := init.Typ;   //Update constant type.
-  if init.opType = otConst then begin
-    //A simple value. We can initialize the constant.
-    cons.value := init.value;
-    cons.evaluated := init.evaluated;
-  end else begin
-    {Puede que siga una expresión "otFunct" como la llamada a una función que
-    devolverá a una constante, como en el caso:
-    CONST := word(1);
-    Pero como no podemos definir el resultado de esa expresión en este nivel, lo
-    dejamos pasar.
-    }
-    //GenError(ER_CON_EXP_EXP);
-    //exit;
-  end;
-  //Other types (no otConst) will be evaluated later.
-  TreeElems.CloseElement;  //Close constant.
-  //Move types created to this level
-  typesCreated := 0;  //Start count.
-  for ele in cons.elements do begin
-    //Only explore the first level.
-    if ele.idClass = eleTypeDec then begin  //It's a type, we need to move
-      //Position before of the last element (constant declaration).
-      posBefore := TreeElems.curNode.elements.Count - 1;
-      //Move the element to this level
-      TreeElems.ChangeParentTo(TreeElems.curNode, ele, posBefore);
-      inc(typesCreated);  //We expect no more than one type is created in this level.
-      { TODO : Hay que estudiar mejor este caso para ver si se pueden generar más de untipo nuevo en el primer nivel. }
-    end;
-  end;
-  exit(cons);
-end;
 procedure TAnalyzer.AnalyzeConstDeclar;
 var
   consNames: array of string;  //nombre de variables
@@ -1014,7 +1019,10 @@ begin
     //Lee el tipo de la variable.
     {Primero fijamos un contenedor de código cualquiera en TreeElems.curCodCont, para
     que GetTypeDeclar() crea que está dentro de una declaración y así pueda ubicar bien a
-    sus elmentos cuando use FindFirst().}
+    sus elementos cuando use FindFirst().
+    Aunque mejor sería llamar a GetTypeDeclar() dentro de la declaración de la variable.
+    Para ello, se podría poner el GetTypeDeclar() y GetAdicVarDeclar() dentro del for
+    asegurándose que son llamados una sola vez.}
     if TreeElems.curCodCont=nil then TreeElems.curCodCont:=typByte;
     xtyp := GetTypeDeclar(decStyle, typeCreated);
     if HayError then exit;
@@ -1065,7 +1073,7 @@ begin
     //Aquí ya se tiene el tipo creado y en el árbol de sintaxis
     //Reserva espacio para las variables
     for i := 0 to high(varNames) do begin
-      xvar := AddVariableAndOpen(varNames[i], xtyp, srcPosArray[i]);
+      xvar := AddVarDecAndOpen(varNames[i], xtyp, srcPosArray[i]);
       if HayError then break;        //Sale para ver otros errores
       //Inicia campos
       xvar.adicPar := adicVarDec;    //Actualiza propiedades adicionales
@@ -1464,7 +1472,7 @@ begin
   TreeElems.AddElementAndOpen(elem);
   if ConstBool then begin
     //Generates a boolean constant.
-    GenExpressionConstBool('else', true, GetSrcPos);
+    AddExpressionConstBool('else', true, GetSrcPos);
   end else begin
     //Get the boolean expression
     OnExprStart;

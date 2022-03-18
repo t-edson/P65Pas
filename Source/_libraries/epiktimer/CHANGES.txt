@@ -1,0 +1,31 @@
+
+  Change log
+
+  Initially written on 24-06-2003 TL
+  Pre-release 30-06-2003 TL - Needs testing on the BSD's and Win32
+  1-7-2003 TL
+    Version 0.1 initial beta release
+  3-7-2003 TL
+    Version 0.2
+      Revised logic around hardware detection to prevent executing extended
+      instructions if the HasCapabilityData call returns false. Removed
+      exposed low level diagnositic functions from unit interface.
+      Revised demo.
+  15-11-2005
+    Version 0.3
+      Updated 0.2 version to make it compile on the latest Lazarus (0.9.10).
+      Added LCL to te required packages.
+      Changed mode to Delphi in order to compile.
+      Changed windows timebase to use QueryPerformanceCounter, because has a
+     much greater precision then GetSystemTime.
+      Added changes to ensure the component compiles on Delphi 7.0
+      Made tests on Windows and Linux
+  06-10-2006
+    Version 1.0
+      Changes for 64 bits operation
+      Added units BaseUnix, Unix and UnixUtil, removed oldlinux (obsolete)
+      Gettimeofday -> fpGettimeofday
+      Changed systemsleep for 64 bits systems
+      Some changes in timeval
+      Tested on AMD64 (linux)
+

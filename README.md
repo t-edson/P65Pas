@@ -327,7 +327,7 @@ TYPE
   TAStr = [3]char;
   TAByte = [4]byte;
 VAR
-  str : TASrt = ('a','b','c');
+  str : TAStr = ('a','b','c');
   numb: TAByte = (1, 2, 3); //ERROR: Expected 4 items.
 ```
 
@@ -1030,7 +1030,7 @@ There is still, much work for development or documentation, so any help will be 
 
 ## Source Code
 
-The source code of the compiler is in the folder /Source.
+The source code of the compiler is located in the folder /Source.
 
 P65Pas has been compiled, using the version 2.0.12 of Lazarus. Tested in Windows, Ubuntu and Mac.
 
@@ -1038,16 +1038,18 @@ To have more information about the compiler, check the Technical Documentation (
 
 To compile P65Pas, it's needed to have the following libraries:
 
-* MiConfig
-* MisUtils
-* P65Utils
-* SynFacilUtils
-* UtilsGrilla
+* MiConfig: https://github.com/t-edson/MiConfig
+* MisUtils: https://github.com/t-edson/MisUtils
+* P65Utils: https://github.com/t-edson/P65Utils
+* SynFacilUtils: https://github.com/t-edson/SynFacilUtils
+* UtilsGrilla: https://github.com/t-edson/UtilsGrilla
+* EpikTimer: https://wiki.freepascal.org/EpikTimer
 
-All of them, are include in the folder /_libraries located in the /Source folder. Additionally, these libraries are available on the GitHub too. 
+All of them, are include in the folder /_libraries located in the /Source folder. 
 
-These libraries don't include package. They are only files in folders that are included when compiling P65Pas.
+These libraries don't include packages. They are only files in folders that are included when compiling P65Pas.
 
 ### External Dependencies
 
-In the current version only the EpikTimer package is needed: https://wiki.freepascal.org/EpikTimer
+There is not external dependencies. All libraries used are included in the /Source folder.
+ 
