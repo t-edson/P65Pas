@@ -175,8 +175,8 @@ can be:
 All aditional settings are returned in "aditVar".
 IMPORTANT: "xType" can change when is an unspecified size array ( like []byte ) and an
 initialization is provided. No new type elements are created or destroyed.
-If aditional type are created for the init value, "typesCreated" specify the number of
-type created.
+If aditional type are created for the init value, "typesCreated" specifies the number of
+types created.
 }
   function ReadAddres(tok: string): word;
   {Lee una dirección de RAM a partir de una cadena numérica.
@@ -309,7 +309,11 @@ begin
     ProcComments;
     //Aquí debe seguir el valor inicial constante.
     newConstName := 'C-'+IntToStr(TreeElems.curNode.Elements.Count);
+
+
     constDec := AddConstDeclar(newConstName, GetSrcPos, typesCreated);  //Leemos como constante
+
+
     if HayError then exit;
     //Ya se tiene el valor constante para inicializar variable.
     if aditVar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
@@ -993,16 +997,97 @@ procedure TAnalyzer.AnalyzeVarDeclar;
       exit('???-' + baseName);
     end;
   end;
+  procedure ValidateTypesCreated(varTyp: TEleTypeDec; varTypCreated: boolean;
+                                 const adicVarDec: TAdicVarDec; typesCreated: Integer);
+  {Do a validation of the types created in order to leave the type elements ordered.}
+  var
+    nItems: Int64;
+  begin
+    if varTypCreated then begin
+      //A new type is created in the definition of the variable.
+      if adicVarDec.hasInit then begin
+        //A initialization exists.
+        if typesCreated=1 then begin
+          {La inicialización también ha creado un tipo en el AST. Esto se produce en un
+          caso de arreglo dinámico, como:
+            VAR myarray: ARRAY[] OF char  //Tipo creado en la definición
+               = 'abc';          //Tipo creado en la inicialización.
+          }
+          {Podríamos eliminar un tipo y dejar solo uno, pero para no tener que lidiar con
+          la eliminación de un elemento del AST (y sus "callers"). }
+          //Actualizamos para que apunte al tipo de la inicialización, porque ya tiene una llamada creada.
+          varTyp := adicVarDec.constDec.typ;
+        end else begin
+          {La inicialización no ha creado un tipo nuevo. Debe ser porque se ha
+          se ha reusado el tipo "varTyp". Puede ser algo como:
+            VAR myarray: ARRAY[3] OF char  //Tipo creado en la definición
+               = 'abc';          //Usa el mismo tipo de la definición.
+          }
+          //En este caso, solo nos queda darle el nombre aporopiado a varTyp:
+          nItems := varTyp.consNitm.value.ValInt;
+          varTyp.name := GenArrayTypeName(varTyp.itmType.name, nItems);
+        end;
+      end
+    end;
+  end;
+  procedure UpdateTypeAndAdVarDec(var varTyp: TEleTypeDec; out adicVarDec: TAdicVarDec);
+  {Updates the parameters:
+    - "varTyp" with the type of the variable dclaration: VAR a,b,c: <<TYPE>>
+    - "adicVarDec" with the aditional parameters of the variable declaration, like
+      REGISTER or ABSOLUTE options.
+  Additionally, make a caller to the variable included in the ABSOLUTE <varAbs> if the
+  declaration exist (ABSOLUTE to some variable).
+  This procedure must be called when the Variable declaration element is opened because
+  callers are added, and this must be done inside a code container.}
+  var
+    decStyle: TTypDeclarStyle;
+    varTypCreated: boolean;
+    typesCreated: integer;
+  begin
+    //Test if it's needed to read from source.
+    if varTyp = nil then begin
+      //We need to read the type of the variable.
+      varTyp := GetTypeDeclar(decStyle, varTypCreated);
+      if HayError then exit;
+      //Lee información adicional de la declaración (ABSOLUTE, REGISTER, initial value)
+      ProcComments;
+      //We need to read aditional parameters: Register, Absolute or Initialization.
+      GetAdicVarDeclar(varTyp, adicVarDec, typesCreated);  //Could create new types
+      if HayError then begin
+        //Cannot destroy, directly, the type created, because the creation has added variables to the AST.
+        //if varTypCreated then varTyp.Destroy;
+        exit;
+      end;
+      //Verifica si hay asignación de valor inicial.
+      ProcComments;
+      {Aquí, finalmente, se tiene el tipo completo en su estructura porque, si había un
+      arreglo no dimensionado, como:  foo []CHAR = 'HELLO'; ya se verificó la
+      inicialización.}
+      ValidateTypesCreated(varTyp, varTypCreated, adicVarDec, typesCreated);
+    end else begin
+      {Aditional parameters already read. Parameters "varTyp" and "adicVarDec" are
+      updated. We only need to add the callers.}
+      if adicVarDec.absVar<>nil then begin
+        //Add caller to variable when it's used in ABSOLUTE.
+        //We need to do it here, because we're not to use GetAdicVarDeclar() again.
+        AddCallerToFromCurr(adicVarDec.absVar);
+      end;
+      //Agrega llamada a constante cuando se use al inicializar
+      if adicVarDec.hasInit then begin
+        AddCallerToFromCurr(adicVarDec.constDec);
+      end;
+    end;
+    {Add caller to the type declaration. IT's done always because GetTypeDeclar() doesn't
+    do.}
+    AddCallerToFromCurr(varTyp);
+  end;
 var
   varNames: array of string;  //nombre de variables
   srcPosArray: TSrcPosArray;
-  i, typesCreated: Integer;
-  xvar: TEleVarDec;
+  i: Integer;
+  varTyp: TEleTypeDec;
   adicVarDec: TAdicVarDec;
-  xtyp: TEleTypeDec;
-  decStyle: TTypDeclarStyle;
-  typeCreated: boolean;
-  nItems: Int64;
+  xvar: TEleVarDec;
 begin
   SetLength(varNames, 0);
   //Procesa variables a,b,c : int;
@@ -1016,65 +1101,18 @@ begin
     //Debe seguir, el tipo de la variable
     Next;  //lo toma
     ProcComments;
-    //Lee el tipo de la variable.
-    {Primero fijamos un contenedor de código cualquiera en TreeElems.curCodCont, para
-    que GetTypeDeclar() crea que está dentro de una declaración y así pueda ubicar bien a
-    sus elementos cuando use FindFirst().
-    Aunque mejor sería llamar a GetTypeDeclar() dentro de la declaración de la variable.
-    Para ello, se podría poner el GetTypeDeclar() y GetAdicVarDeclar() dentro del for
-    asegurándose que son llamados una sola vez.}
-    if TreeElems.curCodCont=nil then TreeElems.curCodCont:=typByte;
-    xtyp := GetTypeDeclar(decStyle, typeCreated);
-    if HayError then exit;
-    //Lee información adicional de la declaración (ABSOLUTE, REGISTER, initial value)
-    ProcComments;
-    GetAdicVarDeclar(xtyp, adicVarDec, typesCreated);  //Could create new types
-    if HayError then begin
-      //Cannot destroy, directly, the type created, because the creation has added variables to the AST.
-      //if typeCreated then xtyp.Destroy;
-      exit;
-    end;
-    //Verifica si hay asignación de valor inicial.
-    ProcComments;
-    {Elimina la llamada agregada a la variable, porque se van a agregar llamadas más
-    específicas desde la(s) variable(s) declaradas.}
-    if adicVarDec.absVar<>nil then begin
-      adicVarDec.absVar.RemoveLastCaller;
-    end;
-    {Aquí, finalmente, se tiene el tipo completo en su estructura porque, si había un
-    arreglo no dimensionado, como:  foo []CHAR = 'HELLO'; ya se verificó la
-    inicialización.}
-    if typeCreated then begin
-      //A new type is created in the definition of the variable.
-      if adicVarDec.hasInit then begin
-        //A initialization exists.
-        if typesCreated=1 then begin
-          {La inicialización también ha creado un tipo en el AST. Esto se produce en un
-          caso de arreglo dinámico, como:
-            VAR myarray: ARRAY[] OF char  //Tipo creado en la definición
-               = 'abc';          //Tipo creado en la inicialización.
-          }
-          {Podríamos eliminar un tipo y dejar solo uno, pero para no tener que lidiar con
-          la eliminación de un elemento del AST (y sus "callers"). }
-          //Actualizamos para que apunte al tipo de la inicialización, porque ya tiene una llamada creada.
-          xtyp := adicVarDec.constDec.typ;
-        end else begin
-          {La inicialización no ha creado un tipo nuevo. Debe ser porque se ha
-          se ha reusado el tipo "xtyp". Puede ser algo como:
-            VAR myarray: ARRAY[3] OF char  //Tipo creado en la definición
-               = 'abc';          //Usa el mismo tipo de la definición.
-          }
-          //En este caso, solo nos queda darle el nombre aporopiado a xtyp:
-          nItems := xtyp.consNitm.value.ValInt;
-          xtyp.name := GenArrayTypeName(xtyp.itmType.name, nItems);
-        end;
-      end
-    end;
-    //Aquí ya se tiene el tipo creado y en el árbol de sintaxis
-    //Reserva espacio para las variables
+    //Add Variable declarations element to the AST
+    varTyp := nil;  //Will be upadted with UpdateTypeAndAdVarDec()
     for i := 0 to high(varNames) do begin
-      xvar := AddVarDecAndOpen(varNames[i], xtyp, srcPosArray[i]);
+      xvar := AddVarDecAndOpen(varNames[i], typNull, srcPosArray[i]);  //We don`t have the type here
       if HayError then break;        //Sale para ver otros errores
+      //Updates "varTyp" and "adicVarDec" and add callers.
+      UpdateTypeAndAdVarDec(varTyp, adicVarDec);
+      if HayError then begin
+        TreeElems.CloseElement;  //Close variable
+        exit;
+      end;
+      xvar.typ := varTyp;   //Update type
       //Inicia campos
       xvar.adicPar := adicVarDec;    //Actualiza propiedades adicionales
       xvar.location := curLocation;  //Actualiza bandera
@@ -1086,16 +1124,6 @@ begin
       decRegisY: xvar.storage := stRegistY;
       decAbsol : xvar.storage := stRamFix;  //Will have a fixed memory address.
       decNone  : xvar.storage := stRamFix;  //Will have a fixed memory address.
-      end;
-      //Agrega la llamada al tipo de la variable.
-      AddCallerToFromCurr(xtyp);  //Llamada al tipo usado (Lo usa cada variable declarada.)
-      //Agrega llamada a variable cuando se use en ABSOLUTE.
-      if adicVarDec.absVar<>nil then begin
-        AddCallerToFromCurr(adicVarDec.absVar);
-      end;
-      //Agrega llamada a constante cuando se use al inicializar
-      if adicVarDec.hasInit then begin
-        AddCallerToFromCurr(adicVarDec.constDec);
       end;
       TreeElems.CloseElement;  //Close variable
     end;

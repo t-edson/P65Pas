@@ -1,9 +1,10 @@
 program muestra;
 
 var
-  n: byte;	      //Declaración de variable.
-  ca: char = 'A'; //Declaración con inicialización.
-
+ x,y: byte = 1;
+  //n: byte = 1;
+//  myarray: ARRAY[] OF char = 'abc'; //Tipo creado en la inicialización.
+//  ca: char = 'A'; //Declaración con inicialización.
 begin
 
 

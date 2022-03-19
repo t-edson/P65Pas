@@ -512,7 +512,7 @@ begin
   xVar.name   := varName;
   xVar.typ    := eleTyp;
   xVar.adicPar.hasAdic := decNone;
-  xVar.adicPar.hasInit := false;
+//  xVar.adicPar.hasInit := false;
   xVar.storage := stRamFix;  //The most common storage for variables
   Result       := xVar;
 end;
