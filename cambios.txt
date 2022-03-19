@@ -17,6 +17,8 @@ información a guardarse en el archivo de configuración.
 método de la clase 
 - Se renombra OpenExpression() a AddExpressAndOpen() y se reordena el código de la 
 unidad CompBase.
+- Se cambian los íconos para las declaraciones de constantes y variables, para 
+diferenciarlos de las expresiones.
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?

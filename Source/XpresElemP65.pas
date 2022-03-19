@@ -115,11 +115,13 @@ type
   {Description for aditional information in variables declaration: ABSOLUTE ,
   REGISTER,  or initialization. }
   TAdicVarDec = record
-    hasAdic  : TxpAdicDeclar; //ABSOLUTE, REGISTERA, ...
+    //Absolute or register information.
+    hasAdic  : TxpAdicDeclar; //Flag. Indicates when variable is register or absolute.
     absVar   : TEleVarDec;    //Reference to variable, when is ABSOLUTE <variable>
     absAddr  : integer;       //ABSOLUTE address
     absOff   : integer;       //Offset to variable when ABSOLUTE.
-    hasInit  : boolean;       //Indicate if variable is initialized
+    //Initialization information.
+    hasInit  : boolean;       //Flag. Indicates if variable is initialized
     constDec : TEleConsDec;   //Reference to the const declaration for init value.
   end;
 type  //Type categories and declaration styles

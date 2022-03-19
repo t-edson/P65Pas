@@ -140,11 +140,11 @@ begin
   end;
   nod := TreeView1.Items.AddChild(nodParent, elem.name);
   if elem.idClass = eleConsDec then begin
-    nod.ImageIndex := 4;
-    nod.SelectedIndex := 4;
+    nod.ImageIndex := 23;
+    nod.SelectedIndex := 23;
   end else if elem.idClass = eleVarDec then begin
-    nod.ImageIndex := 2;
-    nod.SelectedIndex := 2;
+    nod.ImageIndex := 24;
+    nod.SelectedIndex := 24;
   end else if elem.idClass = eleTypeDec then begin
     nod.ImageIndex := 15;
     nod.SelectedIndex := 15;

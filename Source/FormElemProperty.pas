@@ -129,7 +129,7 @@ begin
   if          elem.idClass = eleConsDec then begin
     xcon := TEleConsDec(elem);
     txtEleType.Caption := 'Constant ('+elem.ClassName+')';
-    ImageList1.GetBitmap(4, Image1.Picture.Bitmap);
+    ImageList1.GetBitmap(23, Image1.Picture.Bitmap);
     adicInformation :=
            'Constan Type: ' + IfThen(xcon.typ=nil, 'Unknown', xcon.typ.name) + LineEnding +
            'Evaluated: ' + IfThen(xcon.evaluated, 'true', 'false')  + LineEnding +
@@ -137,7 +137,7 @@ begin
   end else if elem.idClass = eleVarDec then begin
     xvar := TEleVarDec(elem);
     txtEleType.Caption := 'Variable ('+elem.ClassName+')';
-    ImageList1.GetBitmap(2, Image1.Picture.Bitmap);
+    ImageList1.GetBitmap(24, Image1.Picture.Bitmap);
     dirSolic := IntToStr(xvar.adicPar.absAddr);
     adicInformation :=
            'Variable Type: ' + xvar.typ.name + LineEnding +
