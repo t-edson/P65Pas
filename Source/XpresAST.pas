@@ -50,7 +50,7 @@ type  //Abstract Syntax Tree
     procedure RefreshAllUnits;
   public  //Filling the tree
     procedure AddElement(elem: TxpElement; position: integer = - 1);
-    procedure AddElementAndOpen(elem: TxpElement);
+    procedure AddElementAndOpen(elem: TxpElement; position: integer = - 1);
     procedure AddElementToParent(elem: TxpElement; AtBegin: boolean);
     procedure OpenElement(elem: TxpElement);
     procedure CloseElement;
@@ -63,7 +63,8 @@ type  //Abstract Syntax Tree
     function AddElementVarAndOpen(srcPos: TSrcPos; vname: string;
       vtype: TEleTypeDec): TEleVarDec;
     function AddElementTypeAndOpen(srcPos: TSrcPos; tname: string; tsize: integer;
-      catType: TxpCatType; group: TTypeGroup): TEleTypeDec;
+      catType: TxpCatType; group: TTypeGroup; position: integer = - 1
+  ): TEleTypeDec;
     function AddElementBlockAndOpen(srcPos: TSrcPos): TEleBlock;
     function AddElementSentAndOpen(srcPos: TSrcPos; sntType: TxpSentence): TEleSentence;
   public  //Element resolution (FindFirst() - FindNext())
@@ -146,14 +147,14 @@ begin
   //No se incluye el código de RefreshAllUnits() porque solo trabaja en el "main".
   end;
 end;
-procedure TXpTreeElements.AddElementAndOpen(elem: TxpElement);
+procedure TXpTreeElements.AddElementAndOpen(elem: TxpElement; position: integer = -1);
 {Add an element and change the current node to this new node. Open an element means
 that all new nodes added, will be children of this node (The current node).
 To open an element is useful when it will contain other nodes, like a function body.}
 begin
   {Las funciones o procedimientos no se validan inicialmente, sino hasta que
   tengan todos sus parámetros agregados, porque pueden ser sobrecargados.}
-  AddElement(elem);
+  AddElement(elem, position);
   //Genera otro espacio de nombres
   if elem.elements = nil then elem.elements := TxpElements.Create(true);  //Create its list becuase it will contain other nodes.
   curNode := elem;  //Set new Current node.
@@ -268,7 +269,8 @@ begin
   curCodCont := Result;  //Update current Code container
 end;
 function TXpTreeElements.AddElementTypeAndOpen(srcPos: TSrcPos; tname: string;
-  tsize: integer; catType: TxpCatType; group: TTypeGroup): TEleTypeDec;
+  tsize: integer; catType: TxpCatType; group: TTypeGroup;
+  position: integer = -1): TEleTypeDec;
 begin
   Result := TEleTypeDec.Create;
   Result.name    := tname;
@@ -277,7 +279,7 @@ begin
   Result.catType := catType;
   Result.group   := group;
   curNode.codCont := curCodCont;  //Save before change
-  AddElementAndOpen(Result);  //Open type
+  AddElementAndOpen(Result, position);  //Open type
   curCodCont := Result;  //Update current Code container
 end;
 function TXpTreeElements.AddElementBlockAndOpen(srcPos: TSrcPos): TEleBlock;

@@ -1,5 +1,6 @@
 program muestra;
-
+const 
+  CONTANTE = '123';
 var
  x,y: byte = 1;
   //n: byte = 1;

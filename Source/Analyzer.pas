@@ -17,8 +17,8 @@ type
     function PICName: string; virtual; abstract;
     function RAMmax: integer; virtual; abstract;
   private
-    function AddConstDeclar(constName: string; srcPos: TSrcPos; out
-      typesCreated: integer): TEleConsDec;
+    function GetConstValue(srcPos: TSrcPos; out typesCreated: integer
+      ): TEleExpress;
     procedure AnalyzeEXIT(exitSent: TEleSentence);
     procedure AnalyzeFOR;
     procedure AnalyzeIF;
@@ -116,28 +116,25 @@ begin
 end;
 
 //Elements processing
-function TAnalyzer.AddConstDeclar(constName: string; srcPos:TSrcPos;
-                                 out typesCreated: integer): TEleConsDec;
-{Add a constant declaration, to the current node of the AST. Aditional types could be
+function TAnalyzer.GetConstValue(srcPos:TSrcPos;
+                                 out typesCreated: integer): TEleExpress;
+{Add a constant expression, to the current node of the AST. Aditional types could be
 added first. Returns the declaration created.
-"typesCreated" returns the number of types created at the first level.
-If used in constant declaration, must be called after reading the "=" token.}
+"typesCreated" returns the number of types created at the first level.}
 var
-  cons: TEleConsDec;
-  ele: TxpElement;
-  posBefore: Integer;
   init: TEleExpress;
+  ntyp: Integer;
 begin
-  cons := AddConsDecAndOpen(constName, typNull, srcPos);
-  if HayError then exit;  //Can be duplicated
+
   //Debe seguir una expresión constante, que no genere código
-  init := GetExpression(0);
-  if HayError then exit;
-  cons.typ := init.Typ;   //Update constant type.
+  //init := GetExpression(0);
+  ntyp := nTypesCreated;   //Set for count
+  init := GetOperand();
+  typesCreated := nTypesCreated-ntyp;  //Calculate types created.
+  TreeElems.OpenElement(init.Parent);  //Returns to previous node
+
   if init.opType = otConst then begin
     //A simple value. We can initialize the constant.
-    cons.value := init.value;
-    cons.evaluated := init.evaluated;
   end else begin
     {Puede que siga una expresión "otFunct" como la llamada a una función que
     devolverá a una constante, como en el caso:
@@ -148,22 +145,7 @@ begin
     //GenError(ER_CON_EXP_EXP);
     //exit;
   end;
-  //Other types (no otConst) will be evaluated later.
-  TreeElems.CloseElement;  //Close constant.
-  //Move types created to this level
-  typesCreated := 0;  //Start count.
-  for ele in cons.elements do begin
-    //Only explore the first level.
-    if ele.idClass = eleTypeDec then begin  //It's a type, we need to move
-      //Position before of the last element (constant declaration).
-      posBefore := TreeElems.curNode.elements.Count - 1;
-      //Move the element to this level
-      TreeElems.ChangeParentTo(TreeElems.curNode, ele, posBefore);
-      inc(typesCreated);  //We expect no more than one type is created in this level.
-      { TODO : Hay que estudiar mejor este caso para ver si se pueden generar más de untipo nuevo en el primer nivel. }
-    end;
-  end;
-  exit(cons);
+  exit(init);
 end;
 procedure TAnalyzer.GetAdicVarDeclar(xType: TEleTypeDec; out aditVar: TAdicVarDec;
           out typesCreated: integer);
@@ -197,11 +179,12 @@ types created.
 var
   xvar: TEleVarDec;
   n: integer;
-  tokL, newConstName: String;
+  tokL: String;
   ele: TxpElement;
-  xcon, constDec: TEleConsDec;
+  xcon: TEleConsDec;
   consTyp: TEleTypeDec;
   nItems: Int64;
+  consIni: TEleExpress;
 begin
   aditVar.hasAdic  := decNone;       //Bandera
   aditVar.hasInit  := false;
@@ -308,12 +291,7 @@ begin
     Next;   //lo toma
     ProcComments;
     //Aquí debe seguir el valor inicial constante.
-    newConstName := 'C-'+IntToStr(TreeElems.curNode.Elements.Count);
-
-
-    constDec := AddConstDeclar(newConstName, GetSrcPos, typesCreated);  //Leemos como constante
-
-
+    consIni := GetConstValue(GetSrcPos, typesCreated);  //Leemos como constante
     if HayError then exit;
     //Ya se tiene el valor constante para inicializar variable.
     if aditVar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
@@ -331,10 +309,10 @@ begin
     exit;
   end;
   {Ya se validó la pertinencia de la inicialización y ya se tiene el operando de
-  inicialización en "constDec". Ahora toca validar la compatibilidad de los tipos.}
+  inicialización en "consIni". Ahora toca validar la compatibilidad de los tipos.}
   //Por ahora solo se permite inicializar arreglos.
   if aditVar.hasInit then begin
-    consTyp := constDec.Typ;
+    consTyp := consIni.Typ;
     if (xType.catType = tctArray) then begin
       //First validation
       if consTyp <> xType then begin
@@ -380,7 +358,7 @@ begin
       end;
     end;
     //Assign constant init value.
-    aditVar.constDec := constDec;
+    aditVar.constDec := consIni;
   end;
 end;
 procedure TAnalyzer.ReadProcHeader(out procName: String; out retType: TEleTypeDec;
@@ -572,13 +550,7 @@ If some problems happens, Error is generated and the NIL value is returned.
   begin
     if dynam then begin  //Special case
       //Creates constant element "length" to returns array size
-      consDec := AddConsDecAndOpen('length', typNull, GetSrcPos);  //No type defined here.
-      if HayError then exit;  //Can be duplicated
-      sizExp := AddExpressionConstByte('0', 0, GetSrcPos);
-      consDec.typ := sizExp.Typ;
-      consDec.value := sizExp.value;
-      consDec.evaluated := true;
-      TreeElems.CloseElement;  //Close element "length"
+      consDec := AddLengthFieldArray(typNull, 0);
       arrTyp.isDynam := true;
       arrTyp.consNitm := consDec;  //Update reference to the size.
       exit;
@@ -589,17 +561,11 @@ If some problems happens, Error is generated and the NIL value is returned.
       //Short declaration without size specified: []byte ;
       Next;
       //Creates constant element "length" to returns array size
-      consDec := AddConsDecAndOpen('length', typNull, GetSrcPos);  //No type defined here.
-      if HayError then exit;  //Can be duplicated
-      sizExp := AddExpressionConstByte('0', 0, GetSrcPos);
-      consDec.typ := sizExp.Typ;
-      consDec.value := sizExp.value;
-      consDec.evaluated := true;
-      TreeElems.CloseElement;  //Close element "length"
+      consDec := AddLengthFieldArray(typNull, 0);
       arrTyp.isDynam := true;
       arrTyp.consNitm := consDec;  //Update reference to the size.
     end else begin
-      {Note this section of code is similar to TAnalyzer.AnalyzeConstDeclar().}
+      {Note this section of code is similar to TAnalyzer.GetConstValue().}
       //Creates constant element "length" to returns array size
       consDec := AddConsDecAndOpen('length', typNull, GetSrcPos);  //No type defined here.
       if HayError then exit;  //Can be duplicated
@@ -945,7 +911,9 @@ procedure TAnalyzer.AnalyzeConstDeclar;
 var
   consNames: array of string;  //nombre de variables
   srcPosArray: TSrcPosArray;
-  n: integer;
+  typesCreated: integer;
+  consDec: TEleConsDec;
+  consIni: TEleExpress;
 begin
   SetLength(consNames, 0);
   //Procesa lista de constantes a,b,cons ;
@@ -954,15 +922,30 @@ begin
     GenError(ER_IDE_CON_EXP);
     exit;
   end;
-  if length(consNames)>1 then begin
+  if length(consNames)>1 then begin  //Pascal behaviour
     GenError('Only one constant can be initialized.');
     exit;
   end;
   //puede seguir "=" o identificador de tipo
   if token = '=' then begin
     Next;  //Pass to the next.
-    //Create constant
-    AddConstDeclar(consNames[0], srcPosArray[0], n);
+
+    //Create constant declaration
+    consDec := AddConsDecAndOpen(consNames[0], typNull, srcPosArray[0]);  //Open constant dec
+    if HayError then exit;  //Can be duplicated
+
+    consIni := GetConstValue(srcPosArray[0], typesCreated);
+    if HayError then exit;
+
+    consDec.typ := consIni.Typ;   //Update constant type.
+    if consIni.opType = otConst then begin
+      //A simple value. We can initialize the constant.
+      consDec.value := consIni.value;
+      consDec.evaluated := consIni.evaluated;
+    end;
+    //Other types (no otConst) will be evaluated later.
+    TreeElems.CloseElement;  //Close constant.
+
   end else begin
     GenError(ER_EQU_COM_EXP);
     exit;

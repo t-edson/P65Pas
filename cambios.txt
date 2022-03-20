@@ -19,6 +19,20 @@ método de la clase
 unidad CompBase.
 - Se cambian los íconos para las declaraciones de constantes y variables, para 
 diferenciarlos de las expresiones.
+- Se modifica TAnalyzer.AnalyzeVarDeclar() para evitar tener que quitar referencias
+"callers" y evitar hacer llamadas desde contenedores falsos a FindFirst().
+- Se modifica TAnalyzer.AddConstDeclar() para que devuelva un TEleExpress en lugar 
+de una declaración de constante.
+- Se cambia el tipo del campo TAdicVarDec.constDec (de TEleConsDec a TEleExpres)  porque 
+las constantes de inicialización, pasarán a ser nodos hijos de las declaraciones de 
+variables y ya no se usarán declaraciones de variables.
+- Se modifica TCompilerBase.AddLengthFieldArray() para hacerlo más general y poder usarse
+en TAnalyzer.GetTypeDeclar().
+- Se crea TCompilerBase.CreateArrayTypeDec() para reutilizar código y permitir agregar
+los tipos creados en la posición correcta.
+- Se modifican TXpTreeElements.AddElementAndOpen() y TXpTreeElements.AddElementTypeAndOpen() 
+para que permita especificar la ubicación del ítem a agregar.
+- Se cambia de nombre a TAnalyzer.AddConstDeclar() por TAnalyzer.GetConstValue().
 
 TAREAS PLANIFICADAS 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
@@ -40,10 +54,9 @@ información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde
 esta información.
 - Crear estructura para almacenar información de los diferentes archivos que componen el 
 proyecto para gestionar el uso de unidades.
-- Unificar las rutinas que crean el campo length() en TAnalyzer.GetTypeDeclar(), con la 
-rutina que crea 'length' en TCompilerBase.GetOperand() para el caso de arreglos.
 
 PENDIENTES
+- Definir si es necesario "TxpEleLocation" y verificar que se implementa bien.
 - Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
 -Generar bloques IF (o de otro tipo), de más de 128 bytes.
 -Revisar y adaptar los programas de prueba para el compilador.

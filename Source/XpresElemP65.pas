@@ -122,7 +122,11 @@ type
     absOff   : integer;       //Offset to variable when ABSOLUTE.
     //Initialization information.
     hasInit  : boolean;       //Flag. Indicates if variable is initialized
-    constDec : TEleConsDec;   //Reference to the const declaration for init value.
+    constDec : TEleExpress;   //Reference to the const declaration for init value.
+    {El campo "constDec" debería ser innecesario. Inclusive "hasInit" lo sería. Porque
+    la constante de incialización es ahora un nodo hijo de la declración de la variable,
+    pero se mantienen como una ayuda, más aún consdierando que GetExpression() puede
+    crear también tipos dentro de las declaracioens de variables.}
   end;
 type  //Type categories and declaration styles
   //Type categories

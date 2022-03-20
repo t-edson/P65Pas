@@ -45,6 +45,9 @@ TLastASMcode = (
 Esta clase debe ser el ancestro común de todos los compialdores a usar en PicPas.
 Contiene métodos abstractos que deben ser impleemntados en las clases descendeintes.}
 TCompilerBase = class(TContexts)
+private
+  function CreateArrayTypeDec(typName: string; nELem: integer;
+    itType: TEleTypeDec; const srcPos: TSrcPos): TEleTypeDec;
 protected  //Parser routines
   ExprLevel  : Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
   function EOExpres: boolean;
@@ -67,6 +70,7 @@ protected  //Flags for boolean type.
   AcumStatInZ : boolean;  {Indicates the Z flag contains the status of the value in A
                           register. For example if regA = 0, Z wil be 1.}
 protected  //Elements creation
+  nTypesCreated: integer;
   function NameExistsIn(eName: string; list: TxpElements): boolean;
   function CreateEleVarDec(varName: string; eleTyp: TEleTypeDec): TEleVarDec;
   function CreateEleType(const typName: string; const srcPos: TSrcPos;
@@ -134,9 +138,9 @@ protected //Expressions
     OpType2: TEleTypeDec): TEleFunBase;
   function MethodFromUnaOperator(const OpType: TEleTypeDec; Op: string
     ): TEleFunBase;
-  function AddLengthFieldArray(nElem: integer): TEleConsDec;
+  function AddLengthFieldArray(typ: TEleTypeDec; nElem: integer): TEleConsDec;
   function GetConstantArray(arrDelimt: char): TEleExpress;
-  function GetOperand(): TEleExpress;
+  function GetOperand: TEleExpress;
   function GetExpression(const prec: Integer): TEleExpress;
   function AddExpressionConstByte(name: string; bytValue: byte; srcPos: TSrcPos
     ): TEleExpress;
@@ -650,6 +654,46 @@ begin
   end;
   Result := TreeElems.AddElementTypeAndOpen(srcPos, typName, typeSize, catType, group);
 end;
+function TCompilerBase.CreateArrayTypeDec(typName: string; nELem: integer;
+                                          itType: TEleTypeDec;
+                                          const srcPos: TSrcPos): TEleTypeDec;
+{Creates a type declaration for an array.
+"typName"  must be unique in the scope. Verification isn't done here.
+The location where the type is created depende of the current code container.
+}
+var
+  xtyp: TEleTypeDec;
+  consDec: TEleConsDec;
+  tmp, progFrame: TxpElement;
+  ipos: Integer;
+begin
+  //if TreeElems.curCodCont.idClass =  eleBody then begin
+    tmp := TreeElems.curNode;  //Save current location
+    //Change to the parent of the current code container. This will work always.
+    progFrame := TreeElems.curCodCont.Parent;  //Should be TEleProgFrame (Function, unit or main program)
+    TreeElems.OpenElement(progFrame);
+    ipos := progFrame.elements.Count-1;  //Before of the current COde container
+  //else
+  //  ipos := -1;
+  //end;
+  //----------- Create Type -----------
+  xtyp := TreeElems.AddElementTypeAndOpen(srcPos, typName, -1, tctArray, t_object, ipos);
+  //Crea campo "length".
+  consDec := AddLengthFieldArray(typByte, nElem);
+  //Termina definición
+  xtyp.consNitm := consDec;  //Update reference to the number of items.
+  xtyp.itmType := itType;  //Actualiza tipo
+  callDefineArray(xtyp);   //Define operations to array
+  TreeElems.CloseElement;  //Close type.
+  //Add location {******** ¿Es correcto hacer esto desde aquí? }
+  xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
+  // --------- End create type ----------
+  //if typeLocation <> nil then begin
+    TreeElems.curNode := tmp;  //Restore location
+  //end;
+  inc(nTypesCreated);   //Updates counter for types created
+  exit(xtyp);
+end;
 procedure TCompilerBase.CreateFunctionParams(var funPars: TxpParFuncArray);
 {Crea los parámetros de una función como variables globales, a partir de un arreglo
 TxpParFunc. }
@@ -1153,17 +1197,15 @@ begin
   exit(false);
 end;
 //Array utilities
-function TCompilerBase.AddLengthFieldArray(nElem: integer): TEleConsDec;
+function TCompilerBase.AddLengthFieldArray(typ: TEleTypeDec; nElem: integer): TEleConsDec;
 {Add a constant declaration named "length" containing a constant element "n" set to
 the value "nElem".
 The constant declaration is added to the current node in the AST.}
-{***  Notar que este código es similar a los usados en TCompMain.GetTypeDeclar().
-Deberían unificarse.}
 var
   consDec: TEleConsDec;
   sizExp: TEleExpress;
 begin
-  consDec := AddConsDecAndOpen('length', typByte, GetSrcPos);
+  consDec := AddConsDecAndOpen('length', typ, GetSrcPos);
   if HayError then exit;  //Can be duplicated?
   sizExp := AddExpressionConstByte('n', nElem, GetSrcPos);
   consDec.typ := sizExp.Typ;
@@ -1174,7 +1216,10 @@ begin
 end;
 function TCompilerBase.GetConstantArray(arrDelimt: char): TEleExpress;
 {Get an array literal, like [1,2,3] or ('a','b').
-"arrDelimt" is the End delimiter of the array.}
+Paraemters
+* "arrDelimt"     -> Is the ending delimiter of the array. The frrst delimiter is not
+                     checked here.
+}
 var
   srcpos: TSrcPos;
   ReadType, endWithComma: Boolean;
@@ -1182,7 +1227,6 @@ var
   itType, xtyp: TEleTypeDec;
   nElem: Integer;
   typName: String;
-  consDec: TEleConsDec;
 begin
   srcpos := GetSrcPos;
   Next;  //Get '['
@@ -1234,24 +1278,7 @@ begin
     if not TreeElems.ExistsArrayType(itType, nElem, xtyp) then begin
       //The type doesn't exist. We need to create.
       typName := GenArrayTypeName(itType.name, nElem); //Op.nItems won't work
-      xtyp := AddTypeDecAndOpen(typName, -1, tctArray, t_object, srcPos);
-      //Crea campo "length".
-      consDec := AddLengthFieldArray(nElem);
-      //Termina definición
-      xtyp.consNitm := consDec;  //Update reference to the number of items.
-      xtyp.itmType := itType;  //Actualiza tipo
-      callDefineArray(xtyp);   //Define operations to array
-      TreeElems.CloseElement;  //Close type.
-      //Add to the syntax tree
-      xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
-{ TODO : Mover el tipo creado al lugar apropiado. }
-//        if TreeElems.curNode.idClass = eleBody then begin
-//          //When the array is declared in some code-section.
-//          TreeElems.AddElementtoParent(xtyp, true);  //Add at the beginning
-//        end else begin
-//          //In declaration section.
-//          TreeElems.AddElement(xtyp);
-//        end;
+      xtyp := CreateArrayTypeDec(typName, nElem, itType, srcpos);
     end;
     //Finally we set the operand type.
     Op.Typ := xtyp;
@@ -1329,6 +1356,7 @@ can be modified or not, depending on the point where the error is raised.
 
 The operand read is added to the syntax tree, as a TxpEleExpress element, and returned
 in this function.
+
 }
   function ResolveFunction(const pars: TxpParFuncArray;   //Parameters
            xfun: TEleFunBase;   //First function found in the Syntax Tree.
@@ -1482,24 +1510,8 @@ begin
       if not TreeElems.ExistsArrayType(typChar, nElem, xtyp) then begin
         //There is not a similar type. We create a new type.
         typName := GenArrayTypeName('char', nElem); //Op.nItems won't work
-        xtyp := AddTypeDecAndOpen(typName, -1, tctArray, t_object, srcPos);
-        //Crea campo "length".
-        consDec := AddLengthFieldArray(nElem);
-        //Termina definición
-        xtyp.consNitm := consDec;  //Update reference to the number of items.
-        xtyp.itmType := typChar; //Actualiza tipo
-        callDefineArray(xtyp);   //Define operations to array
-        TreeElems.CloseElement;  //Close type.
-        //Add to the syntax tree
-        xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
-        //if TreeElems.curNode.idClass = eleBody then begin
-        //  //This should be the normal position where we espect to have a lieral string
-        //  //We prefer to declare the type in the parent (procedure or main)
-        //  TreeElems.AddElementToParent(xtyp, true);  //Add at the beginning
-        //end else begin
-        //  //This shouldn't appear here.
-        //  TreeElems.AddElement(xtyp);
-        //end;
+        xtyp := CreateArrayTypeDec(typName, nElem, typChar, srcpos);
+
       end;
       Op1 := AddExpressAndOpen('str', xtyp, otConst, srcPos);
       AddCallerToFromCurr(xtyp);
