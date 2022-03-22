@@ -33,8 +33,19 @@ los tipos creados en la posición correcta.
 - Se modifican TXpTreeElements.AddElementAndOpen() y TXpTreeElements.AddElementTypeAndOpen() 
 para que permita especificar la ubicación del ítem a agregar.
 - Se cambia de nombre a TAnalyzer.AddConstDeclar() por TAnalyzer.GetConstValue().
+- Se incluye la evalaución del valor de inicialización de las declaraciones de variables, 
+que ahora se incluye como nodo hijo.
+- Se actualiza la documentación con información sobre las declaraciones de constantes.
+- Se habilita la detección de tipos en la declaración de constantes.
+- Se habilita la incialización de variables y constantes con arreglos en el formato
+(<item>,<item>,...)
 
 TAREAS PLANIFICADAS 
+- Implementra la sintaxis de arreglos: VAR str: TAByte = (1,2,3); Se sugiere implementar 
+en TCompilerBase.GetOperand() el reconocimiento de arreglos de la forma: ('a', 'b') y así 
+se facilitará la creación de literales constantes.  numb: TAByte = (1, 2); 
+Se puede empezar creando la función array(1,2,3).
+
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
 - Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
 - Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
@@ -43,10 +54,6 @@ globales, locales) y los registros de trabajo.
 
 - Implementar la obligatoriedad de localizar el registro IX en la página cero.
 - Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
-- Implementra la sintaxis de arreglos: VAR str: TAByte = (1,2,3); Se sugiere implementar 
-en TCompilerBase.GetOperand() el reconcimiento de arreglos de la forma: ('a', 'b') y así 
-se facilitará la creación de literales constantes.  numb: TAByte = (1, 2); 
-Se puede empezar creando la función array(1,2,3).
 - Crear una referencia en todos los elementos a su arbol de sintaxis correspondiente y 
 crear también una referencia del arbol de sintaxis a su compilador. La idea es que el 
 elemento pueda interpretar el campo idCtx de los registros TSrcPos, para poder obtener 

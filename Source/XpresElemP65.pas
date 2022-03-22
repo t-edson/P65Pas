@@ -472,12 +472,12 @@ type  //Expression elements
     {When element is "otFunct", this flag indicates the function/method has been
     called using an operator instead of call the function by its name.}
     fcallOp: boolean;
-  public  //Fields used when opType is otConst.
+  public  //Fields used when "Sto" is stConst
     evaluated: boolean;  //Activated when constant is evaluated.
-    //Fields used when constant is solved but not evaluated.
-    cons   : TEleConsDec;
     //Fields used when constant is evaluated, or it's a literal constant.
     value  : TConsValue;  //Constant value, when storage opType is otConst.
+    //Fields used when constant is solved but not evaluated.
+    cons   : TEleConsDec;
     function val: dword;
     function valL: word;
     function valH: word;

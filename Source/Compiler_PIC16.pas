@@ -130,6 +130,7 @@ functions. Constants could be expressions:
 }
 var
   cons: TEleConsDec;
+  vard: TEleVarDec;
   consExpres: TEleExpress;
 begin
   //Calculate values in CONST sections
@@ -137,28 +138,52 @@ begin
     {For optimization we should evaluate only used Constant, but we evaluate alls
     because constants like the field "length" of arrays, needs to be evaluated in order
     to get the size defined, before assign RAM. }
-    //if cons.nCalled > 0 then begin  //Used constant.
-       TreeElems.OpenElement(cons);  //To resolve properly identifiers
-       if not cons.evaluated then begin
-         //If it isn't evaluated, must be an expression.
-         consExpres := TEleExpress(cons.elements[0]);  //Takes the expression node.
-         //Should be an expression. Need to be calculated.
-         ConstantFoldExpr(consExpres);
-         if HayError then exit;
-         if consExpres.opType<>otConst then begin
-           //The expression returned a not-constant value.
-           GenError('Expected constant expression.', consExpres.srcDec);
-           exit;
-         end;
-         if not consExpres.evaluated then begin
-           GenError('Constant not evaluated.', consExpres.srcDec);
-           exit;
-         end;
-         //Copy the value.
-         cons.value := consExpres.value;
-         cons.evaluated := true;
+    //if vard.nCalled = 0 then continue; //Skip unused variable.
+     TreeElems.OpenElement(cons);  //To resolve properly identifiers
+     if not cons.evaluated then begin
+       //If it isn't evaluated, must be an expression.
+       consExpres := TEleExpress(cons.elements[0]);  //Takes the expression node.
+       //Should be an expression. Need to be calculated.
+       ConstantFoldExpr(consExpres);
+       if HayError then exit;
+       if consExpres.opType<>otConst then begin
+         //The expression returned a not-constant value.
+         GenError('Expected constant expression.', consExpres.srcDec);
+         exit;
        end;
-    //end;
+       if not consExpres.evaluated then begin
+         GenError('Constant not evaluated.', consExpres.srcDec);
+         exit;
+       end;
+       //Copy the value.
+       cons.value := consExpres.value;
+       cons.evaluated := true;
+     end;
+  end;
+  //Calculate values in VAR sections
+  for vard in TreeElems.AllVars do begin
+    if vard.nCalled = 0 then continue; //Skip unused variable.
+    if vard.elements.Count = 0 then continue;  //Skip vars with no initialization.
+    TreeElems.OpenElement(vard);  //To resolve properly identifiers
+    consExpres := TEleExpress(vard.elements[0]);  //Takes the expression node.
+    if not consExpres.evaluated then begin
+      //If it isn't evaluated, must be an expression.
+      //Should be an expression. Need to be calculated.
+      ConstantFoldExpr(consExpres);
+      if HayError then exit;
+      if consExpres.opType<>otConst then begin
+        //The expression returned a not-constant value.
+        GenError('Expected constant expression.', consExpres.srcDec);
+        exit;
+      end;
+      if not consExpres.evaluated then begin
+        GenError('Constant not evaluated.', consExpres.srcDec);
+        exit;
+      end;
+      //Copy the value.
+      consExpres.value := consExpres.value;
+      consExpres.evaluated := true;
+    end;
   end;
 end;
 procedure TCompiler_PIC16.ConstantFolding;

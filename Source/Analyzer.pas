@@ -17,7 +17,7 @@ type
     function PICName: string; virtual; abstract;
     function RAMmax: integer; virtual; abstract;
   private
-    function GetConstValue(srcPos: TSrcPos; out typesCreated: integer
+    function GetConstValue(typExpec: TEleTypeDec; out typesCreated: integer
       ): TEleExpress;
     procedure AnalyzeEXIT(exitSent: TEleSentence);
     procedure AnalyzeFOR;
@@ -116,35 +116,49 @@ begin
 end;
 
 //Elements processing
-function TAnalyzer.GetConstValue(srcPos:TSrcPos;
-                                 out typesCreated: integer): TEleExpress;
+function TAnalyzer.GetConstValue(typExpec: TEleTypeDec; out typesCreated: integer): TEleExpress;
 {Add a constant expression, to the current node of the AST. Aditional types could be
 added first. Returns the declaration created.
-"typesCreated" returns the number of types created at the first level.}
+"typExpec" is the expected type of the constant. If it's NIL it's ignored.
+"typesCreated" returns the number of types created at the first level.
+}
 var
   init: TEleExpress;
   ntyp: Integer;
 begin
 
   //Debe seguir una expresión constante, que no genere código
-  //init := GetExpression(0);
+  typesCreated := 0;  //Default value
   ntyp := nTypesCreated;   //Set for count
-  init := GetOperand();
-  typesCreated := nTypesCreated-ntyp;  //Calculate types created.
-  TreeElems.OpenElement(init.Parent);  //Returns to previous node
-
-  if init.opType = otConst then begin
-    //A simple value. We can initialize the constant.
-  end else begin
-    {Puede que siga una expresión "otFunct" como la llamada a una función que
-    devolverá a una constante, como en el caso:
-    CONST := word(1);
-    Pero como no podemos definir el resultado de esa expresión en este nivel, lo
-    dejamos pasar.
-    }
-    //GenError(ER_CON_EXP_EXP);
-    //exit;
+  if typExpec=nil then begin
+    init := GetExpression(0);
+    if HayError then exit(nil);
+  end else begin  //With type verification
+    if typExpec.catType = tctArray then begin
+      //Literal array. We read in the format (<item>,<item>,... )
+      ProcComments;
+      if token <> '(' then begin
+        GenError('Expected "("');
+        exit(nil);
+      end;
+      init := GetConstantArray(')');
+      TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
+      if HayError then exit(nil);
+    end else begin
+      init := GetExpression(0);
+      if HayError then exit(nil);
+    end;
+    if typExpec<>init.Typ then begin
+      GenError('Expected a constant of type %s, got %s', [typExpec.name, init.Typ.name]);
+    end;
   end;
+  {We don't verify "init.Sto = stConst" here because some constant declarations
+  can be expressions "ofFunt" with storage "stNone" like :
+        = CONST1 + CONST2;
+        = word(1);
+        = @(variable1);
+  Validation for constant will be done in Optimization level.}
+  typesCreated := nTypesCreated-ntyp;  //Calculate types created.
   exit(init);
 end;
 procedure TAnalyzer.GetAdicVarDeclar(xType: TEleTypeDec; out aditVar: TAdicVarDec;
@@ -291,7 +305,7 @@ begin
     Next;   //lo toma
     ProcComments;
     //Aquí debe seguir el valor inicial constante.
-    consIni := GetConstValue(GetSrcPos, typesCreated);  //Leemos como constante
+    consIni := GetConstValue(xType, typesCreated);  //Leemos como constante
     if HayError then exit;
     //Ya se tiene el valor constante para inicializar variable.
     if aditVar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
@@ -801,7 +815,7 @@ begin
     ele := TreeElems.FindFirstType(typName);
     if ele = nil then begin
       //No identifica a este elemento
-      GenError('Unknown idantifier: %s', [typName]);
+      GenError('Unknown identifier: %s', [typName]);
       exit(nil);
     end;
     if ele.idClass = eleTypeDec then begin
@@ -914,6 +928,9 @@ var
   typesCreated: integer;
   consDec: TEleConsDec;
   consIni: TEleExpress;
+  consTyp: TEleTypeDec;
+  decStyle: TTypDeclarStyle;
+  consTypCreated: boolean;
 begin
   SetLength(consNames, 0);
   //Procesa lista de constantes a,b,cons ;
@@ -926,7 +943,16 @@ begin
     GenError('Only one constant can be initialized.');
     exit;
   end;
-  //puede seguir "=" o identificador de tipo
+  //Puede seguir "=" o identificador de tipo
+  consTyp := nil;
+  if token = ':' then begin  //Check if type exists
+    //Debe seguir, el tipo de la constante
+    Next;  //lo toma
+    ProcComments;
+    consTyp := GetTypeDeclar(decStyle, consTypCreated);
+    if HayError then exit;
+    ProcComments;
+  end;
   if token = '=' then begin
     Next;  //Pass to the next.
 
@@ -934,17 +960,16 @@ begin
     consDec := AddConsDecAndOpen(consNames[0], typNull, srcPosArray[0]);  //Open constant dec
     if HayError then exit;  //Can be duplicated
 
-    consIni := GetConstValue(srcPosArray[0], typesCreated);
+    consIni := GetConstValue(consTyp, typesCreated);
     if HayError then exit;
-
     consDec.typ := consIni.Typ;   //Update constant type.
-    if consIni.opType = otConst then begin
+    if consIni.Sto = stConst then begin
       //A simple value. We can initialize the constant.
       consDec.value := consIni.value;
       consDec.evaluated := consIni.evaluated;
     end;
     //Other types (no otConst) will be evaluated later.
-    TreeElems.CloseElement;  //Close constant.
+    TreeElems.CloseElement;  //Close constant declaration.
 
   end else begin
     GenError(ER_EQU_COM_EXP);
@@ -952,7 +977,7 @@ begin
   end;
   if not CaptureDelExpres then exit;
   ProcComments;
-  //puede salir con error
+  //Puede salir con error
 end;
 procedure TAnalyzer.AnalyzeVarDeclar;
 {Compila la declaración de variables en el nodo actual.
@@ -1013,7 +1038,8 @@ procedure TAnalyzer.AnalyzeVarDeclar;
       end
     end;
   end;
-  procedure UpdateTypeAndAdVarDec(var varTyp: TEleTypeDec; out adicVarDec: TAdicVarDec);
+  procedure UpdateTypeAndAdVarDec(var varTyp: TEleTypeDec; out adicVarDec: TAdicVarDec;
+                                  nVars: integer);
   {Updates the parameters:
     - "varTyp" with the type of the variable dclaration: VAR a,b,c: <<TYPE>>
     - "adicVarDec" with the aditional parameters of the variable declaration, like
@@ -1041,6 +1067,22 @@ procedure TAnalyzer.AnalyzeVarDeclar;
         //if varTypCreated then varTyp.Destroy;
         exit;
       end;
+      if nVars>1 then begin
+        {Like Free Pascal, we don't allow REGISTER, ABSOLUTE or initialization, for more
+        than one variable.}
+        if adicVarDec.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
+          GenError('Cannot define REGISTER for more than one variable');
+          exit;
+        end;
+        if adicVarDec.hasAdic = decAbsol then begin
+          GenError('Cannot define ABSOLUTE for more than one variable');
+          exit;
+        end;
+        if adicVarDec.hasInit then begin
+          GenError('Cannot initialize more than one variable');
+          exit;
+        end;
+      end;
       //Verifica si hay asignación de valor inicial.
       ProcComments;
       {Aquí, finalmente, se tiene el tipo completo en su estructura porque, si había un
@@ -1048,17 +1090,7 @@ procedure TAnalyzer.AnalyzeVarDeclar;
       inicialización.}
       ValidateTypesCreated(varTyp, varTypCreated, adicVarDec, typesCreated);
     end else begin
-      {Aditional parameters already read. Parameters "varTyp" and "adicVarDec" are
-      updated. We only need to add the callers.}
-      if adicVarDec.absVar<>nil then begin
-        //Add caller to variable when it's used in ABSOLUTE.
-        //We need to do it here, because we're not to use GetAdicVarDeclar() again.
-        AddCallerToFromCurr(adicVarDec.absVar);
-      end;
-      //Agrega llamada a constante cuando se use al inicializar
-      if adicVarDec.hasInit then begin
-        AddCallerToFromCurr(adicVarDec.constDec);
-      end;
+      //Parameters "varTyp" and "adicVarDec" are already updated.
     end;
     {Add caller to the type declaration. IT's done always because GetTypeDeclar() doesn't
     do.}
@@ -1090,7 +1122,7 @@ begin
       xvar := AddVarDecAndOpen(varNames[i], typNull, srcPosArray[i]);  //We don`t have the type here
       if HayError then break;        //Sale para ver otros errores
       //Updates "varTyp" and "adicVarDec" and add callers.
-      UpdateTypeAndAdVarDec(varTyp, adicVarDec);
+      UpdateTypeAndAdVarDec(varTyp, adicVarDec, high(varNames) + 1);
       if HayError then begin
         TreeElems.CloseElement;  //Close variable
         exit;
