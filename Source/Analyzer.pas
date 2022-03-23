@@ -137,13 +137,22 @@ begin
     if typExpec.catType = tctArray then begin
       //Literal array. We read in the format (<item>,<item>,... )
       ProcComments;
-      if token <> '(' then begin
+      if token = '(' then begin   //Common Pascal syntax ( ... )
+        init := GetConstantArray(')');
+        TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
+        if HayError then exit(nil);
+      end else if token = '[' then begin  //Alternate syntax [ ... ]
+        init := GetConstantArray(']');
+        TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
+        if HayError then exit(nil);
+      end else if tokType = tkString then begin  //Alternate syntax "abc" onlcy for char.
+        init := GetConstantArrayStr();
+        TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
+        if HayError then exit(nil);
+      end else begin
         GenError('Expected "("');
         exit(nil);
       end;
-      init := GetConstantArray(')');
-      TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
-      if HayError then exit(nil);
     end else begin
       init := GetExpression(0);
       if HayError then exit(nil);
@@ -791,7 +800,6 @@ begin
     TypeCreated := true;
     ArrayDeclaration(srcpos, itemTyp);
     if HayError then exit(nil);     //Sale para ver otros errores
-
     typ.itmType := itemTyp; //Item type
     callDefineArray(typ);   //Define operations to array
     TreeElems.CloseElement;  //Close type
@@ -949,7 +957,7 @@ begin
     //Debe seguir, el tipo de la constante
     Next;  //lo toma
     ProcComments;
-    consTyp := GetTypeDeclar(decStyle, consTypCreated);
+    consTyp := GetTypeDeclar(decStyle, consTypCreated);  //Can create a Type element at this level.
     if HayError then exit;
     ProcComments;
   end;

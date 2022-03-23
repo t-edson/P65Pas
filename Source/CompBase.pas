@@ -140,6 +140,7 @@ protected //Expressions
     ): TEleFunBase;
   function AddLengthFieldArray(typ: TEleTypeDec; nElem: integer): TEleConsDec;
   function GetConstantArray(arrDelimt: char): TEleExpress;
+  function GetConstantArrayStr(): TEleExpress;
   function GetOperand: TEleExpress;
   function GetExpression(const prec: Integer): TEleExpress;
   function AddExpressionConstByte(name: string; bytValue: byte; srcPos: TSrcPos
@@ -1233,13 +1234,16 @@ begin
   ProcComments;
   //Start reading the items
   ReadType := true;  //Set flag to read the item type
-  Op := AddExpressAndOpen(token, typNull, otConst, GetSrcPos);
+  Op := AddExpressAndOpen(token, typNull, otConst, srcPos);
   Op.evaluated := true;  //We have the value directly.
   Op.value.InitItems;
   while not atEof and (token <> arrDelimt) do begin
     //Must be an item
     Op1 := GetExpression(0);  //read item
-    if HayError then exit;
+    if HayError then begin
+      Op.value.CloseItems;  //Resize
+      exit(Op);
+    end;
     if Op1.Sto <> stConst then begin
       GenError('Expected constant item');
       exit;
@@ -1252,7 +1256,10 @@ begin
     //Asure all items have the same type
     if Op1.Typ <> itType then begin
       GenError('Expected item of type: %s', [itType.name]);
-      exit;
+      Op.value.CloseItems;  //Resize
+      exit(Op);
+      //endWithComma := false;
+      //break;  //To finish cleaning the house.
     end;
     //Add the item to the operand
     Op.value.AddConsItem(Op1.Value);
@@ -1266,7 +1273,7 @@ begin
   end;
   if endWithComma then begin
     GenError('Expected item.');
-    exit;
+    exit(Op);
   end;
   if token = arrDelimt then begin
     //Raise the end of array. Now we can create new type.
@@ -1284,11 +1291,58 @@ begin
     Op.Typ := xtyp;
   end else if atEof then begin
     GenError('Unexpected end of file');
-    exit;
-  end else begin  //Only happen when break loop
-    exit;
+    exit(Op);
+  end else begin  //Only happen when break loop (Error)
+    Op.value.CloseItems;  //Resize
+    Op.Typ := xtyp;
   end;
   exit(Op);
+end;
+function TCompilerBase.GetConstantArrayStr(): TEleExpress;
+var
+  Op1: TEleExpress;
+  srcpos: TSrcPos;
+  nElem: SizeInt;
+  str, typName: String;
+  ascCode: Longint;
+  xtyp: TEleTypeDec;
+begin
+  srcpos := GetSrcPos;
+  nElem := length(token) - 2;  //Don't consider quotes
+  str := copy(token, 2, nElem);
+  Next;    //Pasa al siguiente
+  while tokType = tkChar do begin  //like #255
+    //Concat the next char to simulate concat, considering there is not a
+    //string type.
+    if TryStrToInt(Copy(token,2,3), ascCode) then begin
+      str += chr(ascCode and $FF);
+      Next;    //Pasa al siguiente
+      inc(nElem);
+    end else begin
+      GenError(ER_IN_CHARACTER);   //Casi seguro que es el caracter "#" solo.
+      exit;
+    end;
+  end;
+  {$IFDEF LogExpres} Op.txt:= cIn.tok; {$ENDIF}   //toma el texto
+  if length(str) = 1 then begin
+    //De un caracter. Se asume de tipo Char
+    Op1 := AddExpressAndOpen(token, typChar, otConst, srcPos);
+    Op1.value.ValInt := ord(STR[1]);
+    Op1.evaluated := true;
+  end else begin
+    //Will be considered as array of char
+    if not TreeElems.ExistsArrayType(typChar, nElem, xtyp) then begin
+      //There is not a similar type. We create a new type.
+      typName := GenArrayTypeName('char', nElem); //Op.nItems won't work
+      xtyp := CreateArrayTypeDec(typName, nElem, typChar, srcpos);
+
+    end;
+    Op1 := AddExpressAndOpen('str', xtyp, otConst, srcPos);
+    AddCallerToFromCurr(xtyp);
+    Op1.StringToArrayOfChar(str);
+    Op1.evaluated := true;
+  end;
+  exit(Op1);
 end;
 //Expressions
 function TCompilerBase.MethodFromBinOperator(const OpType: TEleTypeDec; Op: string;
@@ -1383,18 +1437,18 @@ in this function.
   end;
 var
   xvar: TEleVarDec;
-  xcon, consDec: TEleConsDec;
+  xcon: TEleConsDec;
   eleMeth, Op1: TEleExpress;
-  level, nElem: Integer;
+  level: Integer;
   ele, att, field: TxpElement;
-  posCall, srcpos: TSrcPos;
+  posCall: TSrcPos;
   pars: TxpParFuncArray;
   xfun: TEleFunBase;
   findState: TxpFindState;
-  fieldName, upTok, str, typName: String;
+  fieldName, upTok: String;
   value: TConsValue;
-  typ, xtyp: TEleTypeDec;
-  cod, ascCode: Longint;
+  typ: TEleTypeDec;
+  cod: Longint;
 begin
   SkipWhites;
   upTok := UpCase(token);
@@ -1483,41 +1537,8 @@ begin
     Op1.evaluated := true;
     Next;
   end else if tokType = tkString then begin  //Constant String
-    srcpos := GetSrcPos;
-    nElem := length(token) - 2;  //Don't consider quotes
-    str := copy(token, 2, nElem);
-    Next;    //Pasa al siguiente
-    while tokType = tkChar do begin  //like #255
-      //Concat the next char to simulate concat, considering there is not a
-      //string type.
-      if TryStrToInt(Copy(token,2,3), ascCode) then begin
-        str += chr(ascCode and $FF);
-        Next;    //Pasa al siguiente
-        inc(nElem);
-      end else begin
-        GenError(ER_IN_CHARACTER);   //Casi seguro que es el caracter "#" solo.
-        exit;
-      end;
-    end;
-    {$IFDEF LogExpres} Op.txt:= cIn.tok; {$ENDIF}   //toma el texto
-    if length(str) = 1 then begin
-      //De un caracter. Se asume de tipo Char
-      Op1 := AddExpressAndOpen(token, typChar, otConst, srcPos);
-      Op1.value.ValInt := ord(STR[1]);
-      Op1.evaluated := true;
-    end else begin
-      //Will be considered as array of char
-      if not TreeElems.ExistsArrayType(typChar, nElem, xtyp) then begin
-        //There is not a similar type. We create a new type.
-        typName := GenArrayTypeName('char', nElem); //Op.nItems won't work
-        xtyp := CreateArrayTypeDec(typName, nElem, typChar, srcpos);
-
-      end;
-      Op1 := AddExpressAndOpen('str', xtyp, otConst, srcPos);
-      AddCallerToFromCurr(xtyp);
-      Op1.StringToArrayOfChar(str);
-      Op1.evaluated := true;
-    end;
+    Op1 := GetConstantArrayStr();
+    if HayError then exit;
   end else if token = '(' then begin  // (...)
     Next;
     Op1 := GetExpression(0);

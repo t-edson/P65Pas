@@ -14,7 +14,7 @@ información a guardarse en el archivo de configuración.
 - Se incluye la librería EpikTimer como parte de las librerías en la carpeta /Source.
 - Se cambia de nombre a AddVariableAndOpen(), AddConstantAndOpen() y a AddTypeAndOpen().
 - Se mueven OpenExpression(), AddLengthFieldArray() y GetConstantArray() a nivel de 
-método de la clase 
+método de la clase.
 - Se renombra OpenExpression() a AddExpressAndOpen() y se reordena el código de la 
 unidad CompBase.
 - Se cambian los íconos para las declaraciones de constantes y variables, para 
@@ -38,14 +38,15 @@ que ahora se incluye como nodo hijo.
 - Se actualiza la documentación con información sobre las declaraciones de constantes.
 - Se habilita la detección de tipos en la declaración de constantes.
 - Se habilita la incialización de variables y constantes con arreglos en el formato
-(<item>,<item>,...)
+(<item>,<item>,...).
+- Se corrige TCompilerBase.GetConstantArray() para que no genere error en tiempo de 
+ejecución en los casos de errores de sintaxis en los ítems.
+- Se habilita TAnalyzer.GetConstValue() para detectar los formatos de arreglos [ ... ] y
+los string como arreglo de cadenas.
 
-TAREAS PLANIFICADAS 
-- Implementra la sintaxis de arreglos: VAR str: TAByte = (1,2,3); Se sugiere implementar 
-en TCompilerBase.GetOperand() el reconocimiento de arreglos de la forma: ('a', 'b') y así 
-se facilitará la creación de literales constantes.  numb: TAByte = (1, 2); 
-Se puede empezar creando la función array(1,2,3).
-
+TAREAS PLANIFICADAS
+- Revisar la implementación de ValidateTypesCreated(). 
+- Revisar si es necesario crear elementos Expresió por cada ítem de las constantes Arreglo.
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
 - Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
 - Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
