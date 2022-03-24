@@ -43,6 +43,7 @@ que ahora se incluye como nodo hijo.
 ejecución en los casos de errores de sintaxis en los ítems.
 - Se habilita TAnalyzer.GetConstValue() para detectar los formatos de arreglos [ ... ] y
 los string como arreglo de cadenas.
+- Se convierte TCompilerBase.getListOfIdent() en función para simplificar su uso.
 
 TAREAS PLANIFICADAS
 - Revisar la implementación de ValidateTypesCreated(). 

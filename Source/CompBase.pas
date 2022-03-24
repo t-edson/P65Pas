@@ -189,8 +189,8 @@ public    //Callers methods
 protected //Miscellaneous
   elemCnt: integer;  //Counter to generate names.
   function GenerateUniqName(base: string): string;
-  procedure getListOfIdent(out itemList: TStringDynArray; out
-    srcPosArray: TSrcPosArray);
+  function getListOfIdent(out itemList: TStringDynArray; out
+    srcPosArray: TSrcPosArray): boolean;
   procedure LogExpLevel(txt: string);
   function IsTheSameVar(var1, var2: TEleVarDec): boolean; inline;
 public    //Initialization
@@ -1839,12 +1839,13 @@ begin
   exit(base + IntToStr(elemCnt));
   inc(elemCnt);
 end;
-procedure TCompilerBase.getListOfIdent(out itemList: TStringDynArray; out
-  srcPosArray: TSrcPosArray);
+function TCompilerBase.getListOfIdent(out itemList: TStringDynArray; out
+  srcPosArray: TSrcPosArray): boolean;
 {Lee una lista de identificadores separados por comas, hasta encontra un caracter distinto
 de coma. Si el primer elemento no es un identificador o si después de la coma no sigue un
 identificador, genera error.
-También devuelve una lista de las posiciones de los identificadores, en el código fuente.}
+También devuelve una lista de las posiciones de los identificadores, en el código fuente.
+Si hay error, devuelve FALSE.}
 const
   BLOCK_SIZE = 10;  //Tamaño de bloque de memoria inicial
 var
@@ -1861,7 +1862,9 @@ begin
     //ahora debe haber un identificador
     if tokType <> tkIdentifier then begin
       GenError(ER_IDEN_EXPECT);
-      exit;
+      setlength(itemList   , n);
+      setlength(srcPosArray, n);
+      exit(false);
     end;
     //hay un identificador
     item := token;
@@ -1882,6 +1885,7 @@ begin
   //Define el tamaño final.
   setlength(itemList   , n+1);
   setlength(srcPosArray, n+1);
+  exit(true);
 end;
 procedure TCompilerBase.LogExpLevel(txt: string);
 {Genera una cadena de registro , considerando el valor de "ExprLevel"}

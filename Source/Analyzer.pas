@@ -42,7 +42,8 @@ type
     function GetTypeDeclar(out decStyle: TTypDeclarStyle; out
       TypeCreated: boolean): TEleTypeDec;
     function GetTypeDeclarSimple(): TEleTypeDec;
-
+    function GetTypeDeclarColon(out decTyp: TEleTypeDec; out
+      decStyle: TTypDeclarStyle; out TypeCreated: boolean): boolean;
     function VerifyEND: boolean;
     function GetCondition(out ex: TEleExpress; ConstBool: boolean = false): boolean;
     function OpenContextFrom(filePath: string): boolean;
@@ -419,8 +420,7 @@ en el procesamiento de unidades.}
         //  Next;
         //  SkipWhites;
         //end;
-        getListOfIdent(itemList, srcPosArray);
-        if HayError then begin  //precisa el error
+        if not getListOfIdent(itemList, srcPosArray) then begin
           GenError(ER_IDEN_EXPECT);
           exit;
         end;
@@ -696,10 +696,8 @@ If some problems happens, Error is generated and the NIL value is returned.
         end else begin
           //Debe ser un campo
           //Esta parte es como la de la declaración de variables pero simplificada.
-          SetLength(varNames, 0);
           //Procesa variables a,b,c : int;
-          getListOfIdent(varNames, srcPosArray);
-          if HayError then begin  //precisa el error
+          if not getListOfIdent(varNames, srcPosArray) then begin  //precisa el error
             GenError(ER_EXP_VAR_IDE);
             exit;
           end;
@@ -866,6 +864,25 @@ begin
     Result := nil;
   end;
 end;
+function TAnalyzer.GetTypeDeclarColon(out decTyp: TEleTypeDec;
+                                 out decStyle: TTypDeclarStyle;
+                                 out TypeCreated: boolean): boolean;
+{Obtiene el tipo declarado después de dos puntos en "decTyp". Si no encuentra dos puntos,
+devuelve NIL en "decTyp". Si se produce algún error, devuelve FALSE.}
+begin
+  if token = ':' then begin  //Check if type exists
+    //Debe seguir, el tipo
+    Next;  //Takes ":"
+    ProcComments;
+    decTyp := GetTypeDeclar(decStyle, TypeCreated);  //Can create a Type element at this level.
+    if HayError then exit(false);
+    ProcComments;
+  end else begin
+    //No problem. Type is optional.
+    decTyp := nil;
+  end;
+  exit(true);
+end;
 procedure TAnalyzer.AnalyzeTypeDeclar(elemLocat: TxpEleLocation);
 {Compila la sección de declaración de un tipo, y genera un elemento TxpEleType, en el
 árbol de sintaxis:  TYPE sometype = <declaration>;
@@ -930,6 +947,18 @@ begin
   ProcComments;
 end;
 procedure TAnalyzer.AnalyzeConstDeclar;
+  procedure GetIntialization(consTyp: TEleTypeDec; out consIni: TEleExpress;
+                             out typesCreated: integer);
+  {Get the constant intiialization for the declaration.}
+  begin
+    if token = '=' then begin
+      Next;  //Pass to the next.
+      consIni := GetConstValue(consTyp, typesCreated);
+    end else begin
+      GenError(ER_EQU_COM_EXP);
+      exit;
+    end;
+  end;
 var
   consNames: array of string;  //nombre de variables
   srcPosArray: TSrcPosArray;
@@ -940,36 +969,22 @@ var
   decStyle: TTypDeclarStyle;
   consTypCreated: boolean;
 begin
-  SetLength(consNames, 0);
   //Procesa lista de constantes a,b,cons ;
-  getListOfIdent(consNames, srcPosArray);
-  if HayError then begin  //precisa el error
+  if not getListOfIdent(consNames, srcPosArray) then begin
     GenError(ER_IDE_CON_EXP);
     exit;
   end;
-  if length(consNames)>1 then begin  //Pascal behaviour
-    GenError('Only one constant can be initialized.');
-    exit;
-  end;
-  //Puede seguir "=" o identificador de tipo
-  consTyp := nil;
-  if token = ':' then begin  //Check if type exists
-    //Debe seguir, el tipo de la constante
-    Next;  //lo toma
-    ProcComments;
-    consTyp := GetTypeDeclar(decStyle, consTypCreated);  //Can create a Type element at this level.
-    if HayError then exit;
-    ProcComments;
-  end;
-  if token = '=' then begin
-    Next;  //Pass to the next.
-
+  if length(consNames)=1 then begin  //Pascal behaviour. Only one constant.
     //Create constant declaration
     consDec := AddConsDecAndOpen(consNames[0], typNull, srcPosArray[0]);  //Open constant dec
     if HayError then exit;  //Can be duplicated
-
-    consIni := GetConstValue(consTyp, typesCreated);
-    if HayError then exit;
+    //Puede seguir "=" o ":" <identificador de tipo>
+    if not GetTypeDeclarColon(consTyp, decStyle, consTypCreated) then exit;
+    //Si no había tipo; "consTyp" será NIL.
+    GetIntialization(consTyp, consIni, typesCreated );
+    if HayError then begin
+      exit;
+    end;
     consDec.typ := consIni.Typ;   //Update constant type.
     if consIni.Sto = stConst then begin
       //A simple value. We can initialize the constant.
@@ -977,10 +992,11 @@ begin
       consDec.evaluated := consIni.evaluated;
     end;
     //Other types (no otConst) will be evaluated later.
+
     TreeElems.CloseElement;  //Close constant declaration.
 
   end else begin
-    GenError(ER_EQU_COM_EXP);
+    GenError('Only one constant can be initialized.');
     exit;
   end;
   if not CaptureDelExpres then exit;
@@ -1046,113 +1062,108 @@ procedure TAnalyzer.AnalyzeVarDeclar;
       end
     end;
   end;
-  procedure UpdateTypeAndAdVarDec(var varTyp: TEleTypeDec; out adicVarDec: TAdicVarDec;
-                                  nVars: integer);
-  {Updates the parameters:
-    - "varTyp" with the type of the variable dclaration: VAR a,b,c: <<TYPE>>
-    - "adicVarDec" with the aditional parameters of the variable declaration, like
-      REGISTER or ABSOLUTE options.
-  Additionally, make a caller to the variable included in the ABSOLUTE <varAbs> if the
-  declaration exist (ABSOLUTE to some variable).
-  This procedure must be called when the Variable declaration element is opened because
-  callers are added, and this must be done inside a code container.}
-  var
-    decStyle: TTypDeclarStyle;
-    varTypCreated: boolean;
-    typesCreated: integer;
+  procedure UpdateVar(xvar: TEleVarDec; varTyp: TEleTypeDec;
+                      const adicVarDec: TAdicVarDec);
   begin
-    //Test if it's needed to read from source.
+    xvar.typ := varTyp;   //Update type
+    //Inicia campos
+    xvar.adicPar := adicVarDec;    //Actualiza propiedades adicionales
+    xvar.location := curLocation;  //Actualiza bandera
+    //Updte storage
+    case adicVarDec.hasAdic of
+    decRegis : xvar.storage := stRegister;
+    decRegisA: xvar.storage := stRegistA;
+    decRegisX: xvar.storage := stRegistX;
+    decRegisY: xvar.storage := stRegistY;
+    decAbsol : xvar.storage := stRamFix;  //Will have a fixed memory address.
+    decNone  : xvar.storage := stRamFix;  //Will have a fixed memory address.
+    end;
+  end;
+  procedure GetAdicVarDeclar2(xType: TEleTypeDec; out aditVar: TAdicVarDec;
+            out typesCreated: integer);
+  {Versión de GetAdicVarDeclar() que no permite declaracionea adicionales.}
+  begin
+    GetAdicVarDeclar(xType, aditVar, typesCreated);  //Could create new types
+    if HayError then exit;
+    {Like Free Pascal, we don't allow REGISTER, ABSOLUTE or initialization, for more
+    than one variable.}
+    if aditVar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
+      GenError('Cannot define REGISTER for more than one variable');
+      exit;
+    end;
+    if aditVar.hasAdic = decAbsol then begin
+      GenError('Cannot define ABSOLUTE for more than one variable');
+      exit;
+    end;
+    if aditVar.hasInit then begin
+      GenError('Cannot initialize more than one variable');
+      exit;
+    end;
+  end;
+
+var
+  varNames: array of string;  //nombre de variables
+  srcPosArray: TSrcPosArray;
+  i, typesCreated: Integer;
+  varTyp: TEleTypeDec;
+  adicVarDec: TAdicVarDec;
+  varDec: TEleVarDec;
+  decStyle: TTypDeclarStyle;
+  varTypCreated: boolean;
+begin
+  {La primera sección de este código es similar a TAnalyzer.AnalyzeConstDeclar().
+  Se ha tratado de mantener la uniformidad para reutilizar el algoritmo hasta donde
+  lo permitan las similitudes.}
+  //Procesa lista de variables a,b,c : int;
+  if not getListOfIdent(varNames, srcPosArray) then begin
+    GenError(ER_EXP_VAR_IDE);
+    exit;
+  end;
+  if length(varNames)=1 then begin //Unique variable declaration
+    varDec := AddVarDecAndOpen(varNames[0], typNull, srcPosArray[0]);  //We don`t have the type here
+    if HayError then exit;        //Sale para ver otros errores
+    //Must follow ":".
+    if not GetTypeDeclarColon(varTyp, decStyle, varTypCreated) then exit;
     if varTyp = nil then begin
-      //We need to read the type of the variable.
-      varTyp := GetTypeDeclar(decStyle, varTypCreated);
-      if HayError then exit;
-      //Lee información adicional de la declaración (ABSOLUTE, REGISTER, initial value)
-      ProcComments;
-      //We need to read aditional parameters: Register, Absolute or Initialization.
-      GetAdicVarDeclar(varTyp, adicVarDec, typesCreated);  //Could create new types
-      if HayError then begin
-        //Cannot destroy, directly, the type created, because the creation has added variables to the AST.
-        //if varTypCreated then varTyp.Destroy;
-        exit;
+      GenError(ER_SEM_COM_EXP);
+      exit;
+    end;
+    //Lee información adicional de la declaración (ABSOLUTE, REGISTER, initial value)
+    GetAdicVarDeclar(varTyp, adicVarDec, typesCreated);  //Could create new types
+    if HayError then begin
+      //Cannot destroy, directly, the type created, because the creation has added variables to the AST.
+      //if varTypCreated then varTyp.Destroy;
+      exit;
+    end;
+//ValidateTypesCreated(varTyp, varTypCreated, adicVarDec, typesCreated);
+    AddCallerToFromCurr(varTyp);
+    UpdateVar(varDec, varTyp, adicVarDec);
+    TreeElems.CloseElement;  //Close variable
+  end else begin  //Multiple variables declaration
+    //Add Variable declarations element to the AST
+    for i := 0 to high(varNames) do begin
+      varDec := AddVarDecAndOpen(varNames[i], typNull, srcPosArray[i]);  //We don`t have the type here
+      if HayError then break;        //Sale para ver otros errores
+      //Updates "varTyp" and "adicVarDec" and add callers.
+      if i=0 then begin  //Lee solo para la primera variable
+        //Must follow ":".
+        if not GetTypeDeclarColon(varTyp, decStyle, varTypCreated) then exit;
+        if varTyp = nil then begin
+          GenError(ER_SEM_COM_EXP);
+          exit;
+        end;
+        GetAdicVarDeclar2(varTyp, adicVarDec, typesCreated);  //Could create new types
+        if HayError then exit;
       end;
-      if nVars>1 then begin
-        {Like Free Pascal, we don't allow REGISTER, ABSOLUTE or initialization, for more
-        than one variable.}
-        if adicVarDec.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
-          GenError('Cannot define REGISTER for more than one variable');
-          exit;
-        end;
-        if adicVarDec.hasAdic = decAbsol then begin
-          GenError('Cannot define ABSOLUTE for more than one variable');
-          exit;
-        end;
-        if adicVarDec.hasInit then begin
-          GenError('Cannot initialize more than one variable');
-          exit;
-        end;
-      end;
-      //Verifica si hay asignación de valor inicial.
       ProcComments;
       {Aquí, finalmente, se tiene el tipo completo en su estructura porque, si había un
       arreglo no dimensionado, como:  foo []CHAR = 'HELLO'; ya se verificó la
       inicialización.}
-      ValidateTypesCreated(varTyp, varTypCreated, adicVarDec, typesCreated);
-    end else begin
-      //Parameters "varTyp" and "adicVarDec" are already updated.
-    end;
-    {Add caller to the type declaration. IT's done always because GetTypeDeclar() doesn't
-    do.}
-    AddCallerToFromCurr(varTyp);
-  end;
-var
-  varNames: array of string;  //nombre de variables
-  srcPosArray: TSrcPosArray;
-  i: Integer;
-  varTyp: TEleTypeDec;
-  adicVarDec: TAdicVarDec;
-  xvar: TEleVarDec;
-begin
-  SetLength(varNames, 0);
-  //Procesa variables a,b,c : int;
-  getListOfIdent(varNames, srcPosArray);
-  if HayError then begin  //precisa el error
-    GenError(ER_EXP_VAR_IDE);
-    exit;
-  end;
-  //usualmente debería seguir ":"
-  if token = ':' then begin
-    //Debe seguir, el tipo de la variable
-    Next;  //lo toma
-    ProcComments;
-    //Add Variable declarations element to the AST
-    varTyp := nil;  //Will be upadted with UpdateTypeAndAdVarDec()
-    for i := 0 to high(varNames) do begin
-      xvar := AddVarDecAndOpen(varNames[i], typNull, srcPosArray[i]);  //We don`t have the type here
-      if HayError then break;        //Sale para ver otros errores
-      //Updates "varTyp" and "adicVarDec" and add callers.
-      UpdateTypeAndAdVarDec(varTyp, adicVarDec, high(varNames) + 1);
-      if HayError then begin
-        TreeElems.CloseElement;  //Close variable
-        exit;
-      end;
-      xvar.typ := varTyp;   //Update type
-      //Inicia campos
-      xvar.adicPar := adicVarDec;    //Actualiza propiedades adicionales
-      xvar.location := curLocation;  //Actualiza bandera
-      //Updte storage
-      case adicVarDec.hasAdic of
-      decRegis : xvar.storage := stRegister;
-      decRegisA: xvar.storage := stRegistA;
-      decRegisX: xvar.storage := stRegistX;
-      decRegisY: xvar.storage := stRegistY;
-      decAbsol : xvar.storage := stRamFix;  //Will have a fixed memory address.
-      decNone  : xvar.storage := stRamFix;  //Will have a fixed memory address.
-      end;
+//      ValidateTypesCreated(varTyp, varTypCreated, adicVarDec, typesCreated);
+      AddCallerToFromCurr(varTyp);
+      UpdateVar(varDec, varTyp, adicVarDec);
       TreeElems.CloseElement;  //Close variable
     end;
-  end else begin
-    GenError(ER_SEM_COM_EXP);
-    exit;
   end;
   if not CaptureDelExpres then exit;
   ProcComments;
