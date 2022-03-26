@@ -133,7 +133,7 @@ begin
     adicInformation :=
            'Constan Type: ' + IfThen(xcon.typ=nil, 'Unknown', xcon.typ.name) + LineEnding +
            'Evaluated: ' + IfThen(xcon.evaluated, 'true', 'false')  + LineEnding +
-           'Value: ' + xcon.value.valuesAsString;
+           'Value: ' + xcon.value^.valuesAsString;
   end else if elem.idClass = eleVarDec then begin
     xvar := TEleVarDec(elem);
     txtEleType.Caption := 'Variable ('+elem.ClassName+')';

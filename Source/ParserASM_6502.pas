@@ -331,7 +331,7 @@ begin
         cpx.AddCallerToFromCurr(xcon);  //lleva la cuenta
         //Constants can be resolved as numbers
         if (xcon.typ = cpx.typByte) or (xcon.typ = cpx.typWord) then begin
-          inst.operVal := xcon.value.ValInt;  //Get Value
+          inst.operVal := xcon.value^.ValInt;  //Get Value
           cpx.Next;
           inst.operVal := -1;        //Indicates to use "operRef"
           inst.operRef := xcon;
@@ -523,9 +523,11 @@ begin
       cpx.SkipWhitesNoEOL;
       if Upcase(cpx.token) = 'X' then begin
         cpx.Next;
+        cpx.SkipWhitesNoEOL;
         UpdateInstruction(idInst, aAbsolutX, curInst.operVal);
       end else if Upcase(cpx.token) = 'Y' then begin
         cpx.Next;
+        cpx.SkipWhitesNoEOL;
         UpdateInstruction(idInst, aAbsolutY, curInst.operVal);
       end else begin
         cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);

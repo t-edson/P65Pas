@@ -44,6 +44,22 @@ ejecución en los casos de errores de sintaxis en los ítems.
 - Se habilita TAnalyzer.GetConstValue() para detectar los formatos de arreglos [ ... ] y
 los string como arreglo de cadenas.
 - Se convierte TCompilerBase.getListOfIdent() en función para simplificar su uso.
+- Se crea GetIntialization() dentro de TAnalyzer.AnalyzeConstDeclar() para uniformizar 
+TAnalyzer.AnalyzeConstDeclar() con TAnalyzer.AnalyzeVarDeclar().
+- Se crea TCompilerBase.AddConstDeclarByte() y se reutiliza en TGenCod.DefineArray() para
+crear el campo "low", además de "length".
+- Se renombran TXpTreeElements.AddElementConsAndOpen(), TXpTreeElements.AddElementVarAndOpen()
+y TXpTreeElements.AddElementTypeAndOpen() a versiones más reducidas.
+- Se crean las funciones TCompilerBase.OpenTypeDec() y TCompilerBase.CloseTypeDec() para 
+gestionar la creación de tipos en diversas ubicaciones del AST.
+- Se modifica TAnalyzer.GetConstValue() para que devuelva el tipo principal creado, en lugar
+de la cantidad de tipos creados.
+- Se corrige la inicialización de arreglos de tipo: ARRAY[] OF CHAR = "abc";
+- Se modifica TAnalyzer.GetAdicVarDeclar() para ordenar las validaciones y darle mas
+inteligencia para validar los tipos de tipo arreglo.
+- Se completa el test de pruebas de código ASM con una rutina de prueba de direccionamiento
+indexado por X y varaible registro.
+- Se corrige un problema con la inicialización del resultado en TGenCod.BOR_byte_equal_byte().
 
 TAREAS PLANIFICADAS
 - Revisar la implementación de ValidateTypesCreated(). 
@@ -69,6 +85,9 @@ PENDIENTES
 - Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
 -Generar bloques IF (o de otro tipo), de más de 128 bytes.
 -Revisar y adaptar los programas de prueba para el compilador.
+- Revisar el caso de tipos creados de forma repetida y hasta con el mismo nombre, como en 
+el caso: CONST CCC: array[3] of char = ('1','2','3'); 
+CC: array[3] of char = ('1','2','3'); 
 
 Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
 implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 

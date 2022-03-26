@@ -24,6 +24,10 @@ TPosExpres = (pexINDEP,  //Expresión independiente
 TOperType = (operUnary,  //Operación Unaria
              operBinary  //Operación Binaria
              );
+TTypeLocat = (
+             tlCurrNode,   //Type at the current node
+             tlParentNode  //Type at the parent node
+           );
 //Information about the las ASM code generated. Used for optimization.
 TLastASMcode = (
              lacNone,    //No special code generated.
@@ -90,6 +94,9 @@ protected  //Elements creation
     ): TEleConsDec;
   function AddTypeDecAndOpen(typName: string; typeSize: integer; catType: TxpCatType;
     group: TTypeGroup; srcPos: TSrcPos): TEleTypeDec;
+  function OpenTypeDec(const srcPos: TSrcPos; tname: string; tsize: integer;
+    catType: TxpCatType; group: TTypeGroup; location: TTypeLocat): TEleTypeDec;
+  procedure CloseTypeDec(typeDec: TEleTypeDec);
   procedure CreateFunctionParams(var funPars: TxpParFuncArray);
   function AddFunctionUNI(funName: string; retTyp: TEleTypeDec;
     const srcPos: TSrcPos; const pars: TxpParFuncArray; Interrup: boolean;
@@ -138,9 +145,9 @@ protected //Expressions
     OpType2: TEleTypeDec): TEleFunBase;
   function MethodFromUnaOperator(const OpType: TEleTypeDec; Op: string
     ): TEleFunBase;
-  function AddLengthFieldArray(typ: TEleTypeDec; nElem: integer): TEleConsDec;
+  function AddConstDeclarByte(decName: string; consVal: integer): TEleConsDec;
   function GetConstantArray(arrDelimt: char): TEleExpress;
-  function GetConstantArrayStr(): TEleExpress;
+  function GetConstantArrayStr(allowChar: boolean = true): TEleExpress;
   function GetOperand: TEleExpress;
   function GetExpression(const prec: Integer): TEleExpress;
   function AddExpressionConstByte(name: string; bytValue: byte; srcPos: TSrcPos
@@ -629,7 +636,7 @@ begin
   //xvar.srcDec := srcPos;  //Actualiza posición
   //TreeElems.AddElement(xvar);
   //Result := xvar;
-  Result := TreeElems.AddElementVarAndOpen(srcPos, varName, eleTyp);
+  Result := TreeElems.AddVarDecAndOpen(srcPos, varName, eleTyp);
   Result.storage := stRamFix;
 end;
 function TCompilerBase.AddConsDecAndOpen(conName: string; eleTyp: TEleTypeDec;
@@ -643,7 +650,7 @@ begin
     GenError(ER_DUPLIC_IDEN, [conName], srcPos);
     exit(nil);
   end;
-  Result := TreeElems.AddElementConsAndOpen(srcPos, conName, eleTyp);
+  Result := TreeElems.AddConsDecAndOpen(srcPos, conName, eleTyp);
 end;
 function TCompilerBase.AddTypeDecAndOpen(typName: string; typeSize: integer;
   catType: TxpCatType; group: TTypeGroup; srcPos: TSrcPos): TEleTypeDec;
@@ -653,14 +660,49 @@ begin
     GenError(ER_DUPLIC_IDEN, [typName], srcPos);
     exit(nil);
   end;
-  Result := TreeElems.AddElementTypeAndOpen(srcPos, typName, typeSize, catType, group);
+  Result := TreeElems.AddTypeDecAndOpen(srcPos, typName, typeSize, catType, group);
+end;
+function TCompilerBase.OpenTypeDec(const srcPos: TSrcPos; tname: string;
+  tsize: integer; catType: TxpCatType; group: TTypeGroup;
+  location: TTypeLocat): TEleTypeDec;
+var
+  tmp, progFrame: TxpElement;
+  ipos: Integer;
+  typeDec: TEleTypeDec;
+begin
+  {Similar to TreeElems.AddTypeDecAndOpen() but can specify the location where the
+  type is opened.
+  This instruction must used with CloseTypeDec()
+  }
+  if location = tlParentNode then begin
+    //Create in the parent location.
+    tmp := TreeElems.curNode;  //Save current location
+    //Change to the parent of the current code container. This will work always.
+    progFrame := TreeElems.curCodCont.Parent;  //Should be TEleProgFrame (Function, unit or main program)
+    TreeElems.OpenElement(progFrame);
+    ipos := progFrame.elements.Count-1;  //Before of the current COde container
+  end else begin
+    //Creates in the current location.
+    tmp := TreeElems.curNode;  //Save current location
+    ipos := -1;
+  end;
+  //----------- Create Type -----------
+  typeDec := TreeElems.AddTypeDecAndOpen(srcPos, tname, tsize, catType, group, ipos);
+  typeDec.tmpNode := tmp;  //Save current node here
+  exit(typeDec);
+end;
+procedure TCompilerBase.CloseTypeDec(typeDec: TEleTypeDec);
+{Close a Type declaration element, opened with OpenTypeDec().}
+begin
+  TreeElems.CloseElement;  //Close type declaration.
+  TreeElems.curNode := typeDec.tmpNode;  //Restore location
 end;
 function TCompilerBase.CreateArrayTypeDec(typName: string; nELem: integer;
                                           itType: TEleTypeDec;
                                           const srcPos: TSrcPos): TEleTypeDec;
 {Creates a type declaration for an array.
 "typName"  must be unique in the scope. Verification isn't done here.
-The location where the type is created depende of the current code container.
+The location where the type is created is before the current node.
 }
 var
   xtyp: TEleTypeDec;
@@ -668,30 +710,16 @@ var
   tmp, progFrame: TxpElement;
   ipos: Integer;
 begin
-  //if TreeElems.curCodCont.idClass =  eleBody then begin
-    tmp := TreeElems.curNode;  //Save current location
-    //Change to the parent of the current code container. This will work always.
-    progFrame := TreeElems.curCodCont.Parent;  //Should be TEleProgFrame (Function, unit or main program)
-    TreeElems.OpenElement(progFrame);
-    ipos := progFrame.elements.Count-1;  //Before of the current COde container
-  //else
-  //  ipos := -1;
-  //end;
-  //----------- Create Type -----------
-  xtyp := TreeElems.AddElementTypeAndOpen(srcPos, typName, -1, tctArray, t_object, ipos);
-  //Crea campo "length".
-  consDec := AddLengthFieldArray(typByte, nElem);
-  //Termina definición
-  xtyp.consNitm := consDec;  //Update reference to the number of items.
-  xtyp.itmType := itType;  //Actualiza tipo
-  callDefineArray(xtyp);   //Define operations to array
-  TreeElems.CloseElement;  //Close type.
-  //Add location {******** ¿Es correcto hacer esto desde aquí? }
-  xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
-  // --------- End create type ----------
-  //if typeLocation <> nil then begin
-    TreeElems.curNode := tmp;  //Restore location
-  //end;
+  xtyp := OpenTypeDec(srcPos, typName, -1, tctArray, t_object, tlParentNode);
+    //Crea campo "length".
+    consDec := AddConstDeclarByte('length', nElem);
+    //Termina definición
+    xtyp.consNitm := consDec;  //Update reference to the number of items.
+    xtyp.itmType := itType;  //Actualiza tipo
+    callDefineArray(xtyp);   //Define operations to array
+    //Add location {******** ¿Es correcto hacer esto desde aquí? }
+    xtyp.location := curLocation;   //Ubicación del tipo (Interface/Implementation/...)
+  CloseTypeDec(xtyp);
   inc(nTypesCreated);   //Updates counter for types created
   exit(xtyp);
 end;
@@ -1198,19 +1226,20 @@ begin
   exit(false);
 end;
 //Array utilities
-function TCompilerBase.AddLengthFieldArray(typ: TEleTypeDec; nElem: integer): TEleConsDec;
-{Add a constant declaration named "length" containing a constant element "n" set to
-the value "nElem".
+function TCompilerBase.AddConstDeclarByte(decName: string;
+                                      consVal: integer): TEleConsDec;
+{Add a constant declaration of type byte, named "decName" containing a constant element
+"n" set to the value "consVal".
 The constant declaration is added to the current node in the AST.}
 var
   consDec: TEleConsDec;
-  sizExp: TEleExpress;
+  expr: TEleExpress;
 begin
-  consDec := AddConsDecAndOpen('length', typ, GetSrcPos);
+  consDec := AddConsDecAndOpen(decName, typByte, GetSrcPos);
   if HayError then exit;  //Can be duplicated?
-  sizExp := AddExpressionConstByte('n', nElem, GetSrcPos);
-  consDec.typ := sizExp.Typ;
-  consDec.value := sizExp.value;
+  expr := AddExpressionConstByte('n', consVal, GetSrcPos);
+  //consDec.typ := expr.Typ;  no needed
+  consDec.value := @expr.value;
   consDec.evaluated := true;
   TreeElems.CloseElement;  //Close constant.
   exit(consDec);
@@ -1298,7 +1327,7 @@ begin
   end;
   exit(Op);
 end;
-function TCompilerBase.GetConstantArrayStr(): TEleExpress;
+function TCompilerBase.GetConstantArrayStr(allowChar: boolean = true): TEleExpress;
 var
   Op1: TEleExpress;
   srcpos: TSrcPos;
@@ -1324,7 +1353,7 @@ begin
     end;
   end;
   {$IFDEF LogExpres} Op.txt:= cIn.tok; {$ENDIF}   //toma el texto
-  if length(str) = 1 then begin
+  if allowChar and (length(str) = 1) then begin
     //De un caracter. Se asume de tipo Char
     Op1 := AddExpressAndOpen(token, typChar, otConst, srcPos);
     Op1.value.ValInt := ord(STR[1]);
@@ -1484,7 +1513,7 @@ begin
       if xcon.evaluated then begin
         //The constant is already calculated. We can obtain the value.
         Op1.evaluated := true;
-        Op1.value := xcon.value;
+        Op1.value := xcon.value^;
       end else begin
         //No yet calculated. Maybe "xcon" depends on an expression.
         Op1.evaluated := false;
@@ -1586,7 +1615,7 @@ begin
         if xcon.evaluated then begin
           //The constant is already calculated. We can obtain the value.
           eleMeth.evaluated := true;
-          eleMeth.value := xcon.value;
+          eleMeth.value := xcon.value^;
         end else begin
           //No yet calculated. Maybe "xcon" depends on an expression.
           eleMeth.evaluated := false;

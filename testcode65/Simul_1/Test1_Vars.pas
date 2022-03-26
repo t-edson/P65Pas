@@ -22,6 +22,8 @@ var  //simple type declarations
   vchar: char;
 	vbyte: byte;
   vword: word;
+  byteInit: byte = $10;
+  wordInit: word = $1234;
 var  //absolute type declarations
   abool: boolean absolute vbool;
   achar: char absolute vchar;
@@ -47,7 +49,11 @@ begin
 	if vchar = chr(65) then bien else mal end;
   vchar := #65;
 	if vchar = 'A' then bien else mal end;
-	
+
+  //Initialization
+  if byteInit = $10 then bien else mal end;
+  if wordInit = $1234 then bien else mal end;
+  	
 	//Absolute position
   abool := false;
 	if vbool then mal else bien end;

@@ -916,6 +916,7 @@ begin
     case parB.Sto of
     stConst: begin   //la expresión p1 se evaluó y esta en A
       if not AcumStatInZ then _TAX;   //Update Z, if needed.
+      SetFunExpres(fun);
       if parB.val = 0 then begin  //caso especial
         //Nothing
       end else begin
@@ -5331,19 +5332,13 @@ begin
 end;
 procedure TGenCod.DefineArray(etyp: TEleTypeDec);
 var
-  cons: TEleConsDec;
+  consDec: TEleConsDec;
   expr: TEleExpress;
 begin
   //Create assigement method
   CreateBOMethod(etyp, ':=', '_set', etyp, typNull, @BOR_arr_asig_arr);
   //Create attribute "low" as constant.
-  cons := AddConsDecAndOpen('low', typNull, GetSrcPos);  //No type defined here.
-  if HayError then exit;   //Can be duplicated
-  expr := AddExpressionConstByte('0', 0, GetSrcPos);
-  cons.typ := expr.Typ;
-  cons.value.ValInt := 0;
-  cons.evaluated := true;
-  TreeElems.CloseElement;  //Close constant.
+  AddConstDeclarByte('low', 0);
   //Create methods
 //  CreateUOMethod(etyp, '', 'length', typByte, @arrayLength);
 //  CreateUOMethod(etyp, '', 'low'   , typByte, @arrayLow);
@@ -5412,7 +5407,7 @@ begin
   //Here variables can be added
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
-  TreeElems.AddElementBodyAndOpen(SrcPos);  //Create body
+  TreeElems.AddBodyAndOpen(SrcPos);  //Create body
   Result.callType     := ctSysInline; //INLINE function
   Result.codSysInline := codSys;  //Set routine to generate code o BOR or UOR.
   TreeElems.CloseElement;  //Close body
@@ -5440,7 +5435,7 @@ begin
   //Here variables can be added
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
-  TreeElems.AddElementBodyAndOpen(SrcPos);  //Create body
+  TreeElems.AddBodyAndOpen(SrcPos);  //Create body
   Result.callType     := ctSysNormal;
   Result.codSysNormal := codSys;  //Set routine to generate code o BOR or UOR.
   TreeElems.CloseElement;  //Close body
@@ -5466,7 +5461,7 @@ begin
   curLocation := locInterface;   { TODO : Does it is neccesary to specify location for a method? }
   Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false,
                       false);  //Don't include variables to don't ask for RAM.
-  TreeElems.AddElementBodyAndOpen(srcPosNull);  //Create body
+  TreeElems.AddBodyAndOpen(srcPosNull);  //Create body
   //Here variables can be added
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}

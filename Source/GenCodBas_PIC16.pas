@@ -1708,7 +1708,7 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
         GenError('Constant not evaluated.', paramRef.srcDec);
         exit;
       end;
-      Result := xcon.value.ValInt;
+      Result := xcon.value^.ValInt;
     end else if paramRef.idClass = eleFunc then begin
       xfun := TEleFun(paramRef);
       if not xfun.coded then begin

@@ -15,9 +15,9 @@ const
   ADRR_ERROR = $FFFF;
 const //Prefixes used to name anonym type declarations
   //Short string are used to don't affect the searching speed
-  PREFIX_ARR = 'ar';
-  PREFIX_PTR = 'pt';
-  PREFIX_OBJ = 'ob';
+  PREFIX_ARR = '_ar';
+  PREFIX_PTR = '_pt';
+  PREFIX_OBJ = '_ob';
   //Name for elements
   TIT_BODY_ELE = 'Body';
 type  //Hardware dependent definitions
@@ -295,7 +295,7 @@ type  //Declaration elements
                                   de una variable (de este tipo) en el ámbito global.}
     OnLoadToWR  : TProcLoadOperand;    //Used when required to load an operand in Work Register.
     OnRequireWR : procedure of object; //Used to detect dependencies on Work registers.
-  public
+  public   //Identification
     copyOf  : TEleTypeDec;  //Indicates this type is copy of other
     group   : TTypeGroup;   //Type group (numéric, string, etc)
     catType : TxpCatType;   //Categoría del tipo
@@ -314,7 +314,8 @@ type  //Declaration elements
     function nItems: integer;  //Number of items, when is tctArray (-1 if it's dynamic.)
   public
     procedure SaveToStk;
-  public   //Identificación
+  public   //Information
+    tmpNode: TxpElement;  //Temporal node informatios. Used by OpenTypeDec().
     function IsByteSize: boolean;
     function IsWordSize: boolean;
     function IsDWordSize: boolean;
@@ -330,14 +331,14 @@ type  //Declaration elements
   //Class to modelate constants declaration.
   TEleConsDec = class(TxpEleCodeCont)
     //Element type
-    typ: TEleTypeDec;
+    typ      : TEleTypeDec;
     {Flag to indicate if the constant value, stored in "value" field, is valid.
     If evaluated = true  -> The constant value can be read in "value".
     If evaluated = false -> The constant is not yet evaluated. It has been defined as an
                             expression, not yet evaluated.}
     evaluated: boolean;
     //Constant value
-    value : TConsValue;
+    value    : ^TConsValue;
     constructor Create; override;
   end;
   TEleConsDecs = specialize TFPGObjectList<TEleConsDec>; //lista de constantes
@@ -1590,9 +1591,9 @@ end;
 function TEleTypeDec.nItems: integer;
 begin
   if copyOf<>nil then begin
-    exit(copyOf.consNitm.value.ValInt)
+    exit(copyOf.consNitm.value^.ValInt)
   end else begin
-    exit(consNitm.value.ValInt)
+    exit(consNitm.value^.ValInt)
   end;
 end;
 { TxpEleType }

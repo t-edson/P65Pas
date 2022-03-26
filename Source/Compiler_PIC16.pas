@@ -112,7 +112,7 @@ begin
     end else begin
       //Could be evaluated using "cons"
       if eleExp.cons.evaluated then begin
-        eleExp.value := eleExp.cons.value;
+        eleExp.value := eleExp.cons.value^;
         eleExp.evaluated := true;
       end else begin
         GenError('Constant not evaluated.', eleExp.srcDec);
@@ -156,7 +156,7 @@ begin
          exit;
        end;
        //Copy the value.
-       cons.value := consExpres.value;
+       cons.value := @consExpres.value;
        cons.evaluated := true;
      end;
   end;

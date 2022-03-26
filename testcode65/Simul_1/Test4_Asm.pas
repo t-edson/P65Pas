@@ -1,4 +1,7 @@
-{Rutina de verificación de las rutinas en ensamblador.}
+{Rutina de verificación de las rutinas en ensamblador.
+La primera parte de la prueba es que el compilador y el 
+simulador de Commodore 64 no colapsen.
+}
 {$Mode Pascal}
 uses Commodore64;
 var
@@ -7,6 +10,7 @@ var
 	vbool: boolean;
 var
   abyte: byte;
+  regA: byte register;
 const
 	CBYTE = 3;
 
@@ -168,6 +172,15 @@ begin
     STA VBYTE
   end;
   if vbyte = 8 then bien else mal; 
+
+  //indirect address mode 
+  asm 
+	   CLC
+     LDX #3     ;Offset to point
+     LDA $, X   ;Indirect X address mode
+     CLC   ;Any opcode to read wuth the previous LDA
+  end; 
+  if regA = $18 then bien else mal; //$18 ->CLC
 
 	//jumps
   asm 

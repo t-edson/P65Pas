@@ -17,7 +17,7 @@ type
     function PICName: string; virtual; abstract;
     function RAMmax: integer; virtual; abstract;
   private
-    function GetConstValue(typExpec: TEleTypeDec; out typesCreated: integer
+    function GetConstValue(typExpec: TEleTypeDec; out mainTypCreated: TEleTypeDec
       ): TEleExpress;
     procedure AnalyzeEXIT(exitSent: TEleSentence);
     procedure AnalyzeFOR;
@@ -31,16 +31,16 @@ type
     function StartOfSection: boolean;
     procedure CompileLastEnd;
   protected  //Elements processing
-    procedure GetAdicVarDeclar(xType: TEleTypeDec; out aditVar: TAdicVarDec; out
-      typesCreated: integer);
+    procedure GetAdicVarDeclar(var varTyp: TEleTypeDec; out aditVar: TAdicVarDec;
+      out mainTypCreated: TEleTypeDec);
     procedure ReadProcHeader(out procName: String; out retType: TEleTypeDec; out
       srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt,
   IsForward: Boolean);
     procedure AnalyzeVarDeclar;
     procedure AnalyzeConstDeclar;
     procedure AnalyzeTypeDeclar(elemLocat: TxpEleLocation);
-    function GetTypeDeclar(out decStyle: TTypDeclarStyle; out
-      TypeCreated: boolean): TEleTypeDec;
+    function GetTypeDeclar(out decStyle: TTypDeclarStyle; out TypeCreated: boolean;
+      location: TTypeLocat = tlCurrNode): TEleTypeDec;
     function GetTypeDeclarSimple(): TEleTypeDec;
     function GetTypeDeclarColon(out decTyp: TEleTypeDec; out
       decStyle: TTypDeclarStyle; out TypeCreated: boolean): boolean;
@@ -117,15 +117,23 @@ begin
 end;
 
 //Elements processing
-function TAnalyzer.GetConstValue(typExpec: TEleTypeDec; out typesCreated: integer): TEleExpress;
-{Add a constant expression, to the current node of the AST. Aditional types could be
-added first. Returns the declaration created.
+function TAnalyzer.GetConstValue(typExpec: TEleTypeDec;
+                                 out mainTypCreated: TEleTypeDec): TEleExpress;
+{Add a constant expression, to the current node of the AST. Returns the declaration
+created.
 "typExpec" is the expected type of the constant. If it's NIL it's ignored.
-"typesCreated" returns the number of types created at the first level.
+
+Aditional types could be added first (when analyzing constant like Arrays). If new types
+are created they are added to the parent node, before the current node.
+
+Parameter "mainTypCreated" returns the main type created (When at least one type is
+created). Some constant like: [[1],[2],[3]] creates two types.
+When no new types are created, "mainTypCreated" returns NIL.
 }
 var
   init: TEleExpress;
-  ntyp: Integer;
+  ntyp, typesCreated, indexNode: Integer;
+  parentNod, typDecElem: TxpElement;
 begin
 
   //Debe seguir una expresión constante, que no genere código
@@ -147,7 +155,7 @@ begin
         TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
         if HayError then exit(nil);
       end else if tokType = tkString then begin  //Alternate syntax "abc" onlcy for char.
-        init := GetConstantArrayStr();
+        init := GetConstantArrayStr(false);
         TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
         if HayError then exit(nil);
       end else begin
@@ -158,8 +166,12 @@ begin
       init := GetExpression(0);
       if HayError then exit(nil);
     end;
-    if typExpec<>init.Typ then begin
-      GenError('Expected a constant of type %s, got %s', [typExpec.name, init.Typ.name]);
+    if typExpec.isDynam then begin
+      //Dynamic arrays cannot be validated directly.
+    end else begin
+      if typExpec<>init.Typ then begin
+        GenError('Expected a constant of type %s, got %s', [typExpec.name, init.Typ.name]);
+      end;
     end;
   end;
   {We don't verify "init.Sto = stConst" here because some constant declarations
@@ -168,20 +180,38 @@ begin
         = word(1);
         = @(variable1);
   Validation for constant will be done in Optimization level.}
+  //This is an accurate measure for the types created.
   typesCreated := nTypesCreated-ntyp;  //Calculate types created.
+  //This is not an accurate way to obtain the main type creaded.
+  if typesCreated>0 then begin
+    {This will work because GetExpression() and GetOperand() creates types at the parent
+    level.}
+    parentNod :=  TreeElems.curNode.Parent;
+    indexNode :=  TreeElems.curNode.Index;
+    typDecElem := parentNod.elements[indexNode-1];
+    if typDecElem.idClass = eleTypeDec then begin
+      mainTypCreated := TEleTypeDec(typDecElem);
+    end else begin  //Wouldn't happens.
+      mainTypCreated := nil;
+      GenError('Design error');
+      exit;
+    end;
+  end else begin
+    mainTypCreated := nil;
+  end;
   exit(init);
 end;
-procedure TAnalyzer.GetAdicVarDeclar(xType: TEleTypeDec; out aditVar: TAdicVarDec;
-          out typesCreated: integer);
+procedure TAnalyzer.GetAdicVarDeclar(var varTyp: TEleTypeDec; out aditVar: TAdicVarDec;
+          out mainTypCreated: TEleTypeDec);
 {Verify aditional settings for var declarations, after the type definition. These settings
 can be:
  ABSOLUTE <literal address or variable/constant identifier>
  REGISTER/REGISTERA/REGISTERX/REGISTERY
 
 All aditional settings are returned in "aditVar".
-IMPORTANT: "xType" can change when is an unspecified size array ( like []byte ) and an
-initialization is provided. No new type elements are created or destroyed.
-If aditional type are created for the init value, "typesCreated" specifies the number of
+IMPORTANT: "varTyp" can be destroyed when is an unspecified size array ( like []byte ) and
+an initialization is provided.
+If aditional type are created for the init value, "typeCreated" specifies the number of
 types created.
 }
   function ReadAddres(tok: string): word;
@@ -247,7 +277,7 @@ begin
       if ele.idClass = eleConsDec then begin  //Is constant
         xcon := TEleConsDec(ele);
         AddCallerToFromCurr(ele);
-        aditVar.absAddr := xcon.value.ValInt; { TODO : Faltaría verificar que "xcon" sea de tipo numérico }
+        aditVar.absAddr := xcon.value^.ValInt; { TODO : Faltaría verificar que "xcon" sea de tipo numérico }
         Next;    //Pasa al siguiente
       end else if ele.idClass = eleVarDec then begin  //Is mapped to a variable
         xvar := TEleVarDec(ele);
@@ -303,7 +333,7 @@ begin
   //Verifica compatibilidad de tamaños
   if aditVar.hasAdic in [decRegisA, decRegisX, decRegisY] then begin
     //Solo pueden ser de tamaño byte
-    if not xType.IsByteSize then begin
+    if not varTyp.IsByteSize then begin
       GenError('Only byte-size types can be a specific register.');
       exit;
     end;
@@ -315,8 +345,9 @@ begin
     Next;   //lo toma
     ProcComments;
     //Aquí debe seguir el valor inicial constante.
-    consIni := GetConstValue(xType, typesCreated);  //Leemos como constante
+    consIni := GetConstValue(varTyp, mainTypCreated);  //Leemos como constante
     if HayError then exit;
+    consTyp := consIni.Typ;
     //Ya se tiene el valor constante para inicializar variable.
     if aditVar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
       GenError('Cannot initialize register variables.');
@@ -326,63 +357,78 @@ begin
     //No hay asignación inicial.
     aditVar.hasInit := false;
   end;
-  //Valida el caso de areglos dinámicos
-  if (xType.catType = tctArray) and xType.isDynam and not aditVar.hasInit then begin
-    //Es un arreglo dinámico. Debió inicializarse.
-    GenError(ER_EQU_EXPECTD);
-    exit;
-  end;
-  {Ya se validó la pertinencia de la inicialización y ya se tiene el operando de
-  inicialización en "consIni". Ahora toca validar la compatibilidad de los tipos.}
-  //Por ahora solo se permite inicializar arreglos.
-  if aditVar.hasInit then begin
-    consTyp := consIni.Typ;
-    if (xType.catType = tctArray) then begin
-      //First validation
-      if consTyp <> xType then begin
-        GenError('Expected type "%s". Got "%s".', [xType.name, consTyp.name]);
+  //Validate initialization for dynamic arrays.
+  if (varTyp.catType = tctArray) then begin
+    if varTyp.isDynam then begin
+      //Dynamic array
+      if not aditVar.hasInit then begin
+        //Es un arreglo dinámico. Debió inicializarse.
+        GenError(ER_EQU_EXPECTD);
         exit;
       end;
-      nItems := consTyp.consNitm.value.ValInt;
-      //Arrays have some particular behaviour
+      //Has initialization. Validates.
+      if consTyp.catType <> tctArray then begin
+        GenError('Expected an array.');
+        exit;
+      end;
+      //Here we assure "varTyp" and "consTyp" are both arrays.
+      //Validation for item types.
+      if varTyp.itmType <> consTyp.itmType then begin
+        //GenError('Item type doesn''t match for initialize array.');
+        GenError('Cannot initialize. Expected array of "%s". Got array of "%s".',
+                 [varTyp.itmType.name, consTyp.itmType.name]);
+        exit;
+      end;
+      //Both are arrays of the same item type.
+//      TreeElems.DeleteTypeNode(varTyp);  //We don't need this type *** Genera error en la síntesis si se elimina.
+      varTyp := consTyp;  //Use the same array type declaration.
+      aditVar.constDec := consIni;
+      exit;
+    end;
+    if aditVar.hasInit then begin
+      nItems := consTyp.consNitm.value^.ValInt;
       //Validation for category
       if consTyp.catType <> tctArray then begin
         GenError('Expected an array.');
         exit;
       end;
-      //Here we assure xType and consTyp are both arrays.
-      //If dynamic, the size depends on initial value
-      if xType.isDynam then begin
-        //Dynamic size
-        xType.consNitm.value.ValInt := nItems;   //Update array size
-        //Type name could be updated too.
-        //xType.name := GenArrayTypeName(xType.itmType.name, nItems);
-      end;
-      //Validation for item types.
-      if xType.itmType <> consTyp.itmType then begin
+      //both are arrays. Validation for item types.
+      if varTyp.itmType <> consTyp.itmType then begin
         GenError('Item type doesn''t match for initialize array.');
         exit;
       end;
       //Validation for size. Must have the same size to simplify creating and calling new types.
-      if xType.nItems < nItems then begin
+      if varTyp.nItems < nItems then begin
         GenError('Too many items to initialize array.');
-      end else if xType.nItems > nItems then begin
+      end else if varTyp.nItems > nItems then begin
         GenError('Too few items to initialize array.');
       end ;
       //Validate type compatibility
-      {Until here we have validated that xType and consTyp and both arrays,
-      have the same item type and compatible sizes, so they are compatible to
-      initialization.
-      }
-    end else begin
-      //Other types are simple to validate
-      if consTyp <> xType then begin
-        GenError('Cannot initialize. Expected type "%s". Got "%s".', [xType.name, consTyp.name]);
+      //First validation
+      if consTyp <> varTyp then begin
+        GenError('Expected type "%s". Got "%s".', [varTyp.name, consTyp.name]);
         exit;
       end;
+      //Assign constant init value.
+      aditVar.constDec := consIni;
     end;
-    //Assign constant init value.
-    aditVar.constDec := consIni;
+  end else begin  //No array
+    if aditVar.hasInit then begin
+      if consTyp <> varTyp then begin
+        GenError('Cannot initialize. Expected type "%s". Got "%s".', [varTyp.name, consTyp.name]);
+        exit;
+      end;
+      //Assign constant init value.
+      aditVar.constDec := consIni;
+    end;
+  end;
+  {Ya se validó la pertinencia de la inicialización y ya se tiene el operando de
+  inicialización en "consIni". Ahora toca validar la compatibilidad de los tipos.}
+  //Por ahora solo se permite inicializar arreglos.
+  if aditVar.hasInit then begin
+    if (varTyp.catType = tctArray) then begin
+    end else begin
+    end;
   end;
 end;
 procedure TAnalyzer.ReadProcHeader(out procName: String; out retType: TEleTypeDec;
@@ -396,10 +442,10 @@ en el procesamiento de unidades.}
   const
     BLOCK_SIZE = 10;  //Tamaño de bloque.
   var
-    typ: TEleTypeDec;
+    typ, typeCreated: TEleTypeDec;
     itemList: TStringDynArray;
     srcPosArray: TSrcPosArray;
-    i, curSize, n, typesCreated: Integer;
+    i, curSize, n: Integer;
     adicVarDec: TAdicVarDec;
   begin
     SkipWhites;
@@ -439,7 +485,7 @@ en el procesamiento de unidades.}
 //        end;
 //        ///////////////////////////////////////////////
         ProcComments;
-        GetAdicVarDeclar(typ, adicVarDec, typesCreated);
+        GetAdicVarDeclar(typ, adicVarDec, typeCreated);
         if adicVarDec.hasInit then begin
           //As we don't permit initialization, we won't have changes on "typ".
           GenError('Cannot initialize parameters.');
@@ -525,7 +571,8 @@ begin
   ProcComments;  //Quita espacios. Puede salir con error
 end;
 function TAnalyzer.GetTypeDeclar(out decStyle: TTypDeclarStyle;
-                                 out TypeCreated: boolean): TEleTypeDec;
+                                 out TypeCreated: boolean;
+                                 location: TTypeLocat = tlCurrNode): TEleTypeDec;
 {Extrae la sección de declaración de tipo (De una variable, parámetro o de una definición
 de tipo). Se debe llamar justo cuando empieza esta declaración de tipo. Se puede usar en
 los siguientes casos;
@@ -557,9 +604,10 @@ ttdDeclar -> Crea un tipo nuevo con la definición del nuevo tipo especificado, 
 Entre "decStyle" y el "catType" del tipo devuelto (Ver comentario de TxpCatType),
 debería quedar completamente especificada la declaración del tipo.
 
-"TypeCreated" indicates when a new Type instance was created in the AST).
-In general, creating new types is avoided when exists other type equivalent.
-
+"TypeCreated" indicates when a new Type instance was created in the AST (The main Type
+element). In general, the extraction of type definition can create several types, like in:
+VAR a: object x:array[3] of byte; end;
+However, there are always a main type (like the object in the example).
 If some problems happens, Error is generated and the NIL value is returned.
 }
   procedure ReadSizeInBrackets(arrTyp: TEleTypeDec; dynam: boolean = false);
@@ -573,7 +621,7 @@ If some problems happens, Error is generated and the NIL value is returned.
   begin
     if dynam then begin  //Special case
       //Creates constant element "length" to returns array size
-      consDec := AddLengthFieldArray(typNull, 0);
+      consDec := AddConstDeclarByte('length', 0);
       arrTyp.isDynam := true;
       arrTyp.consNitm := consDec;  //Update reference to the size.
       exit;
@@ -584,7 +632,7 @@ If some problems happens, Error is generated and the NIL value is returned.
       //Short declaration without size specified: []byte ;
       Next;
       //Creates constant element "length" to returns array size
-      consDec := AddLengthFieldArray(typNull, 0);
+      consDec := AddConstDeclarByte('length', 0);
       arrTyp.isDynam := true;
       arrTyp.consNitm := consDec;  //Update reference to the size.
     end else begin
@@ -597,7 +645,7 @@ If some problems happens, Error is generated and the NIL value is returned.
       if HayError then exit;
       consDec.typ := sizExp.Typ;
       if sizExp.Sto = stConst then begin
-        consDec.value := sizExp.value;
+        consDec.value := @sizExp.value;
         consDec.evaluated := sizExp.evaluated;  //Could be constant, not evaluated yet.
       end else begin
         GenError(ER_CON_EXP_EXP);
@@ -792,15 +840,16 @@ begin
   if (tokL = 'array') or (token = '[') then begin
     //Es declaración de arreglo
     decStyle := ttdDeclar;  //Es declaración elaborada
-    //typ := AddTypeDecAndOpen('!', -1, tctArray, t_object, srcPos);  //No name by now
-    typ := TreeElems.AddElementTypeAndOpen(srcPos, '<undef>', -1, tctArray, t_object);
-    if HayError then exit;  //Can be duplicated
-    TypeCreated := true;
-    ArrayDeclaration(srcpos, itemTyp);
-    if HayError then exit(nil);     //Sale para ver otros errores
-    typ.itmType := itemTyp; //Item type
-    callDefineArray(typ);   //Define operations to array
-    TreeElems.CloseElement;  //Close type
+    typ := OpenTypeDec(srcPos, '', -1, tctArray, t_object, location);
+      if HayError then exit;  //Can be duplicated
+      TypeCreated := true;
+      ArrayDeclaration(srcpos, itemTyp);
+      if HayError then exit(nil);     //Sale para ver otros errores
+      typ.itmType := itemTyp; //Item type
+      callDefineArray(typ);   //Define operations to array
+      //Update name *** ¿Podría estar duplicado?
+      typ.name := GenArrayTypeName(typ.itmType.name, typ.consNitm.value^.ValInt);
+    CloseTypeDec(typ);  //Close type
   end else if {(tokL = 'pointer') or }(token = '^') then begin
     //Es declaración de puntero
     decStyle := ttdDeclar;  //Es declaración elaborada
@@ -868,15 +917,29 @@ function TAnalyzer.GetTypeDeclarColon(out decTyp: TEleTypeDec;
                                  out decStyle: TTypDeclarStyle;
                                  out TypeCreated: boolean): boolean;
 {Obtiene el tipo declarado después de dos puntos en "decTyp". Si no encuentra dos puntos,
-devuelve NIL en "decTyp". Si se produce algún error, devuelve FALSE.}
+devuelve NIL en "decTyp". Si se produce algún error, devuelve FALSE.
+"TypeCreated" indica que el tipo devuelto (el tipo principal de la declaración y no otros
+tipos que pudieron crearse también) ha generado la creación de un nuevo tipo en el AST.
+El tipo creado, cuando se crea alguno, se coloca en el nodo padre antes del nodo actual.
+}
 begin
   if token = ':' then begin  //Check if type exists
     //Debe seguir, el tipo
     Next;  //Takes ":"
     ProcComments;
-    decTyp := GetTypeDeclar(decStyle, TypeCreated);  //Can create a Type element at this level.
+    decTyp := GetTypeDeclar(decStyle, TypeCreated, tlParentNode);  //Can create a Type element at this level.
     if HayError then exit(false);
     ProcComments;
+    if TypeCreated then begin
+      //Se creó al menos un tipo.
+      {Por completar. *****
+      Aquí podríamos verificar si los tipos creados, ya existen, para ir eliminándolos,
+      aprovechando que no tienen referencias aún.
+      Como pueden ser varios, se puede ubicar tomando el índice del nodo actual, antes de
+      llamar a GetTypeDeclar() y ver cuántos nodos se han creado.
+      Para arreglos se puede usar el nombre como identificador.
+      }
+    end;
   end else begin
     //No problem. Type is optional.
     decTyp := nil;
@@ -914,7 +977,7 @@ begin
     //Para este caso, nosotros creamos un tipo nuevo, en  modo copia.
     reftyp := etyp;  //Referencia al tipo { TODO : ¿Y si el tipo es ya una copia? }
     //etyp := CreateEleType(typName, srcPos, reftyp.size, reftyp.catType, reftyp.group);
-    etyp := TreeElems.AddElementTypeAndOpen(srcPos, typName, reftyp.size, reftyp.catType, reftyp.group);
+    etyp := TreeElems.AddTypeDecAndOpen(srcPos, typName, reftyp.size, reftyp.catType, reftyp.group);
     if HayError then exit;  //Can be duplicated
     AddCallerToFromCurr(reftyp);  //Llamada al tipo usado.  { TODO : Validar si se manejan bien las llamadas a los tipos copia. }
     TreeElems.CloseElement;  //Close type
@@ -948,12 +1011,12 @@ begin
 end;
 procedure TAnalyzer.AnalyzeConstDeclar;
   procedure GetIntialization(consTyp: TEleTypeDec; out consIni: TEleExpress;
-                             out typesCreated: integer);
+                             out mainTypCreated: TEleTypeDec);
   {Get the constant intiialization for the declaration.}
   begin
     if token = '=' then begin
       Next;  //Pass to the next.
-      consIni := GetConstValue(consTyp, typesCreated);
+      consIni := GetConstValue(consTyp, mainTypCreated);
     end else begin
       GenError(ER_EQU_COM_EXP);
       exit;
@@ -962,10 +1025,9 @@ procedure TAnalyzer.AnalyzeConstDeclar;
 var
   consNames: array of string;  //nombre de variables
   srcPosArray: TSrcPosArray;
-  typesCreated: integer;
   consDec: TEleConsDec;
   consIni: TEleExpress;
-  consTyp: TEleTypeDec;
+  consTyp, mainTypCreated: TEleTypeDec;
   decStyle: TTypDeclarStyle;
   consTypCreated: boolean;
 begin
@@ -981,14 +1043,15 @@ begin
     //Puede seguir "=" o ":" <identificador de tipo>
     if not GetTypeDeclarColon(consTyp, decStyle, consTypCreated) then exit;
     //Si no había tipo; "consTyp" será NIL.
-    GetIntialization(consTyp, consIni, typesCreated );
+    GetIntialization(consTyp, consIni, mainTypCreated);
     if HayError then begin
       exit;
     end;
+    if consTyp<>nil then AddCallerToFromCurr(consTyp);  //Add caller
     consDec.typ := consIni.Typ;   //Update constant type.
     if consIni.Sto = stConst then begin
       //A simple value. We can initialize the constant.
-      consDec.value := consIni.value;
+      consDec.value := @consIni.value;
       consDec.evaluated := consIni.evaluated;
     end;
     //Other types (no otConst) will be evaluated later.
@@ -1006,63 +1069,7 @@ end;
 procedure TAnalyzer.AnalyzeVarDeclar;
 {Compila la declaración de variables en el nodo actual.
 "IsInterface", indica el valor que se pondrá al as variables, en la bandera "IsInterface" }
-  function GenTypeName(const xtyp: TEleTypeDec; const baseName: string): string;
-  {Genera un nombre para un tipo de acuerdo a su definición. Se supone que no es un tipo
-  "atomic".
-  Se generan nombres representativos, para poder luego verificar la existencia de tipos
-  compatibles. Así por ejemplo si se crea un ARRAY OF char y luego se crea otro ARRAY OF
-  char con el mismo tamaño, se preferirá usar el tipo ya creado que además es compatible.}
-  begin
-    //Genera nombre con caracter inválido para que no se pueda confundir con los que declara el usuario.
-    case xtyp.catType of
-    tctAtomic : //caso inútil
-       exit(xtyp.name);
-    tctArray  :  //Arreglo de algo
-      exit(GenArrayTypeName(xtyp.itmType.name, xtyp.nItems));
-    tctPointer:  //Puntero a algo
-      exit(GenPointerTypeName(xtyp.ptrType.name));
-    tctObject :  {Objeto. No se da un nombre fijo porque los objetos son muy variables. Podría
-                  intentarse con obj-<tipos de campos>, pero podría ser muy largo y poco útil
-                  para buscar compatibilidades de tipo}
-      exit(PREFIX_OBJ + '-' + baseName); //Caso particular
-    else  //Solo pasaría cuando hay ampliaciones
-      exit('???-' + baseName);
-    end;
-  end;
-  procedure ValidateTypesCreated(varTyp: TEleTypeDec; varTypCreated: boolean;
-                                 const adicVarDec: TAdicVarDec; typesCreated: Integer);
-  {Do a validation of the types created in order to leave the type elements ordered.}
-  var
-    nItems: Int64;
-  begin
-    if varTypCreated then begin
-      //A new type is created in the definition of the variable.
-      if adicVarDec.hasInit then begin
-        //A initialization exists.
-        if typesCreated=1 then begin
-          {La inicialización también ha creado un tipo en el AST. Esto se produce en un
-          caso de arreglo dinámico, como:
-            VAR myarray: ARRAY[] OF char  //Tipo creado en la definición
-               = 'abc';          //Tipo creado en la inicialización.
-          }
-          {Podríamos eliminar un tipo y dejar solo uno, pero para no tener que lidiar con
-          la eliminación de un elemento del AST (y sus "callers"). }
-          //Actualizamos para que apunte al tipo de la inicialización, porque ya tiene una llamada creada.
-          varTyp := adicVarDec.constDec.typ;
-        end else begin
-          {La inicialización no ha creado un tipo nuevo. Debe ser porque se ha
-          se ha reusado el tipo "varTyp". Puede ser algo como:
-            VAR myarray: ARRAY[3] OF char  //Tipo creado en la definición
-               = 'abc';          //Usa el mismo tipo de la definición.
-          }
-          //En este caso, solo nos queda darle el nombre aporopiado a varTyp:
-          nItems := varTyp.consNitm.value.ValInt;
-          varTyp.name := GenArrayTypeName(varTyp.itmType.name, nItems);
-        end;
-      end
-    end;
-  end;
-  procedure UpdateVar(xvar: TEleVarDec; varTyp: TEleTypeDec;
+  procedure UpdateVarDec(xvar: TEleVarDec; varTyp: TEleTypeDec;
                       const adicVarDec: TAdicVarDec);
   begin
     xvar.typ := varTyp;   //Update type
@@ -1079,11 +1086,11 @@ procedure TAnalyzer.AnalyzeVarDeclar;
     decNone  : xvar.storage := stRamFix;  //Will have a fixed memory address.
     end;
   end;
-  procedure GetAdicVarDeclar2(xType: TEleTypeDec; out aditVar: TAdicVarDec;
-            out typesCreated: integer);
+  procedure GetAdicVarDeclar2(varTyp: TEleTypeDec; out aditVar: TAdicVarDec;
+            out mainTypCreated: TEleTypeDec);
   {Versión de GetAdicVarDeclar() que no permite declaracionea adicionales.}
   begin
-    GetAdicVarDeclar(xType, aditVar, typesCreated);  //Could create new types
+    GetAdicVarDeclar(varTyp, aditVar, mainTypCreated);  //Could create new types
     if HayError then exit;
     {Like Free Pascal, we don't allow REGISTER, ABSOLUTE or initialization, for more
     than one variable.}
@@ -1104,8 +1111,8 @@ procedure TAnalyzer.AnalyzeVarDeclar;
 var
   varNames: array of string;  //nombre de variables
   srcPosArray: TSrcPosArray;
-  i, typesCreated: Integer;
-  varTyp: TEleTypeDec;
+  i: Integer;
+  varTyp, mainTypCreated: TEleTypeDec;
   adicVarDec: TAdicVarDec;
   varDec: TEleVarDec;
   decStyle: TTypDeclarStyle;
@@ -1129,15 +1136,14 @@ begin
       exit;
     end;
     //Lee información adicional de la declaración (ABSOLUTE, REGISTER, initial value)
-    GetAdicVarDeclar(varTyp, adicVarDec, typesCreated);  //Could create new types
+    GetAdicVarDeclar(varTyp, adicVarDec, mainTypCreated);  //Could create new types
     if HayError then begin
       //Cannot destroy, directly, the type created, because the creation has added variables to the AST.
       //if varTypCreated then varTyp.Destroy;
       exit;
     end;
-//ValidateTypesCreated(varTyp, varTypCreated, adicVarDec, typesCreated);
     AddCallerToFromCurr(varTyp);
-    UpdateVar(varDec, varTyp, adicVarDec);
+    UpdateVarDec(varDec, varTyp, adicVarDec);
     TreeElems.CloseElement;  //Close variable
   end else begin  //Multiple variables declaration
     //Add Variable declarations element to the AST
@@ -1152,16 +1158,15 @@ begin
           GenError(ER_SEM_COM_EXP);
           exit;
         end;
-        GetAdicVarDeclar2(varTyp, adicVarDec, typesCreated);  //Could create new types
+        GetAdicVarDeclar2(varTyp, adicVarDec, mainTypCreated);  //Could create new types
         if HayError then exit;
       end;
       ProcComments;
       {Aquí, finalmente, se tiene el tipo completo en su estructura porque, si había un
       arreglo no dimensionado, como:  foo []CHAR = 'HELLO'; ya se verificó la
       inicialización.}
-//      ValidateTypesCreated(varTyp, varTypCreated, adicVarDec, typesCreated);
       AddCallerToFromCurr(varTyp);
-      UpdateVar(varDec, varTyp, adicVarDec);
+      UpdateVarDec(varDec, varTyp, adicVarDec);
       TreeElems.CloseElement;  //Close variable
     end;
   end;
@@ -1379,7 +1384,7 @@ begin
     exit;
   end;
   //Ahora empieza el cuerpo de la función o las declaraciones
-  bod := TreeElems.AddElementBodyAndOpen(GetSrcPos);  //Open Body node
+  bod := TreeElems.AddBodyAndOpen(GetSrcPos);  //Open Body node
   Next;   //Takes "BEGIN"
   AnalyzeCurBlock;
   TreeElems.CloseElement;  //Close Body node
@@ -2303,7 +2308,7 @@ begin
     GenError('Expected "begin", "var", "type" or "const".');
     exit;
   end;
-  bod := TreeElems.AddElementBodyAndOpen(GetSrcPos);  //Abre nodo Body
+  bod := TreeElems.AddBodyAndOpen(GetSrcPos);  //Abre nodo Body
   Next;   //Takes "BEGIN"
   AnalyzeCurBlock;   //Compiles the body
   TreeElems.CloseElement;   //No debería ser tan necesario.

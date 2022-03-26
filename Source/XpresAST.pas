@@ -57,12 +57,12 @@ type  //Abstract Syntax Tree
     procedure DeleteTypeNode(typNode: TEleTypeDec);
     procedure ChangeParentTo(newparent, elem: TxpElement; position: integer = - 1);
     procedure InsertParentTo(newparent, elem: TxpElement);
-    function AddElementBodyAndOpen(srcPos: TSrcPos): TEleBody;
-    function AddElementConsAndOpen(srcPos: TSrcPos; cname: string;
+    function AddBodyAndOpen(srcPos: TSrcPos): TEleBody;
+    function AddConsDecAndOpen(srcPos: TSrcPos; cname: string;
       ctype: TEleTypeDec): TEleConsDec;
-    function AddElementVarAndOpen(srcPos: TSrcPos; vname: string;
+    function AddVarDecAndOpen(srcPos: TSrcPos; vname: string;
       vtype: TEleTypeDec): TEleVarDec;
-    function AddElementTypeAndOpen(srcPos: TSrcPos; tname: string; tsize: integer;
+    function AddTypeDecAndOpen(srcPos: TSrcPos; tname: string; tsize: integer;
       catType: TxpCatType; group: TTypeGroup; position: integer = - 1
   ): TEleTypeDec;
     function AddElementBlockAndOpen(srcPos: TSrcPos): TEleBlock;
@@ -234,7 +234,7 @@ begin
   //Reinsert "elem" as child of newparent
   newparent.AddElement(elem, 0);
 end;
-function TXpTreeElements.AddElementBodyAndOpen(srcPos: TSrcPos): TEleBody;
+function TXpTreeElements.AddBodyAndOpen(srcPos: TSrcPos): TEleBody;
 {Similar to AddElementAndOpen() but create and open a Body node. Returns the Body created.
 This function must be used always when creating a Body, because it mantains updated the
 variable "curBody" that is used to resolve names.}
@@ -246,7 +246,7 @@ begin
   AddElementAndOpen(Result);
   curCodCont := Result;  //Update current Code container
 end;
-function TXpTreeElements.AddElementConsAndOpen(srcPos: TSrcPos; cname: string;
+function TXpTreeElements.AddConsDecAndOpen(srcPos: TSrcPos; cname: string;
                          ctype: TEleTypeDec): TEleConsDec;
 begin
   Result := TEleConsDec.Create;
@@ -257,7 +257,7 @@ begin
   AddElementAndOpen(Result);
   curCodCont := Result;  //Update current Code container
 end;
-function TXpTreeElements.AddElementVarAndOpen(srcPos: TSrcPos; vname: string;
+function TXpTreeElements.AddVarDecAndOpen(srcPos: TSrcPos; vname: string;
                          vtype: TEleTypeDec): TEleVarDec;
 begin
   Result := TEleVarDec.Create;
@@ -268,7 +268,7 @@ begin
   AddElementAndOpen(Result);
   curCodCont := Result;  //Update current Code container
 end;
-function TXpTreeElements.AddElementTypeAndOpen(srcPos: TSrcPos; tname: string;
+function TXpTreeElements.AddTypeDecAndOpen(srcPos: TSrcPos; tname: string;
   tsize: integer; catType: TxpCatType; group: TTypeGroup;
   position: integer = -1): TEleTypeDec;
 begin

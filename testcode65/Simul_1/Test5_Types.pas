@@ -6,8 +6,10 @@ uses Commodore64;
 /////////////////  Types declaration ////////////////
 type
   tarr1 = array[3] of byte;
-  tarr2 = [3]array of char;
+  //tarr2 = [3]array of char;
+  
 var
+  b,c: boolean;
   arr5: array[] of byte = [1,2,3];
 begin
 
