@@ -28,7 +28,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="_libraries\SynFacilUtils-1.22;_libraries\MisUtils-0.6;_libraries\MiConfig-0.4;_libraries\P65Utils-0.5;_libraries\UtilsGrilla-0.8"/>
+            <OtherUnitFiles Value="_libraries\SynFacilUtils-1.22;_libraries\MisUtils-0.6;_libraries\MiConfig-0.4;_libraries\P65Utils-0.5;_libraries\UtilsGrilla-0.8;_libraries\epiktimer"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>

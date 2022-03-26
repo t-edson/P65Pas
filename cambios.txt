@@ -1,6 +1,13 @@
 P65PAS 0.9.1
 =============
 COMENTARIOS
+En esta versión se realizan algunas mejoras pequeñas en la interfaz, los bloques ASM,
+el generador de código y en el código fuente del proyecto.
+Resalta el ordenamiento de código en lo que se refiere al procesamiento de constantes y
+variables. Ahora se soporta la declaración de constantes con tipo y se ha cambiado a 
+TEleConsDec para que no cree copias de valores constantes.
+El mayor avance ha sido en la implementación casi completa del soporte para arreglos que
+estaba incompleto después de los cambios en la arquitectura del compilador.
 
 CAMBIOS
 - Se actualiza el código fuente para trabajar con la versión más reciente de Lazarus.
@@ -43,6 +50,9 @@ que ahora se incluye como nodo hijo.
 ejecución en los casos de errores de sintaxis en los ítems.
 - Se habilita TAnalyzer.GetConstValue() para detectar los formatos de arreglos [ ... ] y
 los string como arreglo de cadenas.
+- Se cambia el tipo del campo TEleConsDec.value para que sea un puntero en lugar de una
+copia de la constante incluida y se actualizan todas las referencias para mantener la 
+consistencia. 
 - Se convierte TCompilerBase.getListOfIdent() en función para simplificar su uso.
 - Se crea GetIntialization() dentro de TAnalyzer.AnalyzeConstDeclar() para uniformizar 
 TAnalyzer.AnalyzeConstDeclar() con TAnalyzer.AnalyzeVarDeclar().
@@ -59,11 +69,14 @@ de la cantidad de tipos creados.
 inteligencia para validar los tipos de tipo arreglo.
 - Se completa el test de pruebas de código ASM con una rutina de prueba de direccionamiento
 indexado por X y varaible registro.
-- Se corrige un problema con la inicialización del resultado en TGenCod.BOR_byte_equal_byte().
+- Se corrige un problema con la inicialización del resultado en TGenCod.BOR_byte_equal_byte()
+con operandos registro.
+
 
 TAREAS PLANIFICADAS
-- Revisar la implementación de ValidateTypesCreated(). 
-- Revisar si es necesario crear elementos Expresió por cada ítem de las constantes Arreglo.
+- Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
+- Revisar si no es mejor quitar la validación de número de ítems de arreglos en el análisis
+de arreglos y crear solo tipos "ARREGLOS DE TIPO". La validación de 
 - Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
 - Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
 - Describir mejor en la documentación, la forma en que se manejan las variables (registro, 

@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <language Val="en - English"/>
-  <winXpos Val="310"/>
-  <winYpos Val="15"/>
+  <winXpos Val="253"/>
+  <winYpos Val="14"/>
   <winWidth Val="1166"/>
   <winHeight Val="790"/>
   <winState Val="0"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test5_Types.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test5_Arrays.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -51,11 +51,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test5_Types.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test5_Types.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test4_Asm.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test1_Vars.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs2.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test5_Arrays.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_2\dWord1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_2\Word1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_2\types.pas
 "/>
   </Edit>
   <IncDecVar Val="False"/>

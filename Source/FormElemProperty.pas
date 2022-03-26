@@ -132,8 +132,10 @@ begin
     ImageList1.GetBitmap(23, Image1.Picture.Bitmap);
     adicInformation :=
            'Constan Type: ' + IfThen(xcon.typ=nil, 'Unknown', xcon.typ.name) + LineEnding +
-           'Evaluated: ' + IfThen(xcon.evaluated, 'true', 'false')  + LineEnding +
-           'Value: ' + xcon.value^.valuesAsString;
+           'Evaluated: ' + IfThen(xcon.evaluated, 'true', 'false');
+    if xcon.evaluated then begin
+      adicInformation += LineEnding + 'Value: ' + xcon.value^.valuesAsString;
+    end;
   end else if elem.idClass = eleVarDec then begin
     xvar := TEleVarDec(elem);
     txtEleType.Caption := 'Variable ('+elem.ClassName+')';

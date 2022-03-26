@@ -1,9 +1,10 @@
 program muestra;
-//type
-//  string3 = array[3] of char;
-//  tarr2 = [3]array of char;
+type
+  string3 = array[3] of char;
+  tarr2 = [3]char;
 //const BB: byte = 1; 
-//const CONS: string3 = ('a','b','c');
+const 
+ CONS: string3 = ('a','b','c');   
 //CONST CCC: array[3] of char = ('1','2','3'); 
 //CONST CC: array[3] of char = ('1','2','3'); 
 //var   x,y: byte;

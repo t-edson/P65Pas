@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <language Val="en - English"/>
+  <winXpos Val="171"/>
+  <winYpos Val="249"/>
+  <winWidth Val="1152"/>
+  <winHeight Val="641"/>
+  <winState Val="2"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
   <filesClosed Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_Vars.pas
@@ -14,6 +19,7 @@
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="250"/>
+  <EditAsmWidth Val="300"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="0"/>
   <MessPanBack Val="-2147483643"/>
