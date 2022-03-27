@@ -483,7 +483,7 @@ begin
   AcumStatInZ := true;
 end;
 procedure TGenCodBas.SetFunConst(fun: TEleExpress);
-{Fija los parámetros del resultado de una subexpresion. Este método se debe ejcutar,
+{Fija los parámetros del resultado de una subexpresion. Este método se debe ejecutar,
 siempre antes de evaluar cada subexpresión.}
 begin
   fun.opType := otConst;

@@ -139,6 +139,12 @@ protected //Calls to Code Generator (GenCod)
   callValidRAMaddr : procedure(addr: integer) of object;
   callStartProgram : procedure of object;
   callEndProgram   : procedure of object;
+  eleFunInc: TEleFun;   {Referencia a la función de incremento. Se guarda para evitar
+                        hacer búsqueda innecesaria. Notar que esta es una referencia
+                        hacia el generador de código que se llenará posteriormente.}
+  eleFunRef: TEleFun;   {Referencia a la función de _ref(). Se guarda para evitar
+                        hacer búsqueda innecesaria. Notar que esta es una referencia
+                        hacia el generador de código que se llenará posteriormente.}
 protected //Expressions
   function CompatibleTypes(typ1, typ2: TEleTypeDec): boolean;
   function MethodFromBinOperator(const OpType: TEleTypeDec; Op: string;
@@ -1469,15 +1475,16 @@ var
   xcon: TEleConsDec;
   eleMeth, Op1: TEleExpress;
   level: Integer;
-  ele, att, field: TxpElement;
+  ele, field: TxpElement;
   posCall: TSrcPos;
   pars: TxpParFuncArray;
   xfun: TEleFunBase;
   findState: TxpFindState;
-  fieldName, upTok: String;
+  upTok: String;
   value: TConsValue;
   typ: TEleTypeDec;
   cod: Longint;
+  opr1: TEleFun;
 begin
   SkipWhites;
   upTok := UpCase(token);
@@ -1650,24 +1657,27 @@ begin
       end;
     end else if token='^' then begin
       Next;    //Takes "^".
-      fieldName := '_PTRTO';
-      field := nil;
-      if Op1.Typ.elements = nil then begin
-        //There are not fields for this type
-        GenError(ER_UNKNOWN_IDE_, [token]);
+      //Validates if operand is pointer
+      if Op1.Typ.catType <> tctPointer then begin
+        GenError('Expression is not a pointer type.');
         exit;
       end;
-      for att in Op1.Typ.elements do begin
-        if att.uname = fieldName then begin
-           field := att;
-           break;
-        end;
-      end;
-      if field = nil then begin
-        GenError(ER_UNKNOWN_IDE_, [token]);
-        exit;
-      end;
-      //***** Completar
+      //Put element as parent of Op1
+      eleMeth := CreateExpression('_ref', typWord, otFunct, GetSrcPos);
+      eleMeth.fcallOp := true;  //Come from an operator.
+      TreeElems.InsertParentTo(eleMeth, Op1);
+      TreeElems.OpenElement(eleMeth);  //Set parent to method to allow add parameters as child node.
+      //Get reference to system function _ref().
+      opr1 := eleFunRef;  //Take direct reference to avoid call to TreeElems.FindFirst('_ref')
+      eleMeth.name := opr1.name;
+      eleMeth.rfun := opr1;  //Method for operator.
+      //eleMeth.Typ  := opr1.retType;  //Complete returning type.
+      eleMeth.Typ := Op1.Typ.ptrType;  //Complete with the type referenced.
+      AddCallerToFromCurr(opr1);     //Mark as used.
+//      //Prepare next operation.
+//      Op1 := eleMeth;   //Set new operand 1
+//      TreeElems.OpenElement(Op1.Parent);  //Returns to parent (sentence).
+//      SkipWhites;  //Prepares for take next operator.
     end else begin  //Must be '['.
       Next;    //Takes "[".
       if not Op1.Typ.FindElemName('_GETITEM', field) then begin

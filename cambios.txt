@@ -1,3 +1,73 @@
+P65PAS 0.9.2
+=============
+COMENTARIOS
+
+CAMBIOS
+- Se implementa el reconocimiento de los tipos de puntero a nivel de análisis.
+
+TAREAS PLANIFICADAS
+- Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
+- Revisar si no es mejor quitar la validación de número de ítems de arreglos en el análisis
+de arreglos y crear solo tipos "ARREGLOS DE TIPO". ¿Se podría aún trabajar con length() como método?
+- Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
+- Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
+- Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
+globales, locales) y los registros de trabajo.
+- Simplificar el uso de variables temporales.
+
+- Implementar la obligatoriedad de localizar el registro IX en la página cero.
+- Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
+- Crear una referencia en todos los elementos a su arbol de sintaxis correspondiente y 
+crear también una referencia del arbol de sintaxis a su compilador. La idea es que el 
+elemento pueda interpretar el campo idCtx de los registros TSrcPos, para poder obtener 
+información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde se lee 
+esta información.
+- Crear estructura para almacenar información de los diferentes archivos que componen el 
+proyecto para gestionar el uso de unidades.
+
+PENDIENTES
+- Definir si es necesario "TxpEleLocation" y verificar que se implementa bien.
+- Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
+-Generar bloques IF (o de otro tipo), de más de 128 bytes.
+-Revisar y adaptar los programas de prueba para el compilador.
+- Revisar el caso de tipos creados de forma repetida y hasta con el mismo nombre, como en 
+el caso: CONST CCC: array[3] of char = ('1','2','3'); 
+CC: array[3] of char = ('1','2','3'); 
+
+Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
+implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
+hace realmente en Pascal.
+
+Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
+desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
+
+Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
+De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
+almacenar la lista de los posibles tipos creados.
+
+Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
+
+inline func1(var x: byte; const y: word; expr z: char);
+begin
+end;
+
+La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
+considerando el tipo de almacenamiento del operando.
+Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
+codificar operaciones sobre tipos objeto:
+
+octeto = object
+    value: byte;
+  public 
+    inline assign(var x: byte) operator ":="  precedence 5;
+    
+    end;
+    inline assign(x: byte) operator ":=";
+    
+    end;
+  end;
+
+
 P65PAS 0.9.1
 =============
 COMENTARIOS
@@ -72,68 +142,6 @@ indexado por X y varaible registro.
 - Se corrige un problema con la inicialización del resultado en TGenCod.BOR_byte_equal_byte()
 con operandos registro.
 
-
-TAREAS PLANIFICADAS
-- Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
-- Revisar si no es mejor quitar la validación de número de ítems de arreglos en el análisis
-de arreglos y crear solo tipos "ARREGLOS DE TIPO". La validación de 
-- Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
-- Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
-- Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
-globales, locales) y los registros de trabajo.
-- Simplificar el uso de variables temporales.
-
-- Implementar la obligatoriedad de localizar el registro IX en la página cero.
-- Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
-- Crear una referencia en todos los elementos a su arbol de sintaxis correspondiente y 
-crear también una referencia del arbol de sintaxis a su compilador. La idea es que el 
-elemento pueda interpretar el campo idCtx de los registros TSrcPos, para poder obtener 
-información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde se lee 
-esta información.
-- Crear estructura para almacenar información de los diferentes archivos que componen el 
-proyecto para gestionar el uso de unidades.
-
-PENDIENTES
-- Definir si es necesario "TxpEleLocation" y verificar que se implementa bien.
-- Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
--Generar bloques IF (o de otro tipo), de más de 128 bytes.
--Revisar y adaptar los programas de prueba para el compilador.
-- Revisar el caso de tipos creados de forma repetida y hasta con el mismo nombre, como en 
-el caso: CONST CCC: array[3] of char = ('1','2','3'); 
-CC: array[3] of char = ('1','2','3'); 
-
-Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
-implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
-hace realmente en Pascal.
-
-Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
-desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
-
-Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
-De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
-almacenar la lista de los posibles tipos creados.
-
-Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
-
-inline func1(var x: byte; const y: word; expr z: char);
-begin
-end;
-
-La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
-considerando el tipo de almacenamiento del operando.
-Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
-codificar operaciones sobre tipos objeto:
-
-octeto = object
-    value: byte;
-  public 
-    inline assign(var x: byte) operator ":="  precedence 5;
-    
-    end;
-    inline assign(x: byte) operator ":=";
-    
-    end;
-  end;
 
 
 

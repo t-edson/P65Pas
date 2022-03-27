@@ -87,6 +87,7 @@ type
       procedure DefinePointer(etyp: TEleTypeDec);
       procedure DefineShortPointer(etyp: TEleTypeDec);
       procedure fun_Addr(fun: TEleExpress);
+      procedure fun_Ref(fun: TEleExpress);
       procedure fun_Byte(fun: TEleExpress);
 //      procedure DefineArray(etyp: TxpEleType);
       procedure LoadIXmult(const idx: TEleVarDec; size: byte; offset: word);
@@ -4878,7 +4879,7 @@ begin
         SetFunExpres(fun);
       end;
     end else begin
-      genError('Cannot obtain address variable.');
+      genError('Cannot obtain address for variable "%s"',[par.StoAsStr]);
       exit;
     end;
   end;
@@ -4916,6 +4917,42 @@ begin
     //  end;
     //end;
   //end;
+  else
+    //Shouldn't happen
+    genError('Design error.');
+  end;
+end;
+procedure TGenCod.fun_Ref(fun: TEleExpress);
+{Convert an "operand" to the form "operand^".}
+var
+  par: TEleExpress;
+begin
+  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  case par.opType of
+  otVariab: begin
+    //Es una variable simple. Una variable tiene dirección fija
+    if par.Sto = stRamFix then begin
+      {This is a special case where the result operand type, depends on if
+      par is allocated.}
+      if par.allocated then begin
+        SetFunVariab_RamVarOf(fun, par.rvar, 0);
+        fun.value.valInt := par.add;
+      end else begin
+        {No allocated. We keep this as an expression in order to force the
+        evaluation later, when the address must be defined.}
+        SetFunExpres(fun);
+      end;
+    end else begin
+      genError('Cannot use variable "%s" as a pointer.', [par.StoAsStr]);
+      exit;
+    end;
+  end;
+  otConst: begin
+    genError('Cannot use constant as a pointer.');
+  end;
+  otFunct: begin
+    genError('Cannot use expression as a pointer.');
+  end;
   else
     //Shouldn't happen
     genError('Design error.');
@@ -5723,6 +5760,12 @@ begin
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
   AddSysInlineFunction('addr', typWord, srcPosNull, pars, @fun_Addr);
+
+    //Create system function "_ref"
+  setlength(pars, 0);  //Reset parameters
+  AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
+  eleFunRef := AddSysInlineFunction('_ref', typNull, srcPosNull, pars, @fun_Ref);
+  //Se usa "typNull" porque el tipo devuelto no se conoce aquí. Será resuelto en la fase Análisis.
 
   //Multiply system function
   setlength(pars, 0);  //Reset parameters

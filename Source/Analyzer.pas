@@ -11,9 +11,6 @@ type
   public    //Access to CPU hardware.
     picCore    : TCPUCore;   //Objeto PIC Core. This is an abstraction. Real CPU is not yet specified.
     devicesPath: string;     //path to untis for this device
-    eleFunInc: TEleFun;   {Referencia a la función de incremneto. Se guarda para evitar
-                          hacer búsqueda innecesaria. Notar que esta es una referencia
-                          hacia el generador de código que se llenará posteriormente.}
     function PICName: string; virtual; abstract;
     function RAMmax: integer; virtual; abstract;
   private
@@ -786,48 +783,35 @@ If some problems happens, Error is generated and the NIL value is returned.
     //Capture final "END"
     if not CaptureStr('END') then exit;
   end;
-  function PointerDeclaration(const srcpos: TSrcPos): TEleTypeDec;
+  procedure PointerDeclaration(const srcpos: TSrcPos; out refTyp: TEleTypeDec);
   {Procesa la declaración de un tipo puntero y devuelve el tipo, ya creado para su
   validación.
   Se asume que ya se ha identificado el inicio de la declaración de un puntero,
   sea en su forma larga: "POINTER TO BYTE" o en su forma corta: ^BYTE }
   var
-    reftyp, xtyp: TEleTypeDec;
-    typName: String;
+    refDecStyle: TTypDeclarStyle;
+    refTypCreated: boolean;
   begin
-//    if token = '^' then begin
-//      //Declaración corta
-//      Next;  //Toma '^'
-//    {end else begin
-//      //Declaración larga: POINTER TO <tipo>
-//      Next; //Toma 'POINTER'. Se asume que ya se identificó.
-//      ProcComments;
-//      if not CaptureStr('TO') then exit;}
-//    end;
-//    //Por ahora solo permitiremos identificadores de tipos
-//    if not FindSysEleType(token, reftyp) then begin
-//      //No es un tipo del sistema, pero puede ser un tipo prdefinido
-//      reftyp := TreeElems.FindType(token); //Busca elemento
-////      reftyp := GetTypeDeclar(decStyle2, TypeCreated2); //Recursive definition
-//      if HayError then exit;
-//      if reftyp = nil then begin
-//        GenError('Expected a type identifier.');
-//        exit;
-//      end;
-//    end;
-//    //Verify type existence
-//    if not TreeElems.ExistsPointerType(reftyp, xtyp) then begin
-//      typName := GenPointerTypeName(refTyp.name);
-//      xtyp := CreateEleTypePtr(typName, srcPos, reftyp);
-//      if HayError then exit;
-//      TypeCreated  := true;     //Activate flag
-//    end;
-//    Next;   //take type name
-//    Result := xtyp;
+    if token = '^' then begin
+      //Declaración corta
+      Next;  //Toma '^'
+    end else begin
+      //Declaración larga: POINTER TO <tipo>
+      Next; //Toma 'POINTER'. Se asume que ya se identificó.
+      ProcComments;
+      if not CaptureStr('TO') then exit;
+    end;
+//    reftyp := TreeElems.FindType(token); //Busca elemento
+    reftyp := GetTypeDeclar(refDecStyle, refTypCreated); //Recursive definition
+    if refTypCreated then begin
+      //Por ahora solo permitiremos identificadores de tipos
+      GenError('Too complex type definition.');
+      exit;
+    end;
   end;
 var
   typName, tokL: String;
-  typ, itemTyp: TEleTypeDec;
+  typ, itemTyp, refType: TEleTypeDec;
   ele: TxpElement;
   srcPos: TSrcPos;
 begin
@@ -848,13 +832,20 @@ begin
       typ.itmType := itemTyp; //Item type
       callDefineArray(typ);   //Define operations to array
       //Update name *** ¿Podría estar duplicado?
-      typ.name := GenArrayTypeName(typ.itmType.name, typ.consNitm.value^.ValInt);
+      typ.name := GenArrayTypeName(itemTyp.name, typ.consNitm.value^.ValInt);
     CloseTypeDec(typ);  //Close type
   end else if {(tokL = 'pointer') or }(token = '^') then begin
     //Es declaración de puntero
     decStyle := ttdDeclar;  //Es declaración elaborada
-    typ := PointerDeclaration(srcpos);
-    if HayError then exit(nil);     //Sale para ver otros errores
+    typ := OpenTypeDec(srcPos, '', -1, tctPointer, t_object, location);
+      if HayError then exit;  //Can be duplicated
+      TypeCreated := true;
+
+      PointerDeclaration(srcpos, refType);
+      if HayError then exit(nil);     //Sale para ver otros errores
+      typ.ptrType := refType;
+      typ.name := GenPointerTypeName(refType.name);
+    CloseTypeDec(typ);  //Close type
   end else if (tokL = 'object') then begin
     //Es declaración de objeto
     decStyle := ttdDeclar;  //Es declaración elaborada

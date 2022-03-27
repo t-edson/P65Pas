@@ -1,29 +1,20 @@
-//uses Commodore64;
-const 
-  C1 = 0;
-  C2 = C1 + 5;
-  msj = 'holas';
-type
-  tarr1 = array[C2] of char;
-//  tarr2 = [3]char;
+{Test on accessing RAM video of Commodore64.}
+uses Commodore64;
 var
-  a2:tarr1;
-//  m: byte;
-//  a: array[3] of byte='abc';
-//procedure proc1;
-//begin
-//  
-//end; 
+  screen: array[1024] of byte absolute 1024;
 begin
-//  m := msj.length;
-//  a2 := msj;
-  a2 := 'casa';
-//  a3[0] := 1;
-//  n := a.length
-  //CLRSCR;
-  //CHROUT('H');
-  //CHROUT('O');
-  //CHROUT('L');
-  //CHROUT('A');
-  //asm  RTS  end
+  screen[13*40+0] := ord('H')-64;
+  screen[13*40+1] := ord('E')-64;
+  screen[13*40+2] := ord('L')-64;
+  screen[13*40+3] := ord('L')-64;
+  screen[13*40+4] := ord('O')-64;
+  asm rts end;  
 end.
+
+
+
+//  loc: ^byte;
+//  x: byte;
+//
+//  loc^ := 1;  
+
