@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <language Val="en - English"/>
-  <winXpos Val="172"/>
-  <winYpos Val="5"/>
+  <winXpos Val="334"/>
+  <winYpos Val="0"/>
   <winWidth Val="1166"/>
   <winHeight Val="790"/>
   <winState Val="0"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -18,9 +18,9 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="224"/>
-  <EditAsmWidth Val="361"/>
+  <EditAsmWidth Val="312"/>
   <ViewPanAssem Val="True"/>
-  <viewMode Val="0"/>
+  <viewMode Val="1"/>
   <MessPanBack Val="-2147483643"/>
   <MessPanText Val="536870912"/>
   <MessPanErr Val="255"/>
@@ -51,14 +51,14 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test5_Arrays.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\HolaMundo.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test4_Asm.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Procedure.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs1.pas
 "/>
   </Edit>
-  <IncDecVar Val="False"/>
+  <IncDecVar Val="True"/>
   <VarDecType Val="0"/>
   <IncAddress Val="True"/>
   <IncComment Val="True"/>

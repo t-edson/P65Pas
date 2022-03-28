@@ -18,6 +18,7 @@ type
   private //Compilación de secciones
     procedure EvaluateConstantDeclare;
     procedure ConstantFolding;
+    procedure ConstanPropagation;
     procedure DoOptimize;
     procedure DoGenerateCode;
   public
@@ -236,6 +237,153 @@ begin
   //Code body
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   ConstantFoldBody(bod);
+end;
+procedure TCompiler_PIC16.ConstanPropagation;
+{Do a constant propagation optimization. }
+  function IsForm_var_assign_const(assigExp: TEleExpress;
+        out varDec: TEleVarDec;
+        out consVal: TConsValue
+        ): boolean;
+  {Indicates if the assigment expression is of the form:
+     <variable> := <constant>
+  }
+  var
+    leftOp, rightOp: TEleExpress;
+  begin
+    if assigExp.opType <> otFunct then exit(false);  //Validation
+    //Must be an assignment expression
+    leftOp := TEleExpress(assigExp.elements[0]);
+    rightOp := TEleExpress(assigExp.elements[1]);
+    if (rightOp.Sto = stConst) and rightOp.evaluated then begin
+       //It's the form: <variable> := <constant>
+      varDec := leftOp.rvar;  //Takes var declaration
+      consVal := rightOp.value;
+      exit(true);
+    end;
+  end;
+  function ChangeToConstant(Op: TEleExpress; varDec: TEleVarDec; const consVal: TConsValue): boolean;
+  {Test if the operand is a variable refering to "varDec". If so, change it to a constant
+  type, set to "consVal" and returns TRUE. }
+  begin
+    if Op.opType <> otVariab then exit(false);
+    if varDec.IsParameter then exit(false);
+    if (Op.rvar = varDec) then begin
+      Op.opType := otConst;
+      Op.Sto := stConst;
+      Op.evaluated := true;
+      Op.value := consVal;
+      exit(True);
+    end else begin
+      exit(False);
+    end;
+  end;
+  function ReplaceVarByConst(assigExp: TEleExpress; varDec: TEleVarDec;
+        const consVal: TConsValue): boolean;
+  {Replace the variable by a constant in the right part of an assignment expression.
+  It replacing is done, returns TRUE.
+  }
+  var
+    rightOp, Op: TEleExpress;
+    ele: TxpElement;
+  begin
+    //Search at the right expression
+    Result := false;
+    rightOp := TEleExpress(assigExp.elements[1]);
+    case rightOp.opType of
+    otConst: begin
+      //Nothing to replace
+    end;
+    otVariab: begin
+      //Could be
+      if ChangeToConstant(rightOp, varDec, consVal) then begin
+        Result := True;
+      end;
+    end;
+    otFunct: begin
+      {Check for all of the operands of the function. Normal function at this level,
+      won't have child nodes.}
+      for ele in rightOp.elements do begin
+        Op := TEleExpress(ele);
+        if ChangeToConstant(Op, varDec, consVal) then begin
+          Result := True;
+        end;
+      end;
+    end;
+    end;
+  end;
+  procedure ConstantPropagBody(body: TEleBody);
+  {Do constant propagation in all sentences of the body. }
+  var
+    assigExp, assigToDelete: TEleExpress;
+    sen: TEleSentence;
+    eleSen, par: TxpElement;
+    n, i: Integer;
+    varDec, varDecToDelete: TEleVarDec;
+    consVal: TConsValue;
+    replaceMode, replaced: Boolean;
+  begin
+    //Process body
+    TreeElems.OpenElement(body);
+    for eleSen in TreeElems.curNode.elements do begin
+      if eleSen.idClass <> eleSenten then continue;
+      sen := TEleSentence(eleSen);
+      if sen.sntType = sntAssign then begin    //assignment)
+        //Explore previous posssible assigments
+        n := sen.elements.Count;
+        replaceMode := false;
+        replaced := false;
+        for i:=0 to n - 1 do begin
+          //Search the type: <variable> := <constant>
+          assigExp := TEleExpress(sen.elements[i]);  //Shoudn't fail
+          if replaceMode then begin
+            if ReplaceVarByConst(assigExp, varDec, consVal) then begin
+              //Replaced here.
+              replaced := true;
+              debugln('Constant propagation applied to: ' + varDecToDelete.name);
+            end;
+          end else begin
+            //Find mode. Finding the form: <variable> := <constant>
+            if i = n-1 then continue;  //The last assigment is unuseful for replacing.
+            if IsForm_var_assign_const(assigExp, varDec, consVal) then begin
+              replaceMode := true;  //Enter to mode replace for following sentences
+              assigToDelete := assigExp;  //This assigment will be deleted after replaced.
+              varDecToDelete := varDec;
+            end;
+          end;
+        end;
+        //Delete assigment
+        {Fromally we can delete an assigment of the form: <variable> := <constant>
+        even if it hasn't been replaced. In that case it will mean that <variable> is
+        not used (if it cannot be replaced is other problem but we assume it can be
+        replaced in all cases.).}
+        if replaced then begin
+          assigToDelete.elements.Clear;
+          par := assigToDelete.Parent;
+          par.elements.Remove(assigToDelete);
+          //Delete references, because we've deleted the only one remained existent.
+          varDecToDelete.lstCallers.Clear;
+          //We can even delete the variable declaration if it's no used from other sentences.
+        end;
+      end;
+    end;
+    TreeElems.CloseElement;              //Close the Body.
+  end;
+var
+  fun : TEleFun;
+  bod: TEleBody;
+begin
+  compMod := cmConsEval;    //Generates code.
+  pic.disableCodegen := true;  //Disable the code generation
+  pic.iRam := 0;  //Clear RAM position
+  //Code subroutines
+  for fun in usedFuncs do begin
+    if fun.codSysInline <> nil then continue;  //No INLINE
+    ConstantPropagBody(fun.BodyNode);
+    if HayError then exit;   //Puede haber error
+  end;
+  //Code body
+  bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
+  ConstantPropagBody(bod);
 end;
 procedure TCompiler_PIC16.SplitExpresBody(body: TEleBody);
 {Do a separation for assigmente sentences in order to have the "three-address code" form
@@ -496,6 +644,7 @@ begin
   might not be evaluated. So it should be needed to do other Code folding again.}
   ConstantFolding;
   if HayError then exit;
+  ConstanPropagation;
 end;
 procedure TCompiler_PIC16.DoGenerateCode;
 {Generates the final binary code using information from the AST as input.
