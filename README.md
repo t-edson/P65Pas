@@ -658,12 +658,12 @@ Variables are assigned with the instruction $SET:
 ```
 {$SET x = 1}
 {$SET y = 1 + x}
-{$SET x = 'I'm now a string'}
+{$SET x = 'I am now a string'}
 ```
 
 $SET, is not a declaration, but an assignment. First time a variable is assigned, it's created.
 
-Content of a variable, can be shown using instructions like $MSGBOX oo $INFO:
+Content of a variable, can be shown using instructions like $MSGBOX or $INFO:
 
 {$MSGBOX 'x is:' + x}
 
@@ -671,11 +671,11 @@ Content of a variable, can be shown using instructions like $MSGBOX oo $INFO:
 
 There are some system variables, accessible from the directives language. They are:
  
-{$MSGBOX PIC_MODEL} -> Shows the PIC model defined.
+{$MSGBOX CPU_MODEL} -> Shows the PIC model defined.
 
-{$MSGBOX PIC_FREQUEN} -> Shows the Clock frequency.
+{$MSGBOX CPU_FREQUEN} -> Shows the Clock frequency.
 
-{$MSGBOX PIC_MAXFREQ} -> Shows the Max Clock frequency for the device.
+{$MSGBOX CPU_MAXFREQ} -> Shows the Max Clock frequency for the device.
 
 {$MSGBOX SYN_MODE} -> Shows the syntax Mode of the compiler.
 
@@ -724,11 +724,11 @@ Shows a text message in the screen:
 
 {$MSGBOX 'Hello World'} -> Shows the message 'Hello World' in the screen.
 
-{$MSGBOX PIC_MODEL} -> Shows the system variable PIC_MODEL, that is the PIC model defined.
+{$MSGBOX CPU_MODEL} -> Shows the system variable CPU_MODEL, that is the CPU model defined.
 
-{$MSGBOX PIC_FREQUEN} -> Shows the Clock frequency.
+{$MSGBOX CPU_FREQUEN} -> Shows the Clock frequency.
 
-{$MSGBOX 'clock=' + PIC_FREQUEN}  -> Shows the message: "clock=8000000" (if the Frequency was set to 8MHz).
+{$MSGBOX 'clock=' + CPU_FREQUEN}  -> Shows the message: "clock=8000000" (if the Frequency was set to 8MHz).
 
 #### $MSGERR
 

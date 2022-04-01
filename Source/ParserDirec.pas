@@ -1520,10 +1520,10 @@ begin
 
   //Create system variables
   varsList.Clear;
-  AddSysVariableString('PIC_MODEL'   , @read_PIC_MODEL  , @write_PIC_MODEL);
-  AddSysVariableNumber('PIC_FREQUEN' , @read_PIC_FREQUEN, @write_PIC_FREQUEN);
-  AddSysVariableNumber('PIC_MAXFREQ' , @read_PIC_MAXFREQ, @write_PIC_MAXFREQ);
-  AddSysVariableNumber('PIC_ORG'     , @read_ORG        , @write_ORG);
+  AddSysVariableString('CPU_MODEL'   , @read_PIC_MODEL  , @write_PIC_MODEL);
+  AddSysVariableNumber('CPU_FREQUEN' , @read_PIC_FREQUEN, @write_PIC_FREQUEN);
+  AddSysVariableNumber('CPU_MAXFREQ' , @read_PIC_MAXFREQ, @write_PIC_MAXFREQ);
+  AddSysVariableNumber('CPU_ORG'     , @read_ORG        , @write_ORG);
   AddSysVariableString('SYN_MODE'    , @read_SYN_MODE   , @write_SYN_MODE);
 //  AddSysVariableString('CURRBLOCK'   , @read_CURRBLOCK  , nil);
 end;
