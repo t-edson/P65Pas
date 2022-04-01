@@ -844,6 +844,7 @@ begin
       PointerDeclaration(srcpos, refType);
       if HayError then exit(nil);     //Sale para ver otros errores
       typ.ptrType := refType;
+      callDefinePointer(typ);
       typ.name := GenPointerTypeName(refType.name);
     CloseTypeDec(typ);  //Close type
   end else if (tokL = 'object') then begin

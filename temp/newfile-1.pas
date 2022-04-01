@@ -1,11 +1,11 @@
-  procedure func2(par1: byte): byte;
-  begin
-    exit(par1+1);
-  end;
-  
+{$ORG $0801}
 var 
   xbyte : byte;
+  location, ptr: ^byte;
 begin
 //  xbyte := ord('A')-64;
-  xbyte :=  func2(1);
+//  xbyte :=  func2(1);
+  location := @xbyte;
+  location += 1;
+  location^ := 5;
 end.

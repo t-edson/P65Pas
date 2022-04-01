@@ -8,6 +8,8 @@ CAMBIOS
 a la función del sistema "_ref()"
 - Se crea la función TCompiler_PIC16.ConstanPropagation() para experimentar con una rutina
 de propagación de constantes.
+- Se habilita la rutina TGenCod.DefinePointer() para completar la definición de los tipos 
+punteros.
 
 TAREAS PLANIFICADAS
 - Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
@@ -17,7 +19,8 @@ de arreglos y crear solo tipos "ARREGLOS DE TIPO". ¿Se podría aún trabajar con l
 - Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
 - Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
 globales, locales) y los registros de trabajo.
-- Simplificar el uso de variables temporales.
+- Simplificar el uso de variables temporales, implementado el uso de variables registro o 
+con alguna otra técnica.
 
 - Implementar la obligatoriedad de localizar el registro IX en la página cero.
 - Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().

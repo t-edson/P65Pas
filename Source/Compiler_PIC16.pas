@@ -189,6 +189,12 @@ begin
 end;
 procedure TCompiler_PIC16.ConstantFolding;
 {Do a fold constant optimization and evaluate constant expresions. }
+var
+  SCREEN    : array[0..1000] of byte absolute $0400;
+  BITMAP    : array [0..1] of byte   absolute $2000;  //Size doesn't matter
+var
+  location: ^byte;
+
   procedure ConstantFoldBody(body: TEleBody);
   {Do constant folding simplification in all expression nodes. Note the similarity with
   TGenCodeBas.GenCodeSentences(), for scanning the AST.
@@ -225,6 +231,8 @@ var
   fun : TEleFun;
   bod: TEleBody;
 begin
+  location := @BITMAP;
+
   compMod := cmConsEval;    //Generates code.
   pic.disableCodegen := true;  //Disable the code generation
   pic.iRam := 0;  //Clear RAM position

@@ -5342,29 +5342,27 @@ begin
 end;
 procedure TGenCod.DefinePointer(etyp: TEleTypeDec);
 {Set operations that defines pointers aritmethic.}
-//var
-//  opr: TxpOperator;
 begin
-  //Asignación desde Byte y Puntero
-//  opr:=etyp.CreateBinaryOperator(':=',2,'_set');
-//  opr.CreateOperation(typWord, @BOR_word_asig_word);
-//  opr.CreateOperation(etyp   , @BOR_word_asig_word);
-//  //Agrega a los word, la posibilidad de ser asignados por punteros
+  //Asignación desde word y Puntero
+  CreateBOMethod(etyp, ':=', '_set', typWord, typNull, @BOR_word_asig_word);
+  CreateBOMethod(etyp, ':=', '_set', etyp, typNull, @BOR_word_asig_word);
+  //Agrega a los word, la posibilidad de ser asignados por punteros
 //  typWord.operAsign.CreateOperation(etyp, @BOR_word_asig_word);
-//
-//  opr:=etyp.CreateBinaryOperator('=',3,'equal');  //asignación
-//  opr.CreateOperation(typWord, @BOR_word_equal_word);
-//  opr:=etyp.CreateBinaryOperator('+',4,'add');  //suma
-//  opr.CreateOperation(typWord, @BOR_pointer_add_word);
-//  opr.CreateOperation(typByte, @BOR_pointer_add_byte);
-//  opr:=etyp.CreateBinaryOperator('-',4,'add');  //resta
-//  opr.CreateOperation(typWord, @BOR_pointer_sub_word);
-//  opr.CreateOperation(typByte, @BOR_pointer_sub_byte);
-//  opr:=etyp.CreateBinaryOperator('+=',2,'aadd');  //suma
-//  opr.CreateOperation(typWord, @BOR_word_aadd_word);
-//  opr.CreateOperation(typByte, @BOR_word_aadd_byte);
+
+  CreateBOMethod(etyp, '=','_equ', typWord, typBool, @BOR_word_equal_word);
+  CreateBOMethod(etyp, '=','_equ', etyp, typBool, @BOR_word_equal_word);
+
+  CreateBOMethod(etyp, '+', '_add', typWord, etyp, @BOR_pointer_add_word);
+  CreateBOMethod(etyp, '+', '_add', typByte, etyp, @BOR_pointer_add_byte);
+
+  CreateBOMethod(etyp, '-', '_sub', typWord, etyp, @BOR_pointer_sub_word);
+  CreateBOMethod(etyp, '-', '_sub', typByte, etyp, @BOR_pointer_sub_byte);
+
+  CreateBOMethod(etyp, '+=', '_aadd', typWord, etyp, @BOR_word_aadd_word);
+  CreateBOMethod(etyp, '+=', '_aadd', typByte, etyp, @BOR_word_aadd_byte);
 //
 //  etyp.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address); //defined in all types
+
 //  etyp.CreateUnaryPostOperator('^',6, 'deref', @UOR_derefPointer);  //dereferencia
 end;
 procedure TGenCod.DefineArray(etyp: TEleTypeDec);
