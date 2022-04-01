@@ -939,9 +939,9 @@ The syntax of $SET_STATE_RAM is:
 {$SET_STATE_RAM <list of commands>}
 ```
 
-Commands are separaed by commas. One command have the syntax:
+Commands are separated by commas. One command have the syntax:
 
-<Begin adrress>-<End address>:<state>
+  <Begin adrress> - <End address> : <state>
 
 One valid example, for this directive, would be:
 

@@ -21,7 +21,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-0.pas
   <SynTreeWidth Val="224"/>
   <EditAsmWidth Val="352"/>
   <ViewPanAssem Val="True"/>
-  <viewMode Val="0"/>
+  <viewMode Val="1"/>
   <MessPanBack Val="-2147483643"/>
   <MessPanText Val="536870912"/>
   <MessPanErr Val="255"/>
@@ -52,11 +52,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-0.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test4_Asm.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Procedure.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\Test5_Banks.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\Test5_BankConditions.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\loops1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-0.pas
 "/>
   </Edit>
   <IncDecVar Val="True"/>
