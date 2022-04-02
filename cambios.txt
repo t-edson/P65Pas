@@ -11,6 +11,7 @@ de propagación de constantes.
 - Se habilita la rutina TGenCod.DefinePointer() para completar la definición de los tipos 
 punteros.
 - Se corrige y actualizan el archivo README.md para adaptarse a la nueva versión.
+- Se corrige el uso de directivas (macros) al inicio de una expresión.
 
 TAREAS PLANIFICADAS
 - Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.

@@ -1724,7 +1724,7 @@ var
   oprPos: TSrcPos;
   oprPre: Integer;
 begin
-  SkipWhites;
+  ProcComments;
   //------------- Get first operand ---------------
   if tokType = tkOperator then begin
     //First token should be an pre-unary operator.

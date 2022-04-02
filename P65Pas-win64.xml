@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <language Val="en - English"/>
-  <winXpos Val="308"/>
-  <winYpos Val="3"/>
+  <winXpos Val="43"/>
+  <winYpos Val="8"/>
   <winWidth Val="1166"/>
   <winHeight Val="790"/>
   <winState Val="0"/>
@@ -53,11 +53,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-0.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
 "/>
   </Edit>
   <IncDecVar Val="True"/>

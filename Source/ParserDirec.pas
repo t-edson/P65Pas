@@ -1304,6 +1304,8 @@ begin
   instList.Add(dins);
 end;
 function TParserDirecBase.DefinedInstruc(insName: string; out dins: TDirInstruc): boolean;
+{Indica si "insName" es una de las instrucciones definidas con
+TParserDirecBase.AddInstruction().}
 begin
     insName := UpCase(insName);
     for dins in instList do begin

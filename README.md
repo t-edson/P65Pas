@@ -667,6 +667,13 @@ Content of a variable, can be shown using instructions like $MSGBOX or $INFO:
 
 {$MSGBOX 'x is:' + x}
 
+Variables defined can also be used as part of source code like macros:
+
+```
+  {$SET valor=1+1}
+  x := {$valor};   //x := 2;
+```
+
 ### System Variables
 
 There are some system variables, accessible from the directives language. They are:
