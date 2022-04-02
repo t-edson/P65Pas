@@ -728,7 +728,7 @@ Shows a text message in the screen:
 
 {$MSGBOX CPU_FREQUEN} -> Shows the Clock frequency.
 
-{$MSGBOX 'clock=' + CPU_FREQUEN}  -> Shows the message: "clock=8000000" (if the Frequency was set to 8MHz).
+{$MSGBOX 'clock=' + CPU_FREQUEN}  -> Shows the message: "clock=1000000" (if the Frequency was set to 1MHz).
 
 #### $MSGERR
 
