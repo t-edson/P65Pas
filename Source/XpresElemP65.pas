@@ -290,9 +290,6 @@ type  //Declaration elements
     {Estos eventos NO se generan automáticamente en TCompilerBase, sino que es la
     implementación del tipo, la que deberá llamarlos. Son como una ayuda para facilitar
     la implementación.}
-    OnSaveToStk : procedure of object; //Save data to stack.
-    OnGlobalDef : TProcDefineVar; {Es llamado cada vez que se encuentra la declaración
-                                  de una variable (de este tipo) en el ámbito global.}
     OnLoadToWR  : TProcLoadOperand;    //Used when required to load an operand in Work Register.
     OnRequireWR : procedure of object; //Used to detect dependencies on Work registers.
   public   //Identification
@@ -312,8 +309,6 @@ type  //Declaration elements
                                 TPtr = ^integer;       //ptrType = integer
                            }
     function nItems: integer;  //Number of items, when is tctArray (-1 if it's dynamic.)
-  public
-    procedure SaveToStk;
   public   //Information
     tmpNode: TxpElement;  //Temporal node informatios. Used by OpenTypeDec().
     function IsByteSize: boolean;
@@ -609,11 +604,10 @@ type  //Instructions relative elements
   //Sentences categories
   TxpSentence = (
     sntNull,       //Default value
-    //sntExpres,     //Expression or operand
     sntAssign,     //Assignment
     sntProcCal,    //Procedure call
     sntAsmBlock,   //ASM block
-    sntBeginEnd,   //BEGIN-END block
+//    sntBeginEnd,   //BEGIN-END block
     sntIF,         //Conditional IF
     sntREPEAT,     //REPEAT Loop
     sntWHILE,      //WHILE Loop
@@ -1597,10 +1591,6 @@ begin
   end;
 end;
 { TxpEleType }
-procedure TEleTypeDec.SaveToStk;
-begin
-  if OnSaveToStk<>nil then OnSaveToStk;
-end;
 function TEleTypeDec.IsByteSize: boolean;
 {Indica si el tipo, tiene 1 byte de tamaño}
 begin

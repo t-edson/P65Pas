@@ -453,7 +453,6 @@ begin
     WriteVaLueToRAM(@pic.ram, startAdd, typ, xVar.adicPar.constDec.value);
     if HayError then  exit;
   end;
-  if typ.OnGlobalDef<>nil then typ.OnGlobalDef(varName, '');
 end;
 procedure TGenCodBas.CreateValueInCode(typ: TEleTypeDec;
   const value: TConsValue; out startAddr: integer);

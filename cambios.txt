@@ -12,6 +12,9 @@ de propagación de constantes.
 punteros.
 - Se corrige y actualizan el archivo README.md para adaptarse a la nueva versión.
 - Se corrige el uso de directivas (macros) al inicio de una expresión.
+- Se eliminan los evento TEleTypeDec.OnSaveToStk y TEleTypeDec.OnGlobalDef.
+- Se completa la documentación con información sobre los tipos de sentencias y la clase
+TEleTypeDec.
 
 TAREAS PLANIFICADAS
 - Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
