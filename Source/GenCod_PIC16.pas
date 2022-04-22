@@ -5429,7 +5429,9 @@ function TGenCod.AddSysInlineFunction(name: string; retType: TEleTypeDec; const 
 }
 var
    fundec: TEleFunDec;
+   tmpLoc: TxpEleLocation;
 begin
+  tmpLoc := curLocation;     //Save current location. We are going to change it.
   //Add declaration
   curLocation := locInterface;
   fundec := AddFunctionDEC(name, retType, srcPos, pars, false);
@@ -5447,6 +5449,7 @@ begin
   Result.codSysInline := codSys;  //Set routine to generate code o BOR or UOR.
   TreeElems.CloseElement;  //Close body
   TreeElems.CloseElement;  //Close function implementation
+  curLocation := tmpLoc;   //Restore current location
 end;
 function TGenCod.AddSysNormalFunction(name: string; retType: TEleTypeDec; const srcPos: TSrcPos;
                const pars: TxpParFuncArray; codSys: TCodSysNormal): TEleFun;
@@ -5457,7 +5460,9 @@ function TGenCod.AddSysNormalFunction(name: string; retType: TEleTypeDec; const 
 }
 var
    fundec: TEleFunDec;
+   tmpLoc: TxpEleLocation;
 begin
+  tmpLoc := curLocation;     //Save current location. We are going to change it.
   //Add declaration
   curLocation := locInterface;
   fundec := AddFunctionDEC(name, retType, srcPos, pars, false);
@@ -5475,6 +5480,7 @@ begin
   Result.codSysNormal := codSys;  //Set routine to generate code o BOR or UOR.
   TreeElems.CloseElement;  //Close body
   TreeElems.CloseElement;  //Close function implementation
+  curLocation := tmpLoc;   //Restore current location
 end;
 function TGenCod.CreateBOMethod(
                       clsType: TEleTypeDec;   //Base type where the method bellow.
@@ -5493,7 +5499,6 @@ begin
   AddParam(pars, 'b', srcPosNull, clsType, decNone);  //Base object
   AddParam(pars, 'n', srcPosNull, parType, decNone);  //Parameter
   //Add declaration
-  curLocation := locInterface;   { TODO : Does it is neccesary to specify location for a method? }
   Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false,
                       false);  //Don't include variables to don't ask for RAM.
   TreeElems.AddBodyAndOpen(srcPosNull);  //Create body
@@ -5524,7 +5529,6 @@ begin
   setlength(pars, 0);        //Reset parameters
   AddParam(pars, 'b', srcPosNull, clsType, decNone);  //Base object
   //Add declaration
-  curLocation := locInterface;   { TODO : Does it is neccesary to specify location for a method? }
   Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false, true);
   //Here variables can be added
   {Create a body, to be uniform with normal function and for have a space where
@@ -5609,6 +5613,7 @@ begin
   IX.adicPar.hasInit := false;
   IX.location := locInterface;  //make visible
 
+  curLocation := locInterface;   {Maybe not needed because element here are created directly.}
   /////////////// Boolean type ////////////////////
   //Methods-Operators
   TreeElems.OpenElement(typBool);

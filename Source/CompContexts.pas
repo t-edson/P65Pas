@@ -53,7 +53,10 @@ type
     procedure ShowContexts;
     procedure ShowCurContInformat;
   public    //Errors and warnings
-    curLocation: TxpEleLocation;   //Ubicación actual de exploración
+    curLocation: TxpEleLocation;   {Current location for scan. This tells the compiler
+                                   where it's scanning. It useful because some declarations
+                                   have to interpret in different way according to the
+                                   location.}
     HayError: boolean;             //Flag for errors
     OnWarning: procedure(warTxt: string; const srcPos: TSrcPos) of object;
     OnError  : procedure(errTxt: string; const srcPos: TSrcPos) of object;
