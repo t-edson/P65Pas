@@ -3,7 +3,7 @@
   <ProjectSession>
     <PathDelim Value="\"/>
     <Version Value="12"/>
-    <BuildModes Active="Release"/>
+    <BuildModes Active="Debug"/>
     <Units Count="33">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
@@ -34,7 +34,6 @@
         <Filename Value="Compiler_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
         <CursorPos X="33" Y="627"/>
-        <FoldState Value=" TL0010113211141B p0vP0222]D31 T4504 T5A0Q]D7CKN T8D233 TMiQ8104291h]rug440315121E16]x711[d53i5]b pk5kC0w]9l5iI2K3 pjIkG0}l2]A4jA2e4]95ka0{_[T4gmb04]Jiaj20{;2 T6iF03O T0iKYg9]Qcaa47]8Xi7g4A]9Yk5D28]zHiGTIB[^4l6Z89[a5Xf7E]I3l1QW[R40jRJEF[s4l2ZC3 pjGQe1D THnfOK1 TE+e26O"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -48,12 +47,10 @@
       <Unit3>
         <Filename Value="GenCod_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
         <WindowIndex Value="1"/>
-        <TopLine Value="5464"/>
-        <CursorPos X="26" Y="5481"/>
-        <FoldState Value=" TL007116 p0joI05142]Bzf61012222[Q5v521812 T4i603 T5iA0{k1 T8jI457 TMmK030K171A1313]ptN0]h1B]u51]GuI071J[*41213]5F18[d4A01]PY]BxK0{D011I2 p0vP0703232H1R[{m5])4[%4]-43]4]Lsc018314131A1L]Hu84L0D243 pkIpT040]k]@E162 T3lF046 pj2jE045[95C0U2 plBm20{B1]J3lB0z[945kP06[94dk40{m]AiZlb052]JGjO0}q[T47oD0O3 pkLl60{v[J4bn]A5[A40l20{E[A46lI0}5[A5n80{C1[=4l[{G7Yjg0{e[A48m20{D2]&apos;7mI0{q1]AEnK063 pibj4])[T4Zn40,6 pjAkg0O4]SdjQ0Z2[}h5f0l3]9FkN0o[I4fl80Z4]9NkL0{R1 piYlF0x214 T0n3S2H[J4jKCAJ[94k1tJI]lKiME8[I4bifP2G[R4iga3J[j5bV6A]9abD9D]i2iSEG7]98jKB22 pjUJEGF]YXkcI4]zkAkVP3[Z4eiWP39[R4jEI4F[*4idI5E]RIjWP1D[I5SD6A[a4iYY4B[95RI8B[{q5LE6[s4Zi7E6K]s5iRD8G piciME2D[R53D6E[s5JdRD[95PTRC[952R59[95BED5 pk9YE97 pj6k3ECD[}C5LI9C[{Q5UdSG]R1jGIAA pifjbILB[_v5XIB9]RDkbEI8]98iHEaC]^ZiZEJD[s4kgII8[_:58Q2H[{95CI98]9ajKU39[}35JIK[}C6XU3D[_95IB3I]9bmUt2I[R4jVE8G[a5Sd2G pj3iNV4E[}$5Nt2A]IJjgDNB pkWiTD85]IMlKIUA T6oD01Q pdixL03Z]rJix1015 THoNFB4[^4l3IH4]-HleW\3]I7lXII[94fpgWx1 plSoRW!2]a8nBW{e[t45nBJK]9iak4IF[I4BkVIO[95oVW%]9kboNW{O1]bZm2W)2[S4mIId1]9eo4Wk1[;4l8W{l3 pjDtUI6[:4QkMFi[k4Rl9IS2 pkHp1FiZ"/>
+        <TopLine Value="5466"/>
+        <CursorPos X="31" Y="5492"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -318,7 +315,6 @@
         <EditorIndex Value="2"/>
         <TopLine Value="1420"/>
         <CursorPos X="18" Y="1441"/>
-        <FoldState Value=" T4503 T590m012 TMqU21011W151B1 T7EGD]W8F2691]G3l004C pm0mL0S4 pj4jb0C1 piYj50D1]IYk70821]t0l8T19]JZjYZ7F]bXj9d3D]9ZjfB5P[t4k996H[94iI/2B2E T6n807W THoGD.2]RaoLD{Z3 TKqM03 p0.S02G"/>
         <UsageCount Value="206"/>
         <Bookmarks Count="1">
           <Item0 X="23" Y="1441" ID="1"/>
@@ -339,10 +335,11 @@
       <Unit27>
         <Filename Value="Analyzer.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="2260"/>
-        <CursorPos Y="2308"/>
-        <FoldState Value=" T4302 T560r1 TLiC4201514 p0vG22D1117]Cte234118]BuN0125]j79Eo T8A244 T3iS043 pjXk00}-2 pkOmL2{2]j]MGnJ2/4]L6nW0u[I4WiH2G]9mPjM2t[m4Uoa094]RKjY0C[a4OS2d3 pifkO0H1]ZIkb0J2]IXjD0{+ T6iY01I p0%R01D T0j3G3A]XZiPF3A]@Bj5YF7]IYbQCF]HQiURPG[@57D.G]IAlKZ2416]KfjFy37181C[X4nfY4517]ZCkJWW9]Kci9WN51311121D[H4oGO4H[x4mBZ4]ZkSiPS9E]IYiUDfD]-Wj9c3F pj9jKP5G[R5KW353413 TMpQ61011317241F18141]a0t021061E1Q1421]HsZ0{V]I11k[V45650d2 TFrT6s]H&apos;C4p TEyg48 TH.dS7p"/>
+        <TopLine Value="1652"/>
+        <CursorPos X="28" Y="1855"/>
+        <FoldState Value=" T4302 T560r1 TLiC4201514 p0vG22D1117]Cte234118]BuN0125]j79Eo T8A244 T3iS043 pjXk00}-2 pkOmL2{21 poJl12-2]TPl42P[c4Om30u[I4WiH2G]9mPjM2t[t4Uoa094]RKjY0C011]BCS2d]tifkO0H01[,49n70{+1 T6iY01L]TX)D01B T0j3G3A]HZiPF3A]iBj5YF7]IYbQCF]HQiURPG[q4j7D.G]IAlKZ29[Z4j6l4[r41jFvC9[a5CB3E[R4kXS3[/4di9T33 piai4h68]9gi7f7B]s6iYMAF pj0mNO4H]RfmBZ481E[u4k7a401A16]Dejdd1C[}05e%3G[{g5HO3C[94iCb34 TMpQ61011317241F18141]f0t021061E1Q1421]HsZ0{V]I11k[V45650d2 TFrT6s]H&apos;C4p TEyg48 TH.dS71{"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="2"/>
@@ -378,9 +375,8 @@
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="3"/>
         <WindowIndex Value="1"/>
-        <TopLine Value="659"/>
-        <CursorPos X="21" Y="729"/>
-        <FoldState Value=" TL00602218 T4A01 T5i002]88F2F]73iD034 pnYiC0{C]AiZmb[R4pkSlD0{K522 T0iNJ4A]TXj0a5D]9Yj9Z2]lj0Zl7[t4ai2mIF[Z5OD4[Q4QMg3B]8GiAe3A]9NiEaA6]ZdXj3E4B TMsLA1 T6iX019 TFy4224P"/>
+        <TopLine Value="665"/>
+        <CursorPos X="31" Y="678"/>
         <UsageCount Value="203"/>
         <Loaded Value="True"/>
       </Unit30>
@@ -389,7 +385,7 @@
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="5"/>
         <TopLine Value="177"/>
-        <CursorPos X="17" Y="195"/>
+        <CursorPos X="21" Y="194"/>
         <UsageCount Value="205"/>
         <Bookmarks Count="1">
           <Item0 Y="231" ID="5"/>
@@ -404,9 +400,6 @@
         <UsageCount Value="10"/>
       </Unit32>
     </Units>
-    <General>
-      <ActiveWindowIndexAtStart Value="1"/>
-    </General>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="GenCod_PIC16.pas"/>
@@ -534,4 +527,15 @@
       <Modes ActiveMode="default"/>
     </RunParams>
   </ProjectSession>
+  <Debugging>
+    <BreakPoints>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="Analyzer.pas"/>
+        <Line Value="1853"/>
+      </Item>
+    </BreakPoints>
+  </Debugging>
 </CONFIG>
