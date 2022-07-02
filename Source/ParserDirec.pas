@@ -1098,7 +1098,7 @@ begin
   txtMsg := CogExpresion(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
-  if Compiling then GenInfo(txtMsg);
+  if enabDirMsgs then GenInfo(txtMsg);
 end;
 procedure TParserDirecBase.ProcWARNING;
 var
@@ -1108,7 +1108,7 @@ begin
   txtMsg := CogExpresion(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
-  if Compiling then GenWarn(txtMsg);
+  if enabDirMsgs then GenWarn(txtMsg);
 end;
 procedure TParserDirecBase.ProcERROR;
 var
@@ -1118,7 +1118,7 @@ begin
   txtMsg := CogExpresion(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
-  if Compiling then GenError(txtMsg);
+  if enabDirMsgs then GenError(txtMsg);
 end;
 procedure TParserDirecBase.ProcSET;
 //Asigna valor a una varaible
@@ -1169,7 +1169,7 @@ begin
   txtMsg := CogExpresion(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
-  if Compiling then msgbox(txtMsg);
+  if enabDirMsgs then msgbox(txtMsg);
 end;
 procedure TParserDirecBase.ProcMSGERR;
 var
@@ -1179,7 +1179,7 @@ begin
   txtMsg := CogExpresion(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
-  if Compiling then MsgErr(txtMsg);
+  if enabDirMsgs then MsgErr(txtMsg);
 end;
 procedure TParserDirecBase.ProcMSGWAR;
 var
@@ -1189,7 +1189,7 @@ begin
   txtMsg := CogExpresion(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
-  if Compiling then MsgExc(txtMsg);
+  if enabDirMsgs then MsgExc(txtMsg);
 end;
 procedure TParserDirecBase.ProcMODE;
 var

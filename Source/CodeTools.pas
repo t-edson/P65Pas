@@ -5,7 +5,7 @@ interface
 uses
   Classes, SysUtils, LCLType, LCLProc, SynEdit, SynEditHighlighter, LazUTF8,
   MisUtils, SynFacilCompletion, SynFacilHighlighter, SynFacilBasic,
-  FrameEditView, CompBase, Globales, XpresElemP65, LexPas, Analyzer;
+  FrameEditView, Globales, XpresElemP65, LexPas, Analyzer;
 type
   { TCodeTool }
   TCodeTool = class
@@ -97,7 +97,7 @@ begin
   if tok='' then exit;  //No encontró token
   if tokType <> lex.tnIdentif then exit;  //No es identificador
   //Asegurarse que "synTree" está actualizado.
-  cxp.Compile(fraEdit.ActiveEditor.FileName, false);  //Solo primera pasada
+  cxp.Exec(fraEdit.ActiveEditor.FileName, '', '-Ca');  //Solo análisis
   if cxp.HayError then begin
     //Basta que haya compilado hasta donde se encuentra el identifiacdor, para que funciones.
 //    MsgErr('Compilation error.');  //tal vez debería dar más información sobre el error
@@ -233,7 +233,7 @@ var
 begin
   opEve.ClearItems;  //limpia primero
   //Asegurarse que "synTree" está actualizado.
-  cxp.Compile(fraEdit.ActiveEditor.FileName, false);  //Solo primera pasada
+  cxp.Exec(fraEdit.ActiveEditor.FileName, '', '-Ca');  //Solo análisis
   if cxp.HayError then begin
     //Basta que haya compilado hasta donde se encuentra el identificador, para que funciones.
 //    MsgErr('Compilation error.');  //tal vez debería dar más información sobre el error
@@ -332,7 +332,7 @@ begin
   opEve.ClearAvails;
   opEve.ClearItems;  //limpia primero
   //Asegurarse que "synTree" está actualizado.
-  cxp.Compile(ed.FileName, false);  //Solo primera pasada
+  cxp.Exec(ed.FileName, '', '-Ca');  //Solo análisis
   if cxp.HayError then begin
     //Basta que haya compilado hasta donde se encuentra el identificador, para que funciones.
 //    MsgErr('Compilation error.');  //tal vez debería dar más información sobre el error

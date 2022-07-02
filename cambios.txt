@@ -1,6 +1,20 @@
 P65PAS 0.9.2
 =============
 COMENTARIOS
+En esta versión se está haciendo algunos avances importantes con miras a la sepración del 
+compilador de la IDE, y también para hacer una mejor IDE multicompilador. En este sentido,
+destaca las modificaciones que se han introducido en FormConfig para llenar dinámicamente 
+algunos controles a partir de configuraciones que proporciona el mismo compilador y también 
+en FormPrincipal para manejar diversos compiladores.
+Queda aún definir mejor la forma de hacer a la IDE multicompilador. La última opción analizada
+consiste en separar al compilador como proyecto de línea de comando pero incluir también en el 
+compilador, unos frames (que no formarán parte del proyecto compilador de consola) que servirán 
+para adaptar el compilador a la IDE. Estos frames serviran para crear opciones de configuración 
+(a incluir en el FormConfig) y herramientas adicionales (como simulador o depurador) del 
+compilador.
+Importante es la corrección que se ha hecho para las llamadas a funciones dentro de bloques
+condicionales y bucles. Antes no se estaba aplicando la optimización por falta de profundidad 
+en TCompiler_PIC16.SplitExpresBody().
 
 CAMBIOS
 - Se crea la función del sistema "_ref()" para implementar al operador "^".
@@ -17,8 +31,29 @@ punteros.
 TEleTypeDec.
 - Se modifican las rutinas TGenCod.AddSysInlineFunction() y TGenCod.AddSysNormalFunction() para
 que restauren "curLocation" al terminar.
+- Se renombra "TAnalyzer.IsUnit" a "TAnalyzer.GetUnitDeclaration".
+- Se renombra "TCompileBase.CompiledUnit" a "IsUnit".
+- Se modifica la rutina TCompiler_PIC16.Compile() para que se pueda definir la ejecución de 
+los 3 niveles (análisis, optimización y síntesis).
+- Se crea la propiedad "TConfig.AfterEdit_6502" y se crea el control en TConfig para definir 
+las acciones a ejecutar cuando se edita un código fuente.
+- Se crea el método abstracto Exec() en TCompilerBase y se elimina Compile() como método 
+abstracto.
+- Se cambia de nombre a TCompilerBase.Compiling por enabDirMsgs y se pasa a usar como opción
+del compilador.
+- Se crea la bandera TCompiler.Compiling para controlar el estado de la compilación.
+- Se renombra el método TfrmPrincipal.MarcarError por HighlightErrorLine y se incluye dentro 
+de TfrmPrincipal.VerificarError().
+- Se renombra TfrmPrincipal.VerificarError() por TfrmPrincipal.ShowErrorInDialogBox().
+- Se modifica TfraMessagesWin.EndCompilation() para incluir un parámetro de control.
+- Se modifica TfrmPrincipal.Timer1Timer() para llamar a Compiler.Exec() en lugar de 
+Compiler.Compile().
 
 TAREAS PLANIFICADAS
+- Verificar en qué clase corresponde crear OptBnkAftIF, OptReuProVar, ... y si no se mejor 
+ponerlos como PROTECTED porque ya no se necesitan acceder desde fuera porque ahora usamos 
+comandos.
+- Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
 - Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
 - Revisar si no es mejor quitar la validación de número de ítems de arreglos en el análisis
 de arreglos y crear solo tipos "ARREGLOS DE TIPO". ¿Se podría aún trabajar con length() como método?
@@ -41,7 +76,6 @@ proyecto para gestionar el uso de unidades.
 
 PENDIENTES
 - Definir si es necesario "TxpEleLocation" y verificar que se implementa bien.
-- Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
 -Generar bloques IF (o de otro tipo), de más de 128 bytes.
 -Revisar y adaptar los programas de prueba para el compilador.
 - Revisar el caso de tipos creados de forma repetida y hasta con el mismo nombre, como en 

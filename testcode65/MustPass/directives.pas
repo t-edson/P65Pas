@@ -36,8 +36,5 @@ begin
 //Define estado de la memoria RAM
 {$SET_STATE_RAM '000-00B:SFR, 00C-04F:GPR'}
 {$SET_STATE_RAM '080-08B:SFR, 08C-0CF:GPR'}
-//Define zonas de memoria mapeada
-{$SET_MAPPED_RAM '080-080:bnk0, 082-084:bnk0, 08A-08B:bnk0'}
-{$SET_MAPPED_RAM '08C-0CF:bnk0'}
 
 end. 

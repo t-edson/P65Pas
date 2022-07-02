@@ -38,6 +38,7 @@ function Trans(const strEn, strEs, strQu, strDe, strUk, strRu, strFr: string): s
 //////////////////////////////////////////////////////
 function LeerParametros: boolean;
 function NombDifArc(nomBase: String): String;
+procedure AddLine(var baseStr: string; newStr: string);
 
 implementation
 var
@@ -177,6 +178,12 @@ begin
    end;
    //todos los nombres estaban ocupados. Sale con el mismo nombre
 End;
+procedure AddLine(var baseStr: string; newStr: string);
+{Agrega una nueva línea a una cadena, verificando primero si está vacía}
+begin
+  if length(baseStr)=0 then baseStr := newStr
+  else baseStr := baseStr + LineEnding + newStr;
+end;
 
 initialization
   //inicia directorios de la aplicación

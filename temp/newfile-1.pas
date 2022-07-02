@@ -2,7 +2,7 @@ program test;
 {$MODE PASCAL}
 
 var
-  xx: Array[10] of Byte;
+  xx: Array[10] of Byte;+
 
 procedure Run;
 var

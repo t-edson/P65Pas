@@ -212,6 +212,7 @@ type
     procedure Timer1Timer(Sender: TObject);
     procedure butSelCompilerClick(Sender: TObject);
   private
+    Compiling   : Boolean;  //Bandera. Indica que se está en proceso de compilación.
     Compiler16  : TCompiler_PIC16;
     Compiler    : TAnalyzer;
     tic         : integer;  //Contador para temporización
@@ -236,9 +237,8 @@ type
     procedure fraSynTreeOpenFile(filname: string);
     procedure fraSynTreeSelectElemen(fileSrc: string; row, col: integer);
     procedure LoadAsmSyntaxEd;
-    procedure MarcarError(ed: TSynEditor; nLin, nCol: integer);
     procedure MarkErrors;
-    procedure VerificarError;
+    procedure ShowErrorInDialogBox;
   public
     frmDebug: TfrmDebugger;
     procedure SetLanguage(idLang: string);
@@ -306,7 +306,7 @@ begin
 end;
 procedure TfrmPrincipal.Compiler16_RequireFileString(FilePath: string; var strList: TStrings);
 {El compilador está solicitando acceder a un STringList, con el contenido de "FilePath",
-para evitar tener que leerlo de disco, y ahcer más rápido el acceso.}
+para evitar tener que leerlo de disco, y hacer más rápido el acceso.}
 var
   i: Integer;
   ed: TSynEditor;
@@ -315,16 +315,32 @@ begin
   if i <> -1 then begin
     //Tiene el archivo abierto. Pasa la referencia.
     ed := fraEditView1.editors[i];
-    if Compiler.Compiling then ed.SaveFile;   //En compilación guarda siempre los archivos afectados
+    if Compiling then begin
+      //En compilación guarda siempre los archivos afectados.
+      ed.SaveFile;
+    end else begin
+      {En verificación de sintaxis no es coveniente. Puede resultar molesto al usuario.
+      A menos que tenga activada alguna opción de "Autosave".}
+    end;
     strList := ed.SynEdit.Lines;
   end;
 end;
 procedure TfrmPrincipal.fraEdit_ChangeEditorState(ed: TSynEditor);
-{Se produjo una modificación en el editor "ed"}
+{Se produjo un cambio en el estado del editor actual. Estos cambios pueden ser:
+- Modificación del editor actual "ed" (caracter agregado, eliminado, ...).
+- Se acaba de seleccioar una ventana de edición.
+- El usuario graba el archivo del editor actual.
+- Se ha producido una grabación automática del archivo porque se está compilando.).
+}
 begin
-  if not Compiler.Compiling then begin
-    //En compilación no se activa la verificación automática de sintaxis
-    ticSynCheck := 0;  //reinicia cuenta
+  if Compiling then begin
+    //En compilación no se activa la verificación automática de sintaxis.
+    //Ya debe haberse desactivado.
+  end else begin
+    //No se está compilando el archivo.
+    {Activamos el contador de verificación de sintaxis, por si se necesita hacer, ya que
+    ha habido un cambio en el archivo actual en edición.}
+    ticSynCheck := 0;  //Reinicia cuenta.
   end;
   acArcSave.Enabled := ed.Modified;
   acEdUndo.Enabled  := ed.CanUndo;
@@ -468,9 +484,14 @@ begin
   splEdPas.Align := alRight;
   fraEditView1.Align := alClient;
   fraEditView1.tmpPath := patTemp;   //fija ruta de trabajo
-  Config.Iniciar;   //necesario para poder trabajar
+  //Configura opciones de configuración de todos los compiladores reconocidos
+  if not Config.SetActionAfterEdit('6502', Compiler.GetCompilerLevels) then self.Close;
+  //if not Config.SetActionAfterEdit('65C02', Compiler2.GetCompilerLevels) then self.Close;
+  //Inicia formulario de configuración.
+  Config.Init;   //necesario para poder trabajar
   Config.OnPropertiesChanges := @ChangeAppearance;
   Config.fraCfgExtTool.OnReplaceParams := @ConfigExtTool_RequirePar;
+  Config.SetCurrentCompiler('6502');
   CodeTool.SetCompiler(Compiler);
   fraSynTree.Init(Compiler);
   //Termina configuración
@@ -536,6 +557,7 @@ begin
   Config.SaveToFile;  //guarda la configuración actual
 end;
 procedure TfrmPrincipal.Timer1Timer(Sender: TObject);
+{Evento temporizado de Timer1. Cada 100 mseg.}
 var
   ed: TSynEditor;
 begin
@@ -558,33 +580,28 @@ begin
       StatusBar1.Panels[1].Text := Format('%d,%d', [ed.SynEdit.CaretX, ed.SynEdit.CaretY]);
     end;
   end;
-  if Config.AutSynChk and (ticSynCheck = 5) then begin
-    //Se cumplió el tiempo para iniciar la verificación automática de sintaxis
-//    debugln('--Verif. Syntax.' + TimeToStr(now));
-    if fraEditView1.Count>0 then begin
-      //Hay archivo abiertos
-      ed := fraEditView1.ActiveEditor;
-      if (ed.SynEdit.Lines.Count <=1) and  (trim(ed.Text)='') then begin
-        //Verifica rápidamente si hay texto en el editor
-         fraMessages.InitCompilation(Compiler, false);  //Limpia mensajes
-        exit;
-      end;
+  if (ticSynCheck = 5) and (fraEditView1.Count>0 ) then begin
+    {Se cumplió el tiempo para iniciar la verificación automática de sintaxis y hay
+    archivos abiertos.}
+//debugln('--Verif. Syntax.' + TimeToStr(now) + ':');
+    ed := fraEditView1.ActiveEditor;
+    //Verifica rápidamente si hay texto en el editor
+    if (ed.SynEdit.Lines.Count<=1) and (trim(ed.Text)='') then begin
       fraMessages.InitCompilation(Compiler, false);  //Limpia mensajes
-      if Config.AutCompile then begin  //Compilación y enlace
-        CompileFile(ed.FileName, false);  //No verifica error para evitar que el cursor se mueva mientras se escribe.
-        edAsm.BeginUpdate(false);
-        edAsm.Lines.Clear;
-        Compiler.DumpCode(edAsm.Lines, (Config.AsmType = dvtASM),
-                          Config.IncVarDec , Config.ExcUnused,
-                          Config.IncAddress, true, Config.IncVarName );
-        edAsm.EndUpdate;
-      end else begin
-        Compiler.Compile(ed.FileName, false);  //Solo compilación para verificar sintaxis
-      end;
-      //Puede haber generado error, los mismos que deben haberse mostrado en el panel.
-      MarkErrors;  //Resalta errores, si están en el editor actual
-      fraMessages.FilterGrid;  //Para que haga visible la lista de mensajes
+      exit;
     end;
+    //Hace la compilación o el análisis de sintaxis del editor actual.
+    fraMessages.InitCompilation(Compiler, false);  //Limpia mensajes pero no pone mesaje inicial.
+    Compiler.Exec(ed.FileName, '', Config.getParamsAfterEdit('6502'));
+    if fraMessages.HaveErrors then MarkErrors;
+    fraMessages.EndCompilation(false);        //No muestra los resúmenes
+    //Actualiza ventana de ensamblador.
+    edAsm.BeginUpdate(false);
+    edAsm.Lines.Clear;
+    Compiler.DumpCode(edAsm.Lines, (Config.AsmType = dvtASM),
+                      Config.IncVarDec , Config.ExcUnused,
+                      Config.IncAddress, true, Config.IncVarName );
+    edAsm.EndUpdate;
   end;
 end;
 procedure TfrmPrincipal.butSelCompilerClick(Sender: TObject);
@@ -866,19 +883,16 @@ begin
   MsgBox(MSG_NOFOUND_, [buscado]);
 end;
 procedure TfrmPrincipal.CompileFile(filName: string; verifErr: boolean);
+{Realiza la compilación del archivo indicado}
 begin
   fraMessages.InitCompilation(Compiler, true);  //Limpia mensajes
-  Compiler.incDetComm   := Config.IncComment2;   //Visualización de mensajes
-  Compiler.OptBnkAftIF  := Config.OptBnkAftIF;
-  Compiler.OptReuProVar := Config.ReuProcVar;
-  Compiler.OptRetProc   := Config.OptRetProc;
   ticSynCheck := 1000; //Desactiva alguna Verif. de sintaxis, en camino.
-  Compiler.Compiling := true;   //Activa bandera
-  Compiler.Compile(filName, true);
-  Compiler.Compiling := false;
+  Compiling := true;   //Activa bandera
+  Compiler.Exec(filName, '', Config.getParamsCompiling('6502'));
+  Compiling := false;
   if fraMessages.HaveErrors then begin
     fraMessages.EndCompilation;
-    if verifErr then VerificarError;
+    if verifErr then ShowErrorInDialogBox;
     MarkErrors;
     exit;
   end;
@@ -1049,7 +1063,7 @@ procedure TfrmPrincipal.acToolComEjecExecute(Sender: TObject);
 {Compila y ejecuta en la ventana de simulación}
 begin
   acToolCompilExecute(self);
-  if Compiler.CompiledUnit then exit;  //No es programa
+  if Compiler.IsUnit then exit;  //No es programa
   if not fraMessages.HaveErrors then begin
      frmDebug.Exec(Compiler);
      frmDebug.acGenRunExecute(self);
@@ -1222,9 +1236,23 @@ begin
 //     end;
   end;
 end;
-procedure TfrmPrincipal.VerificarError;
-//Verifica si se ha producido algún error en el preprocesamiento y si lo hay
-//Ve la mejor forma de msotrarlo
+procedure TfrmPrincipal.ShowErrorInDialogBox;
+{Verifica si se ha generado al menos un error en el Panel de mensajes. De ser así,
+marca la linea del error en color rojo (cuando es posible) y muestra una Caja de
+Diálogo con el mensaje de error.}
+  procedure HighlightErrorLine(ed: TSynEditor; nLin, nCol: integer);
+  {Pinta la línea de error "nLin" de color rojo, en el editor "ed". También osiciona el
+  cursor en la coordenada: (nCol, nLin).}
+  begin
+    fraEditView1.SetFocus;
+    //posiciona curosr
+  //  ed.SynEdit.CaretY := nLin; //primero la fila
+  //  ed.SynEdit.CaretX := nCol;
+    ed.SynEdit.LogicalCaretXY := Point(nCol, nLin);
+    //Define línea con error
+    ed.linErr := nLin;
+    ed.SynEdit.Invalidate;  //refresca
+  end;
 var
   msg, filname: string;
   row, col: integer;
@@ -1236,24 +1264,13 @@ begin
         fraEditView1.SelectOrLoad(filname);  //Selecciona o abre
          //Ya lo tenemos cargado
         If row <> -1 Then begin
-           MarcarError(fraEditView1.ActiveEditor, row, col);
+           HighlightErrorLine(fraEditView1.ActiveEditor, row, col);
         end;
         if Config.ShowErMsg Then MsgErr(msg);
     end else begin   //no hay archivo de error
       if Config.ShowErMsg Then MsgErr(msg);
     end;
 End;
-procedure TfrmPrincipal.MarcarError(ed: TSynEditor; nLin, nCol: integer);
-begin
-  fraEditView1.SetFocus;
-  //posiciona curosr
-//  ed.SynEdit.CaretY := nLin; //primero la fila
-//  ed.SynEdit.CaretX := nCol;
-  ed.SynEdit.LogicalCaretXY := Point(nCol, nLin);
-  //Define línea con error
-  ed.linErr := nLin;
-  ed.SynEdit.Invalidate;  //refresca
-end;
 
 end.
 

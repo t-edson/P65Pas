@@ -30,9 +30,7 @@ type
     BitCancel: TBitBtn;
     BitAceptar: TBitBtn;
     butSaveCurThem: TButton;
-    chkAutCompile: TCheckBox;
     chkOptBnkAftIF: TCheckBox;
-    chkAutSynChk: TCheckBox;
     chkIncVarName: TCheckBox;
     chkLoadLast: TCheckBox;
     chkOptBnkBefPro: TCheckBox;
@@ -60,6 +58,7 @@ type
     ComboBox1: TComboBox;
     Edit1: TEdit;
     GroupBox1: TGroupBox;
+    grpAfterEdit_65C02: TRadioGroup;
     grpTabEdiState: TRadioGroup;
     ImageList1: TImageList;
     Label1: TLabel;
@@ -83,6 +82,7 @@ type
     RadioGroup1: TRadioGroup;
     RadioGroup2: TRadioGroup;
     grpFilType: TRadioGroup;
+    grpAfterEdit_6502: TRadioGroup;
     spFontSize: TSpinEdit;
     tabEditor: TTabSheet;
     tabEdiColor: TTabSheet;
@@ -148,22 +148,22 @@ type
     VerBarDesV : boolean;  //ver barras de desplazamiento
     VerBarDesH : boolean;  //ver barras de desplazamiento
     TabEdiMode : integer;  //Estado de pestañas del editor
-    AutSynChk  : boolean;  //Verificación automática de sintaxis
-    AutCompile : boolean;  //Compilación automática
+    AfterEdit_6502: integer;  //Acción al editar código fuente
+    AfterEdit_65C02: integer; //Acción al editar código fuente
     property ViewStatusbar: Boolean read FViewStatusbar write SetViewStatusbar;
     property ViewToolbar: boolean read FViewToolbar write SetViewToolbar;
     property ViewPanMsg: boolean read FViewPanMsg write SetViewPanMsg;
     property ViewPanAssem: boolean read FViewPanAssem write SetViewPanAssem;
     property ViewSynTree: boolean read FViewSynTree write SetViewSynTree;
   public  //Configuraciones para ensamblador
-    IncVarDec : boolean;  //Incluye declaración de varaibles
     AsmType   : TAsmType; //Tipo de Salida
+    IncVarDec : boolean;  //Incluye declaración de varaibles
     IncAddress: boolean;  //Incluye dirección física en el código desensamblado
     IncComment: boolean;  //Incluye comentarios en el código desensamblado
     IncComment2: boolean; //Incluye comentarios detallados en el código desensamblado
     ExcUnused : boolean;  //Excluye declaración de variables no usadas
     IncVarName: boolean;  //Reemplaza dirección con etiqueta de variables
-    //Configuracions del compilador
+  public  //Configuracions del compilador
     ShowErMsg   : boolean;
     OptimLev    : TOptimLev;
     OptBnkAftIF : boolean;
@@ -177,9 +177,16 @@ type
     fraCfgSyntax : TfraCfgSyntax;
     fraCfgExtTool: TfraCfgExtTool;
     OnPropertiesChanges: procedure of object;
-    procedure Iniciar;
+    procedure Init;
     procedure Mostrar;
     procedure SaveToFile;
+  public //Configuración para múltiples compiladores
+    function GetRadioGroup(compId: string): TRadioGroup;
+    function GetAfterEdit(compId: string): integer;
+    function SetActionAfterEdit(compId, tasks: string): boolean;
+    procedure SetCurrentCompiler(compId: string);
+    function getParamsCompiling(compId: string): string;
+    function getParamsAfterEdit(compId: string): string;
   end;
 
 var
@@ -351,98 +358,6 @@ begin
   RadioGroup2.Enabled := chkIncDecVar.Checked;
   chkExcUnused.Enabled := chkIncDecVar.Checked;
 end;
-procedure TConfig.Iniciar;
-//Inicia el formulario de configuración. Debe llamarse antes de usar el formulario y
-//después de haber cargado todos los frames.
-var
-  s: TParElem;
-begin
-  //Configuraciones generales
-  s:=cfgFile.Asoc_Str ('language'   , @language, ComboBox1, 'en - English');
-  s:=cfgFile.Asoc_Int ('winXpos'    , @winXpos, 50);
-  s:=cfgFile.Asoc_Int ('winYpos'    , @winYpos, 50);
-  s:=cfgFile.Asoc_Int ('winWidth'   , @winWidth, 800);
-  s:=cfgFile.Asoc_Int ('winHeight'  , @winHeight, 600);
-  s:=cfgFile.Asoc_Enum('winState'   , @winState, SizeOf(TWindowState), 0);
-  //Configuraciones de Entorno
-  s:=cfgFile.Asoc_Enum('StateStatusbar', @StateToolbar, SizeOf(TStyleToolbar), RadioGroup1, 1);
-  s:=cfgFile.Asoc_Bol ('chkLoadLast',@LoadLast   , chkLoadLast   , true);
-  s:=cfgFile.Asoc_Str ('filesClosed', @filesClosed, '');
-  s:=cfgFile.Asoc_TCol('SplitterCol',@SplitterCol, colSplitCol, clDefault);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_TCol('MessPanPan', @PanelsCol , colMessPanPan , clDefault);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_Bol('VerPanMensaj', @FViewPanMsg  , true);
-  s:=cfgFile.Asoc_Bol('VerStatusbar', @ViewStatusbar, true);
-  s:=cfgFile.Asoc_Bol('VerBarHerram', @FViewToolbar , true);
-  s:=cfgFile.Asoc_Bol('ViewSynTree',  @FViewSynTree , true);
-  s:=cfgFile.Asoc_Int('SynTreeWidth', @SynTreeWidth , 130);
-  s:=cfgFile.Asoc_Int('EditAsmWidth', @EditAsmWidth , 300);
-  s:=cfgFile.Asoc_Bol('ViewPanAssem', @FViewPanAssem, true);
-  s:=cfgFile.Asoc_Enum('viewMode',  @viewMode   , SizeOf(TTreeViewMode), 0);
-  //Configuraciones del Panel de mensajes
-  s:=cfgFile.Asoc_TCol('MessPanBack',@MessPanBack, colMessPanBack, clWindow);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_TCol('MessPanText',@MessPanText, colMessPanText, clDefault);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_TCol('MessPanErr', @MessPanErr , colMessPanErr , clRed);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_TCol('MessPanSel', @MessPanSel , colMessPanSel , clBtnFace);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  //Configuraciones del Explorador de Cödigo
-  s:=cfgFile.Asoc_TCol('CodExplBack',@CodExplBack, colCodExplBack, clWindow);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_TCol('CodExplText',@CodExplText, colCodExplText, clDefault);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_Int ('grpFiltypes',@cexpFiltype,  grpFiltype, 0);
-
-  //Configuraciones del Editor
-  s:=cfgFile.Asoc_Int('TamLet', @TamLet, spFontSize, 10);
-  s.categ := 1;
-  cmbFontName.Items.Clear;
-  cmbFontName.Items.Add('Courier New');
-  cmbFontName.Items.Add('DejaVu Sans Mono');
-  cmbFontName.Items.Add('Fixedsys');
-  cmbFontName.Items.Add('Lucida Console');
-  cmbFontName.Items.Add('Consolas');
-  cmbFontName.Items.Add('Cambria');
-  s:=cfgFile.Asoc_Str('TipLet', @TipLet, cmbFontName, 'Courier New');
-  s.categ := 1;
-  s:=cfgFile.Asoc_Bol('VerBarDesV', @VerBarDesV, chkViewVScroll, true);
-  s:=cfgFile.Asoc_Bol('VerBarDesH', @VerBarDesH, chkViewHScroll, false);
-  s:=cfgFile.Asoc_Int('TabEdiState',@TabEdiMode, grpTabEdiState, 0);
-  s:=cfgFile.Asoc_Bol('AutSynChk',  @AutSynChk , chkAutSynChk , false);
-  s:=cfgFile.Asoc_Bol('AutCompile', @AutCompile, chkAutCompile, false);
-  //Configuraciones del Editor-Colores
-  fraCfgSynEdit.Iniciar('Edit', cfgFile);
-  //Configuración del Editor-Sintaxis
-  fraCfgSyntax.LoadSyntaxFiles(patSyntax);
-
-  //Configuraciones de Ensamblador
-  cfgFile.Asoc_Bol('IncDecVar' , @IncVarDec  , chkIncDecVar  , true);
-  cfgFile.Asoc_Enum('VarDecType',@AsmType , Sizeof(TAsmType), RadioGroup2, 1);
-  cfgFile.Asoc_Bol('IncAddress', @IncAddress , chkIncAddress , true);
-  cfgFile.Asoc_Bol('IncComment', @IncComment , chkIncComment , false);
-  cfgFile.Asoc_Bol('IncComment2',@IncComment2, chkIncComment2, false);
-  cfgFile.Asoc_Bol('ExcUnused' , @ExcUnused  , chkExcUnused  , true);
-  cfgFile.Asoc_Bol('IncVarName', @IncVarName , chkIncVarName , true);
-  //Configuraciones del compilador
-  cfgFile.Asoc_Bol('ShowErMsg' , @ShowErMsg, chkShowErrMsg, true);
-  cfgFile.Asoc_Enum('OptimLev' , @OptimLev, Sizeof(TOptimLev), grpOptimLev, 1);
-  cfgFile.Asoc_Bol('OptBnkAftIF' , @OptBnkAftIF , chkOptBnkAftIF , true);
-  cfgFile.Asoc_Bol('OptBnkBefPro', @OptBnkBefPro, chkOptBnkBefPro, true);
-  cfgFile.Asoc_Bol('OptBnkAftPro', @OptBnkAftPro, chkOptBnkAftPro, true);
-  cfgFile.Asoc_Bol('ReuProcVar'  , @ReuProcVar, chkReuProcVar, false);
-  cfgFile.Asoc_Bol('OptRetProc'  , @OptRetProc, chkOptRetProc, true);
-  //Configuración de Herramienta Externa
-  fraCfgExtTool.Init('ExternTool', cfgFile);
-  //////////////////////////////////////////////////
-  cfgFile.OnPropertiesChanges := @cfgFilePropertiesChanges;
-  if not cfgFile.FileToProperties then begin
-    MsgErr(cfgFile.MsjErr);
-  end;
-  chkIncDecVarChange(self);   //para actualizar
-end;
 procedure TConfig.FormShow(Sender: TObject);
 begin
   if not cfgFile.PropertiesToWindow then begin
@@ -500,6 +415,116 @@ begin
   FViewToolbar := AValue;
   cfgFilePropertiesChanges;
 end;
+procedure TConfig.Init;
+//Inicia el formulario de configuración. Debe llamarse antes de usar el formulario y
+//después de haber cargado todos los frames.
+var
+  s: TParElem;
+begin
+  ///////////////////////////////////////////////////////
+  ///////// Configuraciones generales
+  s:=cfgFile.Asoc_Str ('language'   , @language, ComboBox1, 'en - English');
+  s:=cfgFile.Asoc_Int ('winXpos'    , @winXpos, 50);
+  s:=cfgFile.Asoc_Int ('winYpos'    , @winYpos, 50);
+  s:=cfgFile.Asoc_Int ('winWidth'   , @winWidth, 800);
+  s:=cfgFile.Asoc_Int ('winHeight'  , @winHeight, 600);
+  s:=cfgFile.Asoc_Enum('winState'   , @winState, SizeOf(TWindowState), 0);
+
+  ///////////////////////////////////////////////////////
+  ///////// Configuraciones de Entorno
+  s:=cfgFile.Asoc_Enum('StateStatusbar', @StateToolbar, SizeOf(TStyleToolbar), RadioGroup1, 1);
+  s:=cfgFile.Asoc_Bol ('chkLoadLast',@LoadLast   , chkLoadLast   , true);
+  s:=cfgFile.Asoc_Str ('filesClosed', @filesClosed, '');
+  s:=cfgFile.Asoc_TCol('SplitterCol',@SplitterCol, colSplitCol, clDefault);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_TCol('MessPanPan', @PanelsCol , colMessPanPan , clDefault);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_Bol('VerPanMensaj', @FViewPanMsg  , true);
+  s:=cfgFile.Asoc_Bol('VerStatusbar', @ViewStatusbar, true);
+  s:=cfgFile.Asoc_Bol('VerBarHerram', @FViewToolbar , true);
+  s:=cfgFile.Asoc_Bol('ViewSynTree',  @FViewSynTree , true);
+  s:=cfgFile.Asoc_Int('SynTreeWidth', @SynTreeWidth , 130);
+  s:=cfgFile.Asoc_Int('EditAsmWidth', @EditAsmWidth , 300);
+  s:=cfgFile.Asoc_Bol('ViewPanAssem', @FViewPanAssem, true);
+  s:=cfgFile.Asoc_Enum('viewMode',  @viewMode   , SizeOf(TTreeViewMode), 0);
+
+  ///////////////////////////////////////////////////////
+  ///////// Configuraciones del Panel de mensajes
+  s:=cfgFile.Asoc_TCol('MessPanBack',@MessPanBack, colMessPanBack, clWindow);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_TCol('MessPanText',@MessPanText, colMessPanText, clDefault);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_TCol('MessPanErr', @MessPanErr , colMessPanErr , clRed);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_TCol('MessPanSel', @MessPanSel , colMessPanSel , clBtnFace);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  ///////// Configuraciones del Explorador de Cödigo
+  s:=cfgFile.Asoc_TCol('CodExplBack',@CodExplBack, colCodExplBack, clWindow);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_TCol('CodExplText',@CodExplText, colCodExplText, clDefault);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_Int ('grpFiltypes',@cexpFiltype,  grpFiltype, 0);
+
+  ///////////////////////////////////////////////////////
+  ///////// Configuraciones del Editor
+  s:=cfgFile.Asoc_Int('TamLet', @TamLet, spFontSize, 10);
+  s.categ := 1;
+  cmbFontName.Items.Clear;
+  cmbFontName.Items.Add('Courier New');
+  cmbFontName.Items.Add('DejaVu Sans Mono');
+  cmbFontName.Items.Add('Fixedsys');
+  cmbFontName.Items.Add('Lucida Console');
+  cmbFontName.Items.Add('Consolas');
+  cmbFontName.Items.Add('Cambria');
+  s:=cfgFile.Asoc_Str('TipLet', @TipLet, cmbFontName, 'Courier New');
+  s.categ := 1;
+  s:=cfgFile.Asoc_Bol('VerBarDesV', @VerBarDesV, chkViewVScroll, true);
+  s:=cfgFile.Asoc_Bol('VerBarDesH', @VerBarDesH, chkViewHScroll, false);
+  s:=cfgFile.Asoc_Int('TabEdiState',@TabEdiMode, grpTabEdiState, 0);
+  //Configuración por cada compilador
+  if grpAfterEdit_6502.Items.Count>0 then  //Por si no se ha configurado.
+  s:=cfgFile.Asoc_Int('AfterEdit_6502',@AfterEdit_6502, grpAfterEdit_6502, 0);
+
+  if grpAfterEdit_65C02.Items.Count>0 then  //Por si no se ha configurado.
+  s:=cfgFile.Asoc_Int('AfterEdit_65C02',@AfterEdit_65C02, grpAfterEdit_65C02, 0);
+
+  ///////////////////////////////////////////////////////
+  ///////// Configuraciones del Editor-Colores
+  fraCfgSynEdit.Iniciar('Edit', cfgFile);
+  //Configuración del Editor-Sintaxis
+  fraCfgSyntax.LoadSyntaxFiles(patSyntax);
+
+  ///////////////////////////////////////////////////////
+  ///////// Configuraciones de Ensamblador
+  cfgFile.Asoc_Bol('IncDecVar' , @IncVarDec  , chkIncDecVar  , true);
+  cfgFile.Asoc_Enum('VarDecType',@AsmType , Sizeof(TAsmType), RadioGroup2, 1);
+  cfgFile.Asoc_Bol('IncAddress', @IncAddress , chkIncAddress , true);
+  cfgFile.Asoc_Bol('IncComment', @IncComment , chkIncComment , false);
+  cfgFile.Asoc_Bol('IncComment2',@IncComment2, chkIncComment2, false);
+  cfgFile.Asoc_Bol('ExcUnused' , @ExcUnused  , chkExcUnused  , true);
+  cfgFile.Asoc_Bol('IncVarName', @IncVarName , chkIncVarName , true);
+
+  ///////////////////////////////////////////////////////
+  ///////// Configuraciones del compilador
+  cfgFile.Asoc_Bol('ShowErMsg' , @ShowErMsg, chkShowErrMsg, true);
+  cfgFile.Asoc_Enum('OptimLev' , @OptimLev, Sizeof(TOptimLev), grpOptimLev, 1);
+  cfgFile.Asoc_Bol('OptBnkAftIF' , @OptBnkAftIF , chkOptBnkAftIF , true);
+  cfgFile.Asoc_Bol('OptBnkBefPro', @OptBnkBefPro, chkOptBnkBefPro, true);
+  cfgFile.Asoc_Bol('OptBnkAftPro', @OptBnkAftPro, chkOptBnkAftPro, true);
+  cfgFile.Asoc_Bol('ReuProcVar'  , @ReuProcVar, chkReuProcVar, false);
+  cfgFile.Asoc_Bol('OptRetProc'  , @OptRetProc, chkOptRetProc, true);
+
+  ///////////////////////////////////////////////////////
+  ///////// Configuración de Herramienta Externa
+  fraCfgExtTool.Init('ExternTool', cfgFile);
+
+  //////////////////////////////////////////////////
+  cfgFile.OnPropertiesChanges := @cfgFilePropertiesChanges;
+  if not cfgFile.FileToProperties then begin
+    MsgErr(cfgFile.MsjErr);
+  end;
+  chkIncDecVarChange(self);   //para actualizar
+end;
 procedure TConfig.Mostrar;
 //Muestra el formulario para configurarlo
 begin
@@ -511,6 +536,91 @@ begin
   if not cfgFile.PropertiesToFile then begin
     MsgErr(cfgFile.MsjErr);
   end;
+end;
+//Configuración para múltiples compiladores
+function TConfig.GetRadioGroup(compId: string): TRadioGroup;
+//Devuelve el TRadioGroup que corresponde al compilador indicado.
+begin
+  case compId of
+    '6502':  exit(grpAfterEdit_6502); //Get Group to set
+    '65C02':  exit(grpAfterEdit_65C02); //Get Group to set
+  else
+    exit(nil);
+  end;
+end;
+function TConfig.GetAfterEdit(compId: string): integer;
+begin
+  case compId of
+    '6502':  exit(AfterEdit_6502);
+    '65C02':  exit(AfterEdit_65C02);
+  else
+    exit(-1);
+  end;
+end;
+function TConfig.SetActionAfterEdit(compId, tasks: string): boolean;
+{Configura el cuadro "Actions after changes" que define lo que se
+va a hacer después de hacer una modificación del archivo actual.
+Si se produce algún error, se muestra el mensaje y se devuelve FALSE.}
+var
+  lins: TStringList;
+  lin : String;
+  group: TRadioGroup;
+begin
+  //Select the group to fill.
+  group := GetRadioGroup(compId); //Get Group to set
+  if group=nil then begin
+    MsgExc('Unknown compiler.');
+    exit(False);
+  end;
+  //Fill the selected group
+  lins := TStringList.Create;
+  lins.Text := tasks;
+  for lin in lins do group.Items.Add(lin);
+  lins.Destroy;
+  exit(True);
+end;
+procedure TConfig.SetCurrentCompiler(compId: string);
+{Define cuál es el compilador actual de trabajo}
+var
+  group: TRadioGroup;
+  i: Integer;
+  control: TControl;
+begin
+  group := GetRadioGroup(compId); //Get Group to set
+  if group=nil then exit;
+  //Ocultar todos los TRadioGroup de tabEditor
+  for i:=0 to tabEditor.ControlCount-1 do begin
+    control := tabEditor.Controls[i];
+    if copy(control.Name,1,12) = 'grpAfterEdit' then begin
+      control.Visible := false;
+    end;
+  end;
+  //Configura grupo elegido
+  group.Left := 20;
+  group.Width := 300;
+  group.Visible := true;
+end;
+function TConfig.getParamsCompiling(compId: string): string;
+//Devuelve los parámetros definidos para el compilador "compId" como cadema.
+var
+  tmp: String = '';
+begin
+  if IncComment2 then AddLine(tmp, '-Ac');  //Comentario detallado
+//  if OptBnkAftIF then;
+  if ReuProcVar then AddLine(tmp, '-Ov');   //Reusar variables de proced.
+  if OptRetProc then AddLine(tmp, '-Or');   //Optimizar Retorno de proced.
+  exit(tmp);
+end;
+function TConfig.getParamsAfterEdit(compId: string): string;
+{Devuelve los parámetros para el compilador "compId", que se deben usar para ejecutar
+el compilador después de modificar un archivo. Por lo general se usa para verifiación
+de errores de sintaxis.}
+var
+  tmp: String;
+begin
+  tmp := getParamsCompiling(compId);  //Incluye opciones de compilación
+  AddLine(tmp, '-plev' + IntToStr(GetAfterEdit(compId)));  //Incluye comando "-plev"
+  exit(tmp);
 end;
 
 end.

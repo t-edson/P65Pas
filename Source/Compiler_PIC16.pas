@@ -9,28 +9,41 @@ uses
   GenCod_PIC16, ParserDirec_PIC16, Globales, FormConfig,
   XpresElemP65 {Por diseño, FormConfig, no debería accederse desde aquí};
 type
+  TCompileLevel = (
+    clNull,        //Do nothing
+    clAnalys,      //Only Analysis
+    clAnalOptim,   //Analysis and Optimization
+    clComplete     //Analysis, Optimization and Synthesis
+  );
   { TCompiler_PIC16 }
   TCompiler_PIC16 = class(TParserDirec)
-  private   //Funciones básicas
+  private  //Funciones básicas
     procedure ConstantFoldExpr(eleExp: TEleExpress);
-    procedure SplitExpresBody(body: TEleBody);
+    procedure SplitExpresBody(body: TxpEleCodeCont);
     procedure SplitExpressions;
-  private //Compilación de secciones
+  private  //Compilers steps
     procedure EvaluateConstantDeclare;
     procedure ConstantFolding;
     procedure ConstanPropagation;
     procedure DoOptimize;
     procedure DoGenerateCode;
-  public
+    procedure Compile(srcFile: string; level: TCompileLevel);
+  public      //Events
     OnAfterCompile: procedure of object;   //Al finalizar la compilación.
-    procedure Compile(NombArc: string; Link: boolean); override;
+  public      //Override methods
     procedure RAMusage(lins: TStrings; ExcUnused: boolean); override; //uso de memoria RAM
     procedure DumpCode(lins: TSTrings; AsmMode, IncVarDec, ExcUnused: boolean;
       incAdrr, incCom, incVarNam: boolean); override; //uso de la memoria Flash
     function RAMusedStr: string; override;
     procedure GetResourcesUsed(out ramUse, romUse, stkUse: single); override;
     procedure GenerateListReport(lins: TStrings); override;
-  public //Inicialización
+  public      //Interfaz for IDE
+    function GetCompilerOptions: string;
+    function GetCompilerLevels: string; override;
+    function CompilerLevelToPars(parlevel: string): string;
+    procedure Exec(srcFile, outFile: string; pars: string); override;
+    procedure PrintHelp;
+  public      //Inicialización
     constructor Create; override;
     destructor Destroy; override;
   end;
@@ -393,7 +406,7 @@ begin
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   ConstantPropagBody(bod);
 end;
-procedure TCompiler_PIC16.SplitExpresBody(body: TEleBody);
+procedure TCompiler_PIC16.SplitExpresBody(body: TxpEleCodeCont);
 {Do a separation for assigmente sentences in order to have the "three-address code" form
 like used in several compilers.}
   function MoveNodeToAssign(curContainer: TxpElement; Op: TEleExpress): TEleExpress;
@@ -583,6 +596,7 @@ var
   sen: TEleSentence;
   eleSen, _set, ele, _proc: TxpElement;
   _exp: TEleExpress;
+  _blk: TxpEleCodeCont;
 begin
   for eleSen in body.elements do begin
     if eleSen.idClass <> eleSenten then continue;
@@ -594,12 +608,15 @@ begin
     end else if sen.sntType = sntProcCal then begin  //Procedure call
       _proc := sen.elements[0];  //Takes the proc.
       SplitProcCall(sen, TEleExpress(_proc))
-    end else if sen.sntType = sntIF then begin  //IF sentence
-      //There are expressions inside conditions in a IF block
+    end else if sen.sntType in [sntIF, sntREPEAT, sntFOR, sntWHILE] then begin
+      //There are expressions and blocks inside conditions and loops.
       for ele in sen.elements do begin
         if ele.idClass = eleCondit then begin  //It's a condition
           _exp := TEleExpress(ele.elements[0]);  //The first item is a TEleExpress
           SplitExpress(ele, _exp)
+        end else if ele.idClass = eleBlock then begin   //Body of IF
+          _blk := TxpEleCodeCont(ele);  //The first item is a TEleExpress
+          SplitExpresBody(_blk);
         end;
       end;
     end else if sen.sntType = sntExit then begin
@@ -629,6 +646,7 @@ procedure TCompiler_PIC16.DoOptimize;
 miras a la síntesis.
 Se debe llamar después de llamar a DoAnalyzeProgram().}
 begin
+  if IsUnit then exit;
   ExprLevel := 0;
   ResetRAM;    //2ms aprox.
   ClearError;
@@ -710,6 +728,7 @@ var
   iniMain: integer;
   elem   : TxpElement;
 begin
+  if IsUnit then exit;
   //Verifica las constantes usadas. Solo en el nodo principal, para no sobrecargar mensajes.
   for elem in TreeElems.main.elements do if elem.idClass = eleConsDec then begin
     if elem.nCalled = 0 then begin
@@ -820,17 +839,18 @@ begin
   {No es necesario hacer más validaciones, porque ya se hicieron en la primera pasada}
   //_RTS();   //agrega instrucción final
 end;
-procedure TCompiler_PIC16.Compile(NombArc: string; Link: boolean);
+procedure TCompiler_PIC16.Compile(srcFile: string; level: TCompileLevel);
 //Compila el contenido de un archivo.
 var
   p: SizeInt;
 begin
+  if level = clNull then exit;
   debugln('');
   StartCountElapsed;  //Start timer
   DefCompiler;   //Debe hacerse solo una vez al inicio
   mode := modPicPas;   //Por defecto en sintaxis nueva
-  mainFile := NombArc;
-  hexfile := ChangeFileExt(NombArc, '.prg');     //Obtiene nombre
+  mainFile := srcFile;
+  hexfile := ChangeFileExt(srcFile, '.prg');     //Obtiene nombre
   hexfile := hexFilePath;   //Expande nombre si es necesario
   //se pone en un "try" para capturar errores y para tener un punto salida de salida
   //único
@@ -844,9 +864,9 @@ begin
     //Genera instrucciones de inicio
     ClearContexts;       //elimina todos los Contextos de entrada
     //Compila el texto indicado
-    if not OpenContextFrom(NombArc) then begin
+    if not OpenContextFrom(srcFile) then begin
       //No lo encuentra
-      GenError(ER_FIL_NOFOUND, [NombArc]);
+      GenError(ER_FIL_NOFOUND, [srcFile]);
       exit;
     end;
     {-------------------------------------------------}
@@ -855,7 +875,6 @@ begin
     TreeElems.main.name := ExtractFileName(mainFile);
     p := pos('.',TreeElems.main.name);
     if p <> 0 then TreeElems.main.name := copy(TreeElems.main.name, 1, p-1);
-//    TreeElems.main.srcDec.fil := mainFile;
     TreeElems.main.srcDec := GetSrcPos;
     //Continúa con preparación
     TreeDirec.Clear;
@@ -865,28 +884,25 @@ begin
     ClearMacros;           //Limpia las macros
     //Inicia PIC
     ExprLevel := 0;  //inicia
-    pic.dataAddr1   := -1;  {Reset flag}
+    pic.dataAddr1 := -1;  {Reset flag}
     //Compila el archivo actual como programa o como unidad
-    if IsUnit then begin
-      CompiledUnit := true;
-      DoAnalyzeUnit(TreeElems.main);
-      if HayError then exit;
-      UpdateCallersToUnits;
-      EndCountElapsed('-- Unit analyzed in: ');
-    end else begin
-      //Debe ser un programa
-      CompiledUnit := false;
-      DoAnalyzeProgram;    //puede dar error
-      if HayError then exit;
-      UpdateCallersToUnits;
-      EndCountElapsed('-- Program analyzed in: ');
-      if Link then begin  //El enlazado solo es válido para programas
+    IsUnit := GetUnitDeclaration();
+    DoAnalyze;
+    if HayError then exit;
+    UpdateCallersToUnits;
+    EndCountElapsed('-- Analyzed in: ');
+    if level >= clAnalOptim then begin  //Hay optimización
+      if not IsUnit then begin
         {Compila solo los procedimientos usados, leyendo la información del árbol de sintaxis,
         que debe haber sido actualizado en la primera pasada.}
         StartCountElapsed;
         DoOptimize;
         if HayError then exit;
         EndCountElapsed('-- Optimized in: ');
+      end;
+    end;
+    if level >= clComplete then begin  //Hay síntesis
+      if not IsUnit then begin
         StartCountElapsed;
         DoGenerateCode;
         //EndCountElapsed('-- Synthetized in: ');
@@ -995,7 +1011,7 @@ begin
   stkUse := TreeElems.main.maxNesting/STACK_SIZE;
 end;
 procedure TCompiler_PIC16.GenerateListReport(lins: TStrings);
-{Genera un reporte detallado de la compialción}
+{Genera un reporte detallado de la compilación}
 var
   curInst, opc: TP6502Inst;
   i: word;
@@ -1138,6 +1154,112 @@ begin
   lins.Add('');
   //Muestra el máximo nivel de anidamiento.
   lins.Add('Max. Nesting = ' + IntToSTr(TreeElems.main.maxNesting));
+
+end;
+//Interfaz for IDE
+function TCompiler_PIC16.GetCompilerOptions: string;
+{Devuelve el script para generar la interfaz en la GUI que permita configurar las
+opciones de compilación.}
+begin
+  exit('');
+  {***** Por completar ***
+  Se pensó en definir un lenguaje simple que permita crear fragmentos de GUI para
+  crear dinámicamente secciones de la ventana de configuración. Pero queda el problema
+  de la complejidad y que se debe también incluir los mecanismos de persistencia en
+  disco.
+  Después de un breve análisis, parece que conviene mejor crear frames o paneles
+  que se puedan incluir en la ventana de configruación. Esta solución también serviría
+  para acoplar las herramientas de simulación y depuración.}
+
+end;
+function TCompiler_PIC16.GetCompilerLevels: string;
+{Returns the levels that the compilers can execute. Returns as string in order to
+make it easy to read without any dependence of types defined for the compiler.
+This is useful to allow the IDE execute compilation in several detail levels. The
+"Only analysis level" can be used to check syntax. }
+begin
+  exit(
+  '<No actions>' + LineEnding +
+  'Do Only Analysis.' + LineEnding +
+  'Do Analysis and Optimization.' + LineEnding +
+  'Do complete compilation.'
+  );
+end;
+function TCompiler_PIC16.CompilerLevelToPars(parlevel: string): string;
+{Translate the index of menu generated by GetCompilerLevels() to the compiler
+parameters. Used to execute the compiler in the level indicated by "cmplevel".}
+begin
+  case parlevel of
+    '-plev0': exit('-Cn' + LineEnding + '-Dn');  //<No action>
+    '-plev1': exit('-Ca' + LineEnding + '-Dn');  //Do Only Analysis
+    '-plev2': exit('-Cao' + LineEnding + '-Dn'); //Do Analysis and Optimization.
+    '-plev3': exit('-C' + LineEnding + '-Dn');   //Do complete compilation.
+  else ;
+  end;
+end;
+procedure TCompiler_PIC16.Exec(srcFile, outFile: string; pars: string);
+{Execute the compiler. Commonly it will compile "srcFile" getting the parameters fron the
+string "pars". Pars must contain a parameter each line.
+This must be the main entry point to the compiler.}
+var
+  parsList: TStringList;
+  txt, parlevstr, parsexpanded: String;
+  comp_level: TCompileLevel;
+  i: SizeInt;
+begin
+  //Replace parameter levels if present.
+  i := pos('-plev', pars);   //Comiling level is indicated like "-plev0" or "-plev1" ...
+  if i>0 then begin
+    parlevstr := copy(pars, i, 6);  //Including index.
+    parsexpanded := CompilerLevelToPars(parlevstr);
+    pars := StringReplace(pars, parlevstr, parsexpanded, [rfReplaceAll]);
+  end;
+  //Load parameters in a list
+  parsList := TStringList.Create;
+  parsList.Text := trim(pars);
+debugln('--Executing:('+ StringReplace(pars, LineEnding,' ',[rfReplaceAll])+')');
+  //Extract and set parameters
+  if parsList.Count=0 then begin
+     //No parameters.
+    Compile(srcFile, clComplete);   //Complete compilation
+  end else begin
+    //Default settings
+    comp_level := clComplete;
+    enabDirMsgs := true;
+    for txt in parsList do begin
+      if length(txt)<2 then continue;
+      //---Compiling options
+      if copy(txt,1,2) = '-C' then begin
+        case txt of
+          '-Cn' : comp_level := clNull;
+          '-Ca' : comp_level := clAnalys;
+          '-Cao': comp_level := clAnalOptim;
+          '-C'  : comp_level := clComplete;
+        end;
+      end else
+      //---Optimization options
+      if copy(txt,1,2) = '-O' then begin
+        case txt of
+          '-On' : comp_level := clNull;
+          '-Oa' : comp_level := clAnalys;
+          '-Oao': comp_level := clAnalOptim;
+          '-O'  : comp_level := clComplete;
+        end;
+      end else
+      //---Other options
+      if txt = '-Dn' then begin
+         enabDirMsgs := false;  //Disable directive messages
+      end;
+    end;
+    //Compile
+    Compile(srcFile, comp_level);
+  end;
+  //Destroy lits
+  parsList.Destroy;
+end;
+procedure TCompiler_PIC16.PrintHelp;
+{Muestra las opciones de línea de comando que soporta este compilador}
+begin
 
 end;
 constructor TCompiler_PIC16.Create;

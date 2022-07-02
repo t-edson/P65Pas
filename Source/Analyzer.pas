@@ -24,7 +24,7 @@ type
     procedure MoveInternalTypes(node: TxpElement; declarSec: TxpElement;
       declarPos: Integer);
   protected
-    function IsUnit: boolean;
+    function GetUnitDeclaration: boolean;
     function StartOfSection: boolean;
     procedure CompileLastEnd;
   protected  //Elements processing
@@ -52,6 +52,7 @@ type
     procedure AnalyzeUsesDeclaration;
     procedure DoAnalyzeUnit(uni: TxpElement);
     procedure DoAnalyzeProgram;
+    procedure DoAnalyze;
   public
     {Indica que TCompiler, va a acceder a un archivo, peor está pregunatndo para ver
      si se tiene un Stringlist, con los datos ya caragdos del archivo, para evitar
@@ -1993,8 +1994,9 @@ begin
     ProcComments;  //Puede haber Directivas o ASM también
   end;
 end ;
-function TAnalyzer.IsUnit: boolean;
-{Indica si el archivo del contexto actual, es una unidad. Debe llamarse}
+function TAnalyzer.GetUnitDeclaration: boolean;
+{Indica si el archivo del contexto actual, es una unidad. Debe llamarse al inico de la
+exploración del archivo.}
 begin
   ProcCommentsNoExec;  //Solo es validación, así que no debe ejecutar nada
   //Busca UNIT
@@ -2208,14 +2210,6 @@ begin
 //    //codifica el contenido
 //    AnalyzeCurBlock;   //compila el cuerpo
 //    if HayError then exit;
-
-//    _SLEEP();   //agrega instrucción final
-//  end else begin
-//    GenError('Expected "begin", "var", "type" or "const".');
-//    exit;
-//  end;
-//  Cod_EndProgram;
-//debugln('   Fin Unit: %s-%s',[TreeElems.curNode.name, ExtractFIleName(curCon.fileSrc)]);
 end;
 procedure TAnalyzer.DoAnalyzeProgram;
 {Performs the Analysis (Lexical, syntactic and semantic).
@@ -2318,6 +2312,17 @@ begin
   if HayError then exit;
   //_RTS();   //agrega instrucción final
   callEndProgram;
+end;
+procedure TAnalyzer.DoAnalyze;
+{Performs the Analysis (Lexical, syntactic and semantic).
+Input: The current context.
+Output: The AST.}
+begin
+  if IsUnit then begin
+    DoAnalyzeUnit(TreeElems.main);
+  end else begin
+    DoAnalyzeProgram;    //puede dar error
+  end;
 end;
 
 end.

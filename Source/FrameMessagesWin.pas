@@ -80,7 +80,7 @@ type
       row, col: integer);
     function IsErroridx(f: integer): boolean;
     procedure InitCompilation(cxp0: TCompilerBase; InitMsg: boolean);
-    procedure EndCompilation;
+    procedure EndCompilation(showSummary: boolean = true);
     procedure AddError(errTxt: string; const srcPos: TSrcPos);
     procedure AddInformation(infTxt: string);
     procedure AddWarning(warTxt: string; const srcPos: TSrcPos);
@@ -397,6 +397,7 @@ begin
 end;
 procedure TfraMessagesWin.InitCompilation(cxp0: TCompilerBase; InitMsg: boolean
   );
+{Limpia grilla e inicia banderas para empezar a recibir mensajes.}
 begin
   cxp := cxp0;   //Guarda referencia
   grilla.RowCount := 1;   //Limpia Grilla
@@ -409,10 +410,18 @@ begin
   if InitMsg then AddInformation(cxp.CompilerName + ': ' + MSG_INICOMP);
   HaveErrors := false;  //limpia bandera
 end;
-procedure TfraMessagesWin.EndCompilation;
+procedure TfraMessagesWin.EndCompilation(showSummary: boolean = true);
+{Escribe un mensaje final del tiempo de compilación usado y la cantidad de advertencias
+y errores en el Panel de mensajes. También incluye información sobre los recursos usados
+(RAM) y filtra los mensajes de acuerdo a lo que indican los "CheckBox".}
 var
   infWar, infErr: String;
 begin
+  if not showSummary then begin
+     //Solo filtra los posibles mensajes recibidos.
+    FilterGrid;
+    exit;
+  end;
   //Construye información adicional
   CountMessages;
   if nWar = 1 then begin

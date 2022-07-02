@@ -102,9 +102,6 @@ grpTabEdiState.Items[1]:=Trans('Hide for &One file', '&Ocultar si hay un archivo
 grpTabEdiState.Items[2]:=Trans('&Hide always'      , 'Ocultar &Siempre'          , '',
                               '&Immer ausblenden','Ховати завжди','Прятать всегда', '&Toujours cacher');
 
-chkAutSynChk.Caption := Trans('Automatic Syntax checking', 'Verificac. Automática de sintaxis', '',
-                              'Automatische Syntaxprüfung','Автомтична перевірка синтаксису','Автоматическая проверка синтаксиса', 'Correction de syntaxe automatique');
-
 ////////////////////////////////////////////////////////////////////////////
 //////////////////////////// Editor Colors Settings ////////////////////////
 ////////////////////////////////////////////////////////////////////////////

@@ -168,15 +168,16 @@ public    //Types to implement
 //  typString: TxpEleType;
 public    //Public attributes of compiler
   ID        : integer;     //Identificador para el compilador.
-  Compiling : boolean;     //Bandera para el compilado
-  CompiledUnit: boolean;   //Flag to identify a Unit
+  IsUnit: boolean;   //Flag to identify a Unit
   //Variables públicas del compilador
   ejecProg  : boolean;     //Indicates the compiler is working
   stopEjec  : boolean;     //To stop compilation
-public    //Compiling Options
-  incDetComm  : boolean; //Incluir Comentarios detallados.
+public    //Compiling Options. Deberían ser PROTECTED.
   GeneralORG  : integer; //Dirección general de origen de código
+  protected
   mode        : (modPascal, modPicPas);
+  enabDirMsgs : boolean; //Bandera para permitir generar mensajes desde las directivas.
+  incDetComm  : boolean; //Incluir Comentarios detallados.
   OptBnkAftIF : boolean; //Optimizar instrucciones de cambio de banco al final de IF
   OptReuProVar: boolean; //Optimiza reutilizando variables locales de procedimientos
   OptRetProc  : boolean; //Optimiza el último exit de los procedimientos.
@@ -195,7 +196,8 @@ public    //Abstract methods
   procedure DumpCode(lins: TSTrings; asmMode, IncVarDec, ExcUnused: boolean;
                      incAdrr, incCom, incVarNam: boolean); virtual; abstract;
   procedure GenerateListReport(lins: TStrings); virtual; abstract;
-  procedure Compile(NombArc: string; Link: boolean); virtual; abstract;
+  function GetCompilerLevels: string; virtual; abstract;
+  procedure Exec(srcFile, outFile: string; pars: string); virtual; abstract;
 public    //Callers methods
   function AddCallerToFrom(toElem: TxpElement; callerElem: TxpElement): TxpEleCaller;
   function AddCallerToFromCurr(toElem: TxpElement): TxpEleCaller;

@@ -9,7 +9,8 @@
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
   <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
 "/>
   <SplitterCol Val="536870912"/>
   <MessPanPan Val="536870912"/>
@@ -18,7 +19,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="224"/>
-  <EditAsmWidth Val="525"/>
+  <EditAsmWidth Val="385"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="0"/>
   <MessPanBack Val="-2147483643"/>
@@ -33,8 +34,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
   <VerBarDesV Val="True"/>
   <VerBarDesH Val="False"/>
   <TabEdiState Val="0"/>
-  <AutSynChk Val="True"/>
-  <AutCompile Val="True"/>
+  <AfterEdit_6502 Val="3"/>
   <Edit>
     <cTxtNor Val="0"/>
     <cFonEdi Val="16777215"/>
@@ -51,11 +51,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test4_Asm.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test3_Structs1.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\Test5_Banks.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\Test5_BankConditions.pas
 "/>
   </Edit>
   <IncDecVar Val="True"/>
