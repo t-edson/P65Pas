@@ -4,7 +4,7 @@
     <PathDelim Value="\"/>
     <Version Value="12"/>
     <BuildModes Active="Release"/>
-    <Units Count="41">
+    <Units Count="40">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -35,8 +35,8 @@
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="569"/>
-        <CursorPos X="68" Y="611"/>
+        <TopLine Value="504"/>
+        <CursorPos X="41" Y="602"/>
         <FoldState Value=" T4504 T5iA07 TMid8104291 p0-882 T3iI]H pk5kC0w]9l5iI2K31]Bj4mQ2e21[M4Ol12G[K4NmW044 piaj20{;05]=6iS03E p0tf028 T0iXYg9]acaa47]8Xi7g4A]9Yk5D28]/HiGTIB]95l6Z8611512A]FGn1HI84F THoBOK1Z"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
@@ -404,64 +404,57 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="885"/>
         <CursorPos Y="903"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="8"/>
       </Unit32>
       <Unit33>
         <Filename Value="_libraries\MiConfig-0.4\MiConfigBasic.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="257"/>
         <CursorPos Y="276"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="7"/>
       </Unit33>
       <Unit34>
         <Filename Value="_libraries\MisUtils-0.6\MisUtils.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="305"/>
         <CursorPos X="3" Y="316"/>
-        <UsageCount Value="15"/>
+        <UsageCount Value="13"/>
       </Unit34>
       <Unit35>
         <Filename Value="C:\lazarus\lcl\include\radiogroup.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="373"/>
         <CursorPos Y="384"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="6"/>
       </Unit35>
       <Unit36>
-        <Filename Value="..\_language\tra_FormConfig.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="87"/>
-        <CursorPos Y="105"/>
-        <UsageCount Value="0"/>
-      </Unit36>
-      <Unit37>
         <Filename Value="C:\lazarus\lcl\include\customform.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="562"/>
         <CursorPos Y="580"/>
-        <UsageCount Value="9"/>
-      </Unit37>
-      <Unit38>
+        <UsageCount Value="6"/>
+      </Unit36>
+      <Unit37>
         <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\sysutils\sysstr.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="2372"/>
         <CursorPos X="73" Y="2375"/>
-        <UsageCount Value="9"/>
-      </Unit38>
-      <Unit39>
+        <UsageCount Value="7"/>
+      </Unit37>
+      <Unit38>
         <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\sysutils\sysstrh.inc"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="54" Y="28"/>
-        <UsageCount Value="9"/>
-      </Unit39>
-      <Unit40>
+        <UsageCount Value="7"/>
+      </Unit38>
+      <Unit39>
         <Filename Value="C:\lazarus\components\lazutils\lazloggerbase.pas"/>
         <UnitName Value="LazLoggerBase"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="909"/>
         <CursorPos Y="928"/>
-        <UsageCount Value="9"/>
-      </Unit40>
+        <UsageCount Value="7"/>
+      </Unit39>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
