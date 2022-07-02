@@ -11,7 +11,7 @@ uses
   StdCtrls, SynFacilHighlighter, SynFacilUtils, MisUtils, CompBase,  //Para tener acceso a TCompilerBase
   Compiler_PIC16,
   FrameSyntaxTree, FormConfig, Globales,
-  PicPasProject, FrameEditView, FrameMessagesWin, CodeTools,
+  PicPasProject, FrameEditView, FrameMessagesWin, CodeTools6502, adapter6502,
   FrameCfgExtTool, FormDebugger, FormRAMExplorer, ParserASM_6502, Analyzer;
 type
   { TfrmPrincipal }
@@ -201,6 +201,9 @@ type
     procedure fraEdit_ChangeEditorState(ed: TSynEditor);
     procedure DoSelectSample(Sender: TObject);
     procedure editChangeFileInform;
+    procedure ReplaceDialog1Replace(Sender: TObject);
+    procedure butSelCompilerClick(Sender: TObject);
+  published   //Form events
     procedure FormClose(Sender: TObject; var {%H-}CloseAction: TCloseAction);
     procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
@@ -208,9 +211,7 @@ type
     procedure FormShow(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure ReplaceDialog1Replace(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
-    procedure butSelCompilerClick(Sender: TObject);
   private
     Compiling   : Boolean;  //Bandera. Indica que se está en proceso de compilación.
     Compiler16  : TCompiler_PIC16;
@@ -239,6 +240,8 @@ type
     procedure LoadAsmSyntaxEd;
     procedure MarkErrors;
     procedure ShowErrorInDialogBox;
+  public     //Compilers adapters
+    adapter6502: TAdapter6502;
   public
     frmDebug: TfrmDebugger;
     procedure SetLanguage(idLang: string);
@@ -462,9 +465,12 @@ begin
   Compiler16.OnAfterCompile      := @Compiler16_AfterCompile;
   //Crea dinámicamente para poder inciailizarlo con comodidad
   frmDebug:= TfrmDebugger.Create(self);
+  //Crea adaptadores de compiladore
+  adapter6502:= TAdapter6502.Create;
 end;
 procedure TfrmPrincipal.FormDestroy(Sender: TObject);
 begin
+  adapter6502.Destroy;
   frmDebug.Destroy;
   CodeTool.Destroy;
   hlAssem.Free;
@@ -484,7 +490,8 @@ begin
   splEdPas.Align := alRight;
   fraEditView1.Align := alClient;
   fraEditView1.tmpPath := patTemp;   //fija ruta de trabajo
-  //Configura opciones de configuración de todos los compiladores reconocidos
+  //Registra adaptadores de compiladores soportados.
+
   if not Config.SetActionAfterEdit('6502', Compiler.GetCompilerLevels) then self.Close;
   //if not Config.SetActionAfterEdit('65C02', Compiler2.GetCompilerLevels) then self.Close;
   //Inicia formulario de configuración.

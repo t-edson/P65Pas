@@ -10,7 +10,7 @@ uses
   Forms, lazcontrols, FormPrincipal, FrameSyntaxTree, Globales,
   FormConfig, PicPasProject, FrameEditView, FrameMessagesWin, FormElemProperty,
   FrameCfgExtTool, FormDebugger, FormRAMExplorer, ParserDirec, Analyzer, LexPas,
-  CompContexts, ParserASM_6502, XpresElemP65;
+  CompContexts, ParserASM_6502, XpresElemP65, adapter6502;
 
 {$R *.res}
 

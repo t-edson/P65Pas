@@ -73,7 +73,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="32">
+    <Units Count="33">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -170,7 +170,7 @@
         <ResourceBaseClass Value="Frame"/>
       </Unit16>
       <Unit17>
-        <Filename Value="CodeTools.pas"/>
+        <Filename Value="adapter6502\CodeTools6502.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit17>
       <Unit18>
@@ -250,6 +250,10 @@
         <Filename Value="XpresElemP65.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit31>
+      <Unit32>
+        <Filename Value="adapter6502\adapter6502.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit32>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -260,7 +264,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="_libraries\SynFacilUtils-1.22;_libraries\MisUtils-0.6;_libraries\MiConfig-0.4;_libraries\P65Utils-0.5;_libraries\UtilsGrilla-0.8;_libraries\epiktimer"/>
+      <OtherUnitFiles Value="_libraries\SynFacilUtils-1.22;_libraries\MisUtils-0.6;_libraries\MiConfig-0.4;_libraries\P65Utils-0.5;_libraries\UtilsGrilla-0.8;_libraries\epiktimer;adapter6502"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>
