@@ -168,7 +168,7 @@ public    //Types to implement
 //  typString: TxpEleType;
 public    //Public attributes of compiler
   ID        : integer;     //Identificador para el compilador.
-  IsUnit: boolean;   //Flag to identify a Unit
+  IsUnit    : boolean;     //Flag to identify a Unit
   //Variables públicas del compilador
   ejecProg  : boolean;     //Indicates the compiler is working
   stopEjec  : boolean;     //To stop compilation
@@ -197,7 +197,6 @@ public    //Abstract methods
                      incAdrr, incCom, incVarNam: boolean); virtual; abstract;
   procedure GenerateListReport(lins: TStrings); virtual; abstract;
   function GetCompilerLevels: string; virtual; abstract;
-  procedure Exec(srcFile, outFile: string; pars: string); virtual; abstract;
 public    //Callers methods
   function AddCallerToFrom(toElem: TxpElement; callerElem: TxpElement): TxpEleCaller;
   function AddCallerToFromCurr(toElem: TxpElement): TxpEleCaller;

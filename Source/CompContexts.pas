@@ -60,9 +60,10 @@ type
     HayError: boolean;             //Flag for errors
     OnWarning: procedure(warTxt: string; const srcPos: TSrcPos) of object;
     OnError  : procedure(errTxt: string; const srcPos: TSrcPos) of object;
-    OnInfo   : procedure(infTxt: string) of object;
+    OnInfo   : procedure(infTxt: string; const srcPos: TSrcPos) of object;
     procedure ClearError;
     //Rutinas de generación de mensajes
+    procedure GenInfo(msg: string; const srcPos: TSrcPos);
     procedure GenInfo(msg: string);
     //Rutinas de generación de advertencias
     procedure GenWarn(msg: string; const srcPos: TSrcPos);
@@ -365,9 +366,24 @@ error anterior.}
 begin
   HayError := false;
 end;
-procedure TContexts.GenInfo(msg: string);
+procedure TContexts.GenInfo(msg: string; const srcPos: TSrcPos);
+{Genera un mensaje de Advertencia, en la posición indicada. }
 begin
-  if OnInfo<>nil then OnInfo(msg);
+  if OnInfo<>nil then OnInfo(msg, srcPos);
+end;
+procedure TContexts.GenInfo(msg: string);
+{Genera un mensaje de Información, en la posición actual del contexto. }
+var
+  srcPos: TSrcPos;
+begin
+  if curCtx = nil then begin
+    srcPos.row := -1;
+    srcPos.col := -1;
+    srcPos.idCtx := 0;
+    GenInfo(msg, srcPos);
+  end else begin
+    GenInfo(msg, GetSrcPos);
+  end;
 end;
 procedure TContexts.GenWarn(msg: string; const srcPos: TSrcPos);
 {Genera un mensaje de advertencia en la posición indicada.}

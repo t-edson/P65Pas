@@ -1,0 +1,11 @@
+object fraCfgChkSyntax6502: TfraCfgChkSyntax6502
+  Left = 0
+  Height = 204
+  Top = 0
+  Width = 371
+  DesignTimePPI = 120
+  ParentFont = False
+  TabOrder = 0
+  DesignLeft = 387
+  DesignTop = 171
+end

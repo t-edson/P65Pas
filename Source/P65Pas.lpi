@@ -73,7 +73,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="33">
+    <Units Count="36">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -102,9 +102,9 @@
         <IsPartOfProject Value="True"/>
       </Unit5>
       <Unit6>
-        <Filename Value="FrameSyntaxTree.pas"/>
+        <Filename Value="adapter6502\FrameSynTree6502.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="fraSyntaxTree"/>
+        <ComponentName Value="fraSynxTree6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
       </Unit6>
@@ -142,7 +142,7 @@
         <ResourceBaseClass Value="Frame"/>
       </Unit12>
       <Unit13>
-        <Filename Value="FormElemProperty.pas"/>
+        <Filename Value="adapter6502\FormElemProperty.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmElemProperty"/>
         <HasResources Value="True"/>
@@ -254,6 +254,23 @@
         <Filename Value="adapter6502\adapter6502.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit32>
+      <Unit33>
+        <Filename Value="adapter.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit33>
+      <Unit34>
+        <Filename Value="adapter6502\FrameCfgChkSyntax6502.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="fraCfgChkSyntax6502"/>
+        <ResourceBaseClass Value="Frame"/>
+      </Unit34>
+      <Unit35>
+        <Filename Value="adapter6502\FrameStatist6502.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="fraStatist6502"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Frame"/>
+      </Unit35>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

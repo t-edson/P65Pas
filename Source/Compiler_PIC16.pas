@@ -41,7 +41,7 @@ type
     function GetCompilerOptions: string;
     function GetCompilerLevels: string; override;
     function CompilerLevelToPars(parlevel: string): string;
-    procedure Exec(srcFile, outFile: string; pars: string); override;
+    procedure Exec(srcFile, outFile: string; pars: string);
     procedure PrintHelp;
   public      //Inicialización
     constructor Create; override;

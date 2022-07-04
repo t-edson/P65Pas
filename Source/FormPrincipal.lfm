@@ -1396,18 +1396,15 @@ object frmPrincipal: TfrmPrincipal
       ImageIndex = 33
       OnExecute = acToolExt5Execute
     end
-    object acToolSelPIC10: TAction
+    object acToolSel_P65pas: TAction
       Category = 'Tool'
       Caption = 'Baseline Compiler'
+      OnExecute = acToolSel_P65pasExecute
     end
-    object acToolSelPIC16: TAction
+    object acToolSel_PicPas: TAction
       Category = 'Tool'
       Caption = 'Mid-range Compiler'
-      OnExecute = acToolSelPIC16Execute
-    end
-    object acToolSelPIC17: TAction
-      Category = 'Tool'
-      Caption = 'Enhanced Mid-range Compiler'
+      OnExecute = acToolSel_PicPasExecute
     end
   end
   object MainMenu1: TMainMenu
@@ -1536,13 +1533,13 @@ object frmPrincipal: TfrmPrincipal
       object MenuItem51: TMenuItem
         Caption = 'Select Compiler'
         object MenuItem52: TMenuItem
-          Action = acToolSelPIC10
+          Action = acToolSel_P65pas
         end
         object MenuItem53: TMenuItem
-          Action = acToolSelPIC16
+          Action = acToolSel_PicPas
         end
         object MenuItem54: TMenuItem
-          Action = acToolSelPIC17
+          Caption = 'Enhanced Mid-range Compiler'
         end
       end
       object MenuItem55: TMenuItem
@@ -2768,7 +2765,7 @@ object frmPrincipal: TfrmPrincipal
     Left = 270
     Top = 260
     object MenuItem49: TMenuItem
-      Action = acToolSelPIC16
+      Action = acToolSel_PicPas
       Caption = 'CPU6502'
     end
   end

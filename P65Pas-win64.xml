@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <language Val="en - English"/>
-  <winXpos Val="1948"/>
-  <winYpos Val="3"/>
+  <winXpos Val="1997"/>
+  <winYpos Val="14"/>
   <winWidth Val="1274"/>
   <winHeight Val="790"/>
   <winState Val="0"/>
@@ -12,8 +12,8 @@
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
 "/>
-  <SplitterCol Val="536870912"/>
-  <MessPanPan Val="536870912"/>
+  <SplitterCol Val="2368548"/>
+  <MessPanPan Val="2368548"/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
@@ -22,23 +22,22 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.p
   <EditAsmWidth Val="385"/>
   <ViewPanAssem Val="True"/>
   <viewMode Val="0"/>
-  <MessPanBack Val="-2147483643"/>
-  <MessPanText Val="536870912"/>
-  <MessPanErr Val="255"/>
-  <MessPanSel Val="-2147483633"/>
-  <CodExplBack Val="-2147483643"/>
-  <CodExplText Val="536870912"/>
+  <MessPanBack Val="2368548"/>
+  <MessPanText Val="16777215"/>
+  <MessPanErr Val="5855743"/>
+  <MessPanSel Val="-2147483629"/>
+  <CodExplBack Val="2434341"/>
+  <CodExplText Val="12632256"/>
   <grpFiltypes Val="0"/>
   <TamLet Val="10"/>
   <TipLet Val="Courier New"/>
   <VerBarDesV Val="True"/>
   <VerBarDesH Val="False"/>
   <TabEdiState Val="0"/>
-  <AfterEdit_6502 Val="3"/>
   <Edit>
-    <cTxtNor Val="0"/>
-    <cFonEdi Val="16777215"/>
-    <cLinAct Val="65535"/>
+    <cTxtNor Val="16777215"/>
+    <cFonEdi Val="2368548"/>
+    <cLinAct Val="4210688"/>
     <Autoindent Val="True"/>
     <MarLinAct Val="True"/>
     <ResPalCur Val="True"/>
@@ -49,11 +48,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.p
     <VerPanVer Val="True"/>
     <VerNumLin Val="True"/>
     <VerMarPle Val="True"/>
-    <cFonPan Val="16777215"/>
-    <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
+    <cFonPan Val="2105376"/>
+    <cTxtPan Val="12632256"/>
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\Test5_Banks.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\Test5_BankConditions.pas
 "/>

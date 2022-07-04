@@ -1,0 +1,4 @@
+{"version":1,"strings":[
+{"hash":22109,"name":"tfrastatist6502.lblram.caption","sourcebytes":[82,65,77],"value":"RAM"},
+{"hash":22333,"name":"tfrastatist6502.lblrom.caption","sourcebytes":[82,79,77],"value":"ROM"}
+]}

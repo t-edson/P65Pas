@@ -5,7 +5,7 @@ unit Globales;
 {$mode objfpc}{$H+}
 interface
 uses  Classes, SysUtils, Forms, SynEdit, SynEditKeyCmds, MisUtils,
-      lclType, FileUtil, LazLogger, Menus, EpikTimer ;
+      lclType, FileUtil, LazLogger, Menus, EpikTimer;
 
 const
   NOM_PROG = 'P65Pas';   //nombre de programa
