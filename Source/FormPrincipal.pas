@@ -11,7 +11,7 @@ uses
   StdCtrls, SynFacilHighlighter, SynFacilUtils, MisUtils, CompBase,  //Para tener acceso a TCompilerBase
   Compiler_PIC16, FrameLateralPanel, FormConfig, Globales, PicPasProject,
   FrameEditView, FrameMessagesWin, adapter6502, FrameCfgExtTool,
-  FormDebugger, FormRAMExplorer, ParserASM_6502, Analyzer, adapter;
+  FormDebugger, FormRAMExplorer, ParserASM_6502, Analyzer, adapterBase;
 type
   { TfrmPrincipal }
   TfrmPrincipal = class(TForm)
@@ -34,24 +34,15 @@ type
     acArcCloseProj: TAction;
     acArcCloseFile: TAction;
     acSearFindPrv: TAction;
-    acToolTestPic10: TAction;
-    acToolTestUnit: TAction;
     acToolSel_PicPas: TAction;
     acToolSel_P65pas: TAction;
-    acToolASMDebug: TAction;
     acViewAsmPan: TAction;
-    acToolRamExp: TAction;
     acToolExt4: TAction;
     acToolExt5: TAction;
     acToolExt2: TAction;
     acToolExt3: TAction;
     acToolExt1: TAction;
-    acToolFindDec: TAction;
-    acToolListRep: TAction;
     acToolConfig: TAction;
-    acToolCompil: TAction;
-    acToolPICExpl: TAction;
-    acToolComEjec: TAction;
     acViewToolbar: TAction;
     acViewMsgPan: TAction;
     ActionList: TActionList;
@@ -71,12 +62,9 @@ type
     MenuItem15: TMenuItem;
     MenuItem16: TMenuItem;
     MenuItem17: TMenuItem;
-    MenuItem18: TMenuItem;
-    MenuItem19: TMenuItem;
     MenuItem20: TMenuItem;
     MenuItem21: TMenuItem;
     MenuItem22: TMenuItem;
-    MenuItem24: TMenuItem;
     MenuItem25: TMenuItem;
     MenuItem26: TMenuItem;
     MenuItem27: TMenuItem;
@@ -95,18 +83,14 @@ type
     MenuItem40: TMenuItem;
     MenuItem41: TMenuItem;
     MenuItem42: TMenuItem;
-    MenuItem43: TMenuItem;
-    MenuItem44: TMenuItem;
     MenuItem45: TMenuItem;
     MenuItem46: TMenuItem;
-    MenuItem47: TMenuItem;
+    Separator1: TMenuItem;
     MenuItem49: TMenuItem;
     MenuItem51: TMenuItem;
     MenuItem52: TMenuItem;
     MenuItem53: TMenuItem;
     MenuItem54: TMenuItem;
-    MenuItem55: TMenuItem;
-    MenuItem56: TMenuItem;
     MenuItem8: TMenuItem;
     mnSamples: TMenuItem;
     mnView: TMenuItem;
@@ -138,7 +122,6 @@ type
     ToolButton10: TToolButton;
     ToolButton11: TToolButton;
     ToolButton12: TToolButton;
-    ToolButton13: TToolButton;
     ToolButton14: TToolButton;
     ToolButton15: TToolButton;
     ToolButton16: TToolButton;
@@ -147,9 +130,7 @@ type
     ToolButton19: TToolButton;
     ToolButton2: TToolButton;
     ToolButton20: TToolButton;
-    ToolButton21: TToolButton;
     butSelCompiler: TToolButton;
-    ToolButton22: TToolButton;
     ToolButton3: TToolButton;
     ToolButton4: TToolButton;
     ToolButton5: TToolButton;
@@ -176,7 +157,6 @@ type
     procedure acEdSelecAllExecute(Sender: TObject);
     procedure acEdUndoExecute(Sender: TObject);
     procedure acToolComEjecExecute(Sender: TObject);
-    procedure acToolCompilExecute(Sender: TObject);
     procedure acToolASMDebugExecute(Sender: TObject);
     procedure acToolListRepExecute(Sender: TObject);
     procedure acToolConfigExecute(Sender: TObject);
@@ -212,8 +192,6 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
-    Compiling   : Boolean;  //Bandera. Indica que se está en proceso de compilación.
-
     tic         : integer;  //Contador para temporización
     ticSynCheck : integer;  //Contador para temporizar la verifiación ed sintaxis
     curProj     : TPicPasProject; //Proyecto actual
@@ -221,7 +199,10 @@ type
     fraEditView1: TfraEditView;   //Panel de editores
     fraLeftPanel: TfraLateralPanel; //Panel lateral para explorador de archivos y Árbol de sintaxis
     fraMessages : TfraMessagesWin;
-    procedure CompileFile(filName: string; verifErr: boolean);
+    procedure comp_AfterCheckSyn;
+    procedure comp_BeforeCheckSyn;
+    procedure comp_BeforeCompile;
+    procedure comp_AfterCompile;
     procedure ConfigExtTool_RequirePar(var comLine: string);
     procedure fraEdit_RequireSetCompletion(ed: TSynEditor);
     procedure fraMessagesStatisDBlClick;
@@ -231,12 +212,11 @@ type
     procedure fraEdit_SelectEditor;
     procedure fraMessagesDblClickMessage(fileSrc: string; row, col: integer);
     procedure fraSynTreeOpenFile(filname: string);
-    procedure fraSynTreeSelectElemen(fileSrc: string; row, col: integer);
     procedure LoadAsmSyntaxEd;
     procedure MarkErrors;
     procedure ShowErrorInDialogBox;
   public     //Compilers adapters
-    currComp   : TAdapter;   //Compialdor actual
+    currComp   : TAdapterBase;   //Compialdor actual
     adapter6502: TAdapter6502;  //Adaptador para compilado 6502
   public
     frmDebug: TfrmDebugger;
@@ -280,11 +260,6 @@ begin
   acToolSel_P65pas.Caption := MSG_BASEL_COMP;
   acToolSel_PicPas.Caption := MSG_MIDRAN_COMP;
 end;
-procedure TfrmPrincipal.fraSynTreeSelectElemen(fileSrc: string; row,
-  col: integer);
-begin
-  fraEditView1.SelectOrLoad(fileSrc, row, col, false);
-end;
 procedure TfrmPrincipal.fraSynTreeOpenFile(filname: string);
 {El explorador de código, solicita abrir un archivo.}
 begin
@@ -299,26 +274,22 @@ begin
   //Ubica el archivo actual en el explorador.
   ed := fraEditView1.ActiveEditor;
   if (ed<>nil) and (ed.FileName<>'') then begin
-     fraLeftPanel.LocateFile(ed.FileName);
+     //¿Vale la pena hacer esto?
+     //fraLeftPanel.LocateFile(ed.FileName);
   end;
 end;
 procedure TfrmPrincipal.fraEdit_ChangeEditorState(ed: TSynEditor);
 {Se produjo un cambio en el estado del editor actual. Estos cambios pueden ser:
 - Modificación del editor actual "ed" (caracter agregado, eliminado, ...).
-- Se acaba de seleccioar una ventana de edición.
+- Se acaba de seleccionar una ventana de edición.
+- Se ha cambiado el compilador actual.
 - El usuario graba el archivo del editor actual.
 - Se ha producido una grabación automática del archivo porque se está compilando.).
 }
 begin
-  if Compiling then begin
-    //En compilación no se activa la verificación automática de sintaxis.
-    //Ya debe haberse desactivado.
-  end else begin
-    //No se está compilando el archivo.
-    {Activamos el contador de verificación de sintaxis, por si se necesita hacer, ya que
-    ha habido un cambio en el archivo actual en edición.}
-    ticSynCheck := 0;  //Reinicia cuenta.
-  end;
+  {Activamos el contador de verificación de sintaxis, por si se necesita hacer, ya que
+   ha habido un cambio en el archivo actual en edición.}
+  ticSynCheck := 0;  //Reinicia cuenta.
   acArcSave.Enabled := ed.Modified;
   acEdUndo.Enabled  := ed.CanUndo;
   acEdRedo.Enabled  := ed.CanRedo;
@@ -418,12 +389,16 @@ begin
 
   /////////// Crea adaptadores para compiladores soportados ///////////
   adapter6502:= TAdapter6502.Create(fraEditView1);
-  adapter6502.Init(fraLeftPanel.PageControl1);
+  adapter6502.Init(fraLeftPanel.PageControl1, ImgActions16, ImgActions32, ActionList,
+                   MainMenu1);
+  adapter6502.OnBeforeCompile  := @comp_BeforeCompile;
+  adapter6502.OnAfterCompile   := @comp_AfterCompile;
+  adapter6502.OnBeforeCheckSyn := @comp_BeforeCheckSyn;
+  adapter6502.OnAfterCheckSyn  := @comp_AfterCheckSyn;
   currComp := adapter6502;    //Compilador actual
   ///////////////////////////////////////////////////////
 
   //Configura Árbol de sintaxis
-  fraLeftPanel.OnSelectElemen := @fraSynTreeSelectElemen;
   fraLeftPanel.OnOpenFile := @fraSynTreeOpenFile;
   fraLeftPanel.OnSelecFileExplorer := @fraSynTreeSelecFileExplorer;
   //Carga un resaltador a la ventana de ensamblador
@@ -555,22 +530,7 @@ begin
     {Se cumplió el tiempo para iniciar la verificación automática de sintaxis y hay
     archivos abiertos.}
 //debugln('--Verif. Syntax.' + TimeToStr(now) + ':');
-    ed := fraEditView1.ActiveEditor;
-    //Verifica rápidamente si hay texto en el editor
-    if (ed.SynEdit.Lines.Count<=1) and (trim(ed.Text)='') then begin
-      fraMessages.InitCompilation(currComp, false);  //Limpia mensajes
-      exit;
-    end;
-    //Hace la compilación o el análisis de sintaxis del editor actual.
-    fraMessages.InitCompilation(currComp, false);  //Limpia mensajes pero no pone mesaje inicial.
-    currComp.CheckSyntax(ed.FileName, Config.getParamsAfterEdit('6502'));
-    if fraMessages.HaveErrors then MarkErrors;
-    fraMessages.EndCompilation(false);        //No muestra los resúmenes
-    //Actualiza ventana de ensamblador.
-    edAsm.BeginUpdate(false);
-    edAsm.Lines.Clear;
-    currComp.DumpCode(edAsm.Lines);
-    edAsm.EndUpdate;
+    currComp.CheckSyntax();
   end;
 end;
 procedure TfrmPrincipal.butSelCompilerClick(Sender: TObject);
@@ -610,17 +570,18 @@ begin
   end;
   if (Shift = [ssCtrl]) and (Key = VK_F4) then begin
     if fraEditView1.HasFocus then acArcCloseFileExecute(self);
-    if fraLeftPanel.HasFocus and (fraLeftPanel.FileSelected<>'') then
-       //Hay un archivo seleccionado
-       if fraEditView1.SelectEditor(fraLeftPanel.FileSelected) then begin
-         //Está abierto
-         curNode := fraLeftPanel.FileSelected;  //Guarda nodo seleccionado
-         acArcCloseFileExecute(self);  //Cierra archivo actual
-         fraLeftPanel.LocateFile(curNode);  //Restaura nodo seleccionado, porque
-         //Despues de cerrar
-         if fraLeftPanel.frmArcExplor1.TreeView1.Visible then
-           fraLeftPanel.frmArcExplor1.TreeView1.SetFocus;
-       end;
+//*** Comportamiento en el explorador de archivos.
+//    if fraLeftPanel.HasFocus and (fraLeftPanel.FileSelected<>'') then
+//       //Hay un archivo seleccionado
+//       if fraEditView1.SelectEditor(fraLeftPanel.FileSelected) then begin
+//         //Está abierto
+//         curNode := fraLeftPanel.FileSelected;  //Guarda nodo seleccionado
+//         acArcCloseFileExecute(self);  //Cierra archivo actual
+//         fraLeftPanel.LocateFile(curNode);  //Restaura nodo seleccionado, porque
+//         //Despues de cerrar
+//         if fraLeftPanel.frmArcExplor1.TreeView1.Visible then
+//           fraLeftPanel.frmArcExplor1.TreeView1.SetFocus;
+//       end;
     Shift := []; Key := 0;  //para qie no pase
   end;
   //Pasa evento a COde Tool
@@ -792,7 +753,8 @@ begin
     Caption := NOM_PROG + ' - ' + VER_PROG  + ' - ' + MSG_PROJECT + curProj.name;
   end;
   if (ed<>nil) and (ed.FileName<>'') then begin
-     fraLeftPanel.LocateFile(ed.FileName);
+//*** Verificar si es necesario
+//     fraLeftPanel.LocateFile(ed.FileName);
   end;
 end;
 procedure TfrmPrincipal.FindDialog1Find(Sender: TObject);
@@ -851,21 +813,35 @@ begin
   end;
   MsgBox(MSG_NOFOUND_, [buscado]);
 end;
-procedure TfrmPrincipal.CompileFile(filName: string; verifErr: boolean);
-{Realiza la compilación del archivo indicado}
+procedure TfrmPrincipal.comp_BeforeCheckSyn;
+begin
+  fraMessages.InitCompilation(currComp, false);  //Limpia mensajes pero no pone mesaje inicial.
+end;
+procedure TfrmPrincipal.comp_AfterCheckSyn;
+begin
+  if fraMessages.HaveErrors then MarkErrors;
+  fraMessages.EndCompilation(false);        //No muestra los resúmenes
+end;
+procedure TfrmPrincipal.comp_BeforeCompile;
+{Se ha iniciado el proceso de compilación del compilador actual.}
 begin
   fraMessages.InitCompilation(currComp, true);  //Limpia mensajes
   ticSynCheck := 1000; //Desactiva alguna Verif. de sintaxis, en camino.
-  Compiling := true;   //Activa bandera
-  currComp.Exec(filName, '', Config.getParamsCompiling('6502'));
-  Compiling := false;
+end;
+procedure TfrmPrincipal.comp_AfterCompile;
+{Ha terminado el proceso de compilación del compilador actual.}
+begin
+  {Desactiva alguna Verif. de sintaxis, en camino, porque si se ha terminado
+  de compilar, ya no tiene sentido hacer una verifiación de sintaxis.}
+  ticSynCheck := 1000;
+  //Muestra y marca posibles errores
   if fraMessages.HaveErrors then begin
     fraMessages.EndCompilation;
-    if verifErr then ShowErrorInDialogBox;
+    ShowErrorInDialogBox;
     MarkErrors;
     exit;
   end;
-  fraMessages.EndCompilation;
+  fraMessages.EndCompilation(true);  //Muestra resúmenes.
 end;
 /////////////////// Acciones de Archivo /////////////////////
 procedure TfrmPrincipal.acArcNewFileExecute(Sender: TObject);
@@ -987,28 +963,6 @@ begin
   Config.ViewPanAssem := not Config.ViewPanAssem;
 end;
 //////////// Acciones de Herramientas ///////////////
-procedure TfrmPrincipal.acToolCompilExecute(Sender: TObject);
-{Compila el contenido del archivo actual}
-var
-  filName: String;
-begin
-//  if fraEditView1.ActiveEditor=nil then exit;
-//  self.SetFocus;
-//  filName := fraEditView1.ActiveEditor.FileName;
-//  if filName='' then begin
-//    //No tiene nombre. No debería pasar, porque "fraEditView1" debe generar nombres.
-//    if fraEditView1.SaveAsDialog then begin
-//      MsgExc(MSG_FILSAVCOMP);
-//      exit;
-//    end;
-//  end;
-//  CompileFile(filName, true);
-//  //Genera código ensamblador
-//  edAsm.BeginUpdate(false);
-//  edAsm.Lines.Clear;
-//  currComp.DumpCode(edAsm.Lines);
-//  edAsm.EndUpdate;
-end;
 procedure TfrmPrincipal.acToolComEjecExecute(Sender: TObject);
 {Compila y ejecuta en la ventana de simulación}
 begin

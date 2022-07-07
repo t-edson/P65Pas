@@ -21,9 +21,6 @@ type
   TOptimLev = (olvFool,   //Nivel básico de optimización
                olvSmart   //Nivel mayor de optimización
                );
-  TTreeViewMode = (vmDeclar,   //Muestra en el orden de declaración
-                   vmFileExp   //Muestra el explorador de archivos
-                   );
   { TConfig }
   TConfig = class(TForm)
     BitAplicar: TBitBtn;
@@ -129,7 +126,6 @@ type
     StateToolbar: TStyleToolbar;
     SynTreeWidth: integer;  //Ancho del panel del árbol de sintaxis.
     EditAsmWidth: integer;  //Ancho del editor de ensamblador.
-    viewMode   : TTreeViewMode;
     CodExplBack: TColor;
     CodExplText: TColor;
     cexpFiltype: integer;
@@ -446,7 +442,6 @@ begin
   s:=cfgFile.Asoc_Int('SynTreeWidth', @SynTreeWidth , 130);
   s:=cfgFile.Asoc_Int('EditAsmWidth', @EditAsmWidth , 300);
   s:=cfgFile.Asoc_Bol('ViewPanAssem', @FViewPanAssem, true);
-  s:=cfgFile.Asoc_Enum('viewMode',  @viewMode   , SizeOf(TTreeViewMode), 0);
 
   ///////////////////////////////////////////////////////
   ///////// Configuraciones del Panel de mensajes

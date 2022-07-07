@@ -73,7 +73,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="36">
+    <Units Count="37">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -206,7 +206,7 @@
         <ResourceBaseClass Value="Form"/>
       </Unit22>
       <Unit23>
-        <Filename Value="FramePicRegisters.pas"/>
+        <Filename Value="adapter6502\FrameRegisters6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraPicRegisters"/>
         <HasResources Value="True"/>
@@ -224,7 +224,7 @@
         <IsPartOfProject Value="True"/>
       </Unit25>
       <Unit26>
-        <Filename Value="FramePicAsm.pas"/>
+        <Filename Value="adapter6502\FrameAsm6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraPicAsm"/>
         <HasResources Value="True"/>
@@ -255,7 +255,7 @@
         <IsPartOfProject Value="True"/>
       </Unit32>
       <Unit33>
-        <Filename Value="adapter.pas"/>
+        <Filename Value="adapterBase.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit33>
       <Unit34>
@@ -271,6 +271,13 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
       </Unit35>
+      <Unit36>
+        <Filename Value="adapter6502\FormAdapter6502.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="frmAdapter6502"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit36>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

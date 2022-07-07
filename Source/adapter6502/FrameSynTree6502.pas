@@ -2,8 +2,8 @@ unit FrameSynTree6502;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, FileUtil, TreeFilterEdit, Forms, Controls, StdCtrls,
-  ComCtrls, Menus, ActnList, ExtCtrls, ComboEx, LCLProc, Graphics,
+  Classes, SysUtils, FileUtil, TreeFilterEdit, Forms, Controls,
+  ComCtrls, Menus, ActnList, ExtCtrls, LCLProc, Graphics,
   Globales, FormElemProperty, CompBase, FormConfig,
   FrameArcExplor, XpresElemP65, XpresAST, LexPas, MisUtils;
 type
@@ -12,13 +12,9 @@ type
     acGenRefres: TAction;
     acGenGoTo: TAction;
     acGenProp: TAction;
-    acGenViewDec: TAction;
     acGenExpAll: TAction;
     ActionList1: TActionList;
-    ComboBoxEx1: TComboBoxEx;
-    frmArcExplor1: TfrmArcExplor;
     ImageList1: TImageList;
-    Label1: TLabel;
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
@@ -40,8 +36,6 @@ type
     procedure acGenGoToExecute(Sender: TObject);
     procedure acGenRefresExecute(Sender: TObject);
     procedure acGenPropExecute(Sender: TObject);
-    procedure acGenViewDecExecute(Sender: TObject);
-    procedure ComboBoxEx1Change(Sender: TObject);
     procedure TreeView1DblClick(Sender: TObject);
     procedure TreeView1MouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -53,8 +47,6 @@ type
     syntaxTree: TXpTreeElements; //Reference to SyntaxTree
     frmElemProp: TfrmElemProperty;  //Formulario de propiedades
     function AddNodeTo(nodParent: TTreeNode; elem: TxpElement): TTreeNode;
-    procedure frmArcExplor1DoubleClickFile(nod: TExplorNode);
-    procedure frmArcExplor1MenuOpenFile(nod: TExplorNode);
     procedure frmElemPropertyExplore(elem: TxpElement);
     procedure RefreshByDeclar(nodMain: TTreeNode; curEle: TxpElement);
     function SelectedIsMain: boolean;
@@ -65,19 +57,13 @@ type
       Node: TTreeNode; State: TCustomDrawState; Stage: TCustomDrawStage;
       var PaintImages, DefaultDraw: Boolean);
   public
-    OnSelectElemen: procedure(fileSrc: string; row, col: integer) of object;
-    OnOpenFile: procedure(filname: string) of object;
-    OnSelecFileExplorer: procedure of object;
-    //Se requiere información del archivo actual
-//    OnReqCurFile: procedure(var filname: string) of object;
+    OnLocateElemen: procedure(fileSrc: string; row, col: integer) of object;
     function HasFocus: boolean;
-    function FileSelected: string;
     property BackColor: TColor read FBackColor write SetBackColor;
     property TextColor: TColor read FTextColor write SetTextColor;
-    procedure LocateFile(filname: string);
-    procedure Init(Compiler: TCompilerBase);
     procedure Refresh;
     procedure SetLanguage;
+    procedure Init(Compiler: TCompilerBase);
     constructor Create(AOwner: TComponent) ; override;
   end;
 
@@ -96,35 +82,7 @@ var
 procedure TfraSynxTree6502.SetLanguage;
 begin
   {$I ..\_language\tra_FrameSyntaxTree.pas}
-  frmArcExplor1.SetLanguage;
   Refresh;
-end;
-procedure TfraSynxTree6502.frmArcExplor1DoubleClickFile(nod: TExplorNode);
-begin
-  if OnOpenFile<>nil then OnOpenFile(nod.Path);
-end;
-procedure TfraSynxTree6502.frmArcExplor1MenuOpenFile(nod: TExplorNode);
-begin
-  if OnOpenFile<>nil then OnOpenFile(nod.Path);
-end;
-procedure TfraSynxTree6502.Init(Compiler    : TCompilerBase);
-begin
-  cpx        := Compiler;
-  syntaxTree := Compiler.TreeElems;
-  TreeView1.ReadOnly := true;
-  TreeView1.OnAdvancedCustomDrawItem := @TreeView1AdvancedCustomDrawItem;
-  TreeView1.Options := TreeView1.Options - [tvoThemedDraw];
-  frmElemProp.OnExplore := @frmElemPropertyExplore;
-  //Configura filtros del explorador de archivos
-  frmArcExplor1.Filter.Items.Add('*.pas,*.pp,*.inc');  //los filtros se separan por comas
-  frmArcExplor1.Filter.Items.Add('*');  //para seleccionar todos
-  frmArcExplor1.Filter.ItemIndex:=0;    //selecciona la primera opción por defecto
-  frmArcExplor1.Filter.Visible := false;
-  frmArcExplor1.InternalPopupFile := true;
-  frmArcExplor1.InternalPopupFolder := true;
-  frmArcExplor1.OnDoubleClickFile:= @frmArcExplor1DoubleClickFile;
-  frmArcExplor1.OnKeyEnterOnFile := @frmArcExplor1DoubleClickFile;
-  frmArcExplor1.OnMenuOpenFile   := @frmArcExplor1MenuOpenFile;
 end;
 function TfraSynxTree6502.AddNodeTo(nodParent: TTreeNode; elem: TxpElement): TTreeNode;
 {Agrega un elemento a un noco.}
@@ -232,28 +190,17 @@ procedure TfraSynxTree6502.Refresh;
 var
   nodMain: TTreeNode;
 begin
-  case Config.viewMode of
-  vmDeclar: begin
-    TreeView1.Visible := true;
-    frmArcExplor1.Visible := false;
+  TreeView1.Visible := true;
 
-    TreeView1.Items.BeginUpdate;
-    TreeView1.Items.Clear;
-    nodMain := TreeView1.Items.AddChild(nil, TIT_MAIN);
-    nodMain.ImageIndex := 1;
-    nodMain.SelectedIndex := 1;
-    nodMain.Data := syntaxTree.main;  //Elemento raiz
-    RefreshByDeclar(nodMain, syntaxTree.main);
-    nodMain.Expanded := true;    //Expande nodo raiz
-    TreeView1.Items.EndUpdate;
-  end;
-  vmFileExp: begin  //Modo de explorador de archivos
-    TreeView1.Visible := false;
-    frmArcExplor1.Visible := true;
-    frmArcExplor1.Align := alClient;
-
-  end;
-  end;
+  TreeView1.Items.BeginUpdate;
+  TreeView1.Items.Clear;
+  nodMain := TreeView1.Items.AddChild(nil, TIT_MAIN);
+  nodMain.ImageIndex := 1;
+  nodMain.SelectedIndex := 1;
+  nodMain.Data := syntaxTree.main;  //Elemento raiz
+  RefreshByDeclar(nodMain, syntaxTree.main);
+  nodMain.Expanded := true;    //Expande nodo raiz
+  TreeView1.Items.EndUpdate;
 end;
 function TfraSynxTree6502.SelectedIsMain: boolean;
 //Indica si el nodo seleccionado es el nodo raiz
@@ -269,10 +216,8 @@ var
 begin
   if TreeView1.Selected = nil then exit(false);
   nod := TreeView1.Selected;
-  if Config.viewMode = vmDeclar then begin
-    //En modo de declaraciones, es más fácil. Todos son elementos.
-    if nod.Level >= 1 then exit(true);
-  end;
+  //Todos son elementos.
+  if nod.Level >= 1 then exit(true);
   exit(false);
 end;
 procedure TfraSynxTree6502.SetBackColor(AValue: TColor);
@@ -281,13 +226,11 @@ begin
 //  if FBackColor = AValue then Exit;
   FBackColor := AValue;
   TreeView1.BackgroundColor := AValue;
-  frmArcExplor1.TreeView1.BackgroundColor := AValue;
 end;
 procedure TfraSynxTree6502.SetTextColor(AValue: TColor);
 begin
 //  if FTextColor = AValue then Exit;
   FTextColor := AValue;
-  frmArcExplor1.TextColor := AValue;
 end;
 procedure TfraSynxTree6502.TreeView1AdvancedCustomDrawItem(
   Sender: TCustomTreeView; Node: TTreeNode; State: TCustomDrawState;
@@ -306,35 +249,7 @@ end;
 function TfraSynxTree6502.HasFocus: boolean;
 {Indica si el frame tiene el enfoque.}
 begin
-  if frmArcExplor1.Visible then begin
-    //Modo de explorador de archivo
-    Result := frmArcExplor1.TreeView1.Focused;
-  end else begin
-    //Modo normal
-    Result := TreeView1.Focused;
-  end;
-end;
-function TfraSynxTree6502.FileSelected: string;
-{Devuelve el archivo seleccionado. Solo es válido cuando está en modo "vmFileExp"
-}
-begin
-  if Config.viewMode = vmFileExp then begin
-    if frmArcExplor1.SelectedFile = nil then begin
-      Result := '';
-    end else begin
-      Result := frmArcExplor1.SelectedFile.Path;
-    end;
-  end else begin
-    Result := '';
-  end;
-end;
-procedure TfraSynxTree6502.LocateFile(filname: string);
-begin
-  //Ubica el archivo actual en el explorador de archivo
-  if not self.Visible then exit;
-  if frmArcExplor1.Visible then begin
-    frmArcExplor1.LocateFileOnTree(filname);
-  end;
+  Result := TreeView1.Focused;
 end;
 procedure TfraSynxTree6502.TreeView1MouseUp(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
@@ -372,19 +287,6 @@ procedure TfraSynxTree6502.TreeView1DblClick(Sender: TObject);
 begin
   acGenGoToExecute(self);
 end;
-procedure TfraSynxTree6502.ComboBoxEx1Change(Sender: TObject);
-begin
-  if Config = nil then exit;
-  case ComboBoxEx1.ItemIndex of
-  0: Config.viewMode := vmDeclar;
-  1: Config.viewMode := vmFileExp;
-  end;
-  Refresh;
-  if ComboBoxEx1.ItemIndex=2 then begin
-    //Se seleeciona el modo de explorador de archivo
-    if OnSelecFileExplorer<>nil then OnSelecFileExplorer;
-  end;
-end;
 //////////////////////// Acciones /////////////////////
 procedure TfraSynxTree6502.acGenRefresExecute(Sender: TObject);
 begin
@@ -398,7 +300,7 @@ begin
   if SelectedIsElement then begin
     elem := TxpElement(TreeView1.Selected.Data);
     fileName := cpx.ctxFile(elem.srcDec);
-    if OnSelectElemen <> nil  then OnSelectElemen(fileName, elem.srcDec.row, elem.srcDec.col);
+    if OnLocateElemen <> nil  then OnLocateElemen(fileName, elem.srcDec.row, elem.srcDec.col);
   end;
 end;
 procedure TfraSynxTree6502.acGenExpAllExecute(Sender: TObject);
@@ -419,11 +321,14 @@ begin
   frmElemProp.Exec(cpx, elem);
   frmElemProp.Show;
 end;
-procedure TfraSynxTree6502.acGenViewDecExecute(Sender: TObject);
-{Muestra elementos por declaración}
+procedure TfraSynxTree6502.Init(Compiler    : TCompilerBase);
 begin
-  Config.viewMode := vmDeclar;
-  Refresh;
+  cpx        := Compiler;
+  syntaxTree := Compiler.TreeElems;
+  TreeView1.ReadOnly := true;
+  TreeView1.OnAdvancedCustomDrawItem := @TreeView1AdvancedCustomDrawItem;
+  TreeView1.Options := TreeView1.Options - [tvoThemedDraw];
+  frmElemProp.OnExplore := @frmElemPropertyExplore;
 end;
 constructor TfraSynxTree6502.Create(AOwner: TComponent);
 begin
@@ -432,4 +337,4 @@ begin
   frmElemProp := TfrmElemProperty.Create(self);
 end;
 end.
-
+//435

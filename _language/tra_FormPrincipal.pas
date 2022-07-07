@@ -154,40 +154,6 @@
 
 
 //Tool actions
- acToolCompil.Caption  := Trans('&Compile'                , '&Compilar'  , '&Compilay',
-                                '&Compilieren'            , 'Компілювати', 'Компилировать',
-                                '&Compiler');
- acToolCompil.Hint     := Trans('Compile the source code' , 'Compila el código fuente'     , 'Pachanmanta chimpukuna kaqta compilay',
-                                'Compiliere den Quelltext','Компілювати','Компилировать',
-                                'Compiler le code source');
- acToolComEjec.Caption := Trans('Compile and E&xecute'    , 'Compilar y Ej&ecutar'         , 'Compilay chaymanta &Hinay',
-                                'Compilieren und Au&sführen','Компілювати та виконати','Компилировать и выполнить',
-                                'Compiler et &Exécuter');
- acToolComEjec.Hint    := Trans('Compile and Execute'     , 'Compilar y Ejecutar'          , 'Compilay chaymanta &Hinay',
-                                'Compilieren und Ausführen','Компілювати та виконати','Компилировать и выполнить',
-                                'Compiler et Exécuter');
- acToolPICExpl.Caption := Trans('PIC E&xplorer'           , 'E&xplorador de PIC'           , 'PIC nisqakunata T''aqwiq',
-                                'PIC E&xplorer','PIC оглядач','PIC обозреватель',
-                                'E&xplorateur de PIC');
- acToolPICExpl.Hint    := Trans('Open the PIC devices explorer','Abrir el explorador de dispos. PIC', 'Dispos. PIC nisqa t''aqwiqta kichariy',
-                                'Öffne den PIC Geräte explorer','Відкрити PIC оглядач','Открыть PIC обозреватель',
-                                'Ouvrir l''explorateur de modèles PIC');
- acToolListRep.Caption := Trans('&List Report'            , '&Reporte de listado'          , '',
-                                '','Звіт','Отчет',
-                                '&Rapport de Compilation');
- acToolFindDec.Caption := Trans('Find declaration' , 'Ir a la declaración' , 'Riqsichikusqan k''itiman riy',
-                                'Finde Deklaration','Знайти декларування','Найти декларирование',
-                                'Trouver déclaration');
- acToolRamExp.Caption  := Trans('&RAM Explorer' , 'Explorador de &RAM' , '',
-                                '','','',
-                                '');
-
- acToolASMDebug.Caption:= Trans('ASM &Debugger'        , '&Depurador de ASM'            , '',
-                                '','ASM зневаджувач','ASM отладчик',
-                                '&Débogueur PIC');
- acToolASMDebug.Hint   := Trans('ASM &Debugger'        , '&Depurador de ASM'            , '',
-                                '','ASM зневаджувач','ASM отладчик',
-                                'Démarrer le Débogueur');
  MenuItem51.Caption    := Trans('&Select Compiler'        , '&Elegir Compilador'            , '',
                                 '','','',
                                 '');

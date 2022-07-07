@@ -5,7 +5,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, LazFileUtils, Forms, Controls, Grids, Graphics,
   ExtCtrls, StdCtrls, Menus, Clipbrd, EpikTimer, CompBase, Globales, LexPas,
-  adapter, UtilsGrilla, BasicGrilla, MisUtils;
+  adapterBase, UtilsGrilla, BasicGrilla, MisUtils;
 type
 
   { TUtilGrillaFil2 }
@@ -47,7 +47,7 @@ type
     procedure PanGrillaResize(Sender: TObject);
     procedure panStatisDblClick(Sender: TObject);
   private
-    cxp       : TAdapter;
+    cxp       : TAdapterBase;
     FBackColor: TColor;
     FBackSelColor: Tcolor;
     FPanelColor: TColor;
@@ -77,7 +77,7 @@ type
     procedure GetErrorIdx(f: integer; out msg: string; out filname: string; out
       row, col: integer);
     function IsErroridx(f: integer): boolean;
-    procedure InitCompilation(cxp0: TAdapter; InitMsg: boolean);
+    procedure InitCompilation(cxp0: TAdapterBase; InitMsg: boolean);
     procedure EndCompilation(showSummary: boolean = true);
     procedure AddError(errTxt, fname: string; row, col: integer);
     procedure AddInformation(infTxt, fname: string; row, col: integer);
@@ -385,7 +385,7 @@ begin
   end;
   grilla.EndUpdate;
 end;
-procedure TfraMessagesWin.InitCompilation(cxp0: TAdapter; InitMsg: boolean
+procedure TfraMessagesWin.InitCompilation(cxp0: TAdapterBase; InitMsg: boolean
   );
 {Limpia grilla e inicia banderas para empezar a recibir mensajes.}
 begin

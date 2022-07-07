@@ -8,24 +8,12 @@ object fraSynxTree6502: TfraSynxTree6502
   DesignTimePPI = 120
   ParentFont = False
   TabOrder = 0
-  DesignLeft = 222
-  DesignTop = 161
-  object Label1: TLabel
-    Left = 0
-    Height = 21
-    Top = 0
-    Width = 235
-    Align = alTop
-    AutoSize = False
-    Caption = 'Syntax Tree'
-    Color = clActiveCaption
-    ParentFont = False
-    Transparent = False
-  end
+  DesignLeft = 387
+  DesignTop = 246
   object TreeView1: TTreeView
     Left = 0
-    Height = 430
-    Top = 52
+    Height = 451
+    Top = 31
     Width = 235
     Align = alClient
     Images = ImageList1
@@ -41,7 +29,7 @@ object fraSynxTree6502: TfraSynxTree6502
   object Panel1: TPanel
     Left = 0
     Height = 31
-    Top = 21
+    Top = 0
     Width = 235
     Align = alTop
     ClientHeight = 31
@@ -52,7 +40,7 @@ object fraSynxTree6502: TfraSynxTree6502
       Left = 1
       Height = 29
       Top = 1
-      Width = 183
+      Width = 233
       ButtonWidth = 29
       Align = alClient
       NumGlyphs = 1
@@ -60,48 +48,6 @@ object fraSynxTree6502: TfraSynxTree6502
       ParentFont = False
       TabOrder = 0
       FilteredTreeview = TreeView1
-    end
-    object ComboBoxEx1: TComboBoxEx
-      Left = 184
-      Height = 26
-      Top = 1
-      Width = 50
-      Align = alRight
-      Images = ImageList1
-      ItemHeight = 20
-      ItemsEx = <      
-        item
-          ImageIndex = 10
-        end      
-        item
-          Caption = 'ItemEx2'
-          ImageIndex = 14
-        end>
-      ItemIndex = 0
-      OnChange = ComboBoxEx1Change
-      ParentFont = False
-      TabOrder = 1
-    end
-  end
-  inline frmArcExplor1: TfrmArcExplor
-    Left = 92
-    Height = 732
-    Top = 250
-    Width = 330
-    ClientHeight = 732
-    ClientWidth = 330
-    TabOrder = 2
-    DesignLeft = 320
-    DesignTop = 191
-    inherited Filter: TComboBox
-      Height = 28
-      Width = 330
-      ItemHeight = 20
-    end
-    inherited TreeView1: TTreeView
-      Height = 704
-      Top = 28
-      Width = 330
     end
   end
   object PopupElem: TPopupMenu
@@ -444,11 +390,6 @@ object fraSynxTree6502: TfraSynxTree6502
       ImageIndex = 8
       OnExecute = acGenPropExecute
     end
-    object acGenViewDec: TAction
-      Caption = 'View by &Declaration'
-      ImageIndex = 10
-      OnExecute = acGenViewDecExecute
-    end
     object acGenExpAll: TAction
       Caption = 'Expand All'
       ImageIndex = 13
@@ -464,7 +405,8 @@ object fraSynxTree6502: TfraSynxTree6502
       ImageIndex = 0
     end
     object MenuItem2: TMenuItem
-      Action = acGenViewDec
+      Caption = 'View by &Declaration'
+      ImageIndex = 10
     end
     object MenuItem3: TMenuItem
       Caption = '-'
