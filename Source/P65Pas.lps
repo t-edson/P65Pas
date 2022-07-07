@@ -39,7 +39,7 @@
       <Unit2>
         <Filename Value="Compiler_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="7"/>
         <TopLine Value="1200"/>
         <CursorPos X="32" Y="1200"/>
         <FoldState Value=" T4504 T5iA07 TMid8104291 T3iI]A pk5kC0w]9l5iI2K312 T6iS03E T0iXYg9 picaa47]8Xi7g4A]9Yk5D28 pjHiGTIB]95l6Z8611512A THoBOK1b"/>
@@ -97,7 +97,7 @@
       <Unit5>
         <Filename Value="CompBase.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="4"/>
+        <EditorIndex Value="8"/>
         <TopLine Value="153"/>
         <CursorPos X="28" Y="171"/>
         <ExtraEditorCount Value="1"/>
@@ -148,7 +148,7 @@
         <ComponentName Value="Config"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="6"/>
         <TopLine Value="431"/>
         <CursorPos X="23" Y="441"/>
         <UsageCount Value="200"/>
@@ -266,21 +266,22 @@
         <ComponentName Value="frmDebugger"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="71"/>
-        <CursorPos Y="90"/>
+        <EditorIndex Value="4"/>
+        <CursorPos X="23" Y="7"/>
         <UsageCount Value="202"/>
+        <Loaded Value="True"/>
       </Unit20>
       <Unit21>
-        <Filename Value="FrameRamExplorer.pas"/>
+        <Filename Value="adapter6502\FrameRamExplorer6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraRamExplorer"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-        <EditorIndex Value="-1"/>
-        <CursorPos X="65" Y="6"/>
+        <EditorIndex Value="2"/>
+        <CursorPos X="5" Y="7"/>
         <FoldState Value=" T3i603 T6kA042 TMjU81y"/>
         <UsageCount Value="200"/>
+        <Loaded Value="True"/>
       </Unit21>
       <Unit22>
         <Filename Value="FormRAMExplorer.pas"/>
@@ -288,9 +289,11 @@
         <ComponentName Value="frmRAMExplorer"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <EditorIndex Value="-1"/>
-        <CursorPos X="59" Y="6"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="5"/>
+        <CursorPos X="43" Y="6"/>
         <UsageCount Value="200"/>
+        <Loaded Value="True"/>
       </Unit22>
       <Unit23>
         <Filename Value="adapter6502\FrameRegisters6502.pas"/>
@@ -303,14 +306,15 @@
         <UsageCount Value="201"/>
       </Unit23>
       <Unit24>
-        <Filename Value="FrameRegWatcher.pas"/>
+        <Filename Value="adapter6502\FrameRegWatcher6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraRegWatcher"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-        <EditorIndex Value="-1"/>
-        <CursorPos X="17" Y="8"/>
+        <EditorIndex Value="3"/>
+        <CursorPos X="33" Y="13"/>
         <UsageCount Value="211"/>
+        <Loaded Value="True"/>
       </Unit24>
       <Unit25>
         <Filename Value="ParserDirec.pas"/>
@@ -334,7 +338,7 @@
       <Unit27>
         <Filename Value="Analyzer.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="5"/>
+        <EditorIndex Value="9"/>
         <CursorPos X="32" Y="10"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
@@ -388,10 +392,9 @@
       <Unit32>
         <Filename Value="adapter6502\adapter6502.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
         <TopLine Value="237"/>
-        <CursorPos X="5" Y="251"/>
+        <CursorPos X="15" Y="250"/>
         <FoldState Value=" T3iP0L4393131 TLn40D\"/>
         <UsageCount Value="205"/>
         <Loaded Value="True"/>
@@ -434,7 +437,7 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="107"/>
         <CursorPos X="8" Y="110"/>
-        <UsageCount Value="190"/>
+        <UsageCount Value="191"/>
       </Unit36>
       <Unit37>
         <Filename Value="..\_language\tra_FormPrincipal.pas"/>
@@ -471,7 +474,7 @@
         <UsageCount Value="10"/>
       </Unit40>
     </Units>
-    <JumpHistory Count="6" HistoryIndex="5">
+    <JumpHistory Count="8" HistoryIndex="7">
       <Position1>
         <Filename Value="adapter6502\adapter6502.pas"/>
         <Caret Line="301" Column="16" TopLine="274"/>
@@ -496,6 +499,14 @@
         <Filename Value="adapter6502\adapter6502.pas"/>
         <Caret Line="41" Column="15" TopLine="25"/>
       </Position6>
+      <Position7>
+        <Filename Value="adapter6502\FrameRegWatcher6502.pas"/>
+        <Caret Line="13" Column="33"/>
+      </Position7>
+      <Position8>
+        <Filename Value="FormDebugger.pas"/>
+        <Caret Line="7" Column="23"/>
+      </Position8>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>

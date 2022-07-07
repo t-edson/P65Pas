@@ -192,7 +192,7 @@
         <ResourceBaseClass Value="Form"/>
       </Unit20>
       <Unit21>
-        <Filename Value="FrameRamExplorer.pas"/>
+        <Filename Value="adapter6502\FrameRamExplorer6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraRamExplorer"/>
         <HasResources Value="True"/>
@@ -213,7 +213,7 @@
         <ResourceBaseClass Value="Frame"/>
       </Unit23>
       <Unit24>
-        <Filename Value="FrameRegWatcher.pas"/>
+        <Filename Value="adapter6502\FrameRegWatcher6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraRegWatcher"/>
         <HasResources Value="True"/>
