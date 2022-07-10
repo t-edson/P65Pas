@@ -6,6 +6,8 @@ object frmAdapter6502: TfrmAdapter6502
   Caption = 'frmAdapter6502'
   DesignTimePPI = 120
   Menu = MainMenu1
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   LCLVersion = '2.2.0.4'
   object ImgActions16: TImageList
     Left = 80

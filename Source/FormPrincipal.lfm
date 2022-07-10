@@ -702,7 +702,7 @@ object frmPrincipal: TfrmPrincipal
       Left = 366
       Height = 28
       Top = 2
-      Width = 117
+      Width = 88
       Align = alNone
       AutoSize = True
       BorderSpacing.Left = 364
@@ -722,10 +722,6 @@ object frmPrincipal: TfrmPrincipal
       end
       object ToolButton34: TToolButton
         Left = 59
-        Top = 0
-      end
-      object ToolButton35: TToolButton
-        Left = 88
         Top = 0
       end
     end
@@ -1342,15 +1338,15 @@ object frmPrincipal: TfrmPrincipal
       ImageIndex = 13
       OnExecute = acToolExt5Execute
     end
-    object acToolSel_P65pas: TAction
+    object acToolSel_P65pas_6502: TAction
       Category = 'Tool'
-      Caption = 'P65Pas Compiler'
-      OnExecute = acToolSel_P65pasExecute
+      Caption = 'P65Pas 6502'
+      OnExecute = acToolSel_P65pas_6502Execute
     end
-    object acToolSel_PicPas: TAction
+    object acToolSel_P65pas_65c02: TAction
       Category = 'Tool'
-      Caption = 'PicPas 10F'
-      OnExecute = acToolSel_PicPasExecute
+      Caption = 'P65Pas 65C02'
+      OnExecute = acToolSel_P65pas_65c02Execute
     end
   end
   object MainMenu1: TMainMenu
@@ -1500,10 +1496,10 @@ object frmPrincipal: TfrmPrincipal
       object MenuItem51: TMenuItem
         Caption = 'Select Compiler'
         object MenuItem52: TMenuItem
-          Action = acToolSel_P65pas
+          Action = acToolSel_P65pas_6502
         end
         object MenuItem53: TMenuItem
-          Action = acToolSel_PicPas
+          Action = acToolSel_P65pas_65c02
         end
         object MenuItem54: TMenuItem
           Caption = 'Enhanced Mid-range Compiler'
@@ -1530,6 +1526,14 @@ object frmPrincipal: TfrmPrincipal
       object MenuItem42: TMenuItem
         Action = acToolExt5
       end
+    end
+    object extraMenu1: TMenuItem
+      Caption = 'extraMenu1'
+      Visible = False
+    end
+    object extraMenu2: TMenuItem
+      Caption = 'extraMenu2'
+      Visible = False
     end
   end
   object ImgActions32: TImageList
@@ -2544,11 +2548,11 @@ object frmPrincipal: TfrmPrincipal
   object PopupCompiler: TPopupMenu
     Left = 270
     Top = 260
-    object MenuItem49: TMenuItem
-      Action = acToolSel_P65pas
-    end
     object MenuItem18: TMenuItem
-      Action = acToolSel_PicPas
+      Action = acToolSel_P65pas_6502
+    end
+    object MenuItem19: TMenuItem
+      Action = acToolSel_P65pas_65c02
     end
   end
 end

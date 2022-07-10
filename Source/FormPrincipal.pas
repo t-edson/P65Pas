@@ -34,8 +34,8 @@ type
     acArcCloseProj: TAction;
     acArcCloseFile: TAction;
     acSearFindPrv: TAction;
-    acToolSel_PicPas: TAction;
-    acToolSel_P65pas: TAction;
+    acToolSel_P65pas_65c02: TAction;
+    acToolSel_P65pas_6502: TAction;
     acViewAsmPan: TAction;
     acToolExt4: TAction;
     acToolExt5: TAction;
@@ -63,7 +63,10 @@ type
     MenuItem15: TMenuItem;
     MenuItem16: TMenuItem;
     MenuItem17: TMenuItem;
+    extraMenu1: TMenuItem;
+    extraMenu2: TMenuItem;
     MenuItem18: TMenuItem;
+    MenuItem19: TMenuItem;
     MenuItem20: TMenuItem;
     MenuItem21: TMenuItem;
     MenuItem22: TMenuItem;
@@ -88,7 +91,6 @@ type
     MenuItem45: TMenuItem;
     MenuItem46: TMenuItem;
     Separator1: TMenuItem;
-    MenuItem49: TMenuItem;
     MenuItem51: TMenuItem;
     MenuItem52: TMenuItem;
     MenuItem53: TMenuItem;
@@ -136,7 +138,6 @@ type
     ToolButton32: TToolButton;
     ToolButton33: TToolButton;
     ToolButton34: TToolButton;
-    ToolButton35: TToolButton;
     ToolButton36: TToolButton;
     ToolButton37: TToolButton;
     ToolButton38: TToolButton;
@@ -169,8 +170,8 @@ type
     procedure acToolExt4Execute(Sender: TObject);
     procedure acToolExt5Execute(Sender: TObject);
     procedure acToolFindDecExecute(Sender: TObject);
-    procedure acToolSel_P65pasExecute(Sender: TObject);
-    procedure acToolSel_PicPasExecute(Sender: TObject);
+    procedure acToolSel_P65pas_6502Execute(Sender: TObject);
+    procedure acToolSel_P65pas_65c02Execute(Sender: TObject);
     procedure acViewAsmPanExecute(Sender: TObject);
     procedure acViewSynTreeExecute(Sender: TObject);
     procedure acViewStatbarExecute(Sender: TObject);
@@ -215,6 +216,7 @@ type
     procedure LoadAsmSyntaxEd;
     procedure MarkErrors;
     procedure ShowErrorInDialogBox;
+    procedure UpdateIDE(CompName: string);
   public     //Compilers adapters
     currComp   : TAdapterBase;   //Compialdor actual
     adapter6502: TAdapter6502;  //Adaptador para compilado 6502
@@ -430,17 +432,19 @@ begin
   /////////// Crea adaptadores para compiladores soportados ///////////
   adapter6502:= TAdapter6502.Create(fraEditView1);
   adapter6502.Init(fraLeftPanel.PageControl1, ImgActions16, ImgActions32, ActionList,
-                   MainMenu1, Config.fraCfgAfterChg6502, Config.fraCfgCompiler6502);
+       Config.fraCfgAfterChg6502, Config.fraCfgCompiler6502);
   adapter6502.OnBeforeCompile  := @comp_BeforeCompile;
   adapter6502.OnAfterCompile   := @comp_AfterCompile;
   adapter6502.OnBeforeCheckSyn := @comp_BeforeCheckSyn;
   adapter6502.OnAfterCheckSyn  := @comp_AfterCheckSyn;
-  currComp := adapter6502;    //Compilador actual
+
+  //currComp := adapter6502;    //Compilador actual
+  //Fija compilador por defecto
+  acToolSel_P65pas_6502Execute(self);
   ///////////////////////////////////////////////////////
 
   //Carga últimos archivos abiertos
   if Config.LoadLast then fraEditView1.LoadListFiles(Config.filesClosed);
-  acToolSel_P65pasExecute(self);  //Fija compilador por defecto
   Timer1.Enabled := true;
 end;
 procedure TfrmPrincipal.DoSelectSample(Sender: TObject);
@@ -1018,46 +1022,53 @@ begin
   Config.Mostrar;
 end;
 //Seleccion del compilador
-procedure TfrmPrincipal.acToolSel_P65pasExecute(Sender: TObject);
-{Se pide seleccionar el compilador P65pas}
+procedure TfrmPrincipal.UpdateIDE(CompName: string);
+{Termina de hacer las configuraciones finales de la IDE al elegir un compilador.}
 begin
-  currComp := adapter6502;         //Apunta a compilador
-  //Actualiza lista de compiladores
-  acToolSel_P65pas.Checked := true;
-  acToolSel_PicPas.Checked := false;
-  //Actualiza configuración
-  Config.fraCfgAfterChg6502.Visible := true;
-  Config.fraCfgCompiler6502.Visible := true;
-  //Activa Codetools para todos los editores abiertos.
+  {Solicita la actualización de los resaltadores de sintaxis (con completado) y la
+  herramienta Codetools para todos los editores abiertos.}
   currComp.UpdateCompletionForEditors;
   //Actualiza barra de estado
-  StatusBar1.Panels[2].Text := adapter6502.CompilerName;
+  StatusBar1.Panels[2].Text := CompName;
   //Actualiza texto de lista desplegable de Barra de herramientas
-  ToolButton39.Caption := copy(adapter6502.CompilerName+'     ',1,18);        //Actualiza nombre
+  {Agrega espacios al final del nombre para que las rutinas de dimensionamiento no
+  recorten el texto porque s eha movido a la derecha para poner el ícono.}
+  ToolButton39.Caption := copy(CompName + '     ',1,18);
   CoolBar1.AutosizeBands;  //Update size
   //Para compilar de nuevo si está en modo de correccíón de Sintaxis
   if fraEditView1.ActiveEditor <> nil then begin
      fraEdit_ChangeEditorState(fraEditView1.ActiveEditor);
   end;
 end;
-procedure TfrmPrincipal.acToolSel_PicPasExecute(Sender: TObject);
+procedure TfrmPrincipal.acToolSel_P65pas_6502Execute(Sender: TObject);
+{Se pide seleccionar el compilador P65pas}
+begin
+  currComp := adapter6502;         //Apunta a compilador
+  //Actualiza lista de compiladores
+  acToolSel_P65pas_6502.Checked := true;
+  acToolSel_P65pas_65c02.Checked := false;
+  //Actualiza configuración
+  Config.fraCfgAfterChg6502.Visible := true;
+  Config.fraCfgCompiler6502.Visible := true;
+  //Configura menús y Toolbar
+  currComp.setMenusAndToolbar(extraMenu1, extraMenu2, ToolBar4);
+  //Termina configuración
+  UpdateIDE(adapter6502.CompilerName);
+end;
+procedure TfrmPrincipal.acToolSel_P65pas_65c02Execute(Sender: TObject);
 {Se pide seleccionar el compilador PicPas}
 begin
   currComp := adapter6502;         //Apunta a compilador
   //Actualiza lista de compiladores
-  acToolSel_P65pas.Checked := false;
-  acToolSel_PicPas.Checked := true;
+  acToolSel_P65pas_6502.Checked := false;
+  acToolSel_P65pas_65c02.Checked := true;
   //Actualiza configuración
   Config.fraCfgAfterChg6502.Visible := true;
   Config.fraCfgCompiler6502.Visible := true;
-  //Activa Codetools para todos los editores abiertos.
-  currComp.UpdateCompletionForEditors;
-  //Actualiza barra de estado
-  StatusBar1.Panels[2].Text := 'PicPas compiler';
-  //Actualiza texto de lista desplegable de Barra de herramientas
-  ToolButton39.Caption := copy('PicPas compiler     ',1,18);        //Actualiza nombre
-  CoolBar1.AutosizeBands;  //Update size
-
+  //Configura menús y Toolbar
+  currComp.setMenusAndToolbar(extraMenu1, extraMenu2, ToolBar4);
+  //Termina configuración
+  UpdateIDE(adapter6502.CompilerName+'65C02');
 end;
 procedure TfrmPrincipal.acToolExt1Execute(Sender: TObject);
 begin

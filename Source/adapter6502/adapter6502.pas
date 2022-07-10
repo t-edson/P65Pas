@@ -68,8 +68,9 @@ type
     fraCfgCompiler: TfraCfgCompiler6502;
   public      //Inicialización
     procedure Init(pagControl: TPageControl; imgList16, imglist32: TImageList;
-      actList: TActionList; mainMenu: TMainMenu;
-      frmCfgAfterChg0: TfraCfgAfterChg6502; fraCfgCompiler0: TfraCfgCompiler6502);
+      actList: TActionList; frmCfgAfterChg0: TfraCfgAfterChg6502;
+  fraCfgCompiler0: TfraCfgCompiler6502);
+    procedure setMenusAndToolbar(menu1, menu2: TMenuItem; toolbar: TToolBar); override;
     constructor Create(fraEdit0: TfraEditView);
     destructor Destroy; override;
   end;
@@ -335,7 +336,7 @@ begin
 end;
 //Inicialización
 procedure TAdapter6502.Init(pagControl: TPageControl; imgList16,
-  imglist32: TImageList; actList: TActionList; mainMenu: TMainMenu;
+  imglist32: TImageList; actList: TActionList;
   frmCfgAfterChg0: TfraCfgAfterChg6502; fraCfgCompiler0: TfraCfgCompiler6502);
 {Inicializa el adaptador. Eso implica preparar la IDE para que soporte a este nuevo
 compilador que se está registrando.
@@ -355,7 +356,7 @@ var
   tab: TTabSheet;
 begin
   //Agrega los íconos de "adapterForm" a los ImageList
-  adapterForm.AddActions(imgList16, imgList32, actList, COMP_NAME, mainMenu);
+  adapterForm.AddActions(imgList16, imgList32, actList, COMP_NAME);
   //Agrega las herramientas de este compilador
   tab := pagControl.AddTabSheet;    //Agrega nuevo panel
   tab.Name := 'SyntaxTree_'+ COMP_NAME;
@@ -368,6 +369,13 @@ begin
   //Asigna referencias a formularios de configuración
   fraCfgAfterChg := frmCfgAfterChg0;
   fraCfgCompiler := fraCfgCompiler0;
+end;
+procedure TAdapter6502.setMenusAndToolbar(menu1, menu2: TMenuItem;
+  toolbar: TToolBar);
+var
+  i: Integer;
+begin
+  adapterForm.setMenusAndToolbar(menu1, menu2, toolbar);
 end;
 constructor TAdapter6502.Create(fraEdit0: TfraEditView);
 begin

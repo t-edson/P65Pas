@@ -4,7 +4,8 @@ unit adapterBase;
 {$mode ObjFPC}{$H+}
 interface
 uses
-  Classes, SysUtils, types, FrameEditView, Menus, ExtCtrls, Controls, Graphics ;
+  Classes, SysUtils, types, FrameEditView, Menus, ExtCtrls, Controls, Graphics,
+  ComCtrls ;
 
 type
   {Adaptador para controlar a diversos compiladores}
@@ -34,6 +35,8 @@ type
     procedure CheckSyntax; virtual; abstract;
     procedure UpdateCompletionForEditors; virtual; abstract;
     procedure DumpCode(lins: TSTrings); virtual; abstract;
+  public      //Inicialización
+    procedure setMenusAndToolbar(menu1, menu2: TMenuItem; toolbar: TToolBar); virtual; abstract;
   end;
 
   //Funciones para control de menú
