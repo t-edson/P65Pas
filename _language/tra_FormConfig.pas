@@ -136,22 +136,6 @@ chkIncVarName.Caption := Trans('Include &Variable Names','Incluir Nombre de &Var
 ////////////////////////////////////////////////////////////////////////////
 TIT_CFG_COMPIL         := Trans('Compiler'               , 'Compilador'               , '',
                                 'Compiler','Компілятор','Компилятор', 'Compilateur');
-chkShowErrMsg.Caption  := Trans('&Show Error Messages'   , '&Mostrar mensajes de error', '',
-                                '&Zeige Fehlermeldungen','Показувати сповіщення про помилки','Показывать сообщения об ошибках', '&Afficher les messages d''erreur');
-grpOptimLev.Caption    := Trans('Optimization Level:'    , 'Nivel de optimización:'   , '',
-                                'Optimierungsstufe:','Рівень оптимізації:','Уровень оптимизации:', 'Niveau d''optimisation:');
-grpOptimLev.Items[0]   := Trans('Fool'                   , 'Tonto'                    , '',
-                                'Dumm','Дурень','Дурак', 'Basique');
-grpOptimLev.Items[1]   := Trans('Smart'                  , 'Inteligente'              , '',
-                                'Schlau','Розумний','Умный', 'Avancé');
-chkOptBnkAftIF.Caption := Trans('After IF structure'    , 'Después de instrucciones IF.', '',
-                               'Nach IF-Struktur','Після структури IF','После структуры IF', 'Après le bloc IF');
-chkOptBnkBefPro.Caption:= Trans('Before Procedures'     , 'Antes de procedimientos.', '',
-                               'Vor Prozeduren','Перед процедурами','Перед процедурами', 'Avant les procédures');
-chkOptBnkAftPro.Caption:= Trans('After Procedures'      , 'Después de procedimientos.', '',
-                                'Nach den Prozeduren','Після адреси','После адреса', 'Après les procédures');
-chkReuProcVar.Caption  := Trans('Reuse Procedures Variables', 'Reutilizar variables de proced.', '',
-                                '','Повторно використовувати змінні процедур','Повторно использовать переменные процедур', 'Ré-utiliser les variables de procédure');
 ////////////////////////////////////////////////////////////////////////////
 //////////////////////////// External Tool ////////////////////////////
 ////////////////////////////////////////////////////////////////////////////

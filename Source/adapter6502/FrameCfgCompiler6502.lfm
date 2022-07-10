@@ -1,0 +1,86 @@
+object fraCfgCompiler6502: TfraCfgCompiler6502
+  Left = 0
+  Height = 403
+  Top = 0
+  Width = 507
+  ClientHeight = 403
+  ClientWidth = 507
+  DesignTimePPI = 120
+  ParentFont = False
+  TabOrder = 0
+  DesignLeft = 464
+  DesignTop = 453
+  object grpOptimLev: TRadioGroup
+    Left = 24
+    Height = 150
+    Top = 100
+    Width = 166
+    AutoFill = True
+    Caption = 'Optimizacion Level: '
+    ChildSizing.LeftRightSpacing = 6
+    ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
+    ChildSizing.EnlargeVertical = crsHomogenousChildResize
+    ChildSizing.ShrinkHorizontal = crsScaleChilds
+    ChildSizing.ShrinkVertical = crsScaleChilds
+    ChildSizing.Layout = cclLeftToRightThenTopToBottom
+    ChildSizing.ControlsPerLine = 1
+    ClientHeight = 125
+    ClientWidth = 162
+    Enabled = False
+    Items.Strings = (
+      'Fool'
+      'Smart'
+    )
+    TabOrder = 0
+  end
+  object GroupBox1: TGroupBox
+    Left = 244
+    Height = 150
+    Top = 100
+    Width = 231
+    Caption = 'Optimize Bank Selection'
+    ClientHeight = 125
+    ClientWidth = 227
+    TabOrder = 1
+    object chkOptBnkAftIF: TCheckBox
+      Left = 10
+      Height = 24
+      Top = 10
+      Width = 133
+      Caption = 'After IF structure'
+      TabOrder = 0
+    end
+    object chkOptBnkBefPro: TCheckBox
+      Left = 10
+      Height = 24
+      Top = 50
+      Width = 145
+      Caption = 'Before Procedures'
+      TabOrder = 1
+    end
+    object chkOptBnkAftPro: TCheckBox
+      Left = 10
+      Height = 24
+      Top = 90
+      Width = 134
+      Caption = 'After Procedures'
+      TabOrder = 2
+    end
+  end
+  object chkReuProcVar: TCheckBox
+    Left = 34
+    Height = 24
+    Top = 270
+    Width = 205
+    Caption = 'Reuse Procedures Variables'
+    TabOrder = 2
+  end
+  object chkOptRetProc: TCheckBox
+    Left = 34
+    Height = 24
+    Top = 310
+    Width = 238
+    Caption = 'Optimize RETURN in procedures'
+    TabOrder = 3
+  end
+end

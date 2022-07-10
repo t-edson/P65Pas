@@ -1,0 +1,9 @@
+{"version":1,"strings":[
+{"hash":50108912,"name":"tfracfgcompiler6502.grpoptimlev.caption","sourcebytes":[79,112,116,105,109,105,122,97,99,105,111,110,32,76,101,118,101,108,58,32],"value":"Optimizacion Level: "},
+{"hash":110230046,"name":"tfracfgcompiler6502.groupbox1.caption","sourcebytes":[79,112,116,105,109,105,122,101,32,66,97,110,107,32,83,101,108,101,99,116,105,111,110],"value":"Optimize Bank Selection"},
+{"hash":153053813,"name":"tfracfgcompiler6502.chkoptbnkaftif.caption","sourcebytes":[65,102,116,101,114,32,73,70,32,115,116,114,117,99,116,117,114,101],"value":"After IF structure"},
+{"hash":25562867,"name":"tfracfgcompiler6502.chkoptbnkbefpro.caption","sourcebytes":[66,101,102,111,114,101,32,80,114,111,99,101,100,117,114,101,115],"value":"Before Procedures"},
+{"hash":100322867,"name":"tfracfgcompiler6502.chkoptbnkaftpro.caption","sourcebytes":[65,102,116,101,114,32,80,114,111,99,101,100,117,114,101,115],"value":"After Procedures"},
+{"hash":94512499,"name":"tfracfgcompiler6502.chkreuprocvar.caption","sourcebytes":[82,101,117,115,101,32,80,114,111,99,101,100,117,114,101,115,32,86,97,114,105,97,98,108,101,115],"value":"Reuse Procedures Variables"},
+{"hash":188796819,"name":"tfracfgcompiler6502.chkoptretproc.caption","sourcebytes":[79,112,116,105,109,105,122,101,32,82,69,84,85,82,78,32,105,110,32,112,114,111,99,101,100,117,114,101,115],"value":"Optimize RETURN in procedures"}
+]}

@@ -3,6 +3,7 @@ P65PAS 0.9.3
 COMENTARIOS
 
 	PROC. PARA CREAR SOPORTE A NUEVO COMPILADOR
+	- Agregar una acción nueva al ActionList, con el nombre del nuevo compilador.
 	- Se requiere crear un adaptador nuevo para el compilador en la IDE. El adapatador se 
 	crea en una nueva carpeta con el nombre adaptar<NombreCompilador>. El archivo principal
 	es adapter<Nombre_compilador>. Allí se debe crear la clase TAdapter<Nombre_compilador>
@@ -13,13 +14,22 @@ COMENTARIOS
 CAMBIOS
 - Se modifica CompContext en las instrucciones de generación de mensajes de Información y los 
 eventos: TContexts.GenInfo().
-- Se crea la unidad "adapter" para definir la clase abstracta "TAdapter".
+- Se crea la unidad "adapterBase" para definir la clase abstracta "TAdapter".
 - Se crea la unidad "adapter6502" para definir un compilador externo que sería el P65Pas que
 se va a manejar como un compilador separado.
 - Se simplifica el panel del árbol de sintaxis de la IDE y se le quita la función de árbol de 
 sintaxis. Se le deja solo la función de explorador de archivo, pero con opción de acoplarme un
 frame externo que debe ser el del compilador seleccionado.
 - Se crea un Frame en el adaptador del 6502 para incluir un árbol de sintaxis.
+- Se mueven todos los formularios relativos a herramientas del compilador a la unidad 
+/adapter6502 y se dejan en /Source solo los relativos al compilador solo y a la IDE.
+- Se crean dos frames de configuración y se incluyen en el formulario Config.
+- Se crean rutinas para la creación dinámica de menús y botones en el Toolbar desde las rutinas
+del adaptador.
+- Se reemplaza el Toolbar por un control Coolbar. Y se le copia la configuración mejorada que 
+tenía PicPas.
+- Se agrega, a las configuraciones, una propiedad más para fijar el color del texto de los
+páneles.
 
 TAREAS PLANIFICADAS
 - Verificar aplicación de Temas en nueva disposición de la IDE.

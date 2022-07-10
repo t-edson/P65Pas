@@ -1,12 +1,13 @@
-object frmRAMExplorer: TfrmRAMExplorer
+object frmRAMExplorer6502: TfrmRAMExplorer6502
   Left = 332
-  Height = 488
+  Height = 610
   Top = 134
-  Width = 606
+  Width = 758
   AutoSize = True
   Caption = 'RAM Explorer'
-  ClientHeight = 488
-  ClientWidth = 606
+  ClientHeight = 610
+  ClientWidth = 758
+  DesignTimePPI = 120
   Icon.Data = {
     BE1000000000010001002020000001002000A810000016000000280000002000
     0000400000000100200000000000001000006400000064000000000000000000
@@ -147,71 +148,67 @@ object frmRAMExplorer: TfrmRAMExplorer
   KeyPreview = True
   OnCreate = FormCreate
   OnKeyDown = FormKeyDown
-  LCLVersion = '1.8.0.6'
+  LCLVersion = '2.2.0.4'
   object panStatBar: TPanel
     Left = 0
-    Height = 31
-    Top = 457
-    Width = 606
+    Height = 39
+    Top = 571
+    Width = 758
     Align = alBottom
-    ClientHeight = 31
-    ClientWidth = 606
+    ClientHeight = 39
+    ClientWidth = 758
     TabOrder = 0
     object Label2: TLabel
-      Left = 40
-      Height = 15
-      Top = 4
-      Width = 19
+      Left = 50
+      Height = 20
+      Top = 5
+      Width = 24
       Caption = 'SFR'
-      ParentColor = False
     end
     object Label3: TLabel
-      Left = 120
-      Height = 15
-      Top = 4
-      Width = 22
+      Left = 150
+      Height = 20
+      Top = 5
+      Width = 27
       Caption = 'GPR'
-      ParentColor = False
     end
     object Label4: TLabel
-      Left = 304
-      Height = 15
-      Top = 4
-      Width = 59
+      Left = 380
+      Height = 20
+      Top = 5
+      Width = 72
       Caption = 'Unimplem.'
-      ParentColor = False
     end
     object Shape1: TShape
-      Left = 8
-      Height = 18
-      Top = 4
-      Width = 24
+      Left = 10
+      Height = 22
+      Top = 5
+      Width = 30
     end
     object Shape2: TShape
-      Left = 88
-      Height = 18
-      Top = 4
-      Width = 24
+      Left = 110
+      Height = 22
+      Top = 5
+      Width = 30
     end
     object Shape3: TShape
-      Left = 272
-      Height = 18
-      Top = 4
-      Width = 24
+      Left = 340
+      Height = 22
+      Top = 5
+      Width = 30
     end
     object Shape4: TShape
-      Left = 168
-      Height = 18
-      Top = 4
-      Width = 24
+      Left = 210
+      Height = 22
+      Top = 5
+      Width = 30
     end
     object Label5: TLabel
-      Left = 200
-      Height = 15
-      Top = 4
-      Width = 51
+      Left = 250
+      Height = 20
+      Top = 5
+      Width = 64
       Caption = 'GPR Used'
-      ParentColor = False
     end
   end
 end

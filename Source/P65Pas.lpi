@@ -73,7 +73,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="37">
+    <Units Count="38">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -185,23 +185,23 @@
         <ResourceBaseClass Value="Frame"/>
       </Unit19>
       <Unit20>
-        <Filename Value="FormDebugger.pas"/>
+        <Filename Value="adapter6502\FormDebugger6502.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="frmDebugger"/>
+        <ComponentName Value="frmDebugger6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
       </Unit20>
       <Unit21>
         <Filename Value="adapter6502\FrameRamExplorer6502.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="fraRamExplorer"/>
+        <ComponentName Value="fraRamExplorer6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
       </Unit21>
       <Unit22>
-        <Filename Value="FormRAMExplorer.pas"/>
+        <Filename Value="adapter6502\FormRAMExplorer6502.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="frmRAMExplorer"/>
+        <ComponentName Value="frmRAMExplorer6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
       </Unit22>
@@ -259,25 +259,33 @@
         <IsPartOfProject Value="True"/>
       </Unit33>
       <Unit34>
-        <Filename Value="adapter6502\FrameCfgChkSyntax6502.pas"/>
-        <IsPartOfProject Value="True"/>
-        <ComponentName Value="fraCfgChkSyntax6502"/>
-        <ResourceBaseClass Value="Frame"/>
-      </Unit34>
-      <Unit35>
         <Filename Value="adapter6502\FrameStatist6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraStatist6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit35>
-      <Unit36>
+      </Unit34>
+      <Unit35>
         <Filename Value="adapter6502\FormAdapter6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmAdapter6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+      </Unit35>
+      <Unit36>
+        <Filename Value="adapter6502\FrameCfgAfterChg6502.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="fraCfgAfterChg6502"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Frame"/>
       </Unit36>
+      <Unit37>
+        <Filename Value="adapter6502\FrameCfgCompiler6502.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="fraCfgCompiler6502"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Frame"/>
+      </Unit37>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

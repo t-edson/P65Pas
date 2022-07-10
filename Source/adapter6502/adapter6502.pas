@@ -7,8 +7,9 @@ unit adapter6502;
 interface
 uses
   Classes, SysUtils, ComCtrls, Controls, ActnList, Menus, adapterBase,
-  CodeTools6502, Compiler_PIC16, LexPas, FrameEditView, MisUtils,
-  FrameStatist6502, FrameSynTree6502, FormAdapter6502;
+  CodeTools6502, Compiler_PIC16, LexPas, FrameEditView, Globales, MisUtils,
+  FrameStatist6502, FrameSynTree6502, FormAdapter6502, FrameCfgAfterChg6502,
+  FrameCfgCompiler6502, FormDebugger6502, FormRAMExplorer6502;
 type
   { TAdapter6502 }
   TAdapter6502 = class(TAdapterBase)
@@ -21,13 +22,13 @@ type
     Compiler    : TCompiler_PIC16;
     //Referencia al frame de edición
     fraEditView1: TfraEditView;
-    //Frame de estadísticas
-    fraStatis   : TfraStatist6502;
-    //Frame de árbol de sintaxis
-    fraSynTree  : TfraSynxTree6502;
-    //Formulario principal
-    adapterForm: TfrmAdapter6502;
-    //Otros
+  private     //Herramientas adicionales
+    fraStatis     : TfraStatist6502;  //Frame de estadísticas
+    fraSynTree    : TfraSynxTree6502; //Frame de árbol de sintaxis
+    adapterForm   : TfrmAdapter6502;   //Formulario principal
+    frmDebug      : TfrmDebugger6502;
+    frmRAMExplorer: TfrmRAMExplorer6502;
+  private    //Otros
     Compiling   : Boolean;  //Bandera. Indica que se ha pedido ejceutar una compilación.
     procedure Compiler16_RequireFileString(FilePath: string;
       var strList: TStrings);
@@ -36,10 +37,13 @@ type
     procedure CompilerWarning(warTxt: string; const srcPos: TSrcPos);
     procedure fraSynTreeLocateElemen(fileSrc: string; row, col: integer);
     procedure UpdateTools;
-  public      //Respuesta a acciones de "adapterForm"
-    procedure acCompilExecute(Sender: TObject);
-    procedure acCompExExecute(Sender: TObject);
-    procedure acChecksynExecute(Sender: TObject);
+  public      //Acciones adicionales de "adapterForm"
+    procedure CompileAndExec(Sender: TObject);
+    procedure ASMDebug(Sender: TObject);
+    procedure acRamExpExecute(Sender: TObject);
+    procedure ListReport;
+    procedure FindDeclarat;
+    procedure TestUnit;
   public      //Información
     function CompilerName: string; override;
     function hexFilePath: string; override;
@@ -57,9 +61,15 @@ type
     procedure CheckSyntax; override;
     procedure UpdateCompletionForEditors; override;
     procedure DumpCode(lins: TSTrings); override;
+  public      //Frames de configuración
+    //Por practicidad, estos frames se deben instanciar en el formulario de configuración
+    //de la IDE.
+    fraCfgAfterChg: TfraCfgAfterChg6502;
+    fraCfgCompiler: TfraCfgCompiler6502;
   public      //Inicialización
     procedure Init(pagControl: TPageControl; imgList16, imglist32: TImageList;
-      actList: TActionList; mainMenu: TMainMenu);
+      actList: TActionList; mainMenu: TMainMenu;
+      frmCfgAfterChg0: TfraCfgAfterChg6502; fraCfgCompiler0: TfraCfgCompiler6502);
     constructor Create(fraEdit0: TfraEditView);
     destructor Destroy; override;
   end;
@@ -116,20 +126,76 @@ begin
   fName := compiler.ctxFile(srcPos);
   if OnInfo<>nil then OnInfo(infTxt, fname, srcPos.row, srcPos.col);
 end;
-//Respuesta a acciones de "adapterForm"
-procedure TAdapter6502.acCompilExecute(Sender: TObject);
-{Ejecuta acción "Compilar".}
+//Acciones adicionales de "adapterForm"
+procedure TAdapter6502.CompileAndExec(Sender: TObject);
+{Compila y ejecuta en la ventana de simulación}
 begin
-  Compile; //Config.getParamsCompiling('6502'));
+  Compile;
+  if Compiler.IsUnit then exit;  //No es programa
+  if nErrors=0 then begin
+     frmDebug.Exec(Compiler);
+     frmDebug.acGenRunExecute(self);
+  end;
 end;
-procedure TAdapter6502.acCompExExecute(Sender: TObject);
+procedure TAdapter6502.ASMDebug(Sender: TObject);
 begin
-
+    frmDebug.Exec(Compiler);
 end;
-procedure TAdapter6502.acChecksynExecute(Sender: TObject);
-{Hace una verifiación de sintaxis del contenido actual}
+procedure TAdapter6502.acRamExpExecute(Sender: TObject);
 begin
-  CheckSyntax; //Config.getParamsAfterEdit('6502'));
+     frmRAMExplorer.Exec(Compiler);
+end;
+procedure TAdapter6502.ListReport;
+var
+  edit: TSynEditor;
+begin
+//  fraEditView1.NewLstFile;
+//  edit := fraEditView1.ActiveEditor;
+//  edit.SynEdit.BeginUpdate;
+//  Compiler.GenerateListReport(edit.SynEdit.Lines);
+//  edit.SynEdit.EndUpdate;
+end;
+procedure TAdapter6502.FindDeclarat;
+begin
+  if fraEditView1.Count=0 then exit;
+  CodeTool.GoToDeclaration;
+end;
+procedure TAdapter6502.TestUnit;
+{Inicia la prueba de unidades de las carpetas /device10, /device16 y /device17.}
+//  procedure TestDevicesUnits(var nFil: integer);
+//  var
+//    SearchRec: TSearchRec;
+//    directorio, nomArc: String;
+//  begin
+//    directorio := compiler.devicesPath;
+//    if FindFirst(directorio + DirectorySeparator + 'PIC*.pas', faDirectory, SearchRec) = 0 then begin
+//      repeat
+//        inc(nFil);
+//        nomArc := SysToUTF8(SearchRec.Name);
+//        if SearchRec.Attr and faDirectory = faDirectory then begin
+//          //directorio
+//        end else begin //archivo
+//          //Unidad de PIC
+//          nomArc := directorio + DirectorySeparator +  nomArc;
+//          DebugLn('Compiling: '+ nomArc);
+//          CompileFile(nomArc, true);
+//          if Compiler.HayError then break;
+//        end;
+//        fraMessages.AddInformation(Format('%d files processed...', [nFil]));
+//        Application.ProcessMessages;   //Para refrescar ventanas
+//      until FindNext(SearchRec) <> 0;
+//      FindClose(SearchRec);
+//    end;
+//  end;
+//var
+//  nFiles: Integer;
+begin
+//  nFiles := 0;
+//  //Prueba Unidades de PIC16
+//  acToolSelPIC16Execute(self);  //Elige compilador
+//  TestDevicesUnits(nFiles);
+//  if Compiler.HayError then exit;
+//  MsgBox('%d files tested OK.', [nFiles]);
 end;
 //Información
 function TAdapter6502.CompilerName: string;
@@ -209,6 +275,7 @@ procedure TAdapter6502.Compile;
 {Ejecuta el compilador para generar un archivo binario de salida.}
 var
   ed: TSynEditor;
+  pars: string = '';
 begin
   //Validación de editor disponible
   if fraEditView1.ActiveEditor=nil then exit;
@@ -220,11 +287,14 @@ begin
       exit;
     end;
   end;
+  //Lee configuración de compilación
+  if fraCfgCompiler.ReuProcVar then AddLine(pars, '-Ov');   //Reusar variables de proced.
+  if fraCfgCompiler.OptRetProc then AddLine(pars, '-Or');   //Optimizar Retorno de proced.
   //Inicio de compilación
   nErrors := 0;
   if OnBeforeCompile<>nil then OnBeforeCompile();
   Compiling := true;   //Activa bandera para saber que queremos compilar.
-  Compiler.Exec(ed.FileName, '', ''); //*** outFile y pars deben leerese de la configuración
+  Compiler.Exec(ed.FileName, '', pars);
   Compiling := false;
   if OnAfterCompile<>nil then OnAfterCompile();
   UpdateTools;
@@ -233,19 +303,25 @@ procedure TAdapter6502.CheckSyntax;
 {Ejecuta el compilador para realizar una verificación de sintaxis.}
 var
   ed: TSynEditor;
+  pars: string = '';
 begin
   //Validación de editor disponible
   if fraEditView1.ActiveEditor=nil then exit;
   ed := fraEditView1.ActiveEditor;
   if ed.FileName='' then exit;
   //Verifica rápidamente si hay texto en el editor
-  if (ed.SynEdit.Lines.Count<=1) and (trim(ed.Text)='') then begin
-    exit;
+  if (ed.SynEdit.Lines.Count<=1) and (trim(ed.Text)='') then exit;
+  //Lee configuración de verif. de sintaxis.
+  case fraCfgAfterChg.actAfterChg of
+    0: pars := '-Cn' + LineEnding + '-Dn';  //<No action>
+    1: pars := '-Ca' + LineEnding + '-Dn';  //Do Only Analysis
+    2: pars := '-Cao'+ LineEnding + '-Dn'; //Do Analysis and Optimization.
+    3: pars := '-C'  + LineEnding + '-Dn';   //Do complete compilation.
   end;
   //Inicio de compilación
   nErrors := 0;
   if OnBeforeCheckSyn<>nil then OnBeforeCheckSyn();
-  Compiler.Exec(ed.FileName, '', '');
+  Compiler.Exec(ed.FileName, '', pars);
   if OnAfterCheckSyn<>nil then OnAfterCheckSyn();
   UpdateTools;
 end;
@@ -258,8 +334,9 @@ begin
 //  Compiler.DumpCode(lins,AsmMode, IncVarDec, ExcUnused, incAdrr, incCom, incVarNam);
 end;
 //Inicialización
-procedure TAdapter6502.Init(pagControl: TPageControl; imgList16, imglist32: TImageList;
-  actList: TActionList; mainMenu: TMainMenu);
+procedure TAdapter6502.Init(pagControl: TPageControl; imgList16,
+  imglist32: TImageList; actList: TActionList; mainMenu: TMainMenu;
+  frmCfgAfterChg0: TfraCfgAfterChg6502; fraCfgCompiler0: TfraCfgCompiler6502);
 {Inicializa el adaptador. Eso implica preparar la IDE para que soporte a este nuevo
 compilador que se está registrando.
 Solo se debe ejecutar esta rutina una ve al inicio.
@@ -288,6 +365,9 @@ begin
   fraSynTree.Visible := true;
   fraSynTree.Align := alClient;
   fraSynTree.OnLocateElemen  := @fraSynTreeLocateElemen;
+  //Asigna referencias a formularios de configuración
+  fraCfgAfterChg := frmCfgAfterChg0;
+  fraCfgCompiler := fraCfgCompiler0;
 end;
 constructor TAdapter6502.Create(fraEdit0: TfraEditView);
 begin
@@ -310,10 +390,15 @@ begin
   //Crea formulario principal
   adapterForm:= TfrmAdapter6502.Create(nil);
   adapterForm.adapter := self;  //Actualiza referencia
-
+  //Crea formulario de depuración
+  frmDebug    := TfrmDebugger6502.Create(nil);
+  //Crea formulario explorador de RAM
+  frmRAMExplorer:= TfrmRAMExplorer6502.Create(nil);
 end;
 destructor TAdapter6502.Destroy;
 begin
+  frmRAMExplorer.Destroy;
+  frmDebug.Destroy;
   adapterForm.Destroy;
   fraSynTree.Destroy;
   fraStatis.Destroy;

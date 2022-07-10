@@ -1,7 +1,7 @@
 object Config: TConfig
-  Left = 265
+  Left = 292
   Height = 475
-  Top = 177
+  Top = 174
   Width = 714
   BorderStyle = bsDialog
   Caption = 'Configuración'
@@ -59,10 +59,10 @@ object Config: TConfig
     Height = 413
     Top = 0
     Width = 504
-    ActivePage = tabEditor
+    ActivePage = tabEnviron
     Align = alClient
     ShowTabs = False
-    TabIndex = 3
+    TabIndex = 0
     TabOrder = 1
     object tabEnviron: TTabSheet
       Caption = 'Enviroment'
@@ -77,32 +77,32 @@ object Config: TConfig
         TabOrder = 2
       end
       object lblSplitCol: TLabel
-        Left = 290
+        Left = 272
         Height = 20
-        Top = 230
+        Top = 224
         Width = 95
         Caption = 'Splitters color:'
       end
       object colSplitCol: TColorBox
-        Left = 290
+        Left = 272
         Height = 26
-        Top = 250
+        Top = 244
         Width = 152
         Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
         ItemHeight = 20
         TabOrder = 6
       end
       object lblPanelCol: TLabel
-        Left = 290
+        Left = 272
         Height = 20
-        Top = 170
+        Top = 164
         Width = 84
         Caption = 'Panels Color:'
       end
       object colMessPanPan: TColorBox
-        Left = 290
+        Left = 272
         Height = 26
-        Top = 190
+        Top = 184
         Width = 152
         Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
         ItemHeight = 20
@@ -174,14 +174,14 @@ object Config: TConfig
       object Label1: TLabel
         Left = 20
         Height = 20
-        Top = 300
+        Top = 320
         Width = 68
         Caption = 'Units Path:'
       end
       object Edit1: TEdit
         Left = 16
         Height = 28
-        Top = 320
+        Top = 340
         Width = 370
         Enabled = False
         TabOrder = 7
@@ -202,6 +202,23 @@ object Config: TConfig
         Top = 80
         Width = 91
         Caption = 'CreateTheme:'
+      end
+      object lblSplitCol1: TLabel
+        Left = 270
+        Height = 20
+        Top = 280
+        Width = 109
+        Caption = 'Panel Text Color:'
+      end
+      object colPanTextCol: TColorBox
+        Left = 270
+        Height = 26
+        Top = 300
+        Width = 152
+        DefaultColorColor = clGray
+        Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
+        ItemHeight = 20
+        TabOrder = 8
       end
     end
     object tabCodeExp: TTabSheet
@@ -338,9 +355,9 @@ object Config: TConfig
       ClientWidth = 496
       object grpTabEdiState: TRadioGroup
         Left = 20
-        Height = 121
+        Height = 104
         Top = 128
-        Width = 211
+        Width = 236
         AutoFill = True
         Caption = 'Tab Editor State:'
         ChildSizing.LeftRightSpacing = 6
@@ -350,8 +367,8 @@ object Config: TConfig
         ChildSizing.ShrinkVertical = crsScaleChilds
         ChildSizing.Layout = cclLeftToRightThenTopToBottom
         ChildSizing.ControlsPerLine = 1
-        ClientHeight = 96
-        ClientWidth = 207
+        ClientHeight = 79
+        ClientWidth = 232
         Items.Strings = (
           'Show always'
           'Hide for one file'
@@ -398,46 +415,20 @@ object Config: TConfig
         TabOrder = 2
       end
       object chkViewHScroll: TCheckBox
-        Left = 260
+        Left = 280
         Height = 24
         Top = 80
         Width = 178
         Caption = 'Barra de desplaz &Horiz.'
         TabOrder = 3
       end
-      object grpAfterEdit_6502: TRadioGroup
-        Left = 20
-        Height = 128
-        Top = 264
-        Width = 132
-        AutoFill = True
-        Caption = 'Actions after changes in editor:'
-        ChildSizing.LeftRightSpacing = 6
-        ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
-        ChildSizing.EnlargeVertical = crsHomogenousChildResize
-        ChildSizing.ShrinkHorizontal = crsScaleChilds
-        ChildSizing.ShrinkVertical = crsScaleChilds
-        ChildSizing.Layout = cclLeftToRightThenTopToBottom
-        ChildSizing.ControlsPerLine = 1
-        ClientHeight = 103
-        ClientWidth = 128
+      object chkShowErrMsg: TCheckBox
+        Left = 284
+        Height = 24
+        Top = 144
+        Width = 164
+        Caption = 'Show Error Messages'
         TabOrder = 5
-      end
-      object grpAfterEdit_65C02: TRadioGroup
-        Left = 200
-        Height = 128
-        Top = 264
-        Width = 136
-        AutoFill = True
-        Caption = 'Actions after changes in editor:'
-        ChildSizing.LeftRightSpacing = 6
-        ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
-        ChildSizing.EnlargeVertical = crsHomogenousChildResize
-        ChildSizing.ShrinkHorizontal = crsScaleChilds
-        ChildSizing.ShrinkVertical = crsScaleChilds
-        ChildSizing.Layout = cclLeftToRightThenTopToBottom
-        ChildSizing.ControlsPerLine = 1
-        TabOrder = 6
       end
     end
     object tabEdiColor: TTabSheet
@@ -525,89 +516,6 @@ object Config: TConfig
     end
     object tabCompiler: TTabSheet
       Caption = 'Compiler'
-      ClientHeight = 405
-      ClientWidth = 496
-      object grpOptimLev: TRadioGroup
-        Left = 10
-        Height = 150
-        Top = 100
-        Width = 166
-        AutoFill = True
-        Caption = 'Optimizacion Level: '
-        ChildSizing.LeftRightSpacing = 6
-        ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
-        ChildSizing.EnlargeVertical = crsHomogenousChildResize
-        ChildSizing.ShrinkHorizontal = crsScaleChilds
-        ChildSizing.ShrinkVertical = crsScaleChilds
-        ChildSizing.Layout = cclLeftToRightThenTopToBottom
-        ChildSizing.ControlsPerLine = 1
-        ClientHeight = 125
-        ClientWidth = 162
-        Enabled = False
-        Items.Strings = (
-          'Fool'
-          'Smart'
-        )
-        TabOrder = 0
-      end
-      object chkShowErrMsg: TCheckBox
-        Left = 10
-        Height = 24
-        Top = 50
-        Width = 164
-        Caption = 'Show Error Messages'
-        TabOrder = 1
-      end
-      object GroupBox1: TGroupBox
-        Left = 230
-        Height = 150
-        Top = 100
-        Width = 231
-        Caption = 'Optimize Bank Selection'
-        ClientHeight = 125
-        ClientWidth = 227
-        TabOrder = 2
-        object chkOptBnkAftIF: TCheckBox
-          Left = 10
-          Height = 24
-          Top = 10
-          Width = 133
-          Caption = 'After IF structure'
-          TabOrder = 0
-        end
-        object chkOptBnkBefPro: TCheckBox
-          Left = 10
-          Height = 24
-          Top = 50
-          Width = 145
-          Caption = 'Before Procedures'
-          TabOrder = 1
-        end
-        object chkOptBnkAftPro: TCheckBox
-          Left = 10
-          Height = 24
-          Top = 90
-          Width = 134
-          Caption = 'After Procedures'
-          TabOrder = 2
-        end
-      end
-      object chkReuProcVar: TCheckBox
-        Left = 20
-        Height = 24
-        Top = 270
-        Width = 205
-        Caption = 'Reuse Procedures Variables'
-        TabOrder = 3
-      end
-      object chkOptRetProc: TCheckBox
-        Left = 20
-        Height = 24
-        Top = 310
-        Width = 238
-        Caption = 'Optimize RETURN in procedures'
-        TabOrder = 4
-      end
     end
     object tabExtTool: TTabSheet
       Caption = 'External Tool'

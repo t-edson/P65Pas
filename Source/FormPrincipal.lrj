@@ -1,13 +1,11 @@
 {"version":1,"strings":[
 {"hash":177283580,"name":"tfrmprincipal.caption","sourcebytes":[102,114,109,80,114,105,110,99,105,112,97,108],"value":"frmPrincipal"},
-{"hash":106991073,"name":"tfrmprincipal.toolbar1.caption","sourcebytes":[84,111,111,108,66,97,114,49],"value":"ToolBar1"},
-{"hash":160486421,"name":"tfrmprincipal.toolbutton5.caption","sourcebytes":[84,111,111,108,66,117,116,116,111,110,53],"value":"ToolButton5"},
-{"hash":151863761,"name":"tfrmprincipal.toolbutton11.caption","sourcebytes":[84,111,111,108,66,117,116,116,111,110,49,49],"value":"ToolButton11"},
-{"hash":99098764,"name":"tfrmprincipal.toolbutton12.hint","sourcebytes":[67,111,109,112,105,108,97,32,101,108,32,97,114,99,104,105,118,111,32,65,99,116,117,97,108],"value":"Compila el archivo Actual"},
-{"hash":105310242,"name":"tfrmprincipal.toolbutton12.caption","sourcebytes":[38,67,111,109,112,105,108,97,114],"value":"&Compilar"},
-{"hash":151863765,"name":"tfrmprincipal.toolbutton15.caption","sourcebytes":[84,111,111,108,66,117,116,116,111,110,49,53],"value":"ToolButton15"},
-{"hash":150790050,"name":"tfrmprincipal.butselcompiler.hint","sourcebytes":[83,101,108,101,99,116,32,67,111,109,112,105,108,101,114],"value":"Select Compiler"},
-{"hash":4146114,"name":"tfrmprincipal.butselcompiler.caption","sourcebytes":[116,98,83,101,108,67,111,109,112,105,108,101,114],"value":"tbSelCompiler"},
+{"hash":106991074,"name":"tfrmprincipal.toolbar2.caption","sourcebytes":[84,111,111,108,66,97,114,50],"value":"ToolBar2"},
+{"hash":106991075,"name":"tfrmprincipal.toolbar3.caption","sourcebytes":[84,111,111,108,66,97,114,51],"value":"ToolBar3"},
+{"hash":106991076,"name":"tfrmprincipal.toolbar4.caption","sourcebytes":[84,111,111,108,66,97,114,52],"value":"ToolBar4"},
+{"hash":106991077,"name":"tfrmprincipal.toolbar5.caption","sourcebytes":[84,111,111,108,66,97,114,53],"value":"ToolBar5"},
+{"hash":105317986,"name":"tfrmprincipal.toolbutton39.caption","sourcebytes":[67,111,109,112,105,108,101,114],"value":"Compiler"},
+{"hash":106991078,"name":"tfrmprincipal.toolbar6.caption","sourcebytes":[84,111,111,108,66,97,114,54],"value":"ToolBar6"},
 {"hash":153787621,"name":"tfrmprincipal.acarcnewfile.caption","sourcebytes":[78,101,119,32,38,70,105,108,101],"value":"New &File"},
 {"hash":211077989,"name":"tfrmprincipal.acarcnewfile.hint","sourcebytes":[78,101,119,32,70,105,108,101],"value":"New File"},
 {"hash":211702626,"name":"tfrmprincipal.acedundo.caption","sourcebytes":[38,68,101,115,104,97,99,101,114],"value":"&Deshacer"},
@@ -49,8 +47,8 @@
 {"hash":259872035,"name":"tfrmprincipal.actoolext3.caption","sourcebytes":[69,120,116,101,114,110,97,108,32,84,111,111,108,32,51],"value":"External Tool 3"},
 {"hash":259872036,"name":"tfrmprincipal.actoolext4.caption","sourcebytes":[69,120,116,101,114,110,97,108,32,84,111,111,108,32,52],"value":"External Tool 4"},
 {"hash":259872037,"name":"tfrmprincipal.actoolext5.caption","sourcebytes":[69,120,116,101,114,110,97,108,32,84,111,111,108,32,53],"value":"External Tool 5"},
-{"hash":143269794,"name":"tfrmprincipal.actoolsel_p65pas.caption","sourcebytes":[66,97,115,101,108,105,110,101,32,67,111,109,112,105,108,101,114],"value":"Baseline Compiler"},
-{"hash":120914658,"name":"tfrmprincipal.actoolsel_picpas.caption","sourcebytes":[77,105,100,45,114,97,110,103,101,32,67,111,109,112,105,108,101,114],"value":"Mid-range Compiler"},
+{"hash":3081698,"name":"tfrmprincipal.actoolsel_p65pas.caption","sourcebytes":[80,54,53,80,97,115,32,67,111,109,112,105,108,101,114],"value":"P65Pas Compiler"},
+{"hash":109075398,"name":"tfrmprincipal.actoolsel_picpas.caption","sourcebytes":[80,105,99,80,97,115,32,49,48,70],"value":"PicPas 10F"},
 {"hash":143258223,"name":"tfrmprincipal.mnfile.caption","sourcebytes":[38,65,114,99,104,105,118,111],"value":"&Archivo"},
 {"hash":159674483,"name":"tfrmprincipal.mnsamples.caption","sourcebytes":[38,83,97,109,112,108,101,115],"value":"&Samples"},
 {"hash":146392547,"name":"tfrmprincipal.mnrecents.caption","sourcebytes":[82,101,99,101,110,116,115],"value":"Recents"},
@@ -60,6 +58,5 @@
 {"hash":119063043,"name":"tfrmprincipal.mntools.caption","sourcebytes":[72,101,114,114,97,109,105,101,110,116,97,115],"value":"Herramientas"},
 {"hash":150790050,"name":"tfrmprincipal.menuitem51.caption","sourcebytes":[83,101,108,101,99,116,32,67,111,109,112,105,108,101,114],"value":"Select Compiler"},
 {"hash":162551170,"name":"tfrmprincipal.menuitem54.caption","sourcebytes":[69,110,104,97,110,99,101,100,32,77,105,100,45,114,97,110,103,101,32,67,111,109,112,105,108,101,114],"value":"Enhanced Mid-range Compiler"},
-{"hash":247907902,"name":"tfrmprincipal.menuitem36.caption","sourcebytes":[70,105,110,100,32,68,101,99,108,97,114,97,116,105,111,110],"value":"Find Declaration"},
-{"hash":140023922,"name":"tfrmprincipal.menuitem49.caption","sourcebytes":[67,80,85,54,53,48,50],"value":"CPU6502"}
+{"hash":247907902,"name":"tfrmprincipal.menuitem36.caption","sourcebytes":[70,105,110,100,32,68,101,99,108,97,114,97,116,105,111,110],"value":"Find Declaration"}
 ]}

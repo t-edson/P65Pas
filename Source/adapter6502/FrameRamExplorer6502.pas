@@ -16,8 +16,8 @@ type
     used   : TCPURamUsed;   //Indica si el bloque está usado
   end;
 
-  { TfraRamExplorer }
-  TfraRamExplorer = class(TFrame)
+  { TfraRamExplorer6502 }
+  TfraRamExplorer6502 = class(TFrame)
     Label1: TLabel;
     panGraph: TPanel;
     panTitle: TPanel;
@@ -46,12 +46,12 @@ type
 
 implementation
 {$R *.lfm}
-{ TfraRamExplorer }
-procedure TfraRamExplorer.SpeedButton1Click(Sender: TObject);
+{ TfraRamExplorer6502 }
+procedure TfraRamExplorer6502.SpeedButton1Click(Sender: TObject);
 begin
   if OnCloseFrame<>nil then OnCloseFrame;
 end;
-procedure TfraRamExplorer.SplitInStateRAM(dir1, dir2: word);
+procedure TfraRamExplorer6502.SplitInStateRAM(dir1, dir2: word);
 {Explora la memoria RAM, entre las direcciones dir1, y dir2, y almacena los bloques
 encontrados (de distinto campo "state"), en el arreglo "blockSta".
 }
@@ -92,7 +92,7 @@ begin
   blockSta[n].add2 := pos2;
   blockSta[n].blkType := tipBloque;
 end;
-procedure TfraRamExplorer.SplitInUsedRAM(dir1, dir2: word);
+procedure TfraRamExplorer6502.SplitInUsedRAM(dir1, dir2: word);
 {Explora la memoria RAM, entre las direcciones dir1, y dir2, y almacena los bloques
 encontrados (de acuerdo a si están usados o no), en el arreglo "blockUse".
 }
@@ -134,7 +134,7 @@ begin
   blockUse[n].used:= used;
 end;
 
-procedure TfraRamExplorer.DibBar(const x1, x2: integer; y1, y2: integer;
+procedure TfraRamExplorer6502.DibBar(const x1, x2: integer; y1, y2: integer;
                                  lbl: string);
 //Dibuja una barra, en la posición: x1, x2, y, con altura "alto".
 var
@@ -172,7 +172,7 @@ begin
   cv.Brush.Style := bsClear;  //texto sin fondo
   cv.TextRect(Arect, xt, yt, lbl, TextStyle);
 end;
-procedure TfraRamExplorer.DrawBlockTxt(const marcoRam: TRect;
+procedure TfraRamExplorer6502.DrawBlockTxt(const marcoRam: TRect;
   ancMargenDir: integer; dirIni, dirFin, BankSize: integer; lbl: string);
 {Dibuja un bloque de un banco de RAM (definida en el área "marcoRam"), pone etiqueta
 descriptiva y pinta con color indicativo.
@@ -212,7 +212,7 @@ begin
     end;
   end;
 end;
-procedure TfraRamExplorer.DrawBlock(const marcoRam: TRect;
+procedure TfraRamExplorer6502.DrawBlock(const marcoRam: TRect;
                                  ancMargenDir: integer;
                                  dirIni, dirFin, BankSize: integer);
 {Similar a DrawBlockTxt(), pero no pone las etiquetas de dirección, ni la etiqueta
@@ -236,7 +236,7 @@ begin
   cv.Rectangle(x1+ancMargenDir,
                y1, x2, y2+1);  //Corrige y2, porque Rectangle, dibuja hasta un pincel antes
 end;
-procedure TfraRamExplorer.DrawRAMbank(const marcoRam: TRect; selected: boolean);
+procedure TfraRamExplorer6502.DrawRAMbank(const marcoRam: TRect; selected: boolean);
 {Dibuja el banco de RAM completo, en el área "marcoRam", separando por bloques
 de acuerdo al campo "state" }
 var
@@ -298,7 +298,7 @@ begin
     cv.Frame(marcoRam.Left+ancMargenDir-1, marcoRam.Top-1, marcoRam.Right+2, marcoRam.Bottom+3);
   end;
 end;
-procedure TfraRamExplorer.panGraphPaint(Sender: TObject);
+procedure TfraRamExplorer6502.panGraphPaint(Sender: TObject);
 var
   bordlat, ancPag, x0, alto, bordSup, y0: Integer;
 begin
@@ -319,18 +319,18 @@ begin
 
   DrawRAMbank(Rect(x0, y0, x0+ancPag+1, y0+alto), true);
 end;
-procedure TfraRamExplorer.SetCompiler(cxp0: TAnalyzer);
+procedure TfraRamExplorer6502.SetCompiler(cxp0: TAnalyzer);
 begin
   pic := cxp0.picCore;
   cxp := cxp0;
 end;
-constructor TfraRamExplorer.Create(AOwner: TComponent);
+constructor TfraRamExplorer6502.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   //self.OnPaint := @Frame1Paint;
   panGraph.OnPaint := @panGraphPaint;
 end;
-destructor TfraRamExplorer.Destroy;
+destructor TfraRamExplorer6502.Destroy;
 begin
 
   inherited Destroy;

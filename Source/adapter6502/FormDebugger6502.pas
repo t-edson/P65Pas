@@ -7,8 +7,8 @@ uses
   FrameRamExplorer6502, FrameRegisters6502, FrameRegWatcher6502,
   P6502utils, CPUCore, MisUtils, FrameAsm6502, Analyzer;
 type
-  { TfrmDebugger }
-  TfrmDebugger = class(TForm)
+  { TfrmDebugger6502 }
+  TfrmDebugger6502 = class(TForm)
     acGenReset: TAction;
     acGenStep: TAction;
     acGenStepIn: TAction;
@@ -63,7 +63,7 @@ type
   private
     defHeight: LongInt;
     margInstrc: Integer;
-    fraRamExp: TfraRamExplorer;
+    fraRamExp: TfraRamExplorer6502;
     fraPicReg: TfraPicRegisters;
     fraRegWat: TfraRegWatcher;
     fraPicAsm: TfraPicAsm;
@@ -80,16 +80,16 @@ type
   end;
 
 var
-  frmDebugger: TfrmDebugger;
+  frmDebugger6502: TfrmDebugger6502;
 
 implementation
 {$R *.lfm}
-{ TfrmDebugger }
-procedure TfrmDebugger.SetLanguage;
+{ TfrmDebugger6502 }
+procedure TfrmDebugger6502.SetLanguage;
 begin
   fraRegWat.SetLanguage;
 end;
-procedure TfrmDebugger.Timer1Timer(Sender: TObject);
+procedure TfrmDebugger6502.Timer1Timer(Sender: TObject);
 {temporizador para eleditor de diagramas }
 var
   stopped: boolean;
@@ -102,7 +102,7 @@ begin
   end;
 //  consoleTickCount('');
 end;
-procedure TfrmDebugger.Timer2Timer(Sender: TObject);
+procedure TfrmDebugger6502.Timer2Timer(Sender: TObject);
 {Temporizador para los otros frames menos fraPicDia.}
 begin
   fraPicReg.Refrescar;
@@ -114,7 +114,7 @@ begin
   StatusBar1.Panels[2].Text := 'Time  = ' +
             FormatDateTime('hh:mm:ss.zzz', pic.nClck / pic.frequen / (86400 / 4));
 end;
-procedure TfrmDebugger.RefreshScreen(SetGridRow: boolean = true);
+procedure TfrmDebugger6502.RefreshScreen(SetGridRow: boolean = true);
 {Refresca los paneles de la pantalla, con información actual del PIC}
 begin
   fraPicReg.Refrescar;
@@ -125,7 +125,7 @@ begin
   StatusBar1.Panels[2].Text := 'Time  = ' +
             FormatDateTime('hh:mm:ss.zzz', pic.nClck / pic.frequen / (86400 / 4));
 end;
-procedure TfrmDebugger.picExecutionMsg(message: string);
+procedure TfrmDebugger6502.picExecutionMsg(message: string);
 var
   i: Integer;
 begin
@@ -141,7 +141,7 @@ begin
     pic.CommStop := true;  //Manda comando para detener
   end;
 end;
-procedure TfrmDebugger.Exec(cxp0: TAnalyzer);
+procedure TfrmDebugger6502.Exec(cxp0: TAnalyzer);
 {Inicia el prcceso de depuración, mostrando la ventana.}
 begin
   cxp := cxp0;
@@ -173,9 +173,9 @@ begin
   fraRegWat.mnAddVarsClick(self);  //agrega varaibles por defecto
   self.Show;
 end;
-procedure TfrmDebugger.FormCreate(Sender: TObject);
+procedure TfrmDebugger6502.FormCreate(Sender: TObject);
 begin
-  fraRamExp:= TfraRamExplorer.Create(self);
+  fraRamExp:= TfraRamExplorer6502.Create(self);
   fraRamExp.Parent := panRAM;
   fraRamExp.Align := alClient;
 
@@ -201,7 +201,7 @@ begin
 //  ToolBar1.Height:=42;
 //  ToolBar1.Images:=ImgActions32;
 end;
-procedure TfrmDebugger.FormKeyDown(Sender: TObject; var Key: Word;
+procedure TfrmDebugger6502.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   if Key = VK_DELETE then begin
@@ -209,18 +209,18 @@ begin
   end;
 end;
 
-procedure TfrmDebugger.Panel3Click(Sender: TObject);
+procedure TfrmDebugger6502.Panel3Click(Sender: TObject);
 begin
 
 end;
 
-procedure TfrmDebugger.FormClose(Sender: TObject; var CloseAction: TCloseAction
+procedure TfrmDebugger6502.FormClose(Sender: TObject; var CloseAction: TCloseAction
   );
 begin
   acGenPauseExecute(self);
 end;
 ////////////////////// Acciones ////////////////////
-procedure TfrmDebugger.acGenResetExecute(Sender: TObject);
+procedure TfrmDebugger6502.acGenResetExecute(Sender: TObject);
 var
   pc: Integer;
 begin
@@ -242,7 +242,7 @@ begin
   pic.WritePC(pc);
   RefreshScreen;
 end;
-procedure TfrmDebugger.acGenRunExecute(Sender: TObject);
+procedure TfrmDebugger6502.acGenRunExecute(Sender: TObject);
 {Ejecuta el programa, desde la posición actual}
 var
   stopped: boolean;
@@ -265,7 +265,7 @@ begin
   RefreshScreen;
   lstMessages.AddItem('Running program.', nil);
 end;
-procedure TfrmDebugger.acGenPauseExecute(Sender: TObject);
+procedure TfrmDebugger6502.acGenPauseExecute(Sender: TObject);
 {Detiene el programa en el punto actual.}
 begin
   Timer1.Enabled := false;
@@ -275,7 +275,7 @@ begin
   RefreshScreen;
   lstMessages.AddItem('Execution Paused.', nil);
 end;
-procedure TfrmDebugger.acGenSetPCExecute(Sender: TObject);
+procedure TfrmDebugger6502.acGenSetPCExecute(Sender: TObject);
 //Fija el puntero del programa en la instrucción seleccionada.
 var
   row: Integer;
@@ -288,7 +288,7 @@ begin
   pic.WritePC(row);
   fraPicAsm.StringGrid1.Invalidate;
 end;
-procedure TfrmDebugger.acGenExecHerExecute(Sender: TObject);
+procedure TfrmDebugger6502.acGenExecHerExecute(Sender: TObject);
 {Ejecuta una instrucción hasta la dirección seleccionada.}
 var
   pc: word;
@@ -298,18 +298,18 @@ begin
   pic.ExecTo(pc);  //Ejecuta hasta la sgte. instrucción, salta el i_CALL
   RefreshScreen;
 end;
-procedure TfrmDebugger.acGenClearCCExecute(Sender: TObject);
+procedure TfrmDebugger6502.acGenClearCCExecute(Sender: TObject);
 {Reinica el contador de ciclos.}
 begin
   pic.nClck := 0;
   RefreshScreen(false);
 end;
-procedure TfrmDebugger.acGenAddWatchExecute(Sender: TObject);
+procedure TfrmDebugger6502.acGenAddWatchExecute(Sender: TObject);
 {Agrega un vigilante en la varible "curVarName"}
 begin
   fraRegWat.AddWatch(curVarName);
 end;
-procedure TfrmDebugger.acGenSetBrkPntExecute(Sender: TObject);
+procedure TfrmDebugger6502.acGenSetBrkPntExecute(Sender: TObject);
 {Pone o quita un Punto de Interrupción en la posición indicada}
 var
   pc: word;
@@ -319,7 +319,7 @@ begin
   pic.ToggleBreakpoint(pc);
   RefreshScreen(false);
 end;
-procedure TfrmDebugger.acGenStepExecute(Sender: TObject);
+procedure TfrmDebugger6502.acGenStepExecute(Sender: TObject);
 {Ejecuta una instrucción sin entrar a subrutinas}
 var
   pc: DWord;
@@ -341,7 +341,7 @@ begin
   end;
   RefreshScreen;
 end;
-procedure TfrmDebugger.acGenStepInExecute(Sender: TObject);
+procedure TfrmDebugger6502.acGenStepInExecute(Sender: TObject);
 {Ejecuta una isntrucción, entrando al código de las subrutinas.}
 begin
   pic.Exec();

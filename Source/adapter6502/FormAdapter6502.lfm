@@ -441,6 +441,7 @@ object frmAdapter6502: TfrmAdapter6502
       Category = 'Tool'
       Caption = 'Compilar y Ejecutar'
       ImageIndex = 1
+      OnExecute = acToolComEjecExecute
       ShortCut = 120
     end
     object acToolChecksyn: TAction
@@ -449,41 +450,35 @@ object frmAdapter6502: TfrmAdapter6502
       ImageIndex = 7
       OnExecute = acToolChecksynExecute
     end
-    object acToolPICExpl: TAction
-      Category = 'Tool'
-      Caption = 'Explorador de PIC'
-      ImageIndex = 2
-    end
     object acToolRamExp: TAction
       Category = 'Tool'
       Caption = '&RAM Explorer'
       ImageIndex = 3
+      OnExecute = acToolRamExpExecute
       ShortCut = 123
     end
     object acToolASMDebug: TAction
       Category = 'Tool'
       Caption = 'ASM &Debugger'
       ImageIndex = 4
+      OnExecute = acToolASMDebugExecute
       ShortCut = 16507
     end
     object acToolListRep: TAction
       Category = 'Tool'
       Caption = '&List Report'
       ImageIndex = 5
+      OnExecute = acToolListRepExecute
     end
     object acToolFindDec: TAction
       Category = 'Tool'
       Caption = 'Find Declaration'
       ImageIndex = 6
+      OnExecute = acToolFindDecExecute
     end
     object acToolTestUnit: TAction
       Category = 'Tool'
       Caption = 'Test Device Units'
-      ImageIndex = 8
-    end
-    object acToolTestPic10: TAction
-      Category = 'Tool'
-      Caption = 'Test PIC10 compiler'
       ImageIndex = 8
     end
   end

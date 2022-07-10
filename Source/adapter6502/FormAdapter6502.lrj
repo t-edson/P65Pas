@@ -4,11 +4,9 @@
 {"hash":99098764,"name":"tfrmadapter6502.actoolcompil.hint","sourcebytes":[67,111,109,112,105,108,97,32,101,108,32,97,114,99,104,105,118,111,32,65,99,116,117,97,108],"value":"Compila el archivo Actual"},
 {"hash":43585122,"name":"tfrmadapter6502.actoolcomejec.caption","sourcebytes":[67,111,109,112,105,108,97,114,32,121,32,69,106,101,99,117,116,97,114],"value":"Compilar y Ejecutar"},
 {"hash":204851096,"name":"tfrmadapter6502.actoolchecksyn.caption","sourcebytes":[67,104,101,99,107,32,83,38,121,110,116,97,120],"value":"Check S&yntax"},
-{"hash":7091619,"name":"tfrmadapter6502.actoolpicexpl.caption","sourcebytes":[69,120,112,108,111,114,97,100,111,114,32,100,101,32,80,73,67],"value":"Explorador de PIC"},
 {"hash":68721698,"name":"tfrmadapter6502.actoolramexp.caption","sourcebytes":[38,82,65,77,32,69,120,112,108,111,114,101,114],"value":"&RAM Explorer"},
 {"hash":233109282,"name":"tfrmadapter6502.actoolasmdebug.caption","sourcebytes":[65,83,77,32,38,68,101,98,117,103,103,101,114],"value":"ASM &Debugger"},
 {"hash":121601268,"name":"tfrmadapter6502.actoollistrep.caption","sourcebytes":[38,76,105,115,116,32,82,101,112,111,114,116],"value":"&List Report"},
 {"hash":247907902,"name":"tfrmadapter6502.actoolfinddec.caption","sourcebytes":[70,105,110,100,32,68,101,99,108,97,114,97,116,105,111,110],"value":"Find Declaration"},
-{"hash":61756739,"name":"tfrmadapter6502.actooltestunit.caption","sourcebytes":[84,101,115,116,32,68,101,118,105,99,101,32,85,110,105,116,115],"value":"Test Device Units"},
-{"hash":65585490,"name":"tfrmadapter6502.actooltestpic10.caption","sourcebytes":[84,101,115,116,32,80,73,67,49,48,32,99,111,109,112,105,108,101,114],"value":"Test PIC10 compiler"}
+{"hash":61756739,"name":"tfrmadapter6502.actooltestunit.caption","sourcebytes":[84,101,115,116,32,68,101,118,105,99,101,32,85,110,105,116,115],"value":"Test Device Units"}
 ]}

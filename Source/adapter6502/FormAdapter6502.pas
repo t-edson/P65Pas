@@ -24,15 +24,18 @@ type
     acToolCompil: TAction;
     acToolFindDec: TAction;
     acToolListRep: TAction;
-    acToolPICExpl: TAction;
     acToolRamExp: TAction;
-    acToolTestPic10: TAction;
     acToolTestUnit: TAction;
     ImgActions16: TImageList;
     ImgActions32: TImageList;
     MainMenu1: TMainMenu;
+    procedure acToolASMDebugExecute(Sender: TObject);
     procedure acToolChecksynExecute(Sender: TObject);
+    procedure acToolComEjecExecute(Sender: TObject);
     procedure acToolCompilExecute(Sender: TObject);
+    procedure acToolFindDecExecute(Sender: TObject);
+    procedure acToolListRepExecute(Sender: TObject);
+    procedure acToolRamExpExecute(Sender: TObject);
   public
     adapter: TAdapterBase;  //Referencia al adaptador padre
     procedure AddActions(imgList16, imglist32: TImageList; actList: TActionList;
@@ -41,42 +44,6 @@ type
 
 var
   frmAdapter6502: TfrmAdapter6502;
-//resourcestring
-//  acToolCompil.Caption  := Trans('&Compile'                , '&Compilar'  , '&Compilay',
-//                                 '&Compilieren'            , 'Компілювати', 'Компилировать',
-//                                 '&Compiler');
-//  acToolCompil.Hint     := Trans('Compile the source code' , 'Compila el código fuente'     , 'Pachanmanta chimpukuna kaqta compilay',
-//                                 'Compiliere den Quelltext','Компілювати','Компилировать',
-//                                 'Compiler le code source');
-//  acToolComEjec.Caption := Trans('Compile and E&xecute'    , 'Compilar y Ej&ecutar'         , 'Compilay chaymanta &Hinay',
-//                                 'Compilieren und Au&sführen','Компілювати та виконати','Компилировать и выполнить',
-//                                 'Compiler et &Exécuter');
-//  acToolComEjec.Hint    := Trans('Compile and Execute'     , 'Compilar y Ejecutar'          , 'Compilay chaymanta &Hinay',
-//                                 'Compilieren und Ausführen','Компілювати та виконати','Компилировать и выполнить',
-//                                 'Compiler et Exécuter');
-//  acToolPICExpl.Caption := Trans('PIC E&xplorer'           , 'E&xplorador de PIC'           , 'PIC nisqakunata T''aqwiq',
-//                                 'PIC E&xplorer','PIC оглядач','PIC обозреватель',
-//                                 'E&xplorateur de PIC');
-//  acToolPICExpl.Hint    := Trans('Open the PIC devices explorer','Abrir el explorador de dispos. PIC', 'Dispos. PIC nisqa t''aqwiqta kichariy',
-//                                 'Öffne den PIC Geräte explorer','Відкрити PIC оглядач','Открыть PIC обозреватель',
-//                                 'Ouvrir l''explorateur de modèles PIC');
-//  acToolListRep.Caption := Trans('&List Report'            , '&Reporte de listado'          , '',
-//                                 '','Звіт','Отчет',
-//                                 '&Rapport de Compilation');
-//  acToolFindDec.Caption := Trans('Find declaration' , 'Ir a la declaración' , 'Riqsichikusqan k''itiman riy',
-//                                 'Finde Deklaration','Знайти декларування','Найти декларирование',
-//                                 'Trouver déclaration');
-//  acToolRamExp.Caption  := Trans('&RAM Explorer' , 'Explorador de &RAM' , '',
-//                                 '','','',
-//                                 '');
-//
-//  acToolASMDebug.Caption:= Trans('ASM &Debugger'        , '&Depurador de ASM'            , '',
-//                                 '','ASM зневаджувач','ASM отладчик',
-//                                 '&Débogueur PIC');
-//  acToolASMDebug.Hint   := Trans('ASM &Debugger'        , '&Depurador de ASM'            , '',
-//                                 '','ASM зневаджувач','ASM отладчик',
-//                                 'Démarrer le Débogueur');
-//
 implementation
 {$R *.lfm}
 uses adapter6502;
@@ -84,13 +51,36 @@ uses adapter6502;
 //Llamadas a eventos
 procedure TfrmAdapter6502.acToolCompilExecute(Sender: TObject);
 begin
-  TAdapter6502(adapter).acCompilExecute(self);
+  TAdapter6502(adapter).Compile;
 end;
-
+procedure TfrmAdapter6502.acToolComEjecExecute(Sender: TObject);
+begin
+  TAdapter6502(adapter).CompileAndExec(self);
+end;
 procedure TfrmAdapter6502.acToolChecksynExecute(Sender: TObject);
 begin
-  TAdapter6502(adapter).acChecksynExecute(self);
+  TAdapter6502(adapter).CheckSyntax;
 end;
+procedure TfrmAdapter6502.acToolRamExpExecute(Sender: TObject);
+begin
+  TAdapter6502(adapter).acRamExpExecute(self);
+end;
+procedure TfrmAdapter6502.acToolASMDebugExecute(Sender: TObject);
+begin
+  TAdapter6502(adapter).ASMDebug(self);
+end;
+procedure TfrmAdapter6502.acToolListRepExecute(Sender: TObject);
+begin
+  TAdapter6502(adapter).ListReport;
+end;
+procedure TfrmAdapter6502.acToolFindDecExecute(Sender: TObject);
+begin
+  TAdapter6502(adapter).FindDeclarat;
+end;
+//procedure TfrmAdapter6502.acToolTestUnitExecute(Sender: TObject);
+//begin
+//  TAdapter6502(adapter).TestUnit;
+//end;
 
 procedure TfrmAdapter6502.AddActions(imgList16, imglist32: TImageList;
                            actList: TActionList; actionCat: string; mainMenu: TMainMenu);
