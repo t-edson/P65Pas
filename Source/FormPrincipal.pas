@@ -385,6 +385,7 @@ begin
   //Configura Panel lateral
   fraLeftPanel.OnOpenFile := @fraSynTreeOpenFile;
   fraLeftPanel.OnSelecFileExplorer := @fraSynTreeSelecFileExplorer;
+
   //Carga un resaltador a la ventana de ensamblador
   hlAssem := TSynFacilSyn.Create(self);
   edAsm.Highlighter := hlAssem;
@@ -409,12 +410,7 @@ begin
   splEdPas.Align := alRight;
   fraEditView1.Align := alClient;
   fraEditView1.tmpPath := patTemp;   //fija ruta de trabajo
-  //Registra adaptadores de compiladores soportados.
 
-//  if not Config.SetActionAfterEdit('6502', Compiler.GetCompilerLevels) then self.Close;
-
-  //if not Config.SetActionAfterEdit('65C02', Compiler2.GetCompilerLevels) then self.Close;
-  //Inicia formulario de configuración.
   Config.Init;   //necesario para poder trabajar
   Config.OnPropertiesChanges := @ChangeAppearance;
   Config.fraCfgExtTool.OnReplaceParams := @ConfigExtTool_RequirePar;
@@ -432,7 +428,7 @@ begin
   /////////// Crea adaptadores para compiladores soportados ///////////
   adapter6502:= TAdapter6502.Create(fraEditView1);
   adapter6502.Init(fraLeftPanel.PageControl1, ImgActions16, ImgActions32, ActionList,
-       Config.fraCfgAfterChg6502, Config.fraCfgCompiler6502);
+    edAsm, Config.fraCfgAfterChg6502, Config.fraCfgCompiler6502, Config.fraCfgAsmOut6502);
   adapter6502.OnBeforeCompile  := @comp_BeforeCompile;
   adapter6502.OnAfterCompile   := @comp_AfterCompile;
   adapter6502.OnBeforeCheckSyn := @comp_BeforeCheckSyn;
@@ -743,7 +739,7 @@ begin
   splEdPas.Color := Config.SplitterCol;
   //Configura editor ASM
   Config.ConfigEditor(edAsm);
-  LoadAsmSyntaxEd;
+//  LoadAsmSyntaxEd;
   //Solicita configura los editores activos
   fraEditView1.UpdateSynEditConfig;
   fraEditView1.TabViewMode := Config.TabEdiMode;

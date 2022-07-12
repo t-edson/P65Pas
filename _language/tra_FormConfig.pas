@@ -117,20 +117,6 @@ TIT_CFG_SYNTAX      := Trans('Syntax'                 , 'Sintaxis'              
 ////////////////////////////////////////////////////////////////////////////
 TIT_CFG_ASSEMB       := Trans('Assembler'              , 'Ensamblador'              , '',
                                  'Assembler','Асемблер','Ассемблер', 'Assembleur');
-chkIncDecVar.Caption := Trans('Include &Variables declaration', 'Incluir Declaración de variables', '',
-                              'Variablendeklaration einfügen','Включити декларування змінних','Включить объявление переменных', 'Inclure les déclarations de &variables');
-RadioGroup2.Caption  := Trans('Style'                  , 'Estilo'                   , '',
-                              'Stil','Стиль','Стиль', 'Style');
-chkExcUnused.Caption  := Trans('Exclude unused'         , 'Excluir no usadas'        , '',
-                             'Unbenutzte ausschlieÃŸen','Виключити невикористовуване','Исключить неиспользуемое', 'Exclure les portions inutilisées');
-chkIncAddress.Caption := Trans('Include &Memory Address','Incluir &Dirección de memoria','',
-                               'Speicheradressen einbinden','Включити Memory Address','Включить Memory Address', 'Inclure les adresses' + #13#10 + '&mémoire');
-chkIncComment.Caption := Trans('Include &Comments'      , 'Incluir &Comentarios'     , '',
-                               'Kommentare hinzufügen','Включити коментарі','Включить комментарии', 'Inclure les' + #13#10 + '&commentaires');
-chkIncComment2.Caption:= Trans('Include &Detailed comments', 'Incluir Comentarios &detallados' , '',
-                               '&Detaillierte Kommentare hinzufügen','Включити детальні коментарі','Включить детальные комментарии', 'Inclure les commentaires' + #13#10 + '&détaillés');
-chkIncVarName.Caption := Trans('Include &Variable Names','Incluir Nombre de &Variables','',
-                               '&Variablennamen einbinden','Включити імена змінних','Включить имена переменных', 'Inclure les &noms de' + #13#10 + 'variables');
 ////////////////////////////////////////////////////////////////////////////
 //////////////////////////// Output Settings ///////////////////////////////
 ////////////////////////////////////////////////////////////////////////////

@@ -59,10 +59,10 @@ object Config: TConfig
     Height = 413
     Top = 0
     Width = 504
-    ActivePage = tabEnviron
+    ActivePage = tabEnsamb
     Align = alClient
     ShowTabs = False
-    TabIndex = 0
+    TabIndex = 6
     TabOrder = 1
     object tabEnviron: TTabSheet
       Caption = 'Enviroment'
@@ -439,80 +439,6 @@ object Config: TConfig
     end
     object tabEnsamb: TTabSheet
       Caption = 'Assembler'
-      ClientHeight = 405
-      ClientWidth = 496
-      object chkIncAddress: TCheckBox
-        Left = 20
-        Height = 24
-        Top = 190
-        Width = 188
-        Caption = 'Include &Memory Address'
-        TabOrder = 0
-      end
-      object chkIncComment: TCheckBox
-        Left = 20
-        Height = 24
-        Top = 230
-        Width = 147
-        Caption = 'Include &Comments'
-        TabOrder = 1
-      end
-      object chkIncDecVar: TCheckBox
-        Left = 20
-        Height = 24
-        Top = 120
-        Width = 216
-        Caption = 'Include &Variables declaration'
-        OnChange = chkIncDecVarChange
-        TabOrder = 2
-      end
-      object RadioGroup2: TRadioGroup
-        Left = 20
-        Height = 62
-        Top = 0
-        Width = 412
-        AutoFill = True
-        Caption = 'Output'
-        ChildSizing.LeftRightSpacing = 6
-        ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
-        ChildSizing.EnlargeVertical = crsHomogenousChildResize
-        ChildSizing.ShrinkHorizontal = crsScaleChilds
-        ChildSizing.ShrinkVertical = crsScaleChilds
-        ChildSizing.Layout = cclLeftToRightThenTopToBottom
-        ChildSizing.ControlsPerLine = 2
-        ClientHeight = 37
-        ClientWidth = 408
-        Columns = 2
-        Items.Strings = (
-          'Assembler'
-          'Basic Loader'
-        )
-        TabOrder = 3
-      end
-      object chkExcUnused: TCheckBox
-        Left = 80
-        Height = 24
-        Top = 150
-        Width = 126
-        Caption = 'Exclude unused'
-        TabOrder = 4
-      end
-      object chkIncComment2: TCheckBox
-        Left = 240
-        Height = 24
-        Top = 230
-        Width = 206
-        Caption = 'Include &Detailed comments'
-        TabOrder = 5
-      end
-      object chkIncVarName: TCheckBox
-        Left = 240
-        Height = 24
-        Top = 190
-        Width = 178
-        Caption = 'Include &Variable names'
-        TabOrder = 6
-      end
     end
     object tabCompiler: TTabSheet
       Caption = 'Compiler'

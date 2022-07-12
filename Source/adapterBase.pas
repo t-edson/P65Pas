@@ -34,7 +34,7 @@ type
     procedure Compile; virtual; abstract;
     procedure CheckSyntax; virtual; abstract;
     procedure UpdateCompletionForEditors; virtual; abstract;
-    procedure DumpCode(lins: TSTrings); virtual; abstract;
+//    procedure DumpCode(lins: TSTrings); virtual; abstract;
   public      //Inicialización
     procedure setMenusAndToolbar(menu1, menu2: TMenuItem; toolbar: TToolBar); virtual; abstract;
   end;

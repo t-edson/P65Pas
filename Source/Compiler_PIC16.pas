@@ -1196,8 +1196,11 @@ begin
         end;
       end else
       //---Other options
+      if txt = '-Ac' then begin
+        AsmIncComm := true;   //Include commnents in ASM output
+      end else
       if txt = '-Dn' then begin
-         enabDirMsgs := false;  //Disable directive messages
+        enabDirMsgs := false;  //Disable directive messages
       end;
     end;
     //Compile

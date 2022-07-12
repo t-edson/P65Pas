@@ -9,28 +9,18 @@ uses
   Classes, SysUtils, FileUtil, LazFileUtils, SynEdit, Forms, Controls, Graphics,
   Dialogs, Buttons, StdCtrls, ExtCtrls, ComCtrls, ColorBox, LCLType, Spin,
   FrameCfgSynEdit, Globales, FrameCfgSyntax, FrameCfgExtTool,
-  FrameCfgAfterChg6502, FrameCfgCompiler6502, MiConfigXML, MiConfigBasic,
-  MisUtils;
+  FrameCfgAfterChg6502, FrameCfgCompiler6502, FrameCfgAsmOut6502, MiConfigXML,
+  MiConfigBasic, MisUtils;
 type
   //Tipo de Barra de herramientas
   TStyleToolbar = (stb_SmallIcon, stb_BigIcon);
-  //Tipo de declaración de variables
-  TAsmType  = (dvtASM,    //Estilo ensamblador
-               dvtBASIC  //Programa Basic
-              );
   { TConfig }
   TConfig = class(TForm)
     BitAplicar: TBitBtn;
     BitCancel: TBitBtn;
     BitAceptar: TBitBtn;
     butSaveCurThem: TButton;
-    chkIncVarName: TCheckBox;
     chkLoadLast: TCheckBox;
-    chkIncComment2: TCheckBox;
-    chkExcUnused: TCheckBox;
-    chkIncDecVar: TCheckBox;
-    chkIncAddress: TCheckBox;
-    chkIncComment: TCheckBox;
     chkShowErrMsg: TCheckBox;
     chkViewHScroll: TCheckBox;
     chkViewVScroll: TCheckBox;
@@ -68,7 +58,6 @@ type
     Panel1: TPanel;
     Panel2: TPanel;
     RadioGroup1: TRadioGroup;
-    RadioGroup2: TRadioGroup;
     grpFilType: TRadioGroup;
     spFontSize: TSpinEdit;
     tabEditor: TTabSheet;
@@ -84,7 +73,6 @@ type
     procedure BitAceptarClick(Sender: TObject);
     procedure BitAplicarClick(Sender: TObject);
     procedure butSaveCurThemClick(Sender: TObject);
-    procedure chkIncDecVarChange(Sender: TObject);
     procedure SetLanguage;
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -145,13 +133,7 @@ type
     property ViewPanAssem: boolean read FViewPanAssem write SetViewPanAssem;
     property ViewSynTree: boolean read FViewSynTree write SetViewSynTree;
   public  //Configuraciones para ensamblador
-    AsmType   : TAsmType; //Tipo de Salida
-    IncVarDec : boolean;  //Incluye declaración de varaibles
-    IncAddress: boolean;  //Incluye dirección física en el código desensamblado
-    IncComment: boolean;  //Incluye comentarios en el código desensamblado
-    IncComment2: boolean; //Incluye comentarios detallados en el código desensamblado
-    ExcUnused : boolean;  //Excluye declaración de variables no usadas
-    IncVarName: boolean;  //Reemplaza dirección con etiqueta de variables
+    fraCfgAsmOut6502: TfraCfgAsmOut6502;
   public  //Configuracions del compilador
     fraCfgCompiler6502: TfraCfgCompiler6502;
     procedure ConfigEditor(ed: TSynEdit);
@@ -163,8 +145,6 @@ type
     procedure Init;
     procedure Mostrar;
     procedure SaveToFile;
-  public //Configuración para múltiples compiladores
-    function getParamsCompiling(compId: string): string;
   end;
 
 var
@@ -201,6 +181,11 @@ begin
   fraCfgCompiler6502.Parent := tabCompiler;
   fraCfgCompiler6502.Left := 0;
   fraCfgCompiler6502.Top := 0;
+
+  fraCfgAsmOut6502 := TfraCfgAsmOut6502.Create(self);
+  fraCfgAsmOut6502.Parent := tabEnsamb;
+  fraCfgAsmOut6502.Left := 0;
+  fraCfgAsmOut6502.Top := 0;
 
   cfgFile.VerifyFile;
 end;
@@ -342,11 +327,6 @@ begin
   Writeln (f, '<-->');
   CloseFile(f);
 end;
-procedure TConfig.chkIncDecVarChange(Sender: TObject);
-begin
-  RadioGroup2.Enabled := chkIncDecVar.Checked;
-  chkExcUnused.Enabled := chkIncDecVar.Checked;
-end;
 procedure TConfig.FormShow(Sender: TObject);
 begin
   if not cfgFile.PropertiesToWindow then begin
@@ -483,14 +463,7 @@ begin
 
   ///////////////////////////////////////////////////////
   ///////// Configuraciones de Ensamblador
-  cfgFile.Asoc_Bol('IncDecVar' , @IncVarDec  , chkIncDecVar  , true);
-  cfgFile.Asoc_Enum('VarDecType',@AsmType , Sizeof(TAsmType), RadioGroup2, 1);
-  cfgFile.Asoc_Bol('IncAddress', @IncAddress , chkIncAddress , true);
-  cfgFile.Asoc_Bol('IncComment', @IncComment , chkIncComment , false);
-  cfgFile.Asoc_Bol('IncComment2',@IncComment2, chkIncComment2, false);
-  cfgFile.Asoc_Bol('ExcUnused' , @ExcUnused  , chkExcUnused  , true);
-  cfgFile.Asoc_Bol('IncVarName', @IncVarName , chkIncVarName , true);
-
+  fraCfgAsmOut6502.Init('AsmOutput6502', cfgFile);
   ///////////////////////////////////////////////////////
   ///////// Configuraciones del compilador
   fraCfgCompiler6502.Init('Compiler6502', cfgFile);
@@ -504,7 +477,6 @@ begin
   if not cfgFile.FileToProperties then begin
     MsgErr(cfgFile.MsjErr);
   end;
-  chkIncDecVarChange(self);   //para actualizar
 end;
 procedure TConfig.Mostrar;
 //Muestra el formulario para configurarlo
@@ -517,16 +489,6 @@ begin
   if not cfgFile.PropertiesToFile then begin
     MsgErr(cfgFile.MsjErr);
   end;
-end;
-//Configuración para múltiples compiladores
-function TConfig.getParamsCompiling(compId: string): string;
-//Devuelve los parámetros definidos para el compilador "compId" como cadema.
-var
-  tmp: String = '';
-begin
-  if IncComment2 then AddLine(tmp, '-Ac');  //Comentario detallado
-
-  exit(tmp);
 end;
 
 end.

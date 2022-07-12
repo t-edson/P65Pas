@@ -181,6 +181,7 @@ public    //Compiling Options. Deberían ser PROTECTED.
   OptBnkAftIF : boolean; //Optimizar instrucciones de cambio de banco al final de IF
   OptReuProVar: boolean; //Optimiza reutilizando variables locales de procedimientos
   OptRetProc  : boolean; //Optimiza el último exit de los procedimientos.
+  AsmIncComm  : boolean; //Incluye comentarios en salida de ASM
 protected //Files
   mainFile    : string;    //Archivo inicial que se compila
   hexFile     : string;    //Nombre de archivo de salida

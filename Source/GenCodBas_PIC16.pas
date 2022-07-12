@@ -2052,7 +2052,7 @@ begin
     if eleSen.idClass = eleSenten then begin
       //Generates code to the sentence.
       sen := TEleSentence(eleSen);
-      if Config.IncComment then begin
+      if AsmIncComm then begin
         {Genera los comentarios por instrucción, accediendo al contenido del
         código fuente a través del contexto al que apunta cada instrucción. }
         idCtx  := sen.srcDec.idCtx;

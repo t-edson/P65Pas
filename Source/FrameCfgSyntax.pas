@@ -1,7 +1,7 @@
 {Frame para la configuración de los elementos de la sintaxis de los editores de texto.
 A diferencia de los otros frames, este no trabaja a la manera común, que sería asociar
 propiedades a controles, con rutinas de MiConfig.
-Aquí se leen directamente las propiedades de lso archivos XML de sintaxis, y se cargan
+Aquí se leen directamente las propiedades de los archivos XML de sintaxis, y se cargan
 en la lista synLangList. Allí se modifican y solo cuando se pulsa "Aplicar", se vuelca
 nuevamente el contenido a disco, sobreescribiendo todo el archivo.
 }

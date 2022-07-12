@@ -37,13 +37,6 @@
 {"hash":79367010,"name":"tconfig.tabedicolor.caption","sourcebytes":[69,100,105,116,111,114],"value":"Editor"},
 {"hash":95443592,"name":"tconfig.tabedisyntax.caption","sourcebytes":[83,121,110,116,97,120],"value":"Syntax"},
 {"hash":163830370,"name":"tconfig.tabensamb.caption","sourcebytes":[65,115,115,101,109,98,108,101,114],"value":"Assembler"},
-{"hash":108689123,"name":"tconfig.chkincaddress.caption","sourcebytes":[73,110,99,108,117,100,101,32,38,77,101,109,111,114,121,32,65,100,100,114,101,115,115],"value":"Include &Memory Address"},
-{"hash":265610499,"name":"tconfig.chkinccomment.caption","sourcebytes":[73,110,99,108,117,100,101,32,38,67,111,109,109,101,110,116,115],"value":"Include &Comments"},
-{"hash":174308238,"name":"tconfig.chkincdecvar.caption","sourcebytes":[73,110,99,108,117,100,101,32,38,86,97,114,105,97,98,108,101,115,32,100,101,99,108,97,114,97,116,105,111,110],"value":"Include &Variables declaration"},
-{"hash":91011012,"name":"tconfig.radiogroup2.caption","sourcebytes":[79,117,116,112,117,116],"value":"Output"},
-{"hash":153515780,"name":"tconfig.chkexcunused.caption","sourcebytes":[69,120,99,108,117,100,101,32,117,110,117,115,101,100],"value":"Exclude unused"},
-{"hash":2209283,"name":"tconfig.chkinccomment2.caption","sourcebytes":[73,110,99,108,117,100,101,32,38,68,101,116,97,105,108,101,100,32,99,111,109,109,101,110,116,115],"value":"Include &Detailed comments"},
-{"hash":70023443,"name":"tconfig.chkincvarname.caption","sourcebytes":[73,110,99,108,117,100,101,32,38,86,97,114,105,97,98,108,101,32,110,97,109,101,115],"value":"Include &Variable names"},
 {"hash":105317986,"name":"tconfig.tabcompiler.caption","sourcebytes":[67,111,109,112,105,108,101,114],"value":"Compiler"},
 {"hash":186613084,"name":"tconfig.tabexttool.caption","sourcebytes":[69,120,116,101,114,110,97,108,32,84,111,111,108],"value":"External Tool"}
 ]}

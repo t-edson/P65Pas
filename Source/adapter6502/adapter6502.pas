@@ -6,10 +6,11 @@ unit adapter6502;
 {$mode ObjFPC}{$H+}
 interface
 uses
-  Classes, SysUtils, ComCtrls, Controls, ActnList, Menus, adapterBase,
+  Classes, SysUtils, ComCtrls, Controls, ActnList, Menus, SynEdit, adapterBase,
   CodeTools6502, Compiler_PIC16, LexPas, FrameEditView, Globales, MisUtils,
-  FrameStatist6502, FrameSynTree6502, FormAdapter6502, FrameCfgAfterChg6502,
-  FrameCfgCompiler6502, FormDebugger6502, FormRAMExplorer6502;
+  SynFacilHighlighter, FrameStatist6502, FrameSynTree6502, FormAdapter6502,
+  FrameCfgAfterChg6502, FrameCfgCompiler6502, FormDebugger6502,
+  FormRAMExplorer6502, FrameCfgAsmOut6502;
 type
   { TAdapter6502 }
   TAdapter6502 = class(TAdapterBase)
@@ -22,6 +23,8 @@ type
     Compiler    : TCompiler_PIC16;
     //Referencia al frame de edición
     fraEditView1: TfraEditView;
+    //Referencia al editor lateral (Ensamblador)
+    lateralEdit: TsynEdit;
   private     //Herramientas adicionales
     fraStatis     : TfraStatist6502;  //Frame de estadísticas
     fraSynTree    : TfraSynxTree6502; //Frame de árbol de sintaxis
@@ -60,16 +63,17 @@ type
     procedure Compile; override;
     procedure CheckSyntax; override;
     procedure UpdateCompletionForEditors; override;
-    procedure DumpCode(lins: TSTrings); override;
   public      //Frames de configuración
     //Por practicidad, estos frames se deben instanciar en el formulario de configuración
     //de la IDE.
     fraCfgAfterChg: TfraCfgAfterChg6502;
     fraCfgCompiler: TfraCfgCompiler6502;
+    fraCfgAsmOut  : TfraCfgAsmOut6502;
   public      //Inicialización
     procedure Init(pagControl: TPageControl; imgList16, imglist32: TImageList;
-      actList: TActionList; frmCfgAfterChg0: TfraCfgAfterChg6502;
-  fraCfgCompiler0: TfraCfgCompiler6502);
+      actList: TActionList; lateralEdit0: TSynEdit;
+  frmCfgAfterChg0: TfraCfgAfterChg6502; fraCfgCompiler0: TfraCfgCompiler6502;
+  fraCfgAsmOut0: TfraCfgAsmOut6502);
     procedure setMenusAndToolbar(menu1, menu2: TMenuItem; toolbar: TToolBar); override;
     constructor Create(fraEdit0: TfraEditView);
     destructor Destroy; override;
@@ -267,10 +271,13 @@ begin
     fraStatis.Update(0, 0, 0);
   end;
   //Actualiza ventana de ensamblador.
-//  edAsm.BeginUpdate(false);
-//  edAsm.Lines.Clear;
-//  currComp.DumpCode(edAsm.Lines);
-//  edAsm.EndUpdate;
+  lateralEdit.BeginUpdate(false);
+  lateralEdit.Lines.Clear;
+//  compiler.DumpCode(lateralEdit.Lines);
+  Compiler.DumpCode(lateralEdit.Lines, (fraCfgAsmOut.AsmType = dvtASM),
+                    fraCfgAsmOut.IncVarDec , fraCfgAsmOut.ExcUnused,
+                    fraCfgAsmOut.IncAddress, true, fraCfgAsmOut.IncVarName );
+  lateralEdit.EndUpdate;
 end;
 procedure TAdapter6502.Compile;
 {Ejecuta el compilador para generar un archivo binario de salida.}
@@ -289,8 +296,10 @@ begin
     end;
   end;
   //Lee configuración de compilación
-  if fraCfgCompiler.ReuProcVar then AddLine(pars, '-Ov');   //Reusar variables de proced.
-  if fraCfgCompiler.OptRetProc then AddLine(pars, '-Or');   //Optimizar Retorno de proced.
+  if fraCfgCompiler.ReuProcVar then AddLine(pars, '-Ov');  //Reusar variables de proced.
+  if fraCfgCompiler.OptRetProc then AddLine(pars, '-Or');  //Optimizar Retorno de proced.
+  if fraCfgAsmOut.IncComment2  then AddLine(pars, '-Ac');  //Comentario detallado
+
   //Inicio de compilación
   nErrors := 0;
   if OnBeforeCompile<>nil then OnBeforeCompile();
@@ -330,14 +339,11 @@ procedure TAdapter6502.UpdateCompletionForEditors;
 begin
   fraEditView1.UpdateSynEditCompletion;
 end;
-procedure TAdapter6502.DumpCode(lins: TSTrings);
-begin
-//  Compiler.DumpCode(lins,AsmMode, IncVarDec, ExcUnused, incAdrr, incCom, incVarNam);
-end;
 //Inicialización
 procedure TAdapter6502.Init(pagControl: TPageControl; imgList16,
-  imglist32: TImageList; actList: TActionList;
-  frmCfgAfterChg0: TfraCfgAfterChg6502; fraCfgCompiler0: TfraCfgCompiler6502);
+  imglist32: TImageList; actList: TActionList; lateralEdit0: TSynEdit;
+  frmCfgAfterChg0: TfraCfgAfterChg6502; fraCfgCompiler0: TfraCfgCompiler6502;
+  fraCfgAsmOut0: TfraCfgAsmOut6502);
 {Inicializa el adaptador. Eso implica preparar la IDE para que soporte a este nuevo
 compilador que se está registrando.
 Solo se debe ejecutar esta rutina una ve al inicio.
@@ -369,11 +375,14 @@ begin
   //Asigna referencias a formularios de configuración
   fraCfgAfterChg := frmCfgAfterChg0;
   fraCfgCompiler := fraCfgCompiler0;
+  fraCfgAsmOut   := fraCfgAsmOut0;
+  //Guarda referencia a editor lateral.
+  lateralEdit := lateralEdit0;
+  //Configura resaltador
+//  lateralEdit.Highlighter := hlAssem;
 end;
 procedure TAdapter6502.setMenusAndToolbar(menu1, menu2: TMenuItem;
   toolbar: TToolBar);
-var
-  i: Integer;
 begin
   adapterForm.setMenusAndToolbar(menu1, menu2, toolbar);
 end;

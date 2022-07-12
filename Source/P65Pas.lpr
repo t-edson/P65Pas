@@ -12,7 +12,7 @@ uses
   FrameCfgExtTool, FormDebugger6502, FormRAMExplorer6502, ParserDirec, Analyzer,
   LexPas, CompContexts, ParserASM_6502, XpresElemP65, adapter6502,
   FrameStatist6502, FormAdapter6502,
-  FrameCfgAfterChg6502, FrameCfgCompiler6502;
+  FrameCfgAfterChg6502, FrameCfgCompiler6502, FrameCfgAsmOut6502;
 
 {$R *.res}
 
