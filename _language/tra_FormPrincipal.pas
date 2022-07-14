@@ -145,10 +145,10 @@
  acViewToolbar.Hint   := Trans('Show/hide Tool Bar'      , 'Mostrar/Ocultar la barra de herramientas', 'Llamk''anakuna Qhawachiqta Rikuchiy/Pakachiy',
                                'Werkzeugleiste zeigen oder verbergen','Показати/Сховати панель інструментів','Показать/Спрятать панель инструментов',
                                'Montrer/Cacher la barre d''Outils');
- acViewSynTree.Caption:= Trans('&Code explorer'          , '&Explorador de código.'       , '&Chimpukunata t''aqwiq',
+ acViewPanLeft.Caption:= Trans('&Code explorer'          , '&Explorador de código.'       , '&Chimpukunata t''aqwiq',
                                '&Quelltext-Explorer','Оглядач кода','Обозреватель кода',
                                '&Explorateur de Code');
- acViewAsmPan.Caption := Trans('&Assembler Panel'        , '&Panel de ensamblador.'       , '',
+ acViewPanRight.Caption := Trans('&Assembler Panel'        , '&Panel de ensamblador.'       , '',
                                '','Панель асемблера','Панель ассемблера',
                                'Panneau &Assembleur');
 

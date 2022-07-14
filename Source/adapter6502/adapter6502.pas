@@ -6,11 +6,12 @@ unit adapter6502;
 {$mode ObjFPC}{$H+}
 interface
 uses
-  Classes, SysUtils, ComCtrls, Controls, ActnList, Menus, SynEdit, adapterBase,
-  CodeTools6502, Compiler_PIC16, LexPas, FrameEditView, Globales, MisUtils,
-  SynFacilHighlighter, FrameStatist6502, FrameSynTree6502, FormAdapter6502,
-  FrameCfgAfterChg6502, FrameCfgCompiler6502, FormDebugger6502,
-  FormRAMExplorer6502, FrameCfgAsmOut6502;
+  Classes, SysUtils, ComCtrls, Controls, ActnList, Menus, ExtCtrls, Graphics,
+  SynEdit, adapterBase, CodeTools6502, Compiler_PIC16, LexPas, FrameEditView,
+  Globales, FrameCfgSynEdit, MisUtils, SynFacilHighlighter, SynFacilUtils,
+  FrameStatist6502, FrameSynTree6502, FormAdapter6502, FrameCfgAfterChg6502,
+  FrameCfgCompiler6502, FormDebugger6502, FormRAMExplorer6502,
+  FrameCfgAsmOut6502;
 type
   { TAdapter6502 }
   TAdapter6502 = class(TAdapterBase)
@@ -24,7 +25,10 @@ type
     //Referencia al frame de edición
     fraEditView1: TfraEditView;
     //Referencia al editor lateral (Ensamblador)
-    lateralEdit: TsynEdit;
+    panRightPanel: TPanel;
+    edAsm        : TSynEdit;
+    hlAssem      : TSynFacilSyn;   //resaltador para ensamblador
+    procedure LoadAsmSyntaxEd;
   private     //Herramientas adicionales
     fraStatis     : TfraStatist6502;  //Frame de estadísticas
     fraSynTree    : TfraSynxTree6502; //Frame de árbol de sintaxis
@@ -62,7 +66,9 @@ type
     nErrors: Integer;
     procedure Compile; override;
     procedure CheckSyntax; override;
-    procedure UpdateCompletionForEditors; override;
+//    procedure UpdateCompletionForEditors; override;
+    procedure NotifyConfigChanged(MessPanBack, MessPanText, MessPanErr,
+      MessPanSel: TColor; mainEditorCfg: TfraCfgSynEdit); override;
   public      //Frames de configuración
     //Por practicidad, estos frames se deben instanciar en el formulario de configuración
     //de la IDE.
@@ -71,13 +77,14 @@ type
     fraCfgAsmOut  : TfraCfgAsmOut6502;
   public      //Inicialización
     procedure Init(pagControl: TPageControl; imgList16, imglist32: TImageList;
-      actList: TActionList; lateralEdit0: TSynEdit;
-  frmCfgAfterChg0: TfraCfgAfterChg6502; fraCfgCompiler0: TfraCfgCompiler6502;
-  fraCfgAsmOut0: TfraCfgAsmOut6502);
+      actList: TActionList; frmCfgAfterChg0: TfraCfgAfterChg6502;
+  fraCfgCompiler0: TfraCfgCompiler6502; fraCfgAsmOut0: TfraCfgAsmOut6502);
     procedure setMenusAndToolbar(menu1, menu2: TMenuItem; toolbar: TToolBar); override;
-    constructor Create(fraEdit0: TfraEditView);
+    constructor Create(fraEdit0: TfraEditView; panRightPanel0: TPanel);
     destructor Destroy; override;
   end;
+resourcestring
+  MSG_SYNFIL_NOF = 'Syntax file not found: %s';
 
 implementation
 { TAdapter6502 }
@@ -154,11 +161,11 @@ procedure TAdapter6502.ListReport;
 var
   edit: TSynEditor;
 begin
-//  fraEditView1.NewLstFile;
-//  edit := fraEditView1.ActiveEditor;
-//  edit.SynEdit.BeginUpdate;
-//  Compiler.GenerateListReport(edit.SynEdit.Lines);
-//  edit.SynEdit.EndUpdate;
+  fraEditView1.NewLstFile;
+  edit := fraEditView1.ActiveEditor;
+  edit.SynEdit.BeginUpdate;
+  Compiler.GenerateListReport(edit.SynEdit.Lines);
+  edit.SynEdit.EndUpdate;
 end;
 procedure TAdapter6502.FindDeclarat;
 begin
@@ -271,13 +278,13 @@ begin
     fraStatis.Update(0, 0, 0);
   end;
   //Actualiza ventana de ensamblador.
-  lateralEdit.BeginUpdate(false);
-  lateralEdit.Lines.Clear;
-//  compiler.DumpCode(lateralEdit.Lines);
-  Compiler.DumpCode(lateralEdit.Lines, (fraCfgAsmOut.AsmType = dvtASM),
+  edAsm.BeginUpdate(false);
+  edAsm.Lines.Clear;
+//  compiler.DumpCode(edAsm.Lines);
+  Compiler.DumpCode(edAsm.Lines, (fraCfgAsmOut.AsmType = dvtASM),
                     fraCfgAsmOut.IncVarDec , fraCfgAsmOut.ExcUnused,
                     fraCfgAsmOut.IncAddress, true, fraCfgAsmOut.IncVarName );
-  lateralEdit.EndUpdate;
+  edAsm.EndUpdate;
 end;
 procedure TAdapter6502.Compile;
 {Ejecuta el compilador para generar un archivo binario de salida.}
@@ -335,13 +342,38 @@ begin
   if OnAfterCheckSyn<>nil then OnAfterCheckSyn();
   UpdateTools;
 end;
-procedure TAdapter6502.UpdateCompletionForEditors;
+procedure TAdapter6502.NotifyConfigChanged(MessPanBack, MessPanText,
+          MessPanErr, MessPanSel: TColor; mainEditorCfg: TfraCfgSynEdit);
+{Se está notificando al adaptador que ha habido un cambio en la configuración y que
+probablemnete modifica la apariencia de la IDE. Probablemente se hayan modificado los
+atributos de los resaltadores de sintaxis. Puede que se hayan modificado, también, alguna
+de las propiedades que usa este adaptador.}
 begin
-  fraEditView1.UpdateSynEditCompletion;
+  //Actualizamos la apariencia del árbol de sintaxis, usando colores de la configuración
+  //global, en vez de manejar nuestro propio Frame de configuración.
+  fraSynTree.SetBackColor(MessPanBack);
+  fraSynTree.SetTextColor(MessPanText);
+  //Configuramos nuestro editor ASM usando la misma configuración que el editor principal.
+  {Otra opción sería crear nuestro propio Frame de configuración, pero mejor usamos el
+  de la IDE y aprovechamos sus facilidades de manejo de temas.}
+  mainEditorCfg.ConfigEditor(edAsm);
+  LoadAsmSyntaxEd;
 end;
 //Inicialización
+procedure TAdapter6502.LoadAsmSyntaxEd;
+{Carga archivo de sinatxis para el editor de ASM}
+var
+  synFile: String;
+begin
+  synFile := patSyntax + DirectorySeparator + 'P65Pas_Asm.xml';
+  if FileExists(synFile) then begin
+    hlAssem.LoadFromFile(synFile);
+  end else begin
+    MsgErr(MSG_SYNFIL_NOF, [synFile]);
+  end;
+end;
 procedure TAdapter6502.Init(pagControl: TPageControl; imgList16,
-  imglist32: TImageList; actList: TActionList; lateralEdit0: TSynEdit;
+  imglist32: TImageList; actList: TActionList;
   frmCfgAfterChg0: TfraCfgAfterChg6502; fraCfgCompiler0: TfraCfgCompiler6502;
   fraCfgAsmOut0: TfraCfgAsmOut6502);
 {Inicializa el adaptador. Eso implica preparar la IDE para que soporte a este nuevo
@@ -376,17 +408,18 @@ begin
   fraCfgAfterChg := frmCfgAfterChg0;
   fraCfgCompiler := fraCfgCompiler0;
   fraCfgAsmOut   := fraCfgAsmOut0;
-  //Guarda referencia a editor lateral.
-  lateralEdit := lateralEdit0;
-  //Configura resaltador
-//  lateralEdit.Highlighter := hlAssem;
+  //COnfigura editor de ensamblador
+  edAsm.Parent := panRightPanel;
+  edAsm.Align := alClient;
+  edAsm.Highlighter := hlAssem;
+  InicEditorC1(edAsm);
 end;
 procedure TAdapter6502.setMenusAndToolbar(menu1, menu2: TMenuItem;
   toolbar: TToolBar);
 begin
   adapterForm.setMenusAndToolbar(menu1, menu2, toolbar);
 end;
-constructor TAdapter6502.Create(fraEdit0: TfraEditView);
+constructor TAdapter6502.Create(fraEdit0: TfraEditView; panRightPanel0: TPanel);
 begin
   inherited Create;
   fraEditView1 := fraEdit0;
@@ -411,9 +444,16 @@ begin
   frmDebug    := TfrmDebugger6502.Create(nil);
   //Crea formulario explorador de RAM
   frmRAMExplorer:= TfrmRAMExplorer6502.Create(nil);
+  //Guarda referencia a editor lateral.
+  panRightPanel := panRightPanel0;
+  //Crea editor y resaltador
+  edAsm := TSynEdit.Create(panRightPanel);
+  hlAssem := TSynFacilSyn.Create(edAsm);
+  LoadAsmSyntaxEd;
 end;
 destructor TAdapter6502.Destroy;
 begin
+  hlAssem.Free;
   frmRAMExplorer.Destroy;
   frmDebug.Destroy;
   adapterForm.Destroy;

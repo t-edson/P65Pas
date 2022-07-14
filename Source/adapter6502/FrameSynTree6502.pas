@@ -51,13 +51,13 @@ type
     procedure RefreshByDeclar(nodMain: TTreeNode; curEle: TxpElement);
     function SelectedIsMain: boolean;
     function SelectedIsElement: boolean;
-    procedure SetBackColor(AValue: TColor);
-    procedure SetTextColor(AValue: TColor);
     procedure TreeView1AdvancedCustomDrawItem(Sender: TCustomTreeView;
       Node: TTreeNode; State: TCustomDrawState; Stage: TCustomDrawStage;
       var PaintImages, DefaultDraw: Boolean);
   public
     OnLocateElemen: procedure(fileSrc: string; row, col: integer) of object;
+    procedure SetBackColor(AValue: TColor);
+    procedure SetTextColor(AValue: TColor);
     function HasFocus: boolean;
     property BackColor: TColor read FBackColor write SetBackColor;
     property TextColor: TColor read FTextColor write SetTextColor;
@@ -81,7 +81,6 @@ var
 { TfraSynxTree6502 }
 procedure TfraSynxTree6502.SetLanguage;
 begin
-  {$I ..\_language\tra_FrameSyntaxTree.pas}
   Refresh;
 end;
 function TfraSynxTree6502.AddNodeTo(nodParent: TTreeNode; elem: TxpElement): TTreeNode;

@@ -22,9 +22,6 @@ type
     butSaveCurThem: TButton;
     chkLoadLast: TCheckBox;
     chkShowErrMsg: TCheckBox;
-    chkViewHScroll: TCheckBox;
-    chkViewVScroll: TCheckBox;
-    cmbFontName: TComboBox;
     colCodExplBack: TColorBox;
     colCodExplText: TColorBox;
     colMessPanBack: TColorBox;
@@ -43,8 +40,6 @@ type
     Label2: TLabel;
     Label3: TLabel;
     Label4: TLabel;
-    Label6: TLabel;
-    Label7: TLabel;
     lblCodExplCol1: TLabel;
     lblCodExplCol2: TLabel;
     lblMessPan1: TLabel;
@@ -59,7 +54,7 @@ type
     Panel2: TPanel;
     RadioGroup1: TRadioGroup;
     grpFilType: TRadioGroup;
-    spFontSize: TSpinEdit;
+    scrlEdiColor: TScrollBox;
     tabEditor: TTabSheet;
     tabEdiColor: TTabSheet;
     tabEnsamb: TTabSheet;
@@ -69,6 +64,9 @@ type
     tabMessPan: TTabSheet;
     tabCodeExp: TTabSheet;
     tabEdiSyntax: TTabSheet;
+    tabAftEdit: TTabSheet;
+    tabExtraPan1: TTabSheet;
+    tabExtraPan2: TTabSheet;
     TreeView1: TTreeView;
     procedure BitAceptarClick(Sender: TObject);
     procedure BitAplicarClick(Sender: TObject);
@@ -80,18 +78,18 @@ type
     procedure TreeView1KeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
   private
-    FViewPanAssem: boolean;
+    FViewPanRight: boolean;
     FViewPanMsg: boolean;
     FViewStatusbar: Boolean;
-    FViewSynTree: boolean;
+    FViewPanLeft: boolean;
     FViewToolbar: boolean;
     ItemIni   : TTreeNode;
     procedure cfgFilePropertiesChanges;
     procedure FillTree;
-    procedure SetViewPanAssem(AValue: boolean);
+    procedure SetViewPanRight(AValue: boolean);
     procedure SetViewPanMsg(AValue: boolean);
     procedure SetViewStatusbar(AValue: Boolean);
-    procedure SetViewSynTree(AValue: boolean);
+    procedure SetViewPanLeft(AValue: boolean);
     procedure SetViewToolbar(AValue: boolean);
   public  //Configuraciones generales
     language  : string;   //Lenguaje
@@ -108,37 +106,35 @@ type
     PanTextCol : TColor;  //Color del texto mostrado en la barra de herramientas
 
     StateToolbar: TStyleToolbar;
-    SynTreeWidth: integer;  //Ancho del panel del árbol de sintaxis.
-    EditAsmWidth: integer;  //Ancho del editor de ensamblador.
+    PanLeftWidth: integer;  //Ancho del panel del árbol de sintaxis.
+    PanRightWidth: integer;  //Ancho del editor de ensamblador.
     CodExplBack: TColor;
     CodExplText: TColor;
     cexpFiltype: integer;
+    filesClosed: string;  {Lista de archivos cargados. Usado para restaurar los archivos
+                          abiertos al abrir nuevamente el programa.}
+    //Porpiedades del panel de mensajes
     MessPanBack: TColor;  //Color de fondo del panel de mensajes
     MessPanText: TColor;  //Color del texto del panel de mensajes
     MessPanErr : TColor;  //Color del texto de error del panel de mensajes
     MessPanSel : TColor;  //Color del fonde de la selección del panel de mensajes
-    filesClosed: string;  {Lista de archivos cargados. Usado para restaurar los archivos
-                          abiertos al abrir nuevamente el programa.}
   public //Configuraciones de Editor
-    TipLet     : string;   //tipo de letra
-    TamLet     : integer;  //tamaño de letra
-    VerBarDesV : boolean;  //ver barras de desplazamiento
-    VerBarDesH : boolean;  //ver barras de desplazamiento
     TabEdiMode : integer;  //Estado de pestañas del editor
     ShowErMsg   : boolean; //Muestra diálogo con mensaje de error
-    fraCfgAfterChg6502: TfraCfgAfterChg6502;
     property ViewStatusbar: Boolean read FViewStatusbar write SetViewStatusbar;
     property ViewToolbar: boolean read FViewToolbar write SetViewToolbar;
     property ViewPanMsg: boolean read FViewPanMsg write SetViewPanMsg;
-    property ViewPanAssem: boolean read FViewPanAssem write SetViewPanAssem;
-    property ViewSynTree: boolean read FViewSynTree write SetViewSynTree;
+    property ViewPanRight: boolean read FViewPanRight write SetViewPanRight;
+    property ViewPanLeft: boolean read FViewPanLeft write SetViewPanLeft;
+  public  //COnfiguraciones apariencia del editor
+    fraCfgSynEdit: TfraCfgSynEdit;
+  public  //Configuraciones después de editar
+    fraCfgAfterChg6502: TfraCfgAfterChg6502;
   public  //Configuraciones para ensamblador
     fraCfgAsmOut6502: TfraCfgAsmOut6502;
   public  //Configuracions del compilador
     fraCfgCompiler6502: TfraCfgCompiler6502;
-    procedure ConfigEditor(ed: TSynEdit);
   public
-    fraCfgSynEdit: TfraCfgSynEdit;
     fraCfgSyntax : TfraCfgSyntax;
     fraCfgExtTool: TfraCfgExtTool;
     OnPropertiesChanges: procedure of object;
@@ -153,13 +149,38 @@ var
 implementation
 {$R *.lfm}
 { TConfig }
-  {$I ..\_language\tra_FormConfig.pas}
+resourcestring
+  LABEL_THEM_NONE   = 'None';
+  // Environment Settings
+  TIT_CFG_ENVIRON   = 'Environment';
+  TIT_CFG_CODEXP    = 'Code Explorer';
+  TIT_CFG_MESPAN    = 'Message Panel';
+  // Editor Settings
+  TIT_CFG_EDITOR    = 'Editor' ;
+  TIT_CFG_EDICOL    = 'Appearance';
+  TIT_CFG_SYNTAX    = 'Syntax';
+  TIT_CFG_AFTEDI    = 'After Edit';    //Disponible para uso por el compilador
+  // Compiler Settings
+  TIT_CFG_COMPIL    = 'Compiler';      //Disponible para uso por el compilador
+  TIT_CFG_ASSEMB    = 'Assembler';     //Disponible para uso por el compilador
+  TIT_CFG_EXTRA1    = 'Extra Panel 1'; //Disponible para uso por el compilador
+  TIT_CFG_EXTRA2    = 'Extra Panel 2'; //Disponible para uso por el compilador
+  // External Tool
+  TIT_CFG_EXTOOL    = 'External Tool';
+
+procedure TConfig.SetLanguage;
+begin
+  fraCfgSynEdit.SetLanguage;
+  fraCfgExtTool.SetLanguage;
+  fraCfgSyntax.SetLanguage;
+  FillTree;
+end;
 procedure TConfig.FormCreate(Sender: TObject);
 begin
   fraCfgSynEdit := TfraCfgSynEdit.Create(self);
-  fraCfgSynEdit.Parent := tabEdiColor;
-  fraCfgSynEdit.Left := 5;
-  fraCfgSynEdit.Top := 5;
+  fraCfgSynEdit.Parent := scrlEdiColor; // tabEdiColor;
+  fraCfgSynEdit.Left := 0;
+  fraCfgSynEdit.Top := 0;
 
   fraCfgSyntax := TfraCfgSyntax.Create(self);
   fraCfgSyntax.Parent := tabEdiSyntax;
@@ -173,9 +194,9 @@ begin
 
   //Frames de configuración para todos los compiladores soportados.
   fraCfgAfterChg6502 := TfraCfgAfterChg6502.Create(self);
-  fraCfgAfterChg6502.Parent := tabEditor;
-  fraCfgAfterChg6502.Left := 5;
-  fraCfgAfterChg6502.Top := 240;
+  fraCfgAfterChg6502.Parent := tabAftEdit;
+  fraCfgAfterChg6502.Left := 0;
+  fraCfgAfterChg6502.Top := 0;
 
   fraCfgCompiler6502 := TfraCfgCompiler6502.Create(self);
   fraCfgCompiler6502.Parent := tabCompiler;
@@ -220,14 +241,29 @@ begin
     SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_SYNTAX);
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
+    //Acciones después de editar
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_AFTEDI);
+    SubItem.ImageIndex:=0;    //cambia ícono del nodo
+    SubItem.SelectedIndex := 0;
   Item.Expanded := true;
-  //Assembler
-  Item := TreeView1.Items.AddChild(nil, TIT_CFG_ASSEMB);
-  Item.ImageIndex:=0;    //cambia ícono del nodo
-  Item.SelectedIndex := 0;
+  //Compilador
   Item := TreeView1.Items.AddChild(nil, TIT_CFG_COMPIL);
   Item.ImageIndex:=0;    //cambia ícono del nodo
   Item.SelectedIndex := 0;
+    //Assembler
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_ASSEMB);
+    SubItem.ImageIndex:=0;    //cambia ícono del nodo
+    SubItem.SelectedIndex := 0;
+    //Extra panel 1
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EXTRA1);
+    SubItem.ImageIndex:=0;    //cambia ícono del nodo
+    SubItem.SelectedIndex := 0;
+    //Extra panel 2
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EXTRA2);
+    SubItem.ImageIndex:=0;    //cambia ícono del nodo
+    SubItem.SelectedIndex := 0;
+  Item.Expanded := true;
+  //Herramientas externas
   Item := TreeView1.Items.AddChild(nil, TIT_CFG_EXTOOL);
   Item.ImageIndex:=0;    //cambia ícono del nodo
   Item.SelectedIndex := 0;
@@ -250,14 +286,20 @@ var
   nodStr: String;
 begin
   nodStr := TreeView1.Selected.Text;
-  if nodStr = TIT_CFG_EDITOR  then PageControl1.ActivePage := tabEditor;
   if nodStr = TIT_CFG_ENVIRON then PageControl1.ActivePage := tabEnviron;
   if nodStr = TIT_CFG_CODEXP  then PageControl1.ActivePage := tabCodeExp;
   if nodStr = TIT_CFG_MESPAN  then PageControl1.ActivePage := tabMessPan;
+
+  if nodStr = TIT_CFG_EDITOR  then PageControl1.ActivePage := tabEditor;
   if nodStr = TIT_CFG_EDICOL  then PageControl1.ActivePage := tabEdiColor;
+  if nodStr = TIT_CFG_AFTEDI  then PageControl1.ActivePage := tabAftEdit;
   if nodStr = TIT_CFG_SYNTAX  then PageControl1.ActivePage := tabEdiSyntax;
-  if nodStr = TIT_CFG_ASSEMB  then PageControl1.ActivePage := tabEnsamb;
+
   if nodStr = TIT_CFG_COMPIL  then PageControl1.ActivePage := tabCompiler;
+  if nodStr = TIT_CFG_ASSEMB  then PageControl1.ActivePage := tabEnsamb;
+  if nodStr = TIT_CFG_EXTRA1  then PageControl1.ActivePage := tabExtraPan1;
+  if nodStr = TIT_CFG_EXTRA2  then PageControl1.ActivePage := tabExtraPan2;
+
   if nodStr = TIT_CFG_EXTOOL  then PageControl1.ActivePage := tabExtTool;
 end;
 procedure TConfig.TreeView1KeyDown(Sender: TObject; var Key: Word;
@@ -333,23 +375,6 @@ begin
     MsgErr(cfgFile.MsjErr);
   end;
 end;
-procedure TConfig.ConfigEditor(ed: TSynEdit);
-//Configura un editor con las opciones definidas aquí
-begin
-  fraCfgSynEdit.ConfigEditor(ed);
-  //tipo de texto
-  if TipLet <> '' then ed.Font.Name:=TipLet;
-  if (TamLet > 6) and (TamLet < 32) then ed.Font.Size:=Round(TamLet);
-  //Barras de desplazamiento
-  if VerBarDesV and VerBarDesH then  //barras de desplazamiento
-    ed.ScrollBars:= ssBoth
-  else if VerBarDesV and not VerBarDesH then
-    ed.ScrollBars:= ssVertical
-  else if not VerBarDesV and VerBarDesH then
-    ed.ScrollBars:= ssHorizontal
-  else
-    ed.ScrollBars := ssNone;
-end;
 procedure TConfig.cfgFilePropertiesChanges;
 begin
   if OnPropertiesChanges<>nil then OnPropertiesChanges;
@@ -366,16 +391,16 @@ begin
   FViewStatusbar := AValue;
   cfgFilePropertiesChanges;
 end;
-procedure TConfig.SetViewSynTree(AValue: boolean);
+procedure TConfig.SetViewPanLeft(AValue: boolean);
 begin
-  if FViewSynTree = AValue then Exit;
-  FViewSynTree := AValue;
+  if FViewPanLeft = AValue then Exit;
+  FViewPanLeft := AValue;
   cfgFilePropertiesChanges;
 end;
-procedure TConfig.SetViewPanAssem(AValue: boolean);
+procedure TConfig.SetViewPanRight(AValue: boolean);
 begin
-  if FViewPanAssem = AValue then Exit;
-  FViewPanAssem := AValue;
+  if FViewPanRight = AValue then Exit;
+  FViewPanRight := AValue;
   cfgFilePropertiesChanges
 end;
 procedure TConfig.SetViewToolbar(AValue: boolean);
@@ -413,10 +438,10 @@ begin
   s:=cfgFile.Asoc_Bol('VerPanMensaj', @FViewPanMsg  , true);
   s:=cfgFile.Asoc_Bol('VerStatusbar', @ViewStatusbar, true);
   s:=cfgFile.Asoc_Bol('VerBarHerram', @FViewToolbar , true);
-  s:=cfgFile.Asoc_Bol('ViewSynTree',  @FViewSynTree , true);
-  s:=cfgFile.Asoc_Int('SynTreeWidth', @SynTreeWidth , 130);
-  s:=cfgFile.Asoc_Int('EditAsmWidth', @EditAsmWidth , 300);
-  s:=cfgFile.Asoc_Bol('ViewPanAssem', @FViewPanAssem, true);
+  s:=cfgFile.Asoc_Bol('ViewSynTree',  @FViewPanLeft , true);
+  s:=cfgFile.Asoc_Int('SynTreeWidth', @PanLeftWidth , 130);
+  s:=cfgFile.Asoc_Int('EditAsmWidth', @PanRightWidth , 300);
+  s:=cfgFile.Asoc_Bol('ViewPanAssem', @FViewPanRight, true);
 
   ///////////////////////////////////////////////////////
   ///////// Configuraciones del Panel de mensajes
@@ -437,19 +462,6 @@ begin
 
   ///////////////////////////////////////////////////////
   ///////// Configuraciones del Editor
-  s:=cfgFile.Asoc_Int('TamLet', @TamLet, spFontSize, 10);
-  s.categ := 1;
-  cmbFontName.Items.Clear;
-  cmbFontName.Items.Add('Courier New');
-  cmbFontName.Items.Add('DejaVu Sans Mono');
-  cmbFontName.Items.Add('Fixedsys');
-  cmbFontName.Items.Add('Lucida Console');
-  cmbFontName.Items.Add('Consolas');
-  cmbFontName.Items.Add('Cambria');
-  s:=cfgFile.Asoc_Str('TipLet', @TipLet, cmbFontName, 'Courier New');
-  s.categ := 1;
-  s:=cfgFile.Asoc_Bol('VerBarDesV' , @VerBarDesV, chkViewVScroll, true);
-  s:=cfgFile.Asoc_Bol('VerBarDesH' , @VerBarDesH, chkViewHScroll, false);
   s:=cfgFile.Asoc_Int('TabEdiState', @TabEdiMode, grpTabEdiState, 0);
   s:=cfgFile.Asoc_Bol('ShowErMsg'  , @ShowErMsg, chkShowErrMsg, true);
   //Configuración por cada compilador

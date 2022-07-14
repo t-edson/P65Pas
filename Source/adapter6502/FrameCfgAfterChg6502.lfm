@@ -1,20 +1,20 @@
 object fraCfgAfterChg6502: TfraCfgAfterChg6502
   Left = 0
-  Height = 170
+  Height = 245
   Top = 0
-  Width = 400
-  ClientHeight = 170
-  ClientWidth = 400
+  Width = 434
+  ClientHeight = 245
+  ClientWidth = 434
   DesignTimePPI = 120
   ParentFont = False
   TabOrder = 0
   DesignLeft = 302
   DesignTop = 680
   object grpAfterEdit_6502: TRadioGroup
-    Left = 16
-    Height = 128
-    Top = 8
-    Width = 228
+    Left = 24
+    Height = 152
+    Top = 24
+    Width = 272
     AutoFill = True
     Caption = 'Actions after changes in editor:'
     ChildSizing.LeftRightSpacing = 6
@@ -24,8 +24,8 @@ object fraCfgAfterChg6502: TfraCfgAfterChg6502
     ChildSizing.ShrinkVertical = crsScaleChilds
     ChildSizing.Layout = cclLeftToRightThenTopToBottom
     ChildSizing.ControlsPerLine = 1
-    ClientHeight = 103
-    ClientWidth = 224
+    ClientHeight = 127
+    ClientWidth = 268
     Items.Strings = (
       '<No actions>'
       'Do Only Analysis'

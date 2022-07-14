@@ -8,10 +8,10 @@ interface
 uses
   Classes, SysUtils, SynEdit, SynEditTypes, LazUTF8, Forms, Controls, Dialogs,
   Menus, ComCtrls, ActnList, StdActns, ExtCtrls, LCLIntf, LCLType, LCLProc,
-  StdCtrls, Graphics, SynFacilHighlighter, SynFacilUtils, MisUtils, CompBase,  //Para tener acceso a TCompilerBase
+  StdCtrls, Graphics, SynFacilUtils, MisUtils, CompBase,  //Para tener acceso a TCompilerBase
   Compiler_PIC16, FrameLateralPanel, FormConfig, Globales, PicPasProject,
   FrameEditView, FrameMessagesWin, adapter6502, FrameCfgExtTool,
-  FormDebugger6502, FormRAMExplorer6502, ParserASM_6502, Analyzer, adapterBase;
+  ParserASM_6502, Analyzer, adapterBase;
 type
   { TfrmPrincipal }
   TfrmPrincipal = class(TForm)
@@ -36,7 +36,7 @@ type
     acSearFindPrv: TAction;
     acToolSel_P65pas_65c02: TAction;
     acToolSel_P65pas_6502: TAction;
-    acViewAsmPan: TAction;
+    acViewPanRight: TAction;
     acToolExt4: TAction;
     acToolExt5: TAction;
     acToolExt2: TAction;
@@ -47,9 +47,8 @@ type
     acViewMsgPan: TAction;
     ActionList: TActionList;
     acViewStatbar: TAction;
-    acViewSynTree: TAction;
+    acViewPanLeft: TAction;
     CoolBar1: TCoolBar;
-    edAsm: TSynEdit;
     FindDialog1: TFindDialog;
     ImgActions32: TImageList;
     ImgActions16: TImageList;
@@ -90,6 +89,7 @@ type
     MenuItem42: TMenuItem;
     MenuItem45: TMenuItem;
     MenuItem46: TMenuItem;
+    panRightPanel: TPanel;
     Separator1: TMenuItem;
     MenuItem51: TMenuItem;
     MenuItem52: TMenuItem;
@@ -116,9 +116,9 @@ type
     PopupEdit: TPopupMenu;
     PopupCompiler: TPopupMenu;
     ReplaceDialog1: TReplaceDialog;
-    splSynTree: TSplitter;
+    splLeft: TSplitter;
     Splitter2: TSplitter;
-    splEdPas: TSplitter;
+    splRight: TSplitter;
     StatusBar1: TStatusBar;
     Timer1: TTimer;
     ToolBar2: TToolBar;
@@ -172,8 +172,8 @@ type
     procedure acToolFindDecExecute(Sender: TObject);
     procedure acToolSel_P65pas_6502Execute(Sender: TObject);
     procedure acToolSel_P65pas_65c02Execute(Sender: TObject);
-    procedure acViewAsmPanExecute(Sender: TObject);
-    procedure acViewSynTreeExecute(Sender: TObject);
+    procedure acViewPanRightExecute(Sender: TObject);
+    procedure acViewPanLeftExecute(Sender: TObject);
     procedure acViewStatbarExecute(Sender: TObject);
     procedure acViewToolbarExecute(Sender: TObject);
     procedure acViewMsgPanExecute(Sender: TObject);
@@ -196,7 +196,6 @@ type
     tic         : integer;  //Contador para temporización
     ticSynCheck : integer;  //Contador para temporizar la verifiación ed sintaxis
     curProj     : TPicPasProject; //Proyecto actual
-    hlAssem     : TSynFacilSyn;   //resaltador para ensamblador
     fraEditView1: TfraEditView;   //Panel de editores
     fraLeftPanel: TfraLateralPanel; //Panel lateral para explorador de archivos y Árbol de sintaxis
     fraMessages : TfraMessagesWin;
@@ -209,11 +208,10 @@ type
     procedure fraMessagesStatisDBlClick;
     procedure fraSynTreeSelecFileExplorer;
     procedure fraEdit_RequireSynEditConfig(ed: TsynEdit);
-    procedure ChangeAppearance;
+    procedure ConfigChanged;
     procedure fraEdit_SelectEditor;
     procedure fraMessagesDblClickMessage(fileSrc: string; row, col: integer);
     procedure fraSynTreeOpenFile(filname: string);
-    procedure LoadAsmSyntaxEd;
     procedure MarkErrors;
     procedure ShowErrorInDialogBox;
     procedure UpdateIDE(CompName: string);
@@ -330,7 +328,7 @@ procedure TfrmPrincipal.fraEdit_RequireSynEditConfig(ed: TsynEdit);
 {Se pide actualizar la configuración de un editor.}
 begin
   ed.PopupMenu := PopupEdit;
-  Config.ConfigEditor(ed);
+  Config.fraCfgSynEdit.ConfigEditor(ed);
 end;
 procedure TfrmPrincipal.fraEdit_RequireSetCompletion(ed: TSynEditor);
 {Solicita configurar el completado de código al resaltador.}
@@ -350,18 +348,6 @@ begin
   comLine := StringReplace(comLine, '$(mainFile)', currComp.mainFilePath, [rfReplaceAll, rfIgnoreCase]);
   comLine := StringReplace(comLine, '$(mainPath)', ExtractFileDir(currComp.mainFilePath), [rfReplaceAll, rfIgnoreCase]);
   comLine := StringReplace(comLine, '$(picModel)', currComp.CPUname, [rfReplaceAll, rfIgnoreCase]);
-end;
-procedure TfrmPrincipal.LoadAsmSyntaxEd;
-{Carga archivo de sinatxis para el editor de ASM}
-var
-  synFile: String;
-begin
-  synFile := patSyntax + DirectorySeparator + 'P65Pas_Asm.xml';
-  if FileExists(synFile) then begin
-    hlAssem.LoadFromFile(synFile);
-  end else begin
-    MsgErr(MSG_SYNFIL_NOF, [synFile]);
-  end;
 end;
 procedure TfrmPrincipal.FormCreate(Sender: TObject);
 begin
@@ -385,39 +371,34 @@ begin
   //Configura Panel lateral
   fraLeftPanel.OnOpenFile := @fraSynTreeOpenFile;
   fraLeftPanel.OnSelecFileExplorer := @fraSynTreeSelecFileExplorer;
-
-  //Carga un resaltador a la ventana de ensamblador
-  hlAssem := TSynFacilSyn.Create(self);
-  edAsm.Highlighter := hlAssem;
-  LoadAsmSyntaxEd;
 end;
 procedure TfrmPrincipal.FormDestroy(Sender: TObject);
 begin
   adapter6502.Destroy;
-  hlAssem.Free;
 end;
 procedure TfrmPrincipal.FormShow(Sender: TObject);
 var
   Hay: Boolean;
   SR: TSearchRec;
 begin
+  //ALineamiento de panel izquierdo
   fraLeftPanel.Align := alLeft;
   fraLeftPanel.Visible := true;
-  splSynTree.Align := alLeft;
-  AnchorTo(splSynTree, akLeft, fraLeftPanel);
-  edAsm.Align := alRight;
-  InicEditorC1(edAsm);
-  splEdPas.Align := alRight;
+  splLeft.Align := alLeft;
+  AnchorTo(splLeft, akLeft, fraLeftPanel);
+  //Alineamieanto de Panel derecho
+  panRightPanel.Align := alRight;
+  splRight.Align := alRight;
+  //Frame de editores
   fraEditView1.Align := alClient;
   fraEditView1.tmpPath := patTemp;   //fija ruta de trabajo
 
   Config.Init;   //necesario para poder trabajar
-  Config.OnPropertiesChanges := @ChangeAppearance;
+  Config.OnPropertiesChanges := @ConfigChanged;
   Config.fraCfgExtTool.OnReplaceParams := @ConfigExtTool_RequirePar;
   fraLeftPanel.Init;
   //Termina configuración
   fraEditView1.InitMenuRecents(mnRecents, Config.fraCfgSynEdit.ArcRecientes);  //inicia el menú "Recientes"
-  ChangeAppearance;   //primera actualización
   //Carga lista de ejemplos
   Hay := FindFirst(patSamples + DirectorySeparator + '*.pas', faAnyFile - faDirectory, SR) = 0;
   while Hay do begin
@@ -426,9 +407,9 @@ begin
     Hay := FindNext(SR) = 0;
   end;
   /////////// Crea adaptadores para compiladores soportados ///////////
-  adapter6502:= TAdapter6502.Create(fraEditView1);
+  adapter6502:= TAdapter6502.Create(fraEditView1, panRightPanel);
   adapter6502.Init(fraLeftPanel.PageControl1, ImgActions16, ImgActions32, ActionList,
-    edAsm, Config.fraCfgAfterChg6502, Config.fraCfgCompiler6502, Config.fraCfgAsmOut6502);
+    Config.fraCfgAfterChg6502, Config.fraCfgCompiler6502, Config.fraCfgAsmOut6502);
   adapter6502.OnBeforeCompile  := @comp_BeforeCompile;
   adapter6502.OnAfterCompile   := @comp_AfterCompile;
   adapter6502.OnBeforeCheckSyn := @comp_BeforeCheckSyn;
@@ -438,6 +419,7 @@ begin
   //Fija compilador por defecto
   acToolSel_P65pas_6502Execute(self);
   ///////////////////////////////////////////////////////
+  ConfigChanged;   //primera actualización
 
   //Carga últimos archivos abiertos
   if Config.LoadLast then fraEditView1.LoadListFiles(Config.filesClosed);
@@ -484,9 +466,9 @@ begin
     Config.winHeight := self.Height;
     Config.winWidth  := self.Width;
   end;
-  Config.EditAsmWidth := edAsm.Width;
+  Config.PanRightWidth := panRightPanel.Width;
 
-  Config.SynTreeWidth := fraLeftPanel.Width;   //Guarda ancho
+  Config.PanLeftWidth := fraLeftPanel.Width;   //Guarda ancho
   Config.SaveToFile;  //guarda la configuración actual
 end;
 procedure TfrmPrincipal.Timer1Timer(Sender: TObject);
@@ -566,8 +548,6 @@ begin
 end;
 procedure TfrmPrincipal.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
-var
-  curNode: String;
 begin
   {Realmente, todo este código podrái ir dentro de de CodeTool.KeyDown.}
   if (Shift = [ssCtrl]) and (Key = VK_TAB) then begin
@@ -576,9 +556,9 @@ begin
         fraEditView1.SelectNextEditor;
       end else begin
         //Debe haber solo una ventana
-        if edAsm.Visible then edAsm.SetFocus;
+        if panRightPanel.Visible then panRightPanel.SetFocus;
       end;
-    end else if edAsm.Focused then begin
+    end else if panRightPanel.Focused then begin
       fraEditView1.SetFocus;
     end;
   end;
@@ -609,7 +589,7 @@ procedure TfrmPrincipal.fraMessagesDblClickMessage(fileSrc: string; row,
 begin
   fraEditView1.SelectOrLoad(fileSrc, row, col, false);
 end;
-procedure TfrmPrincipal.ChangeAppearance;
+procedure TfrmPrincipal.ConfigChanged;
 //Se han cambiado las opciones de configuración.
   procedure SetStateActionsProject(state: boolean);
   begin
@@ -659,11 +639,11 @@ begin
     self.Height := Config.winHeight;
     self.Width  := Config.winWidth;
   end;
-  //Visibilidad del explorador de código
-  fraLeftPanel.Visible := Config.ViewSynTree;
-  fraLeftPanel.Width   := Config.SynTreeWidth;
-  splSynTree.Visible := Config.ViewSynTree;
-  acViewSynTree.Checked := Config.ViewSynTree;
+  //Visibilidad del Panel izquierdo (explorador de archivo)
+  fraLeftPanel.Visible := Config.ViewPanLeft;
+  fraLeftPanel.Width   := Config.PanLeftWidth;
+  splLeft.Visible := Config.ViewPanLeft;
+  acViewPanLeft.Checked := Config.ViewPanLeft;
 
   //Visibilidad de La Barra de Estado
   StatusBar1.Visible := Config.ViewStatusbar;
@@ -678,11 +658,11 @@ begin
   Splitter2.Visible  := Config.ViewPanMsg;
   acViewMsgPan.Checked:= Config.ViewPanMsg;
 
-  //Visibilidad del Visor de Ensamblador
-  edAsm.Visible      := Config.ViewPanAssem;
-  splEdPas.Visible   := Config.ViewPanAssem;
-  acViewAsmPan.Checked:= Config.ViewPanAssem;
-  edAsm.Width   := Config.EditAsmWidth;
+  //Visibilidad del Panel derecho (Ensamblador)
+  panRightPanel.Visible:= Config.ViewPanRight;
+  splRight.Visible     := Config.ViewPanRight;
+  acViewPanRight.Checked := Config.ViewPanRight;
+  panRightPanel.Width  := Config.PanRightWidth;
 
   //Tamaño de la Barra de Herramientas
   case Config.StateToolbar of
@@ -735,11 +715,8 @@ begin
   //fraEditView1.Color :=  Config.PanelsCol;
   //Color de separadores
   Splitter2.Color := Config.SplitterCol;
-  splSynTree.Color := Config.SplitterCol;
-  splEdPas.Color := Config.SplitterCol;
-  //Configura editor ASM
-  Config.ConfigEditor(edAsm);
-//  LoadAsmSyntaxEd;
+  splLeft.Color := Config.SplitterCol;
+  splRight.Color := Config.SplitterCol;
   //Solicita configura los editores activos
   fraEditView1.UpdateSynEditConfig;
   fraEditView1.TabViewMode := Config.TabEdiMode;
@@ -750,6 +727,9 @@ begin
   acToolExt3.Visible := false;
   acToolExt4.Visible := false;
   acToolExt5.Visible := false;
+  //Notifica al adaptador actual por si lo necesita
+  currComp.NotifyConfigChanged( Config.MessPanBack,
+    Config.MessPanText, Config.MessPanErr, Config.MessPanSel, Config.fraCfgSynEdit);
   for i:=0 to config.fraCfgExtTool.ExternTools.Count-1 do begin
     cad := config.fraCfgExtTool.ExternTools[i];
     tool.ReadFromString(cad);  //lee campos
@@ -1004,13 +984,13 @@ procedure TfrmPrincipal.acViewMsgPanExecute(Sender: TObject);
 begin
   Config.ViewPanMsg:= not Config.ViewPanMsg;
 end;
-procedure TfrmPrincipal.acViewSynTreeExecute(Sender: TObject);
+procedure TfrmPrincipal.acViewPanLeftExecute(Sender: TObject);
 begin
-  Config.ViewSynTree := not Config.ViewSynTree;
+  Config.ViewPanLeft := not Config.ViewPanLeft;
 end;
-procedure TfrmPrincipal.acViewAsmPanExecute(Sender: TObject);
+procedure TfrmPrincipal.acViewPanRightExecute(Sender: TObject);
 begin
-  Config.ViewPanAssem := not Config.ViewPanAssem;
+  Config.ViewPanRight := not Config.ViewPanRight;
 end;
 //////////// Acciones de Herramientas ///////////////
 procedure TfrmPrincipal.acToolConfigExecute(Sender: TObject);
@@ -1023,7 +1003,7 @@ procedure TfrmPrincipal.UpdateIDE(CompName: string);
 begin
   {Solicita la actualización de los resaltadores de sintaxis (con completado) y la
   herramienta Codetools para todos los editores abiertos.}
-  currComp.UpdateCompletionForEditors;
+  fraEditView1.UpdateSynEditCompletion;
   //Actualiza barra de estado
   StatusBar1.Panels[2].Text := CompName;
   //Actualiza texto de lista desplegable de Barra de herramientas

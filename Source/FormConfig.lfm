@@ -1,7 +1,7 @@
 object Config: TConfig
-  Left = 292
+  Left = 294
   Height = 475
-  Top = 174
+  Top = 150
   Width = 714
   BorderStyle = bsDialog
   Caption = 'Configuración'
@@ -59,10 +59,10 @@ object Config: TConfig
     Height = 413
     Top = 0
     Width = 504
-    ActivePage = tabEnsamb
+    ActivePage = tabEditor
     Align = alClient
     ShowTabs = False
-    TabIndex = 6
+    TabIndex = 3
     TabOrder = 1
     object tabEnviron: TTabSheet
       Caption = 'Enviroment'
@@ -354,9 +354,9 @@ object Config: TConfig
       ClientHeight = 405
       ClientWidth = 496
       object grpTabEdiState: TRadioGroup
-        Left = 20
-        Height = 104
-        Top = 128
+        Left = 24
+        Height = 120
+        Top = 120
         Width = 236
         AutoFill = True
         Caption = 'Tab Editor State:'
@@ -367,81 +367,56 @@ object Config: TConfig
         ChildSizing.ShrinkVertical = crsScaleChilds
         ChildSizing.Layout = cclLeftToRightThenTopToBottom
         ChildSizing.ControlsPerLine = 1
-        ClientHeight = 79
+        ClientHeight = 95
         ClientWidth = 232
         Items.Strings = (
           'Show always'
           'Hide for one file'
           'Hide always'
         )
-        TabOrder = 4
-      end
-      object Label6: TLabel
-        Left = 20
-        Height = 20
-        Top = 30
-        Width = 36
-        Caption = 'Letra:'
-      end
-      object cmbFontName: TComboBox
-        Left = 90
-        Height = 28
-        Top = 22
-        Width = 125
-        ItemHeight = 20
         TabOrder = 0
-        Text = 'cmbFontName'
-      end
-      object Label7: TLabel
-        Left = 264
-        Height = 20
-        Top = 30
-        Width = 55
-        Caption = 'Tamaño:'
-      end
-      object spFontSize: TSpinEdit
-        Left = 371
-        Height = 28
-        Top = 20
-        Width = 62
-        TabOrder = 1
-      end
-      object chkViewVScroll: TCheckBox
-        Left = 20
-        Height = 24
-        Top = 80
-        Width = 169
-        Caption = 'Barra de desplaz &Vert.'
-        TabOrder = 2
-      end
-      object chkViewHScroll: TCheckBox
-        Left = 280
-        Height = 24
-        Top = 80
-        Width = 178
-        Caption = 'Barra de desplaz &Horiz.'
-        TabOrder = 3
       end
       object chkShowErrMsg: TCheckBox
-        Left = 284
+        Left = 24
         Height = 24
-        Top = 144
+        Top = 64
         Width = 164
         Caption = 'Show Error Messages'
-        TabOrder = 5
+        TabOrder = 1
       end
     end
     object tabEdiColor: TTabSheet
       Caption = 'Editor'
+      ClientHeight = 405
+      ClientWidth = 496
+      object scrlEdiColor: TScrollBox
+        Left = 0
+        Height = 405
+        Top = 0
+        Width = 496
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        TabOrder = 0
+      end
     end
     object tabEdiSyntax: TTabSheet
       Caption = 'Syntax'
     end
-    object tabEnsamb: TTabSheet
-      Caption = 'Assembler'
+    object tabAftEdit: TTabSheet
+      Caption = 'After Edit Action'
     end
     object tabCompiler: TTabSheet
       Caption = 'Compiler'
+    end
+    object tabEnsamb: TTabSheet
+      Caption = 'Assembler'
+    end
+    object tabExtraPan1: TTabSheet
+      Caption = 'tabExtraPan1'
+    end
+    object tabExtraPan2: TTabSheet
+      Caption = 'tabExtraPan2'
     end
     object tabExtTool: TTabSheet
       Caption = 'External Tool'

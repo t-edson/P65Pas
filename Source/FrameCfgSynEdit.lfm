@@ -1,83 +1,83 @@
 object fraCfgSynEdit: TfraCfgSynEdit
   Left = 0
-  Height = 404
+  Height = 426
   Top = 0
-  Width = 478
-  ClientHeight = 404
-  ClientWidth = 478
+  Width = 468
+  ClientHeight = 426
+  ClientWidth = 468
   DesignTimePPI = 120
   ParentFont = False
   TabOrder = 0
-  DesignLeft = 316
-  DesignTop = 362
+  DesignLeft = 453
+  DesignTop = 307
   object cbutLinAct: TColorButton
-    Left = 330
+    Left = 346
     Height = 31
-    Top = 110
+    Top = 168
     Width = 80
     BorderWidth = 2
     ButtonColorSize = 16
     ButtonColor = clBlack
   end
   object Label1: TLabel
-    Left = 280
+    Left = 258
     Height = 20
-    Top = 115
+    Top = 172
     Width = 39
     Caption = 'Color:'
   end
   object Label8: TLabel
-    Left = 10
+    Left = 12
     Height = 20
-    Top = 30
-    Width = 104
-    Caption = 'Color de fondo:'
+    Top = 98
+    Width = 74
+    Caption = 'Back Color:'
   end
   object cbutBackCol: TColorButton
-    Left = 130
+    Left = 132
     Height = 31
-    Top = 22
+    Top = 90
     Width = 80
     BorderWidth = 2
     ButtonColorSize = 16
     ButtonColor = clBlack
   end
   object Label9: TLabel
-    Left = 254
+    Left = 256
     Height = 20
-    Top = 30
-    Width = 77
-    Caption = 'Color texto:'
+    Top = 98
+    Width = 70
+    Caption = 'Font color:'
   end
   object cbutTextCol: TColorButton
-    Left = 344
+    Left = 346
     Height = 31
-    Top = 20
+    Top = 88
     Width = 80
     BorderWidth = 2
     ButtonColorSize = 16
     ButtonColor = clBlack
   end
   object GroupBox1: TGroupBox
-    Left = 10
-    Height = 111
-    Top = 280
-    Width = 452
+    Left = 8
+    Height = 95
+    Top = 328
+    Width = 438
     Caption = '   '
-    ClientHeight = 86
-    ClientWidth = 448
+    ClientHeight = 70
+    ClientWidth = 434
     TabOrder = 0
     object chkVerPanVer: TCheckBox
       Left = 20
       Height = 24
-      Top = -22
-      Width = 114
-      Caption = 'Panel Vertical'
+      Top = -21
+      Width = 65
+      Caption = 'Gutter'
       OnChange = chkVerPanVerChange
       TabOrder = 0
     end
     object cbutFonPan: TColorButton
-      Left = 330
+      Left = 344
       Height = 31
       Top = 0
       Width = 80
@@ -89,18 +89,18 @@ object fraCfgSynEdit: TfraCfgSynEdit
       Left = 210
       Height = 20
       Top = 10
-      Width = 85
-      Caption = 'Color Fondo:'
+      Width = 72
+      Caption = 'Back color:'
     end
     object Label3: TLabel
       Left = 210
       Height = 20
       Top = 45
-      Width = 98
-      Caption = 'Color de texto:'
+      Width = 68
+      Caption = 'Text color:'
     end
     object cbutTxtPan: TColorButton
-      Left = 330
+      Left = 344
       Height = 31
       Top = 35
       Width = 80
@@ -112,40 +112,40 @@ object fraCfgSynEdit: TfraCfgSynEdit
       Left = 5
       Height = 24
       Top = 10
-      Width = 138
-      Caption = 'Ver Núm.de línea'
+      Width = 143
+      Caption = 'Show line number'
       TabOrder = 1
     end
     object chkVerMarPle: TCheckBox
       Left = 5
       Height = 24
       Top = 40
-      Width = 163
-      Caption = 'Ver Marc.de plegado'
+      Width = 155
+      Caption = 'Show folding marks'
       TabOrder = 2
     end
   end
   object chkAutoindent: TCheckBox
-    Left = 10
+    Left = 11
     Height = 24
-    Top = 70
+    Top = 134
     Width = 98
     Caption = 'Autoindent'
     TabOrder = 1
   end
   object GroupBox2: TGroupBox
-    Left = 10
+    Left = 11
     Height = 111
-    Top = 150
-    Width = 452
+    Top = 210
+    Width = 436
     Caption = '              '
     ClientHeight = 86
-    ClientWidth = 448
+    ClientWidth = 432
     TabOrder = 2
     object chkHighCurWord: TCheckBox
       Left = 20
       Height = 24
-      Top = -22
+      Top = -21
       Width = 174
       Caption = 'Highlight current word'
       OnChange = chkHighCurWordChange
@@ -175,7 +175,7 @@ object fraCfgSynEdit: TfraCfgSynEdit
       Caption = 'Text color:'
     end
     object cbutResPalCTxt: TColorButton
-      Left = 350
+      Left = 344
       Height = 31
       Top = 10
       Width = 80
@@ -186,14 +186,14 @@ object fraCfgSynEdit: TfraCfgSynEdit
     object Label12: TLabel
       Left = 8
       Height = 20
-      Top = 55
+      Top = 53
       Width = 82
       Caption = 'Frame color:'
     end
     object cbutResPalCBor: TColorButton
       Left = 128
       Height = 31
-      Top = 50
+      Top = 48
       Width = 80
       BorderWidth = 2
       ButtonColorSize = 16
@@ -202,19 +202,65 @@ object fraCfgSynEdit: TfraCfgSynEdit
     object chkFullWord: TCheckBox
       Left = 230
       Height = 24
-      Top = 50
+      Top = 48
       Width = 88
       Caption = 'Full Word'
       TabOrder = 1
     end
   end
   object chkHighCurLin: TCheckBox
-    Left = 10
+    Left = 12
     Height = 24
-    Top = 110
-    Width = 150
-    Caption = 'Marcar línea actual'
+    Top = 168
+    Width = 164
+    Caption = 'Highlight current line'
     OnChange = chkHighCurLinChange
     TabOrder = 3
+  end
+  object Label6: TLabel
+    Left = 11
+    Height = 20
+    Top = 18
+    Width = 36
+    Caption = 'Letra:'
+  end
+  object cmbFontName: TComboBox
+    Left = 81
+    Height = 28
+    Top = 10
+    Width = 125
+    ItemHeight = 20
+    TabOrder = 4
+    Text = 'cmbFontName'
+  end
+  object Label7: TLabel
+    Left = 255
+    Height = 20
+    Top = 18
+    Width = 55
+    Caption = 'Tamaño:'
+  end
+  object spFontSize: TSpinEdit
+    Left = 362
+    Height = 28
+    Top = 8
+    Width = 62
+    TabOrder = 5
+  end
+  object chkViewVScroll: TCheckBox
+    Left = 12
+    Height = 24
+    Top = 48
+    Width = 169
+    Caption = 'Barra de desplaz &Vert.'
+    TabOrder = 6
+  end
+  object chkViewHScroll: TCheckBox
+    Left = 255
+    Height = 24
+    Top = 48
+    Width = 178
+    Caption = 'Barra de desplaz &Horiz.'
+    TabOrder = 7
   end
 end

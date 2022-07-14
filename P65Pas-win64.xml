@@ -8,9 +8,10 @@
   <winState Val="2"/>
   <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.lst
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
 "/>
   <SplitterCol Val="2368548"/>
   <MessPanPan Val="2368548"/>
@@ -20,7 +21,7 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.p
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="224"/>
-  <EditAsmWidth Val="596"/>
+  <EditAsmWidth Val="787"/>
   <ViewPanAssem Val="True"/>
   <MessPanBack Val="2368548"/>
   <MessPanText Val="16777215"/>
@@ -29,15 +30,15 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.p
   <CodExplBack Val="2434341"/>
   <CodExplText Val="12632256"/>
   <grpFiltypes Val="0"/>
+  <TabEdiState Val="0"/>
+  <ShowErMsg Val="False"/>
+  <AftChg6502>
+    <actAfterChg Val="1"/>
+  </AftChg6502>
   <TamLet Val="10"/>
   <TipLet Val="Courier New"/>
   <VerBarDesV Val="True"/>
   <VerBarDesH Val="False"/>
-  <TabEdiState Val="0"/>
-  <ShowErMsg Val="False"/>
-  <AftChg6502>
-    <actAfterChg Val="3"/>
-  </AftChg6502>
   <Edit>
     <cTxtNor Val="16777215"/>
     <cFonEdi Val="2368548"/>
@@ -54,9 +55,9 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.p
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\Test5_Banks.pas
 "/>

@@ -86,7 +86,6 @@ end;
 //begin
 //  TAdapter6502(adapter).TestUnit;
 //end;
-
 procedure TfrmAdapter6502.AddActions(imgList16, imglist32: TImageList;
                            actList: TActionList; actionCat: string);
 {Copia todas las acciones de "self.ActionList" a "actList". Como las acciones a copiar
@@ -126,7 +125,7 @@ begin
       actSrc := TAction(ActionList.Actions[i]);   //Asumimos que ActionList.Actions[i] es TAction
       newAct := AddActionTo(actList, actSrc, actionCat);
       //Guardamos la acción creada.
-      actionsAdded.Add(newAct);
+      {%H-}actionsAdded.Add(newAct);
   end;
 end;
 procedure AddButtons(ToolBar: TToolBar; const ButtonCaptions: array of String);
@@ -161,10 +160,8 @@ procedure TfrmAdapter6502.setMenusAndToolbar(menu1, menu2: TMenuItem; toolbar: T
     but.Left := toolbar.Width;  //Pone a la derecha
   end;
 var
-  menCompiler: TMenuItem;
   actAdded: TAction;
   i: Integer;
-  but: TToolButton;
 begin
   //Configuramos el menu1.
   menu1.Clear;
@@ -180,10 +177,10 @@ begin
 
   //Configuramos Toolbar
   for i:=toolBar.ButtonCount-1 downto 0 do toolBar.Buttons[i].Free;  //Borramos botones
-  AddButtonTB(actionsAdded[0]);  //Agrega botón acToolCmpil
-  AddButtonTB(actionsAdded[1]);  //Agrega botón acToolComEjec
-  AddButtonTB(actionsAdded[4]);  //Agrega botón acToolASMDebug
-  AddButtonTB(actionsAdded[3]);  //Agrega botón acToolRamExp
+  AddButtonTB(actionsAdded[0]{%H-});  //Agrega botón acToolCmpil
+  AddButtonTB(actionsAdded[1]{%H-});  //Agrega botón acToolComEjec
+  AddButtonTB(actionsAdded[4]{%H-});  //Agrega botón acToolASMDebug
+  AddButtonTB(actionsAdded[3]{%H-});  //Agrega botón acToolRamExp
 end;
 
 //Inicialización

@@ -8,8 +8,9 @@ unit FrameCfgSynEdit;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, Forms, StdCtrls, Dialogs, SynEdit, Graphics, Globales,
-  MiConfigXML, MiConfigBasic, SynEditMarkupHighAll, SynEditMarkup, SynEditTypes;
+  Classes, SysUtils, Forms, StdCtrls, Dialogs, SynEdit, Graphics, Spin,
+  Globales, MiConfigXML, MiConfigBasic, SynEditMarkupHighAll, SynEditMarkup,
+  SynEditTypes;
 type
 
   { TfraCfgSynEdit }
@@ -29,6 +30,9 @@ type
     chkVerMarPle: TCheckBox;
     cbutBackCol: TColorButton;
     cbutTextCol: TColorButton;
+    chkViewHScroll: TCheckBox;
+    chkViewVScroll: TCheckBox;
+    cmbFontName: TComboBox;
     GroupBox1: TGroupBox;
     GroupBox2: TGroupBox;
     Label1: TLabel;
@@ -37,12 +41,20 @@ type
     Label12: TLabel;
     Label2: TLabel;
     Label3: TLabel;
+    Label6: TLabel;
+    Label7: TLabel;
     Label8: TLabel;
     Label9: TLabel;
+    spFontSize: TSpinEdit;
     procedure chkHighCurLinChange(Sender: TObject);
     procedure chkHighCurWordChange(Sender: TObject);
     procedure chkVerPanVerChange(Sender: TObject);
   public
+    TipLet     : string;   //Tipo de letra
+    TamLet     : integer;  //Tamaño de letra
+    VerBarDesV : boolean;  //Ver barras de desplazamiento
+    VerBarDesH : boolean;  //Ver barras de desplazamiento
+
     //configuración del editor
     MarLinAct  : boolean;   //marcar línea actual
     Autoindent : boolean;   //Autotabulación
@@ -57,12 +69,13 @@ type
     cFonSel    : TColor;    //color del fondo de la selección
     cTxtSel    : TColor;    //color del texto de la selección
     cLinAct    : TColor;    //color de la línea actual
-    //panel vertical
-    VerPanVer  : boolean;    //ver pánel vertical
-    VerNumLin  : boolean;    //ver número de línea
-    VerMarPle  : boolean;    //ver marcas de plegado
-    cFonPan     : TColor;    //color de fondo del panel vertical
-    cTxtPan     : TColor;    //color de texto del panel vertical
+
+    //Panel vertical (Gutter)
+    VerPanVer  : boolean;    //Ver pánel vertical
+    VerNumLin  : boolean;    //Ver número de línea
+    VerMarPle  : boolean;    //Ver marcas de plegado
+    cFonPan     : TColor;    //Color de fondo del panel vertical
+    cTxtPan     : TColor;    //Color de texto del panel vertical
     ArcRecientes: TStringList;  //Lista de archivos recientes
 
     procedure PropToWindow;
@@ -90,35 +103,48 @@ procedure TfraCfgSynEdit.Iniciar(section: string; cfgFile: TMiConfigXML);
 var
   s: TParElem;
 begin
-  //Asigna referencia necesarias
-  //crea las relaciones variable-control
+  //Crea las relaciones variable-control
+  s:=cfgFile.Asoc_Int('TamLet', @TamLet, spFontSize, 10);
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
+  cmbFontName.Items.Clear;
+  cmbFontName.Items.Add('Courier New');
+  cmbFontName.Items.Add('DejaVu Sans Mono');
+  cmbFontName.Items.Add('Fixedsys');
+  cmbFontName.Items.Add('Lucida Console');
+  cmbFontName.Items.Add('Consolas');
+  cmbFontName.Items.Add('Cambria');
+  s:=cfgFile.Asoc_Str('TipLet', @TipLet, cmbFontName, 'Courier New');
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_Bol('VerBarDesV' , @VerBarDesV, chkViewVScroll, true);
+  s:=cfgFile.Asoc_Bol('VerBarDesH' , @VerBarDesH, chkViewHScroll, false);
+
   s:=cfgFile.Asoc_TCol(section+ '/cTxtNor', @cTxtNor, cbutTextCol, clBlack);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
   s:=cfgFile.Asoc_TCol(section+ '/cFonEdi', @cFonEdi, cbutBackCol,  clWhite);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
   s:=cfgFile.Asoc_TCol(section+ '/cLinAct', @cLinAct, cbutLinAct, clYellow);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
 
   s:=cfgFile.Asoc_Bol(section+ '/Autoindent', @Autoindent, chkAutoindent, true);
   s:=cfgFile.Asoc_Bol(section+ '/MarLinAct' , @MarLinAct , chkHighCurLin , false);
 
   s:=cfgFile.Asoc_Bol(section+ '/ResPalCur' , @ResPalAct , chkHighCurWord , true);
-  s.categ := 1;
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
   s:=cfgFile.Asoc_TCol(section+ '/ResPalCFon',@ResPalCFon, cbutResPalCFon, clSkyBlue);
-  s.categ := 1;
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
   s:=cfgFile.Asoc_TCol(section+ '/ResPalCTxt',@ResPalCTxt, cbutResPalCTxt, clBlack);
-  s.categ := 1;
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
   s:=cfgFile.Asoc_TCol(section+ '/ResPalCBor',@ResPalCBor, cbutResPalCBor, clSkyBlue);
-  s.categ := 1;
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
   s:=cfgFile.Asoc_Bol(section+ '/ResPalFWord',@ResPalFWord, chkFullWord, false);
 
   s:=cfgFile.Asoc_Bol(section+ '/VerPanVer', @VerPanVer, chkVerPanVer, true);
   s:=cfgFile.Asoc_Bol(section+ '/VerNumLin', @VerNumLin, chkVerNumLin, false);
   s:=cfgFile.Asoc_Bol(section+ '/VerMarPle', @VerMarPle, chkVerMarPle, true);
   s:=cfgFile.Asoc_TCol(section+ '/cFonPan'  , @cFonPan  , cbutFonPan  , clWhite);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
   s:=cfgFile.Asoc_TCol(section+ '/cTxtPan'  , @cTxtPan  , cbutTxtPan  , clBlack);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s.categ := 1;   //Marca como propiedad de tipo "Tema"
 
   cfgFile.Asoc_StrList(section+ '/recient', @ArcRecientes);
 end;
@@ -158,19 +184,34 @@ begin
   inherited Destroy;
 end;
 procedure TfraCfgSynEdit.ConfigEditor(ed: TSynEdit);
-{Configura el editor con las propiedades almacenadas}
+{Configura el editor con las propiedades almacenadas en este frame de configuración}
 var
   marc: TSynEditMarkup;
 begin
    if ed = nil then exit;  //protección
+   //////////// Configura apariencia
+   if TipLet <> '' then ed.Font.Name:=TipLet;   //Tipo de fuente
+   if (TamLet > 6) and (TamLet < 32) then ed.Font.Size:=Round(TamLet);
+   //Barras de desplazamiento
+   if VerBarDesV and VerBarDesH then  //barras de desplazamiento
+     ed.ScrollBars:= ssBoth
+   else if VerBarDesV and not VerBarDesH then
+     ed.ScrollBars:= ssVertical
+   else if not VerBarDesV and VerBarDesH then
+     ed.ScrollBars:= ssHorizontal
+   else
+     ed.ScrollBars := ssNone;
 
-   ed.Font.Color:=cTxtNor;      //color de texto normal
-   ed.Color:=cFonEdi;           //color de fondo
-   if MarLinAct then          //resaltado de línea actual
+   ///////// Configura colores principales.
+   //Los colores de sintaxis se configuran aparte.
+   ed.Font.Color:=cTxtNor;    //Color de texto normal
+   ed.Color:=cFonEdi;         //Color de fondo
+   if MarLinAct then          //Cesaltado de línea actual
      ed.LineHighlightColor.Background:=cLinAct
    else
      ed.LineHighlightColor.Background:=clNone;
-   //configura panel vertical
+
+   ///////// Configura panel vertical
    ed.Gutter.Visible:=VerPanVer;  //muestra panel vertical
    ed.Gutter.Parts[1].Visible:=VerNumLin;  //Número de línea
    if ed.Gutter.Parts.Count>4 then
@@ -179,7 +220,7 @@ begin
    ed.Gutter.Parts[1].MarkupInfo.Background:=cFonPan; //fondo del núemro de línea
    ed.Gutter.Parts[1].MarkupInfo.Foreground:=cTxtPan; //texto del núemro de línea
 
-   ////////Configura el resaltado de la palabra actual //////////
+   ///////// Configura el resaltado de la palabra actual //////////
    marc := ed.MarkupByClass[TSynEditMarkupHighlightAllCaret];
    if marc<>nil then begin  //hay marcador
       marc.Enabled:=ResPalAct;  //configura
@@ -188,7 +229,7 @@ begin
       marc.MarkupInfo.Foreground := ResPalCTxt;
       TSynEditMarkupHighlightAllCaret(marc).FullWord := ResPalFWord;
    end;
-   ///////fija color de delimitadores () {} [] ///////////
+   /////// Fija color de delimitadores () {} [] ///////////
    ed.BracketMatchColor.Foreground := clRed;
    //Opciones
    if Autoindent then begin

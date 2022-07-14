@@ -4,8 +4,8 @@ unit adapterBase;
 {$mode ObjFPC}{$H+}
 interface
 uses
-  Classes, SysUtils, types, FrameEditView, Menus, ExtCtrls, Controls, Graphics,
-  ComCtrls ;
+  Classes, SysUtils, types, FrameEditView, FrameCfgSynEdit, Menus, ExtCtrls,
+  Controls, Graphics, ComCtrls ;
 
 type
   {Adaptador para controlar a diversos compiladores}
@@ -33,7 +33,9 @@ type
   public      //Ejecución
     procedure Compile; virtual; abstract;
     procedure CheckSyntax; virtual; abstract;
-    procedure UpdateCompletionForEditors; virtual; abstract;
+    procedure NotifyConfigChanged(MessPanBack, MessPanText, MessPanErr,
+      MessPanSel: TColor; mainEditorCfg: TfraCfgSynEdit); virtual; abstract;
+//    procedure UpdateCompletionForEditors; virtual; abstract;
 //    procedure DumpCode(lins: TSTrings); virtual; abstract;
   public      //Inicialización
     procedure setMenusAndToolbar(menu1, menu2: TMenuItem; toolbar: TToolBar); virtual; abstract;
@@ -50,7 +52,7 @@ type
                     imgLst16trg, imgLst32trg: TImageList): integer;      //Destino
   procedure CopyIconsTo(imgLst16src, imgLst32src: TImageList;
                         imgList16, imgList32: TImageList;
-                        var transImgIndexes: TIntegerDynArray);
+                        out transImgIndexes: TIntegerDynArray);
 
 implementation
 var  //variables para el lleado de acciones de facturables
@@ -143,7 +145,7 @@ begin
 end;
 procedure CopyIconsTo(imgLst16src, imgLst32src: TImageList;
                       imgList16, imgList32: TImageList;
-                      var transImgIndexes: TIntegerDynArray);
+                      out transImgIndexes: TIntegerDynArray);
 {Rutina para copiar los íconos de 16 y 32 bits de imgLst16src e imgLst32src a dos ImageList.
 El parámetro "transImgIndexes" devuelve la traducción del índice de cada ícono en el
 nuevo TImageList. Por ejemplo si el ícono ocupaba la posición 1 en nuestro imgLst16src,

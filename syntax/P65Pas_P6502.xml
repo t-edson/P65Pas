@@ -2,7 +2,7 @@
 <Language name="P65Pas Pascal" ext="pas">
   <!-- Atributos a usar. No cambiar formato porque se modifica automáticamente-->
   <Attribute Name="Keyword"   ForeCol="#00A4F2" Bold="True"  Italic="False" Underline="False"/>
-  <Attribute Name="Comment"   ForeCol="#8D8D8D" Bold="False" Italic="False" Underline="False"/>
+  <Attribute Name="Comment"   ForeCol="#008000" Bold="False" Italic="False" Underline="False"/>
   <Attribute Name="Number"    ForeCol="#FF00FF" Bold="False" Italic="False" Underline="False"/>
   <Attribute Name="String"    ForeCol="#00FF00" Bold="False" Italic="False" Underline="False"/>
   <Attribute Name="Boolean"   ForeCol="#FFFF00" Bold="False" Italic="False" Underline="False"/>

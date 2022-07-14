@@ -2,14 +2,6 @@ P65PAS 0.9.3
 =============
 COMENTARIOS
 
-	PROC. PARA CREAR SOPORTE A NUEVO COMPILADOR
-	- Agregar una acción nueva al ActionList, con el nombre del nuevo compilador.
-	- Se requiere crear un adaptador nuevo para el compilador en la IDE. El adapatador se 
-	crea en una nueva carpeta con el nombre adaptar<NombreCompilador>. El archivo principal
-	es adapter<Nombre_compilador>. Allí se debe crear la clase TAdapter<Nombre_compilador>
-	como descendiente de TAdapter y se deben implementar todos los métodos abstractos.
-	- Agregar las referencias al nuevo adaptador en el formulario FormPrincpal.
-	- Agregar los nuevos frames de configuración en FormConfig.
 
 CAMBIOS
 - Se modifica CompContext en las instrucciones de generación de mensajes de Información y los 
@@ -30,6 +22,9 @@ del adaptador.
 tenía PicPas.
 - Se agrega, a las configuraciones, una propiedad más para fijar el color del texto de los
 páneles.
+- Se modifica la interfaz para usar un Panel a la derecha en lugar de solo el editor de ASM.
+- Se modifica formulario de configruación para separar las aciones "AFter Edit" en una página
+separada del editor.
 
 TAREAS PLANIFICADAS
 - Verificar aplicación de Temas en nueva disposición de la IDE.

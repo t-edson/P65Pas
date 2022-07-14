@@ -197,7 +197,6 @@ public    //Abstract methods
   procedure DumpCode(lins: TSTrings; asmMode, IncVarDec, ExcUnused: boolean;
                      incAdrr, incCom, incVarNam: boolean); virtual; abstract;
   procedure GenerateListReport(lins: TStrings); virtual; abstract;
-  function GetCompilerLevels: string; virtual; abstract;
 public    //Callers methods
   function AddCallerToFrom(toElem: TxpElement; callerElem: TxpElement): TxpEleCaller;
   function AddCallerToFromCurr(toElem: TxpElement): TxpEleCaller;
