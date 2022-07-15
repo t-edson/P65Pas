@@ -43,14 +43,6 @@ uses
   Classes, {$IFDEF MSWINDOWS} Windows, {$ENDIF} SysUtils, FileUtil, Forms, Controls, StdCtrls, ComCtrls,
   LCLType, Menus, Masks, LazUTF8, Dialogs, Graphics, Globales, strutils,
   MisUtils;
-var
-  NEW_FILE_NAME: string;
-  FOLDER_NAME  : string;
-  TXT_EMPTY    : string;
-  TXT_FOLD     : string;
-  TXT_UNFOLD   : string;
-  TXT_NOTDELFOL: string;
-  TXT_DELFILE  : string;
 
 type
   TNodeType = (ntyDrive, ntyFile, ntyFolder);
@@ -69,9 +61,9 @@ type
   TEvArcExp_Abrir= procedure(arc0: string) of object;
   TevClickOnFile = procedure(nod: TExplorNode) of object;
 
-  { TfrmArcExplor }
+  { TfraArcExplor }
 
-  TfrmArcExplor = class(TFrame)
+  TfraArcExplor = class(TFrame)
   published
     Filter: TComboBox;
     ImageList2: TImageList;
@@ -159,19 +151,19 @@ type
     function SelectedFile: TExplorNode;
     procedure LocateFileOnTree(arch8: string);
     constructor Create(AOwner: TComponent) ; override;
-    procedure SetLanguage;
   end;
 
 implementation
 {$R *.lfm}
-procedure TfrmArcExplor.SetLanguage;
-//Rutina de traducción
-begin
-  {$I ..\_language\tra_FrameArcExplor.pas}
-  //Inicia propiedades
-  NewFileName := NEW_FILE_NAME;
-  NewFolderName := FOLDER_NAME;
-end;
+resourcestring
+  NEW_FILE_NAME   = 'newfile.pas';
+  FOLDER_NAME     = 'folder';
+  TXT_EMPTY       = '<empty>';
+  TXT_FOLD        = 'C&ollapse';
+  TXT_UNFOLD      = 'E&xpand';
+  TXT_NOTDELFOL   = 'Cannot delete folders';
+  TXT_DELFILE     = 'Delete file "%s"?';
+
 procedure TrozaRuta(rut: string; lrut: TStringList); //devuelve una ruta trozada
 begin
   if rut = '' then exit;  //no hay ruta
@@ -201,9 +193,9 @@ begin
   Result := NodType = ntyFolder;
 end;
 
-{ TfrmArcExplor }
+{ TfraArcExplor }
 //funciones básicas
-function TfrmArcExplor.SelectedNode: TExplorNode;
+function TfraArcExplor.SelectedNode: TExplorNode;
 //Lee el nodo seleccionado actualmente. Si no hay ninguno seleccionado, devuelve NIL.
 var
   nod: TTreeNode;
@@ -212,7 +204,7 @@ begin
   if nod = nil then exit(nil);     //verifica
   Result := TExplorNode(nod);
 end;
-function TfrmArcExplor.SelectedFile: TExplorNode;
+function TfraArcExplor.SelectedFile: TExplorNode;
 //Lee el nodo seleccionado. Si no hay ninguno seleccionado o no es archivo, devuelve NIL.
 var
   nod: TExplorNode;
@@ -222,7 +214,7 @@ begin
   if not nod.IsFile then exit(nil);     //verifica
   Result := TExplorNode(nod);
 end;
-function TfrmArcExplor.NodRuta(rut: string): TExplorNode;
+function TfraArcExplor.NodRuta(rut: string): TExplorNode;
 //Devuelve el nodo a partir de la ruta completa
 var
   nod   : TTreeNode;
@@ -255,12 +247,12 @@ begin
     cadNodos.Free;
   end;
 end;
-procedure TfrmArcExplor.SetTextColor(AValue: TColor);
+procedure TfraArcExplor.SetTextColor(AValue: TColor);
 begin
   FTextColor := AValue;
   Invalidate;
 end;
-procedure TfrmArcExplor.TreeView1AdvancedCustomDrawItem(
+procedure TfraArcExplor.TreeView1AdvancedCustomDrawItem(
   Sender: TCustomTreeView; Node: TTreeNode; State: TCustomDrawState;
   Stage: TCustomDrawStage; var PaintImages, DefaultDraw: Boolean);
 begin
@@ -274,14 +266,14 @@ begin
      DefaultDraw := true;   //Para que siga ejecutando la rutina de dibujo
   end;
 end;
-procedure TfrmArcExplor.LeeFilt(lfil: TStringList);
+procedure TfraArcExplor.LeeFilt(lfil: TStringList);
 //Devuelve los filtros para nombres de archivos
 begin
   lfil.Delimiter:=',';  //intrepreta como delimitador
   lfil.StrictDelimiter:=true;
   lfil.DelimitedText:=Filter.Text;
 end;
-procedure TfrmArcExplor.ExpandirNodArc(Node: TTreeNode; expan: Boolean);
+procedure TfraArcExplor.ExpandirNodArc(Node: TTreeNode; expan: Boolean);
 //Lee el contenido de un nodo y permite expandirlo. Usa el filtro actual.
 var
   filtros : TStringList;
@@ -291,7 +283,7 @@ begin
    LeerDirectorio(Node, filtros, expan);
    filtros.Free;
 end;
-procedure TfrmArcExplor.TreeView1Expanding(Sender: TObject; Node: TTreeNode;
+procedure TfraArcExplor.TreeView1Expanding(Sender: TObject; Node: TTreeNode;
   var AllowExpansion: Boolean);
 begin
   //solo actualiza si no se ha expandido antes
@@ -299,7 +291,7 @@ begin
     ExpandirNodArc(TExplorNode(Node), false);
 //  end;
 end;
-procedure TfrmArcExplor.LeerDirectorio(Item0: TTreeNode; filtro: TStringList;
+procedure TfraArcExplor.LeerDirectorio(Item0: TTreeNode; filtro: TStringList;
                                        expandir: boolean = false);
 {Lee el contenido de un directorio, y lo agrega al nodo indicado. Aplica los filtros
  indicados en "filtros" para el nombre de los archivos, no de carpetas}
@@ -391,7 +383,7 @@ begin
     TreeView1.Items.EndUpdate;
   end;
 end;
-procedure TfrmArcExplor.ActualPanelArc;
+procedure TfraArcExplor.ActualPanelArc;
 {Actualiza el contenido del panel de archivos, refrescando todos los nodos visibles y
  expandidos}
 var
@@ -420,12 +412,12 @@ begin
   nodExpan.Free;
   filtros.Free;
 end;
-procedure TfrmArcExplor.FilterChange(Sender: TObject);  //Evento del combo
+procedure TfraArcExplor.FilterChange(Sender: TObject);  //Evento del combo
 begin
   ActualPanelArc;  //actualiza
 end;
 //Eventos de TreeView1
-procedure TfrmArcExplor.TreeView1MouseUp(Sender: TObject; Button: TMouseButton;
+procedure TfraArcExplor.TreeView1MouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 var
   nodEx: TExplorNode;
@@ -447,12 +439,12 @@ begin
     end;
   end;
 end;
-procedure TfrmArcExplor.TreeView1CreateNodeClass(Sender: TCustomTreeView;
+procedure TfraArcExplor.TreeView1CreateNodeClass(Sender: TCustomTreeView;
   var NodeClass: TTreeNodeClass);
 begin
   NodeClass := TExplorNode;  //define neustra clase de nodo
 end;
-procedure TfrmArcExplor.TreeView1DblClick(Sender: TObject); //Abre el archivo solicitado
+procedure TfraArcExplor.TreeView1DblClick(Sender: TObject); //Abre el archivo solicitado
 var
   nodEx: TExplorNode;
 begin
@@ -460,7 +452,7 @@ begin
   if nodEx = nil then exit;     //verifica
   if OnDoubleClickFile<>nil then OnDoubleClickFile(nodEx); //dispara evento
 end;
-procedure TfrmArcExplor.TreeView1EditingEnd(Sender: TObject; Node: TTreeNode; Cancel: Boolean);
+procedure TfraArcExplor.TreeView1EditingEnd(Sender: TObject; Node: TTreeNode; Cancel: Boolean);
 //Termina la edición del nombre de un nodo
 var
   NuevoNom: String;
@@ -479,7 +471,7 @@ begin
   nodEx := nodRuta(NuevoNom);  //toma a partir de su ruta, porque al refrescar se pierde la ref.
   if nodEx <> nil then NodEx.Selected:=true;
 end;
-procedure TfrmArcExplor.TreeView1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TfraArcExplor.TreeView1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 var
   nodEx: TExplorNode;
   a: TPoint;
@@ -516,7 +508,7 @@ begin
     if nodEx.IsFolder then PopupFolder.PopUp(a.x, a.y);
   end;
 end;
-procedure TfrmArcExplor.LocateFileOnTree(arch8: string);
+procedure TfraArcExplor.LocateFileOnTree(arch8: string);
 //Configura el árbol de archivos para ubicar la ruta del archivo indicado.
 //El parámetro "arch8", debe estar en UTF-8
 var nod: TTreeNode;
@@ -556,12 +548,12 @@ begin
   end;
   cadNodos.Destroy;
 end;
-function TfrmArcExplor.AddNodeTo(ParentNode: TTreeNode; const S: string): TExplorNode;
+function TfraArcExplor.AddNodeTo(ParentNode: TTreeNode; const S: string): TExplorNode;
 //Agrega un nodo al TreeView del frame. Devuelve una referencia de tipo 'TExplorNode'
 begin
   Result := TExplorNode(TreeView1.Items.AddChild(ParentNode, S));
 end;
-constructor TfrmArcExplor.Create(AOwner: TComponent);
+constructor TfraArcExplor.Create(AOwner: TComponent);
 var
 //  Nodo: TTreeNode;
   Drive: Char;
@@ -615,16 +607,19 @@ begin
   TreeView1.Options := TreeView1.Options - [tvoThemedDraw];
   InternalPopupFolder := false;  //desactiva el menú interno
   InternalPopupFile := false;  //desactiva el menú interno
+  //Inicia propiedades
+  NewFileName := NEW_FILE_NAME;
+  NewFolderName := FOLDER_NAME;
 end;
 //////////////////////////// Acciones /////////////////////////////////
-procedure TfrmArcExplor.PopupFolderPopup(Sender: TObject);
+procedure TfraArcExplor.PopupFolderPopup(Sender: TObject);
 begin
   curNod := SelectedNode;
   if curNod = nil then exit;
   if curNod.Expanded then mnFolExpandCol.Caption:= TXT_FOLD
   else mnFolExpandCol.Caption:= TXT_UNFOLD;
 end;
-procedure TfrmArcExplor.mnFolExpandColClick(Sender: TObject);
+procedure TfraArcExplor.mnFolExpandColClick(Sender: TObject);
 begin
   curNod := SelectedNode;
   if curNod = nil then exit;
@@ -632,7 +627,7 @@ begin
   if curNod.Expanded then mnFolExpandCol.Caption:= TXT_FOLD
   else mnFolExpandCol.Caption:= TXT_UNFOLD;
 end;
-procedure TfrmArcExplor.mnFolOpenInExplorClick(Sender: TObject);
+procedure TfraArcExplor.mnFolOpenInExplorClick(Sender: TObject);
 var
   tmp: String;
 begin
@@ -643,7 +638,7 @@ begin
 //  tmp := UTF8ToSys(curNod.Path);
   Exec('explorer', '"' + tmp + '"');
 end;
-procedure TfrmArcExplor.mnFolNewFileClick(Sender: TObject);
+procedure TfraArcExplor.mnFolNewFileClick(Sender: TObject);
 var
   archivo: string;
 begin
@@ -660,7 +655,7 @@ begin
   end;
   if curNod.Expanded then ExpandirNodArc(curNod, true);   //refresca
 end;
-procedure TfrmArcExplor.mnFolNewFolderClick(Sender: TObject);
+procedure TfraArcExplor.mnFolNewFolderClick(Sender: TObject);
 var
   carpeta: string;
 begin
@@ -677,20 +672,20 @@ begin
   end;
   if curNod.Expanded then ExpandirNodArc(curNod, true);   //refresca
 end;
-procedure TfrmArcExplor.mnFolChanNameClick(Sender: TObject);
+procedure TfraArcExplor.mnFolChanNameClick(Sender: TObject);
 begin
   curNod := SelectedNode;
   if curNod = nil then exit;
   curNod.EditText;           //inicia edición
   NombNodEdi := curNod.Path; //Guarda nombre de nodo editado
 end;
-procedure TfrmArcExplor.mnFolDeleteClick(Sender: TObject);
+procedure TfraArcExplor.mnFolDeleteClick(Sender: TObject);
 begin
   curNod := SelectedNode;
   if curNod = nil then exit;
   MsgExc(TXT_NOTDELFOL);
 end;
-procedure TfrmArcExplor.mnFolRefreshClick(Sender: TObject);
+procedure TfraArcExplor.mnFolRefreshClick(Sender: TObject);
 begin
   curNod := SelectedNode;
   if curNod = nil then exit;
@@ -698,13 +693,13 @@ begin
     ExpandirNodArc(curNod, true);   //mantiene expansión
 end;
 // File actions
-procedure TfrmArcExplor.mnFilOpenClick(Sender: TObject);
+procedure TfraArcExplor.mnFilOpenClick(Sender: TObject);
 begin
   curNod := SelectedNode;
   if curNod = nil then exit;
   if OnMenuOpenFile<>nil then OnMenuOpenFile(curNod);
 end;
-procedure TfrmArcExplor.mnFilCreCopFromClick(Sender: TObject);
+procedure TfraArcExplor.mnFilCreCopFromClick(Sender: TObject);
 var
   newFile, archivo: String;
 begin
@@ -721,11 +716,11 @@ begin
   end;
   if curNod.Parent.Expanded then ExpandirNodArc(curNod.parent, true);   //refresca
 end;
-procedure TfrmArcExplor.mnFilChanNameClick(Sender: TObject);
+procedure TfraArcExplor.mnFilChanNameClick(Sender: TObject);
 begin
   mnFolChanNameClick(Sender);  //funciona comoa archivo
 end;
-procedure TfrmArcExplor.mnFilDeleteClick(Sender: TObject);
+procedure TfraArcExplor.mnFilDeleteClick(Sender: TObject);
 var
   archivo: String;
 begin
@@ -743,7 +738,7 @@ begin
   end;
   if curNod.Parent.Expanded then ExpandirNodArc(curNod.parent, true);   //refresca
 end;
-procedure TfrmArcExplor.mnFilRefrescarClick(Sender: TObject);
+procedure TfraArcExplor.mnFilRefrescarClick(Sender: TObject);
 begin
 
 end;

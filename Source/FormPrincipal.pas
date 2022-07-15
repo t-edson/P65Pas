@@ -206,12 +206,12 @@ type
     procedure ConfigExtTool_RequirePar(var comLine: string);
     procedure fraEdit_RequireSetCompletion(ed: TSynEditor);
     procedure fraMessagesStatisDBlClick;
-    procedure fraSynTreeSelecFileExplorer;
+    procedure fraLeftPanel_selecFileExplorer;
     procedure fraEdit_RequireSynEditConfig(ed: TsynEdit);
     procedure ConfigChanged;
     procedure fraEdit_SelectEditor;
     procedure fraMessagesDblClickMessage(fileSrc: string; row, col: integer);
-    procedure fraSynTreeOpenFile(filname: string);
+    procedure fraLeftPanel_OpenFile(filname: string);
     procedure MarkErrors;
     procedure ShowErrorInDialogBox;
     procedure UpdateIDE(CompName: string);
@@ -244,7 +244,6 @@ begin
     exit;  //no ha habido cambio de idioma
   curLanguage := idLang;
   Config.SetLanguage;
-  fraLeftPanel.SetLanguage;
   fraEditView1.SetLanguage;
   fraMessages.SetLanguage;
   Compiler_PIC16.SetLanguage;
@@ -253,13 +252,13 @@ begin
   //ParserDirec_PIC16.SetLanguage;
   {$I ..\_language\tra_FormPrincipal.pas}
 end;
-procedure TfrmPrincipal.fraSynTreeOpenFile(filname: string);
+procedure TfrmPrincipal.fraLeftPanel_OpenFile(filname: string);
 {El explorador de código, solicita abrir un archivo.}
 begin
   fraEditView1.LoadFile(filname);
   Config.SaveToFile;  //guarda la configuración actual
 end;
-procedure TfrmPrincipal.fraSynTreeSelecFileExplorer;
+procedure TfrmPrincipal.fraLeftPanel_selecFileExplorer;
 {Se ha seleccionado el modo de explorador de archivo,}
 var
   ed: TSynEditor;
@@ -368,9 +367,6 @@ begin
   fraEditView1.OnRequireSynEditConfig := @fraEdit_RequireSynEditConfig;
   fraEditview1.OnRequireSetCompletion := @fraEdit_RequireSetCompletion;
 
-  //Configura Panel lateral
-  fraLeftPanel.OnOpenFile := @fraSynTreeOpenFile;
-  fraLeftPanel.OnSelecFileExplorer := @fraSynTreeSelecFileExplorer;
 end;
 procedure TfrmPrincipal.FormDestroy(Sender: TObject);
 begin
@@ -396,6 +392,9 @@ begin
   Config.Init;   //necesario para poder trabajar
   Config.OnPropertiesChanges := @ConfigChanged;
   Config.fraCfgExtTool.OnReplaceParams := @ConfigExtTool_RequirePar;
+  //Configura Panel lateral
+  fraLeftPanel.OnOpenFile := @fraLeftPanel_OpenFile;
+  fraLeftPanel.OnSelecFileExplorer := @fraLeftPanel_selecFileExplorer;
   fraLeftPanel.Init;
   //Termina configuración
   fraEditView1.InitMenuRecents(mnRecents, Config.fraCfgSynEdit.ArcRecientes);  //inicia el menú "Recientes"
@@ -576,8 +575,8 @@ begin
 //         acArcCloseFileExecute(self);  //Cierra archivo actual
 //         fraLeftPanel.LocateFile(curNode);  //Restaura nodo seleccionado, porque
 //         //Despues de cerrar
-//         if fraLeftPanel.frmArcExplor1.TreeView1.Visible then
-//           fraLeftPanel.frmArcExplor1.TreeView1.SetFocus;
+//         if fraLeftPanel.fraArcExplor1.TreeView1.Visible then
+//           fraLeftPanel.fraArcExplor1.TreeView1.SetFocus;
 //       end;
     Shift := []; Key := 0;  //para qie no pase
   end;
@@ -686,8 +685,8 @@ begin
   //Configura Explorador de código
   fraLeftPanel.BackColor := Config.CodExplBack;;
   fraLeftPanel.TextColor := Config.CodExplText;
-  fraLeftPanel.frmArcExplor1.Filter.ItemIndex := Config.cexpFiltype;
-  fraLeftPanel.frmArcExplor1.FilterChange(self);
+  fraLeftPanel.fraArcExplor1.Filter.ItemIndex := Config.cexpFiltype;
+  fraLeftPanel.fraArcExplor1.FilterChange(self);
   //Configura Visor de Mensajes
   fraMessages.BackColor := Config.MessPanBack;
   fraMessages.TextColor := Config.MessPanText;

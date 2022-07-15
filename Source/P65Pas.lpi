@@ -73,7 +73,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="39">
+    <Units Count="40">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -151,7 +151,7 @@
       <Unit14>
         <Filename Value="FrameArcExplor.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="frmArcExplor"/>
+        <ComponentName Value="fraArcExplor"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
       </Unit14>
@@ -293,6 +293,13 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
       </Unit38>
+      <Unit39>
+        <Filename Value="FrameLateralPanel.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="fraLateralPanel"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Frame"/>
+      </Unit39>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
