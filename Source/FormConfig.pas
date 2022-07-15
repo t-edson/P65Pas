@@ -153,16 +153,16 @@ resourcestring
   LABEL_THEM_NONE   = 'None';
   // Environment Settings
   TIT_CFG_ENVIRON   = 'Environment';
-  TIT_CFG_CODEXP    = 'Code Explorer';
+  TIT_CFG_FILEXP    = 'File Explorer';
   TIT_CFG_MESPAN    = 'Message Panel';
   // Editor Settings
   TIT_CFG_EDITOR    = 'Editor' ;
-  TIT_CFG_EDICOL    = 'Appearance';
-  TIT_CFG_SYNTAX    = 'Syntax';
-  TIT_CFG_AFTEDI    = 'After Edit';    //Disponible para uso por el compilador
+  TIT_CFG_EDI_APR   = 'Appearance';
+  TIT_CFG_EDI_SYN   = 'Syntax';
+  TIT_CFG_EDI_AFT   = 'After Edit';    //Disponible para uso por el compilador
   // Compiler Settings
   TIT_CFG_COMPIL    = 'Compiler';      //Disponible para uso por el compilador
-  TIT_CFG_ASSEMB    = 'Assembler';     //Disponible para uso por el compilador
+  TIT_CFG_CMP_ASM   = 'Assembler';     //Disponible para uso por el compilador
   TIT_CFG_EXTRA1    = 'Extra Panel 1'; //Disponible para uso por el compilador
   TIT_CFG_EXTRA2    = 'Extra Panel 2'; //Disponible para uso por el compilador
   // External Tool
@@ -222,7 +222,7 @@ begin
   Item.ImageIndex:=0;
   Item.SelectedIndex := 0;
   ItemIni := Item;   //Item inicial
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_CODEXP);
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_FILEXP);
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
     SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_MESPAN);
@@ -234,15 +234,15 @@ begin
   Item.ImageIndex:=0;
   Item.SelectedIndex := 0;
     //Editor-Colores
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EDICOL);
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EDI_APR);
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
     //Editor-Sintaxis
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_SYNTAX);
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EDI_SYN);
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
     //Acciones después de editar
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_AFTEDI);
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EDI_AFT);
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
   Item.Expanded := true;
@@ -251,7 +251,7 @@ begin
   Item.ImageIndex:=0;    //cambia ícono del nodo
   Item.SelectedIndex := 0;
     //Assembler
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_ASSEMB);
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_CMP_ASM);
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
     //Extra panel 1
@@ -287,16 +287,16 @@ var
 begin
   nodStr := TreeView1.Selected.Text;
   if nodStr = TIT_CFG_ENVIRON then PageControl1.ActivePage := tabEnviron;
-  if nodStr = TIT_CFG_CODEXP  then PageControl1.ActivePage := tabCodeExp;
+  if nodStr = TIT_CFG_FILEXP  then PageControl1.ActivePage := tabCodeExp;
   if nodStr = TIT_CFG_MESPAN  then PageControl1.ActivePage := tabMessPan;
 
   if nodStr = TIT_CFG_EDITOR  then PageControl1.ActivePage := tabEditor;
-  if nodStr = TIT_CFG_EDICOL  then PageControl1.ActivePage := tabEdiColor;
-  if nodStr = TIT_CFG_AFTEDI  then PageControl1.ActivePage := tabAftEdit;
-  if nodStr = TIT_CFG_SYNTAX  then PageControl1.ActivePage := tabEdiSyntax;
+  if nodStr = TIT_CFG_EDI_APR  then PageControl1.ActivePage := tabEdiColor;
+  if nodStr = TIT_CFG_EDI_AFT  then PageControl1.ActivePage := tabAftEdit;
+  if nodStr = TIT_CFG_EDI_SYN  then PageControl1.ActivePage := tabEdiSyntax;
 
   if nodStr = TIT_CFG_COMPIL  then PageControl1.ActivePage := tabCompiler;
-  if nodStr = TIT_CFG_ASSEMB  then PageControl1.ActivePage := tabEnsamb;
+  if nodStr = TIT_CFG_CMP_ASM then PageControl1.ActivePage := tabEnsamb;
   if nodStr = TIT_CFG_EXTRA1  then PageControl1.ActivePage := tabExtraPan1;
   if nodStr = TIT_CFG_EXTRA2  then PageControl1.ActivePage := tabExtraPan2;
 
