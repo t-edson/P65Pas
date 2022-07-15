@@ -18,8 +18,9 @@
         <ComponentName Value="frmPrincipal"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+        <IsVisibleTab Value="True"/>
         <TopLine Value="428"/>
-        <CursorPos X="6" Y="570"/>
+        <CursorPos X="44" Y="570"/>
         <FoldState Value=" TL0030212341 p0+3210]D3 T5m9011 T8H2}]92 T3mJ0K6 piYjI04315 pjLlT080]Upl4iB29[K44mb03G]eZjE04D]9cjH037[I4iG2C TMma[{N511D1W1113 p0tI010P2 T6n501D T0nAg3C]rYnIX261[!4fmDZ1F[K4oGt33 THwMRH1J"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
@@ -146,8 +147,8 @@
         <ComponentName Value="Config"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
+        <CursorPos X="24" Y="20"/>
         <FoldState Value=" T3l50Y022121113j"/>
         <UsageCount Value="200"/>
         <Loaded Value="True"/>
@@ -454,7 +455,7 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="14"/>
         <CursorPos X="21" Y="47"/>
-        <UsageCount Value="160"/>
+        <UsageCount Value="176"/>
       </Unit38>
       <Unit39>
         <Filename Value="adapter6502\FrameCfgChkSyntax6502.pas"/>
@@ -463,40 +464,40 @@
         <ResourceBaseClass Value="Frame"/>
         <EditorIndex Value="-1"/>
         <CursorPos Y="12"/>
-        <UsageCount Value="194"/>
+        <UsageCount Value="193"/>
       </Unit39>
       <Unit40>
         <Filename Value="..\_language\tra_FormPrincipal.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="156"/>
         <CursorPos Y="189"/>
-        <UsageCount Value="25"/>
+        <UsageCount Value="23"/>
       </Unit40>
       <Unit41>
         <Filename Value="..\_language\tra_FormConfig.pas"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit41>
       <Unit42>
         <Filename Value="_libraries\SynFacilUtils-1.22\SynFacilHighlighter.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="1190"/>
         <CursorPos Y="1207"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit42>
       <Unit43>
         <Filename Value="_libraries\SynFacilUtils-1.22\SynFacilCompletion.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="1657"/>
         <CursorPos X="26" Y="1678"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="4"/>
       </Unit43>
       <Unit44>
         <Filename Value="_libraries\SynFacilUtils-1.22\SynFacilUtils.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="182"/>
         <CursorPos X="4" Y="187"/>
-        <UsageCount Value="5"/>
+        <UsageCount Value="3"/>
       </Unit44>
       <Unit45>
         <Filename Value="FrameLateralPanel.pas"/>
@@ -505,7 +506,7 @@
         <ResourceBaseClass Value="Frame"/>
         <EditorIndex Value="1"/>
         <CursorPos X="17" Y="15"/>
-        <UsageCount Value="25"/>
+        <UsageCount Value="33"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit45>
@@ -515,7 +516,7 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="4757"/>
         <CursorPos Y="4775"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit46>
       <Unit47>
         <Filename Value="C:\lazarus\lcl\extctrls.pp"/>
@@ -523,13 +524,13 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="1093"/>
         <CursorPos X="3" Y="1110"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="1"/>
       </Unit47>
       <Unit48>
         <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\fgl.pp"/>
         <EditorIndex Value="-1"/>
         <CursorPos Y="20"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="8"/>
       </Unit48>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
