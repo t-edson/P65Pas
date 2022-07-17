@@ -1,7 +1,7 @@
 object Config: TConfig
-  Left = 294
+  Left = 252
   Height = 475
-  Top = 150
+  Top = 231
   Width = 714
   BorderStyle = bsDialog
   Caption = 'Configuración'
@@ -59,7 +59,7 @@ object Config: TConfig
     Height = 413
     Top = 0
     Width = 504
-    ActivePage = tabEditor
+    ActivePage = tabEnvExt1
     Align = alClient
     ShowTabs = False
     TabIndex = 3
@@ -99,7 +99,7 @@ object Config: TConfig
         Width = 84
         Caption = 'Panels Color:'
       end
-      object colMessPanPan: TColorBox
+      object colPanels: TColorBox
         Left = 272
         Height = 26
         Top = 184
@@ -131,7 +131,7 @@ object Config: TConfig
         Width = 68
         Caption = 'Language:'
       end
-      object ComboBox1: TComboBox
+      object cmbLanguage: TComboBox
         Left = 110
         Height = 28
         Top = 30
@@ -147,9 +147,9 @@ object Config: TConfig
           'qu - Quechua'
         )
         TabOrder = 0
-        Text = 'ComboBox1'
+        Text = 'cmbLanguage'
       end
-      object RadioGroup1: TRadioGroup
+      object grpToolbarSta: TRadioGroup
         Left = 16
         Height = 110
         Top = 160
@@ -349,6 +349,21 @@ object Config: TConfig
         Caption = 'Back color'
       end
     end
+    object tabEnvExt1: TTabSheet
+      Caption = 'tabEnvExt1'
+      ClientHeight = 405
+      ClientWidth = 496
+      object scrlEnvExt1: TScrollBox
+        Left = 0
+        Height = 405
+        Top = 0
+        Width = 496
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        TabOrder = 0
+      end
+    end
     object tabEditor: TTabSheet
       Caption = 'General'
       ClientHeight = 405
@@ -409,14 +424,14 @@ object Config: TConfig
     object tabCompiler: TTabSheet
       Caption = 'Compiler'
     end
-    object tabEnsamb: TTabSheet
+    object tabCompAsm: TTabSheet
       Caption = 'Assembler'
     end
-    object tabExtraPan1: TTabSheet
-      Caption = 'tabExtraPan1'
+    object tabCompExt2: TTabSheet
+      Caption = 'tabCompExt2'
     end
-    object tabExtraPan2: TTabSheet
-      Caption = 'tabExtraPan2'
+    object tabCompExt3: TTabSheet
+      Caption = 'tabCompExt3'
     end
     object tabExtTool: TTabSheet
       Caption = 'External Tool'

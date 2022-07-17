@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <language Val="en - English"/>
-  <winXpos Val="94"/>
-  <winYpos Val="0"/>
-  <winWidth Val="1274"/>
-  <winHeight Val="790"/>
-  <winState Val="2"/>
-  <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
+  <grpToolbarSta Val="1"/>
+  <MessPanels Val="536870912"/>
+  <SplitterCol Val="2368548"/>
+  <TextPanel Val="8421504"/>
   <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
 "/>
-  <SplitterCol Val="2368548"/>
-  <MessPanPan Val="2368548"/>
-  <TextPanel Val="8421504"/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
@@ -22,18 +17,20 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
   <SynTreeWidth Val="224"/>
   <EditAsmWidth Val="787"/>
   <ViewPanAssem Val="True"/>
+  <winXpos Val="94"/>
+  <winYpos Val="0"/>
+  <winWidth Val="1274"/>
+  <winHeight Val="790"/>
+  <winState Val="2"/>
+  <CodExplBack Val="2434341"/>
+  <CodExplText Val="12632256"/>
+  <grpFiltypes Val="0"/>
   <MessPanBack Val="2368548"/>
   <MessPanText Val="16777215"/>
   <MessPanErr Val="5855743"/>
   <MessPanSel Val="-2147483629"/>
-  <CodExplBack Val="2434341"/>
-  <CodExplText Val="12632256"/>
-  <grpFiltypes Val="0"/>
-  <TabEdiState Val="0"/>
   <ShowErMsg Val="False"/>
-  <AftChg6502>
-    <actAfterChg Val="1"/>
-  </AftChg6502>
+  <TabEdiState Val="0"/>
   <TamLet Val="10"/>
   <TipLet Val="Courier New"/>
   <VerBarDesV Val="True"/>
@@ -61,6 +58,17 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.lst
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
 "/>
   </Edit>
+  <AftChg6502>
+    <actAfterChg Val="1"/>
+  </AftChg6502>
+  <Compiler6502>
+    <OptimLev Val="1"/>
+    <OptBnkAftIF Val="True"/>
+    <OptBnkBefPro Val="True"/>
+    <OptBnkAftPro Val="True"/>
+    <ReuProcVar Val="False"/>
+    <OptRetProc Val="True"/>
+  </Compiler6502>
   <AsmOutput6502>
     <IncDecVar Val="True"/>
     <VarDecType Val="0"/>
@@ -70,14 +78,6 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
     <ExcUnused Val="True"/>
     <IncVarName Val="True"/>
   </AsmOutput6502>
-  <Compiler6502>
-    <OptimLev Val="1"/>
-    <OptBnkAftIF Val="True"/>
-    <OptBnkBefPro Val="True"/>
-    <OptBnkAftPro Val="True"/>
-    <ReuProcVar Val="False"/>
-    <OptRetProc Val="True"/>
-  </Compiler6502>
   <ExternTool>
     <extern_tools Val="SImulate	                        	C:\Program Files (x86)\Computerbrains\CCS64 v3.9.3\CCS64.exe	$(hexFile)	F	V					
 "/>

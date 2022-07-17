@@ -1,7 +1,7 @@
 object frmPrincipal: TfrmPrincipal
-  Left = 122
+  Left = 214
   Height = 790
-  Top = 120
+  Top = 119
   Width = 1166
   AllowDropFiles = True
   Caption = 'frmPrincipal'
@@ -44,9 +44,9 @@ object frmPrincipal: TfrmPrincipal
     SimplePanel = False
   end
   object splLeft: TSplitter
-    Left = 200
+    Left = 264
     Height = 481
-    Top = 80
+    Top = 88
     Width = 6
     Align = alNone
     ParentColor = False
@@ -70,7 +70,7 @@ object frmPrincipal: TfrmPrincipal
     ResizeAnchor = akBottom
   end
   object splRight: TSplitter
-    Left = 760
+    Left = 800
     Height = 481
     Top = 56
     Width = 6
@@ -304,16 +304,16 @@ object frmPrincipal: TfrmPrincipal
     end
   end
   object panRightPanel: TPanel
-    Left = 840
+    Left = 872
     Height = 552
     Top = 72
-    Width = 293
+    Width = 261
     BevelOuter = bvNone
     TabOrder = 6
   end
   object ImgActions16: TImageList
-    Left = 270
-    Top = 580
+    Left = 338
+    Top = 548
     Bitmap = {
       4C7A170000001000000010000000B82900000000000078DAED9C07541549D7AE
       8FA222A8631C95240828A8280A8288208201417150C90610308B18308C09C6CC
@@ -654,8 +654,8 @@ object frmPrincipal: TfrmPrincipal
   end
   object ActionList: TActionList
     Images = ImgActions16
-    Left = 270
-    Top = 500
+    Left = 338
+    Top = 468
     object acArcNewFile: TAction
       Category = 'Arc'
       Caption = 'New &File'
@@ -863,7 +863,7 @@ object frmPrincipal: TfrmPrincipal
   object MainMenu1: TMainMenu
     Images = ImgActions16
     Left = 88
-    Top = 110
+    Top = 112
     object mnFile: TMenuItem
       Caption = '&Archivo'
       object MenuItem3: TMenuItem
@@ -1040,18 +1040,19 @@ object frmPrincipal: TfrmPrincipal
     end
     object extraMenu1: TMenuItem
       Caption = 'extraMenu1'
-      Visible = False
     end
     object extraMenu2: TMenuItem
       Caption = 'extraMenu2'
-      Visible = False
+    end
+    object extraMenu3: TMenuItem
+      Caption = 'extraMenu3'
     end
   end
   object ImgActions32: TImageList
     Height = 32
     Width = 32
-    Left = 420
-    Top = 580
+    Left = 488
+    Top = 548
     Bitmap = {
       4C7A170000002000000020000000E37600000000000078DAEC9D0558145DFBFF
       C720AD477D6C6CB03B10140B115404135BB1BB15BB1EBBBB3B11B1051B040C44
@@ -2009,12 +2010,8 @@ object frmPrincipal: TfrmPrincipal
   end
   object PopupEdit: TPopupMenu
     Images = ImgActions16
-    Left = 420
-    Top = 500
-    object MenuItem36: TMenuItem
-      Caption = 'Find Declaration'
-      ImageIndex = 32
-    end
+    Left = 488
+    Top = 468
     object MenuItem8: TMenuItem
       Action = acEdUndo
     end
@@ -2042,23 +2039,23 @@ object frmPrincipal: TfrmPrincipal
     Enabled = False
     Interval = 100
     OnTimer = Timer1Timer
-    Left = 260
-    Top = 112
+    Left = 328
+    Top = 80
   end
   object FindDialog1: TFindDialog
     OnFind = FindDialog1Find
-    Left = 270
-    Top = 410
+    Left = 338
+    Top = 378
   end
   object ReplaceDialog1: TReplaceDialog
     Options = [frDown, frReplace, frReplaceAll, frHidePromptOnReplace]
     OnReplace = ReplaceDialog1Replace
-    Left = 410
-    Top = 410
+    Left = 478
+    Top = 378
   end
   object PopupCompiler: TPopupMenu
-    Left = 270
-    Top = 260
+    Left = 338
+    Top = 228
     object MenuItem18: TMenuItem
       Action = acToolSel_P65pas_6502
     end

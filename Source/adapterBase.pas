@@ -5,7 +5,7 @@ unit adapterBase;
 interface
 uses
   Classes, SysUtils, types, FrameEditView, FrameCfgSynEdit, Menus, ExtCtrls,
-  Controls, Graphics, ComCtrls ;
+  Controls, Graphics, ComCtrls, Forms ;
 
 type
   {Adaptador para controlar a diversos compiladores}
@@ -38,12 +38,15 @@ type
 //    procedure UpdateCompletionForEditors; virtual; abstract;
 //    procedure DumpCode(lins: TSTrings); virtual; abstract;
   public      //Inicialización
-    procedure setMenusAndToolbar(menu1, menu2: TMenuItem; toolbar: TToolBar); virtual; abstract;
+    procedure ConfigCreate(frmConfig: TComponent; tabEnvExt1, tabAftEdit,
+      tabCompiler, tabCompAsm, tabCompExt2, tabCompExt3: TScrollbox); virtual; abstract;
+    procedure setMenusAndToolbar(menu1, menu2, menu3: TMenuItem; toolbar: TToolBar;
+      popupEdit: TPopupMenu; popupEditCount: integer); virtual; abstract;
   end;
 
   //Funciones para control de menú
   procedure InicLlenadoAcciones(MenuPopup0: TPopupMenu );
-  procedure CreaMenuConAccion(itemMenu: TMenuItem; accion: TBasicAction);
+  procedure CreaMenuConAccion(itemMenu: TMenuItem; accion: TBasicAction; TheOwner: TComponent);
   function MenuAccion(etiq: string; accion: TNotifyEvent; id_icon: integer = -1): TMenuItem;
   function AgregarAccion(var ordShortCut: integer; etiq: string;
                          accion: TNotifyEvent; id_icon: integer = -1): TMenuItem;
@@ -64,12 +67,12 @@ begin
   idxMenu := MenuPopup0.Items.Count;   //empieza a agregar desde el final
   MenuPopup := MenuPopup0;
 end;
-procedure CreaMenuConAccion(itemMenu: TMenuItem; accion: TBasicAction);
+procedure CreaMenuConAccion(itemMenu: TMenuItem; accion: TBasicAction; TheOwner: TComponent);
 {Agrega un nuevo ítem a un menú, a partir de una acción.}
 var
   mn: TMenuItem;
 begin
-  mn :=  TMenuItem.Create(nil);
+  mn :=  TMenuItem.Create(TheOwner);
   mn.Action := accion;
   itemMenu.Add(mn);
 end;

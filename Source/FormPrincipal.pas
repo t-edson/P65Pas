@@ -69,6 +69,7 @@ type
     MenuItem20: TMenuItem;
     MenuItem21: TMenuItem;
     MenuItem22: TMenuItem;
+    extraMenu3: TMenuItem;
     MenuItem25: TMenuItem;
     MenuItem26: TMenuItem;
     MenuItem27: TMenuItem;
@@ -80,7 +81,6 @@ type
     MenuItem33: TMenuItem;
     MenuItem34: TMenuItem;
     MenuItem35: TMenuItem;
-    MenuItem36: TMenuItem;
     MenuItem37: TMenuItem;
     MenuItem38: TMenuItem;
     MenuItem39: TMenuItem;
@@ -195,6 +195,7 @@ type
   private
     tic         : integer;  //Contador para temporización
     ticSynCheck : integer;  //Contador para temporizar la verifiación ed sintaxis
+    PopupEdit_N : integer; //Contador de ítems de menú
     curProj     : TPicPasProject; //Proyecto actual
     fraEditView1: TfraEditView;   //Panel de editores
     fraLeftPanel: TfraLateralPanel; //Panel lateral para explorador de archivos y Árbol de sintaxis
@@ -248,7 +249,6 @@ begin
   fraMessages.SetLanguage;
   Compiler_PIC16.SetLanguage;
   ParserASM_6502.SetLanguage;
-  //ParserAsm_PIC16.SetLanguage;
   //ParserDirec_PIC16.SetLanguage;
   {$I ..\_language\tra_FormPrincipal.pas}
 end;
@@ -366,7 +366,9 @@ begin
   fraEditView1.OnSelectEditor         := @fraEdit_SelectEditor;
   fraEditView1.OnRequireSynEditConfig := @fraEdit_RequireSynEditConfig;
   fraEditview1.OnRequireSetCompletion := @fraEdit_RequireSetCompletion;
-
+  //Guarda cantidad de ítems en menú contextul del editor para dar esa información a los
+  //adaptadores.
+  PopupEdit_N := PopupEdit.Items.Count;
 end;
 procedure TfrmPrincipal.FormDestroy(Sender: TObject);
 begin
@@ -377,7 +379,7 @@ var
   Hay: Boolean;
   SR: TSearchRec;
 begin
-  //ALineamiento de panel izquierdo
+  //Alineamiento de panel izquierdo
   fraLeftPanel.Align := alLeft;
   fraLeftPanel.Visible := true;
   splLeft.Align := alLeft;
@@ -413,8 +415,6 @@ begin
   adapter6502.OnAfterCompile   := @comp_AfterCompile;
   adapter6502.OnBeforeCheckSyn := @comp_BeforeCheckSyn;
   adapter6502.OnAfterCheckSyn  := @comp_AfterCheckSyn;
-
-  //currComp := adapter6502;    //Compilador actual
   //Fija compilador por defecto
   acToolSel_P65pas_6502Execute(self);
   ///////////////////////////////////////////////////////
@@ -1026,7 +1026,8 @@ begin
   Config.fraCfgAfterChg6502.Visible := true;
   Config.fraCfgCompiler6502.Visible := true;
   //Configura menús y Toolbar
-  currComp.setMenusAndToolbar(extraMenu1, extraMenu2, ToolBar4);
+  currComp.setMenusAndToolbar(extraMenu1, extraMenu2, extraMenu3, ToolBar4, PopupEdit,
+    PopupEdit_N);
   //Termina configuración
   UpdateIDE(adapter6502.CompilerName);
 end;
@@ -1041,7 +1042,8 @@ begin
   Config.fraCfgAfterChg6502.Visible := true;
   Config.fraCfgCompiler6502.Visible := true;
   //Configura menús y Toolbar
-  currComp.setMenusAndToolbar(extraMenu1, extraMenu2, ToolBar4);
+  currComp.setMenusAndToolbar(extraMenu1, extraMenu2, extraMenu3, ToolBar4, PopupEdit,
+    PopupEdit_N);
   //Termina configuración
   UpdateIDE(adapter6502.CompilerName+'65C02');
 end;

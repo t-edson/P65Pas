@@ -7,11 +7,11 @@ unit adapter6502;
 interface
 uses
   Classes, SysUtils, ComCtrls, Controls, ActnList, Menus, ExtCtrls, Graphics,
-  SynEdit, adapterBase, CodeTools6502, Compiler_PIC16, LexPas, FrameEditView,
-  Globales, FrameCfgSynEdit, MisUtils, SynFacilHighlighter, SynFacilUtils,
-  FrameStatist6502, FrameSynTree6502, FormAdapter6502, FrameCfgAfterChg6502,
-  FrameCfgCompiler6502, FormDebugger6502, FormRAMExplorer6502,
-  FrameCfgAsmOut6502;
+  Forms, SynEdit, adapterBase, CodeTools6502, Compiler_PIC16, LexPas,
+  FrameEditView, Globales, FrameCfgSynEdit, MisUtils, SynFacilHighlighter,
+  SynFacilUtils, FrameStatist6502, FrameSynTree6502, FormAdapter6502,
+  FrameCfgAfterChg6502, FrameCfgCompiler6502, FormDebugger6502,
+  FormRAMExplorer6502, FrameCfgAsmOut6502;
 type
   { TAdapter6502 }
   TAdapter6502 = class(TAdapterBase)
@@ -79,7 +79,10 @@ type
     procedure Init(pagControl: TPageControl; imgList16, imglist32: TImageList;
       actList: TActionList; frmCfgAfterChg0: TfraCfgAfterChg6502;
   fraCfgCompiler0: TfraCfgCompiler6502; fraCfgAsmOut0: TfraCfgAsmOut6502);
-    procedure setMenusAndToolbar(menu1, menu2: TMenuItem; toolbar: TToolBar); override;
+    procedure ConfigCreate(frmConfig: TComponent; tabEnvExt1, tabAftEdit,
+      tabCompiler, tabCompAsm, tabCompExt2, tabCompExt3: TScrollbox); override;
+    procedure setMenusAndToolbar(menu1, menu2, menu3: TMenuItem; toolbar: TToolBar;
+      popupEdit: TPopupMenu; popupEditCount: integer); override;
     constructor Create(fraEdit0: TfraEditView; panRightPanel0: TPanel);
     destructor Destroy; override;
   end;
@@ -280,7 +283,6 @@ begin
   //Actualiza ventana de ensamblador.
   edAsm.BeginUpdate(false);
   edAsm.Lines.Clear;
-//  compiler.DumpCode(edAsm.Lines);
   Compiler.DumpCode(edAsm.Lines, (fraCfgAsmOut.AsmType = dvtASM),
                     fraCfgAsmOut.IncVarDec , fraCfgAsmOut.ExcUnused,
                     fraCfgAsmOut.IncAddress, true, fraCfgAsmOut.IncVarName );
@@ -365,6 +367,7 @@ procedure TAdapter6502.LoadAsmSyntaxEd;
 var
   synFile: String;
 begin
+  //Carga sintaxis de la carpeta de sintaxis
   synFile := patSyntax + DirectorySeparator + 'P65Pas_Asm.xml';
   if FileExists(synFile) then begin
     hlAssem.LoadFromFile(synFile);
@@ -378,7 +381,7 @@ procedure TAdapter6502.Init(pagControl: TPageControl; imgList16,
   fraCfgAsmOut0: TfraCfgAsmOut6502);
 {Inicializa el adaptador. Eso implica preparar la IDE para que soporte a este nuevo
 compilador que se está registrando.
-Solo se debe ejecutar esta rutina una ve al inicio.
+Solo se debe ejecutar esta rutina una vez al inicio.
 Parámetros:
   * pagControl -> Es el contenedor de la barra lateral izquierda (donde está el navegador
   de archivos), donde se crearán las herramientas que ofrece este compilador en esta
@@ -414,10 +417,16 @@ begin
   edAsm.Highlighter := hlAssem;
   InicEditorC1(edAsm);
 end;
-procedure TAdapter6502.setMenusAndToolbar(menu1, menu2: TMenuItem;
-  toolbar: TToolBar);
+procedure TAdapter6502.ConfigCreate(frmConfig: TComponent; tabEnvExt1,
+  tabAftEdit, tabCompiler, tabCompAsm, tabCompExt2, tabCompExt3: TScrollbox);
+{Se pide crear los frames de configuración que necesita el formulario de configuración.}
 begin
-  adapterForm.setMenusAndToolbar(menu1, menu2, toolbar);
+
+end;
+procedure TAdapter6502.setMenusAndToolbar(menu1, menu2, menu3: TMenuItem;
+  toolbar: TToolBar; popupEdit: TPopupMenu; popupEditCount: integer);
+begin
+  adapterForm.setMenusAndToolbar(menu1, menu2, menu3, toolbar, popupEdit, popupEditCount);
 end;
 constructor TAdapter6502.Create(fraEdit0: TfraEditView; panRightPanel0: TPanel);
 begin

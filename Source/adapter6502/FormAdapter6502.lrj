@@ -8,5 +8,7 @@
 {"hash":233109282,"name":"tfrmadapter6502.actoolasmdebug.caption","sourcebytes":[65,83,77,32,38,68,101,98,117,103,103,101,114],"value":"ASM &Debugger"},
 {"hash":121601268,"name":"tfrmadapter6502.actoollistrep.caption","sourcebytes":[38,76,105,115,116,32,82,101,112,111,114,116],"value":"&List Report"},
 {"hash":247907902,"name":"tfrmadapter6502.actoolfinddec.caption","sourcebytes":[70,105,110,100,32,68,101,99,108,97,114,97,116,105,111,110],"value":"Find Declaration"},
-{"hash":61756739,"name":"tfrmadapter6502.actooltestunit.caption","sourcebytes":[84,101,115,116,32,68,101,118,105,99,101,32,85,110,105,116,115],"value":"Test Device Units"}
+{"hash":61756739,"name":"tfrmadapter6502.actooltestunit.caption","sourcebytes":[84,101,115,116,32,68,101,118,105,99,101,32,85,110,105,116,115],"value":"Test Device Units"},
+{"hash":140872241,"name":"tfrmadapter6502.extramenu1.caption","sourcebytes":[101,120,116,114,97,77,101,110,117,49],"value":"extraMenu1"},
+{"hash":140872242,"name":"tfrmadapter6502.extramenu2.caption","sourcebytes":[101,120,116,114,97,77,101,110,117,50],"value":"extraMenu2"}
 ]}

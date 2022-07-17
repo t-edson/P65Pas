@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, LazFileUtils, SynEdit, Forms, Controls, Graphics,
-  Dialogs, Buttons, StdCtrls, ExtCtrls, ComCtrls, ColorBox, LCLType, Spin,
+  Dialogs, Buttons, StdCtrls, ExtCtrls, ComCtrls, ColorBox, LCLType,
   FrameCfgSynEdit, Globales, FrameCfgSyntax, FrameCfgExtTool,
   FrameCfgAfterChg6502, FrameCfgCompiler6502, FrameCfgAsmOut6502, MiConfigXML,
   MiConfigBasic, MisUtils;
@@ -26,13 +26,13 @@ type
     colCodExplText: TColorBox;
     colMessPanBack: TColorBox;
     colMessPanErr: TColorBox;
-    colMessPanPan: TColorBox;
+    colPanels: TColorBox;
     colMessPanSel: TColorBox;
     colMessPanText: TColorBox;
     colPanTextCol: TColorBox;
     colSplitCol: TColorBox;
     cmbThemes: TComboBox;
-    ComboBox1: TComboBox;
+    cmbLanguage: TComboBox;
     Edit1: TEdit;
     grpTabEdiState: TRadioGroup;
     ImageList1: TImageList;
@@ -52,12 +52,13 @@ type
     PageControl1: TPageControl;
     Panel1: TPanel;
     Panel2: TPanel;
-    RadioGroup1: TRadioGroup;
+    grpToolbarSta: TRadioGroup;
     grpFilType: TRadioGroup;
     scrlEdiColor: TScrollBox;
+    scrlEnvExt1: TScrollBox;
     tabEditor: TTabSheet;
     tabEdiColor: TTabSheet;
-    tabEnsamb: TTabSheet;
+    tabCompAsm: TTabSheet;
     tabCompiler: TTabSheet;
     tabEnviron: TTabSheet;
     tabExtTool: TTabSheet;
@@ -65,8 +66,9 @@ type
     tabCodeExp: TTabSheet;
     tabEdiSyntax: TTabSheet;
     tabAftEdit: TTabSheet;
-    tabExtraPan1: TTabSheet;
-    tabExtraPan2: TTabSheet;
+    tabCompExt2: TTabSheet;
+    tabCompExt3: TTabSheet;
+    tabEnvExt1: TTabSheet;
     TreeView1: TTreeView;
     procedure BitAceptarClick(Sender: TObject);
     procedure BitAplicarClick(Sender: TObject);
@@ -155,6 +157,7 @@ resourcestring
   TIT_CFG_ENVIRON   = 'Environment';
   TIT_CFG_FILEXP    = 'File Explorer';
   TIT_CFG_MESPAN    = 'Message Panel';
+  TIT_CFG_ENV_EXT1  = 'Extra Panel 1'; //Disponible para uso por el compilador
   // Editor Settings
   TIT_CFG_EDITOR    = 'Editor' ;
   TIT_CFG_EDI_APR   = 'Appearance';
@@ -163,8 +166,8 @@ resourcestring
   // Compiler Settings
   TIT_CFG_COMPIL    = 'Compiler';      //Disponible para uso por el compilador
   TIT_CFG_CMP_ASM   = 'Assembler';     //Disponible para uso por el compilador
-  TIT_CFG_EXTRA1    = 'Extra Panel 1'; //Disponible para uso por el compilador
-  TIT_CFG_EXTRA2    = 'Extra Panel 2'; //Disponible para uso por el compilador
+  TIT_CFG_CMP_EXT2  = 'Extra Panel 2'; //Disponible para uso por el compilador
+  TIT_CFG_CMP_EXT3  = 'Extra Panel 3'; //Disponible para uso por el compilador
   // External Tool
   TIT_CFG_EXTOOL    = 'External Tool';
 
@@ -204,7 +207,7 @@ begin
   fraCfgCompiler6502.Top := 0;
 
   fraCfgAsmOut6502 := TfraCfgAsmOut6502.Create(self);
-  fraCfgAsmOut6502.Parent := tabEnsamb;
+  fraCfgAsmOut6502.Parent := tabCompAsm;
   fraCfgAsmOut6502.Left := 0;
   fraCfgAsmOut6502.Top := 0;
 
@@ -222,10 +225,16 @@ begin
   Item.ImageIndex:=0;
   Item.SelectedIndex := 0;
   ItemIni := Item;   //Item inicial
+    //Explorador de archivos
     SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_FILEXP);
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
+    //Panel de mensajes
     SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_MESPAN);
+    SubItem.ImageIndex:=0;    //cambia ícono del nodo
+    SubItem.SelectedIndex := 0;
+    //Extra panel 1
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_ENV_EXT1);
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
   Item.Expanded := true;
@@ -255,11 +264,11 @@ begin
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
     //Extra panel 1
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EXTRA1);
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_CMP_EXT2);
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
     //Extra panel 2
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EXTRA2);
+    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_CMP_EXT3);
     SubItem.ImageIndex:=0;    //cambia ícono del nodo
     SubItem.SelectedIndex := 0;
   Item.Expanded := true;
@@ -289,6 +298,7 @@ begin
   if nodStr = TIT_CFG_ENVIRON then PageControl1.ActivePage := tabEnviron;
   if nodStr = TIT_CFG_FILEXP  then PageControl1.ActivePage := tabCodeExp;
   if nodStr = TIT_CFG_MESPAN  then PageControl1.ActivePage := tabMessPan;
+  if nodStr = TIT_CFG_ENV_EXT1 then PageControl1.ActivePage := tabEnvExt1;
 
   if nodStr = TIT_CFG_EDITOR  then PageControl1.ActivePage := tabEditor;
   if nodStr = TIT_CFG_EDI_APR  then PageControl1.ActivePage := tabEdiColor;
@@ -296,9 +306,9 @@ begin
   if nodStr = TIT_CFG_EDI_SYN  then PageControl1.ActivePage := tabEdiSyntax;
 
   if nodStr = TIT_CFG_COMPIL  then PageControl1.ActivePage := tabCompiler;
-  if nodStr = TIT_CFG_CMP_ASM then PageControl1.ActivePage := tabEnsamb;
-  if nodStr = TIT_CFG_EXTRA1  then PageControl1.ActivePage := tabExtraPan1;
-  if nodStr = TIT_CFG_EXTRA2  then PageControl1.ActivePage := tabExtraPan2;
+  if nodStr = TIT_CFG_CMP_ASM then PageControl1.ActivePage := tabCompAsm;
+  if nodStr = TIT_CFG_CMP_EXT2  then PageControl1.ActivePage := tabCompExt2;
+  if nodStr = TIT_CFG_CMP_EXT3  then PageControl1.ActivePage := tabCompExt3;
 
   if nodStr = TIT_CFG_EXTOOL  then PageControl1.ActivePage := tabExtTool;
 end;
@@ -416,34 +426,39 @@ var
   s: TParElem;
 begin
   ///////////////////////////////////////////////////////
-  ///////// Configuraciones generales
-  s:=cfgFile.Asoc_Str ('language'   , @language, ComboBox1, 'en - English');
-  s:=cfgFile.Asoc_Int ('winXpos'    , @winXpos, 50);
-  s:=cfgFile.Asoc_Int ('winYpos'    , @winYpos, 50);
-  s:=cfgFile.Asoc_Int ('winWidth'   , @winWidth, 800);
-  s:=cfgFile.Asoc_Int ('winHeight'  , @winHeight, 600);
-  s:=cfgFile.Asoc_Enum('winState'   , @winState, SizeOf(TWindowState), 0);
-
-  ///////////////////////////////////////////////////////
   ///////// Configuraciones de Entorno
-  s:=cfgFile.Asoc_Enum('StateStatusbar', @StateToolbar, SizeOf(TStyleToolbar), RadioGroup1, 1);
-  s:=cfgFile.Asoc_Bol ('chkLoadLast',@LoadLast   , chkLoadLast   , true);
-  s:=cfgFile.Asoc_Str ('filesClosed', @filesClosed, '');
-  s:=cfgFile.Asoc_TCol('SplitterCol',@SplitterCol, colSplitCol, clDefault);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_TCol('MessPanPan', @PanelsCol , colMessPanPan , clDefault);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_TCol('TextPanel' ,  @PanTextCol , colPanTextCol , clGray);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_Bol('VerPanMensaj', @FViewPanMsg  , true);
-  s:=cfgFile.Asoc_Bol('VerStatusbar', @ViewStatusbar, true);
-  s:=cfgFile.Asoc_Bol('VerBarHerram', @FViewToolbar , true);
-  s:=cfgFile.Asoc_Bol('ViewSynTree',  @FViewPanLeft , true);
-  s:=cfgFile.Asoc_Int('SynTreeWidth', @PanLeftWidth , 130);
-  s:=cfgFile.Asoc_Int('EditAsmWidth', @PanRightWidth , 300);
-  s:=cfgFile.Asoc_Bol('ViewPanAssem', @FViewPanRight, true);
-
   ///////////////////////////////////////////////////////
+  s:=cfgFile.Asoc_Str ('language'    , @language   , cmbLanguage , 'en - English');
+  s:=cfgFile.Asoc_Bol ('chkLoadLast' , @LoadLast   , chkLoadLast , true);
+  s:=cfgFile.Asoc_Enum('grpToolbarSta',@StateToolbar, SizeOf(TStyleToolbar), grpToolbarSta, 1);
+  s:=cfgFile.Asoc_TCol('MessPanels'  , @PanelsCol  , colPanels   , clDefault);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_TCol('SplitterCol' , @SplitterCol, colSplitCol , clDefault);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_TCol('TextPanel'   , @PanTextCol , colPanTextCol, clGray);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  //Propiedades sin control
+  s:=cfgFile.Asoc_Str ('filesClosed' , @filesClosed  , '');
+  s:=cfgFile.Asoc_Bol ('VerPanMensaj', @FViewPanMsg  , true);
+  s:=cfgFile.Asoc_Bol ('VerStatusbar', @ViewStatusbar, true);
+  s:=cfgFile.Asoc_Bol ('VerBarHerram', @FViewToolbar , true);
+  s:=cfgFile.Asoc_Bol ('ViewSynTree' , @FViewPanLeft , true);
+  s:=cfgFile.Asoc_Int ('SynTreeWidth', @PanLeftWidth , 130);
+  s:=cfgFile.Asoc_Int ('EditAsmWidth', @PanRightWidth, 300);
+  s:=cfgFile.Asoc_Bol ('ViewPanAssem', @FViewPanRight, true);
+  s:=cfgFile.Asoc_Int ('winXpos'     , @winXpos  , 50);
+  s:=cfgFile.Asoc_Int ('winYpos'     , @winYpos  , 50);
+  s:=cfgFile.Asoc_Int ('winWidth'    , @winWidth , 800);
+  s:=cfgFile.Asoc_Int ('winHeight'   , @winHeight, 600);
+  s:=cfgFile.Asoc_Enum('winState'    , @winState , SizeOf(TWindowState), 0);
+
+  ///////// Configuraciones del Explorador de Cödigo
+  s:=cfgFile.Asoc_TCol('CodExplBack',@CodExplBack, colCodExplBack, clWindow);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_TCol('CodExplText',@CodExplText, colCodExplText, clDefault);
+  s.categ := 1;   //marca como propiedad de tipo "Tema"
+  s:=cfgFile.Asoc_Int ('grpFiltypes',@cexpFiltype, grpFiltype, 0);
+
   ///////// Configuraciones del Panel de mensajes
   s:=cfgFile.Asoc_TCol('MessPanBack',@MessPanBack, colMessPanBack, clWindow);
   s.categ := 1;   //marca como propiedad de tipo "Tema"
@@ -453,32 +468,31 @@ begin
   s.categ := 1;   //marca como propiedad de tipo "Tema"
   s:=cfgFile.Asoc_TCol('MessPanSel', @MessPanSel , colMessPanSel , clBtnFace);
   s.categ := 1;   //marca como propiedad de tipo "Tema"
-  ///////// Configuraciones del Explorador de Cödigo
-  s:=cfgFile.Asoc_TCol('CodExplBack',@CodExplBack, colCodExplBack, clWindow);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_TCol('CodExplText',@CodExplText, colCodExplText, clDefault);
-  s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_Int ('grpFiltypes',@cexpFiltype,  grpFiltype, 0);
 
   ///////////////////////////////////////////////////////
   ///////// Configuraciones del Editor
-  s:=cfgFile.Asoc_Int('TabEdiState', @TabEdiMode, grpTabEdiState, 0);
+  ///////////////////////////////////////////////////////
+
   s:=cfgFile.Asoc_Bol('ShowErMsg'  , @ShowErMsg, chkShowErrMsg, true);
+  s:=cfgFile.Asoc_Int('TabEdiState', @TabEdiMode, grpTabEdiState, 0);
+
+  ///////// Configuraciones de apariencia
+  fraCfgSynEdit.Iniciar('Edit', cfgFile);
+
+  //Configuración de Sintaxis
+  fraCfgSyntax.LoadSyntaxFiles(patSyntax);
+
   //Configuración por cada compilador
   fraCfgAfterChg6502.Init('AftChg6502', cfgFile);
 
   ///////////////////////////////////////////////////////
-  ///////// Configuraciones del Editor-Colores
-  fraCfgSynEdit.Iniciar('Edit', cfgFile);
-  //Configuración del Editor-Sintaxis
-  fraCfgSyntax.LoadSyntaxFiles(patSyntax);
+  ///////// Configuraciones del compilador
+  ///////////////////////////////////////////////////////
 
+  fraCfgCompiler6502.Init('Compiler6502', cfgFile);
   ///////////////////////////////////////////////////////
   ///////// Configuraciones de Ensamblador
   fraCfgAsmOut6502.Init('AsmOutput6502', cfgFile);
-  ///////////////////////////////////////////////////////
-  ///////// Configuraciones del compilador
-  fraCfgCompiler6502.Init('Compiler6502', cfgFile);
 
   ///////////////////////////////////////////////////////
   ///////// Configuración de Herramienta Externa

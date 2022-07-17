@@ -432,7 +432,7 @@ object frmAdapter6502: TfrmAdapter6502
     Left = 152
     Top = 168
     object acToolCompil: TAction
-      Category = 'Tool'
+      Category = 'Compiler'
       Caption = '&Compilar'
       Hint = 'Compila el archivo Actual'
       ImageIndex = 0
@@ -440,52 +440,58 @@ object frmAdapter6502: TfrmAdapter6502
       ShortCut = 16504
     end
     object acToolComEjec: TAction
-      Category = 'Tool'
+      Category = 'Compiler'
       Caption = 'Compilar y Ejecutar'
       ImageIndex = 1
       OnExecute = acToolComEjecExecute
       ShortCut = 120
     end
     object acToolChecksyn: TAction
-      Category = 'Tool'
+      Category = 'Compiler'
       Caption = 'Check S&yntax'
       ImageIndex = 7
       OnExecute = acToolChecksynExecute
     end
     object acToolRamExp: TAction
-      Category = 'Tool'
+      Category = 'Compiler'
       Caption = '&RAM Explorer'
       ImageIndex = 3
       OnExecute = acToolRamExpExecute
       ShortCut = 123
     end
     object acToolASMDebug: TAction
-      Category = 'Tool'
+      Category = 'Compiler'
       Caption = 'ASM &Debugger'
       ImageIndex = 4
       OnExecute = acToolASMDebugExecute
       ShortCut = 16507
     end
     object acToolListRep: TAction
-      Category = 'Tool'
+      Category = 'Compiler'
       Caption = '&List Report'
       ImageIndex = 5
       OnExecute = acToolListRepExecute
     end
     object acToolFindDec: TAction
-      Category = 'Tool'
+      Category = 'Codetool'
       Caption = 'Find Declaration'
       ImageIndex = 6
       OnExecute = acToolFindDecExecute
     end
     object acToolTestUnit: TAction
-      Category = 'Tool'
+      Category = 'Compiler'
       Caption = 'Test Device Units'
       ImageIndex = 8
     end
   end
   object MainMenu1: TMainMenu
     Left = 48
-    Top = 56
+    Top = 48
+    object extraMenu1: TMenuItem
+      Caption = 'extraMenu1'
+    end
+    object extraMenu2: TMenuItem
+      Caption = 'extraMenu2'
+    end
   end
 end
