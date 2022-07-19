@@ -54,7 +54,7 @@ type
     procedure DoAnalyzeProgram;
     procedure DoAnalyze;
   public
-    {Indica que TCompiler, va a acceder a un archivo, peor está pregunatndo para ver
+    {Indica que TCompiler, va a acceder a un archivo, peor está preguntando para ver
      si se tiene un Stringlist, con los datos ya caragdos del archivo, para evitar
      tener que abrir nuevamente al archivo.}
     OnRequireFileString: procedure(FilePath: string; var strList: TStrings) of object;

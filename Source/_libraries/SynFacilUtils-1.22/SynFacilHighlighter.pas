@@ -1205,6 +1205,7 @@ begin
     on e: Exception do begin
       //completa el mensaje
       e.Message:=ERROR_LOADING_ + Filename + #13#10 + e.Message;
+      DebugLn(e.Message);
       fs.Free;
       raise   //genera de nuevo
     end;

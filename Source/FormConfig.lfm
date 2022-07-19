@@ -1,11 +1,11 @@
 object Config: TConfig
-  Left = 215
-  Height = 475
+  Left = 226
+  Height = 501
   Top = 215
   Width = 714
   BorderStyle = bsDialog
   Caption = 'Configuración'
-  ClientHeight = 475
+  ClientHeight = 501
   ClientWidth = 714
   DesignTimePPI = 120
   OnCreate = FormCreate
@@ -16,7 +16,7 @@ object Config: TConfig
   object Panel1: TPanel
     Left = 0
     Height = 62
-    Top = 413
+    Top = 439
     Width = 714
     Align = alBottom
     ClientHeight = 62
@@ -57,28 +57,28 @@ object Config: TConfig
   end
   object PageControl1: TPageControl
     Left = 200
-    Height = 413
+    Height = 439
     Top = 0
     Width = 514
-    ActivePage = tabEnviron
+    ActivePage = tabEnvThemes
     Align = alClient
     ShowTabs = False
-    TabIndex = 0
+    TabIndex = 1
     TabOrder = 1
     object tabEnviron: TTabSheet
       Caption = 'Enviroment'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclEnviron: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
-        HorzScrollBar.Page = 460
+        HorzScrollBar.Page = 442
         VertScrollBar.Page = 368
         Align = alClient
         BorderStyle = bsNone
-        ClientHeight = 405
+        ClientHeight = 431
         ClientWidth = 506
         TabOrder = 0
         object chkLoadLast: TCheckBox
@@ -90,52 +90,36 @@ object Config: TConfig
           TabOrder = 0
         end
         object lblSplitCol: TLabel
-          Left = 272
+          Left = 290
           Height = 20
-          Top = 224
+          Top = 204
           Width = 95
           Caption = 'Splitters color:'
         end
         object colSplitCol: TColorBox
-          Left = 272
+          Left = 290
           Height = 26
-          Top = 244
+          Top = 224
           Width = 152
           Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
           ItemHeight = 20
           TabOrder = 1
         end
         object lblPanelCol: TLabel
-          Left = 272
+          Left = 290
           Height = 20
-          Top = 164
+          Top = 144
           Width = 84
           Caption = 'Panels Color:'
         end
         object colPanelsCol: TColorBox
-          Left = 272
+          Left = 290
           Height = 26
-          Top = 184
+          Top = 164
           Width = 152
           Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
           ItemHeight = 20
           TabOrder = 2
-        end
-        object cmbThemes: TComboBox
-          Left = 270
-          Height = 28
-          Top = 40
-          Width = 190
-          ItemHeight = 20
-          TabOrder = 3
-          Text = 'cmbThemes'
-        end
-        object Label3: TLabel
-          Left = 270
-          Height = 20
-          Top = 20
-          Width = 73
-          Caption = 'Set Theme:'
         end
         object Label2: TLabel
           Left = 20
@@ -159,7 +143,7 @@ object Config: TConfig
             'fr - French'
             'qu - Quechua'
           )
-          TabOrder = 4
+          TabOrder = 3
           Text = 'cmbLanguage'
         end
         object grpToolbarSta: TRadioGroup
@@ -182,7 +166,7 @@ object Config: TConfig
             'Small Icons'
             'Big Icons'
           )
-          TabOrder = 5
+          TabOrder = 4
         end
         object Label1: TLabel
           Left = 20
@@ -197,58 +181,92 @@ object Config: TConfig
           Top = 340
           Width = 370
           Enabled = False
-          TabOrder = 6
+          TabOrder = 5
           Text = '{AppPath}/units/'
         end
-        object butSaveCurThem: TButton
-          Left = 270
-          Height = 42
-          Top = 100
-          Width = 190
-          Caption = '&Save current config.'
-          OnClick = butSaveCurThemClick
-          TabOrder = 7
-        end
-        object Label4: TLabel
-          Left = 270
-          Height = 20
-          Top = 80
-          Width = 91
-          Caption = 'CreateTheme:'
-        end
         object lblSplitCol1: TLabel
-          Left = 270
+          Left = 288
           Height = 20
-          Top = 280
+          Top = 260
           Width = 109
           Caption = 'Panel Text Color:'
         end
         object colPanTextCol: TColorBox
-          Left = 270
+          Left = 288
           Height = 26
-          Top = 300
+          Top = 280
           Width = 152
           DefaultColorColor = clGray
           Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
           ItemHeight = 20
-          TabOrder = 8
+          TabOrder = 6
+        end
+      end
+    end
+    object tabEnvThemes: TTabSheet
+      Caption = 'tabEnvThemes'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclEnvThemes: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 446
+        VertScrollBar.Page = 210
+        Align = alClient
+        BorderStyle = bsNone
+        ClientHeight = 431
+        ClientWidth = 506
+        TabOrder = 0
+        object butSaveCurThem: TButton
+          Left = 128
+          Height = 42
+          Top = 168
+          Width = 224
+          Caption = '&Save current config. as theme'
+          OnClick = butSaveCurThemClick
+          TabOrder = 0
+        end
+        object lblThemLoad: TLabel
+          Left = 24
+          Height = 20
+          Top = 24
+          Width = 99
+          Caption = 'Theme loaded:'
+        end
+        object butLoadTheme: TButton
+          Left = 288
+          Height = 30
+          Top = 48
+          Width = 158
+          Caption = '&Load theme ...'
+          OnClick = butLoadThemeClick
+          TabOrder = 1
+        end
+        object txtThemLoaded: TEdit
+          Left = 24
+          Height = 28
+          Top = 48
+          Width = 200
+          TabOrder = 2
         end
       end
     end
     object tabEnvFilExp: TTabSheet
       Caption = 'tabEnvFilExp'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclEnvFilExp: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 438
         VertScrollBar.Page = 319
         Align = alClient
         BorderStyle = bsNone
-        ClientHeight = 405
+        ClientHeight = 431
         ClientWidth = 506
         TabOrder = 0
         object colCodExplText: TColorBox
@@ -309,18 +327,18 @@ object Config: TConfig
     end
     object tabEnvMesPan: TTabSheet
       Caption = 'tabEnvMesPan'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclEnvMesPan: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 162
         VertScrollBar.Page = 276
         Align = alClient
         BorderStyle = bsNone
-        ClientHeight = 405
+        ClientHeight = 431
         ClientWidth = 506
         TabOrder = 0
         object colMessPanSel: TColorBox
@@ -391,11 +409,11 @@ object Config: TConfig
     end
     object tabEnvExtra1: TTabSheet
       Caption = 'tabEnvExtra1'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclEnvExtra1: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 1
@@ -407,18 +425,18 @@ object Config: TConfig
     end
     object tabEditor: TTabSheet
       Caption = 'General'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclEditor: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 260
         VertScrollBar.Page = 240
         Align = alClient
         BorderStyle = bsNone
-        ClientHeight = 405
+        ClientHeight = 431
         ClientWidth = 506
         TabOrder = 0
         object grpTabEdiState: TRadioGroup
@@ -456,11 +474,11 @@ object Config: TConfig
     end
     object tabEdiAppear: TTabSheet
       Caption = 'Editor'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclEdiAppear: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 1
@@ -472,11 +490,11 @@ object Config: TConfig
     end
     object tabEdiSyntax: TTabSheet
       Caption = 'Syntax'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclEdiSyntax: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 1
@@ -488,11 +506,11 @@ object Config: TConfig
     end
     object tabEdiExtra1: TTabSheet
       Caption = 'After Edit Action'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclEdiExtra1: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 1
@@ -504,11 +522,11 @@ object Config: TConfig
     end
     object tabCompiler: TTabSheet
       Caption = 'Compiler'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclCompiler: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 1
@@ -520,11 +538,11 @@ object Config: TConfig
     end
     object tabCmpExtra1: TTabSheet
       Caption = 'Assembler'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclCmpExtra1: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 1
@@ -536,11 +554,11 @@ object Config: TConfig
     end
     object tabCmpExtra2: TTabSheet
       Caption = 'tabCmpExtra2'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclCmpExtra2: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 1
@@ -552,11 +570,11 @@ object Config: TConfig
     end
     object tabCmpExtra3: TTabSheet
       Caption = 'tabCmpExtra3'
-      ClientHeight = 405
+      ClientHeight = 431
       ClientWidth = 506
       object sclCmpExtra3: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 1
@@ -567,12 +585,12 @@ object Config: TConfig
       end
     end
     object tabExtTool: TTabSheet
-      Caption = 'External Tool'
-      ClientHeight = 405
+      Caption = 'tabExtTool'
+      ClientHeight = 431
       ClientWidth = 506
       object sclExtTool: TScrollBox
         Left = 0
-        Height = 405
+        Height = 431
         Top = 0
         Width = 506
         HorzScrollBar.Page = 1
@@ -585,16 +603,16 @@ object Config: TConfig
   end
   object Panel2: TPanel
     Left = 0
-    Height = 413
+    Height = 439
     Top = 0
     Width = 200
     Align = alLeft
-    ClientHeight = 413
+    ClientHeight = 439
     ClientWidth = 200
     TabOrder = 2
     object TreeView1: TTreeView
       Left = 1
-      Height = 411
+      Height = 437
       Top = 1
       Width = 198
       Align = alClient
@@ -637,5 +655,9 @@ object Config: TConfig
       7D737DA0415A4E44658582F292670F58453D69638A03E52F0AC4B7CFFF03CDFD
       6AC6
     }
+  end
+  object OpenDialog1: TOpenDialog
+    Left = 272
+    Top = 240
   end
 end

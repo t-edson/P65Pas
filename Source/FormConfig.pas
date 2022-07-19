@@ -22,6 +22,7 @@ type
     BitCancel: TBitBtn;
     BitAceptar: TBitBtn;
     butSaveCurThem: TButton;
+    butLoadTheme: TButton;
     chkLoadLast: TCheckBox;
     chkShowErrMsg: TCheckBox;
     colCodExplBack: TColorBox;
@@ -33,15 +34,14 @@ type
     colMessPanText: TColorBox;
     colPanTextCol: TColorBox;
     colSplitCol: TColorBox;
-    cmbThemes: TComboBox;
     cmbLanguage: TComboBox;
     Edit1: TEdit;
+    txtThemLoaded: TEdit;
     grpTabEdiState: TRadioGroup;
     ImageList1: TImageList;
     Label1: TLabel;
     Label2: TLabel;
-    Label3: TLabel;
-    Label4: TLabel;
+    lblThemLoad: TLabel;
     lblCodExplCol1: TLabel;
     lblCodExplCol2: TLabel;
     lblMessPan1: TLabel;
@@ -51,11 +51,13 @@ type
     lblPanelCol: TLabel;
     lblSplitCol: TLabel;
     lblSplitCol1: TLabel;
+    OpenDialog1: TOpenDialog;
     PageControl1: TPageControl;
     Panel1: TPanel;
     Panel2: TPanel;
     grpToolbarSta: TRadioGroup;
     grpFilType: TRadioGroup;
+    sclEnvThemes: TScrollBox;
     sclExtTool: TScrollBox;
     sclEdiAppear: TScrollBox;
     sclCompiler: TScrollBox;
@@ -82,9 +84,11 @@ type
     tabCmpExtra2: TTabSheet;
     tabCmpExtra3: TTabSheet;
     tabEnvExtra1: TTabSheet;
+    tabEnvThemes: TTabSheet;
     TreeView1: TTreeView;
     procedure BitAceptarClick(Sender: TObject);
     procedure BitAplicarClick(Sender: TObject);
+    procedure butLoadThemeClick(Sender: TObject);
     procedure butSaveCurThemClick(Sender: TObject);
     procedure SetLanguage;
     procedure TreeView1Click(Sender: TObject);
@@ -110,17 +114,11 @@ type
     procedure SetViewPanLeft(AValue: boolean);
     procedure SetViewToolbar(AValue: boolean);
   private     //Páginas de configuración
-    pEnviron, pEnvFilExp, pEnvMesPan, pEnvExtra1,
+    pEnviron, pEnvThemes, pEnvFilExp, pEnvMesPan, pEnvExtra1,
     pEditor, pEdiAppear, pEdiSyntax, pEdiExtra1,
     pCompiler, pCmpExtra1, pCmpExtra2, pCmpExtra3,
     pExtTool: TConfigPage;
 
-  public  //Configuraciones generales
-    winXpos   : integer;  //Coordenada X de la ventana pricipal.
-    winYpos   : integer;  //Coordenada Y de la ventana pricipal.
-    winWidth  : integer;
-    winHeight : integer;
-    winState  : TWindowState;
   public  //Configuraciones de entorno
     language   : string;  //Lenguaje
     LoadLast   : boolean; //Cargar el último archivo editado
@@ -131,14 +129,21 @@ type
 
     StateToolbar: TStyleToolbar;
     PanLeftWidth: integer;  //Ancho del panel del árbol de sintaxis.
-    PanRightWidth: integer;  //Ancho del editor de ensamblador.
-    filesClosed: string;  {Lista de archivos cargados. Usado para restaurar los archivos
+    PanRightWidth:integer;  //Ancho del editor de ensamblador.
+    //Propiedades sin control
+    filesClosed : string;  {Lista de archivos cargados. Usado para restaurar los archivos
                           abiertos al abrir nuevamente el programa.}
+    winXpos   : integer;  //Coordenada X de la ventana pricipal.
+    winYpos   : integer;  //Coordenada Y de la ventana pricipal.
+    winWidth  : integer;
+    winHeight : integer;
+    winState  : TWindowState;
+    //Propiedades de temas
+    themLoaded  : string; //Nombre del último tema cargado
     //Propiedades del explorador de archivos
-    FilExplBack: TColor;
-    FilExplText: TColor;
+    FilExplBack : TColor;
+    FilExplText : TColor;
     FilExpFiltyp: integer;
-
     //Propiedades del panel de mensajes
     MessPanBack: TColor;  //Color de fondo del panel de mensajes
     MessPanText: TColor;  //Color del texto del panel de mensajes
@@ -173,10 +178,13 @@ implementation
 {$R *.lfm}
 { TConfig }
 resourcestring
+  THEME_FILE_DESC  = 'Theme file';
+  MSG_ALLFILES     = 'All files';
   LABEL_THEM_NONE   = 'None';
   // Environment Settings
   CPAGE_ENVIRON    = 'Environment';
   CPAGE_ENV_FILEXP = 'File Explorer';
+  CPAGE_ENV_THEMES = 'Themes';
   CPAGE_ENV_MESPAN = 'Message Panel';
   CPAGE_ENV_EXTRA1 = 'Extra Subpanel 1'; //Disponible para uso por el compilador
   // Editor Settings
@@ -241,6 +249,7 @@ begin
   //Configuración de entorno
   pEnviron := AddConfigPage(CPAGE_ENVIRON,nil, 0, tabEnviron , sclEnviron);
   ItemIni := pEnviron.treeNode;   //ítem inicial
+    pEnvThemes := AddConfigPage (CPAGE_ENV_THEMES, pEnviron.treeNode, 0, tabEnvThemes, sclEnvThemes); //Temas
     pEnvFilExp := AddConfigPage (CPAGE_ENV_FILEXP, pEnviron.treeNode, 0, tabEnvFilExp, sclEnvFilExp); //Explorador de archivos
     pEnvMesPan := AddConfigPage (CPAGE_ENV_MESPAN, pEnviron.treeNode, 0, tabEnvMesPan, sclEnvMesPan); //Panel de mensajes
     pEnvExtra1 := AddConfigExtra(CPAGE_ENV_EXTRA1, pEnviron.treeNode, 0, tabEnvExtra1, sclEnvExtra1); //Extra panel 1
@@ -264,15 +273,15 @@ begin
   ItemIni.Selected := true;
   TreeView1Click(self);
   //Lee lista de temas
-  cmbThemes.Items.Clear;
-  cmbThemes.Items.Add(LABEL_THEM_NONE);
-  Hay := FindFirst(patThemes + DirectorySeparator + '*.theme',faAnyFile - faDirectory, SR) = 0;
-  while Hay do begin
-     //Encontró archivo, lee sus extensiones
-     cmbThemes.Items.Add(ExtractFileNameWithoutExt(SR.name));
-     Hay := FindNext(SR) = 0;  //Busca siguiente
-  end;
-  cmbThemes.ItemIndex := 0;
+  //cmbThemes.Items.Clear;
+  //cmbThemes.Items.Add(LABEL_THEM_NONE);
+  //Hay := FindFirst(patThemes + DirectorySeparator + '*.theme',faAnyFile - faDirectory, SR) = 0;
+  //while Hay do begin
+  //   //Encontró archivo, lee sus extensiones
+  //   cmbThemes.Items.Add(ExtractFileNameWithoutExt(SR.name));
+  //   Hay := FindNext(SR) = 0;  //Busca siguiente
+  //end;
+  //cmbThemes.ItemIndex := 0;
 end;
 procedure TConfig.TreeView1Click(Sender: TObject);
 var
@@ -304,22 +313,22 @@ var
   filTheme: String;
 begin
   //Verifica primero si hay tema, para cargarlo antes que nada
-  if cmbThemes.ItemIndex > 0 then begin
-    filTheme := patThemes + DirectorySeparator + cmbThemes.Text + '.theme';
-    //Lee de archivo, solo las propiedades marcadas con categoría 1.
-    if not cfgFile.FileToPropertiesCat(filTheme, 1) then begin
-      MsgErr(cfgFile.MsjErr);
-    end;
-    //Mueva valor de las propiedades, a los controles.
-    if not cfgFile.PropertiesToWindowCat(1) then begin
-      MsgErr(cfgFile.MsjErr);
-    end;
-    //Las propiedades de colores de las sintaxis se leen del final del archivo
-    //Actualiza las propiedades leídas del tema, en fraCfgSyntax
-    fraCfgSyntax.SetPropertiesForTheme(filTheme);
-  end;
-  //Guarda primero, para tener actualizado los archivos de sintaxis, cuando se dispare
-  //"OnPropertiesChanges"
+//  if cmbThemes.ItemIndex > 0 then begin
+//    filTheme := patThemes + DirectorySeparator + cmbThemes.Text + '.theme';
+//    //Lee de archivo, solo las propiedades marcadas con categoría 1.
+//    if not cfgFile.FileToPropertiesCat(filTheme, 1) then begin
+//      MsgErr(cfgFile.MsjErr);
+//    end;
+//    //Mueva valor de las propiedades, a los controles.
+//    if not cfgFile.PropertiesToWindowCat(1) then begin
+//      MsgErr(cfgFile.MsjErr);
+//    end;
+//    //Las propiedades de colores de las sintaxis se leen del final del archivo
+//    //Actualiza las propiedades leídas del tema, en fraCfgSyntax
+//    fraCfgSyntax.SetPropertiesForTheme(filTheme);
+//  end;
+  //Guarda primero los posibles cambios en la sintaxis, para tener actualizado los
+  //archivos de sintaxis, cuando se dispare "OnPropertiesChanges".
   fraCfgSyntax.SaveChanges;
   //Proceso normal
   cfgFile.WindowToProperties;
@@ -329,6 +338,34 @@ begin
   end;
   //Cambiará toda la interfaz incluyendo el idioma, y se recargará el archivo de sintaxis
   SaveToFile;
+end;
+procedure TConfig.butLoadThemeClick(Sender: TObject);
+var
+  filTheme: String;
+begin
+  OpenDialog1.InitialDir := patThemes;
+  OpenDialog1.Filter:= THEME_FILE_DESC + '|*.theme|' + MSG_ALLFILES + '|*.*';
+  if not OpenDialog1.Execute then exit;    //se canceló
+  filTheme := OpenDialog1.FileName;
+  if not FileExists(filTheme) then begin
+    MsgExc('Theme file doesn''t exist.');
+    exit;
+  end;
+  //Actualiza nombre de tema
+  txtThemLoaded.Text := filTheme;
+
+  //Lee de archivo, solo las propiedades marcadas con categoría 1.
+  if not cfgFile.FileToPropertiesCat(filTheme, 1) then begin
+    MsgErr(cfgFile.MsjErr);
+  end;
+  //Mueva valor de las propiedades, a los controles.
+  if not cfgFile.PropertiesToWindowCat(1) then begin
+    MsgErr(cfgFile.MsjErr);
+  end;
+  //Las propiedades de colores de las sintaxis se leen del final del archivo
+  //Actualiza las propiedades leídas del tema, en fraCfgSyntax
+  fraCfgSyntax.SetPropertiesForTheme(filTheme);
+
 end;
 procedure TConfig.butSaveCurThemClick(Sender: TObject);
 {Se pide guardar la configuración actual como tema.}
@@ -352,6 +389,7 @@ begin
   Writeln (f, fraCfgSyntax.GetPropertiesForTheme);
   Writeln (f, '<-->');
   CloseFile(f);
+
 end;
 procedure TConfig.cfgFilePropertiesChanges;
 begin
@@ -460,6 +498,9 @@ begin
   s:=cfgFile.Asoc_Int ('winHeight'   , @winHeight, 600);
   s:=cfgFile.Asoc_Enum('winState'    , @winState , SizeOf(TWindowState), 0);
 
+  ///////// Configuraciones del Temas
+  s:=cfgFile.Asoc_Str('themLoaded'  ,@themLoaded, txtThemLoaded, '');
+
   ///////// Configuraciones del Explorador de Archivos
   s:=cfgFile.Asoc_TCol('CodExplBack',@FilExplBack, colCodExplBack, clWindow);
   s.categ := 1;   //marca como propiedad de tipo "Tema"
@@ -507,16 +548,13 @@ end;
 procedure TConfig.Mostrar;
 //Muestra el formulario para configurarlo
 begin
-  cmbThemes.ItemIndex := 0;   //Para evitar confusión
   Showmodal;
 end;
 procedure TConfig.SaveToFile;
 begin
-  msgbox('PanelsCol:' + IntToStr(PanelsCol));
   if not cfgFile.PropertiesToFile then begin
     MsgErr(cfgFile.MsjErr);
   end;
-  msgbox('PanelsCol:' + IntToStr(PanelsCol));
 end;
 //Inicialización
 procedure TConfig.FormCreate(Sender: TObject);

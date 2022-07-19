@@ -4,12 +4,12 @@
     <PathDelim Value="\"/>
     <Version Value="12"/>
     <BuildModes Active="Debug"/>
-    <Units Count="51">
+    <Units Count="56">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="-1"/>
-        <CursorPos X="62" Y="15"/>
+        <CursorPos X="16" Y="17"/>
         <UsageCount Value="219"/>
       </Unit0>
       <Unit1>
@@ -18,9 +18,9 @@
         <ComponentName Value="frmPrincipal"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <TopLine Value="689"/>
-        <CursorPos Y="696"/>
-        <FoldState Value=" TL0030212341 p0@W02 T4706 T5mA011 T8H2}002]O3mK0I6 piYjG04315 pjLlU08216]BDo403F]VZjD04C28]Bckc2C TMnA51111W1E]6 T6n4018 T0n9g32181F THwMRH1W"/>
+        <TopLine Value="383"/>
+        <CursorPos X="26" Y="395"/>
+        <FoldState Value=" TL0030212341 p0+2250]D3 T4706 T5E0}h2 T7GI}e T8H2}04 T3mK0I6 piYjG04315 pjLlU083 pleiB29[I44ma03F]cZjD04C28]Bckc2C TMnA5111151Q1E]8]u0t0010P2 T6n401D T0n9g3C piYnJX2E pj9lJV4J]93pAp85 THwMRH1E"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -123,6 +123,8 @@
         <Filename Value="Globales.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="-1"/>
+        <TopLine Value="181"/>
+        <CursorPos X="3" Y="184"/>
         <UsageCount Value="202"/>
       </Unit7>
       <Unit8>
@@ -145,14 +147,11 @@
         <ComponentName Value="Config"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="1"/>
-        <TopLine Value="96"/>
-        <CursorPos X="39" Y="113"/>
-        <FoldState Value=" T5l20J T3lM050121219 pj1la2C1 piYjI[O5i"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="177"/>
+        <CursorPos X="26" Y="319"/>
+        <FoldState Value=" T4704 T5l1021 TMpb0]7Lld22113 T8J2^01122 T3lU051 piX72P43117 T6lg233[f40nWd533411v"/>
         <UsageCount Value="200"/>
-        <Loaded Value="True"/>
-        <LoadedDesigner Value="True"/>
       </Unit9>
       <Unit10>
         <Filename Value="PicPasProject.pas"/>
@@ -167,9 +166,9 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="1076"/>
-        <CursorPos X="17" Y="1092"/>
-        <FoldState Value=" T7EC33 T8F41A piZk02L2 TLK2105131 TMnI01231B]C5lD05]83lR056]mbj8084 pjUiJ2O4 THldO6]Y6m701A T0mLcEC1143111E TExB42 TF-M23I"/>
+        <TopLine Value="479"/>
+        <CursorPos X="39" Y="488"/>
+        <FoldState Value=" T7EC32 T8F41A piZk02L1 TLK210513]BMnI012[A45lD05 T3lR05614 THldO6]P6m70]+T0mLcEC1143111E TExB42 TF-M23="/>
         <UsageCount Value="200"/>
       </Unit11>
       <Unit12>
@@ -335,6 +334,8 @@
         <Filename Value="Analyzer.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="5"/>
+        <TopLine Value="36"/>
+        <CursorPos X="21" Y="44"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="2"/>
@@ -349,8 +350,8 @@
         <Filename Value="LexPas.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="230"/>
-        <CursorPos X="3" Y="248"/>
+        <TopLine Value="131"/>
+        <CursorPos X="3" Y="149"/>
         <UsageCount Value="364"/>
       </Unit28>
       <Unit29>
@@ -387,9 +388,9 @@
       <Unit32>
         <Filename Value="adapter6502\adapter6502.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="2"/>
-        <TopLine Value="459"/>
-        <CursorPos X="22" Y="464"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="285"/>
+        <CursorPos X="43" Y="319"/>
         <FoldState Value=" T3jI0LA pj2ja0373442 T6jM023112]C0jRIB241w"/>
         <UsageCount Value="205"/>
         <Loaded Value="True"/>
@@ -433,7 +434,7 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
         <EditorIndex Value="-1"/>
-        <CursorPos X="26" Y="16"/>
+        <CursorPos Y="28"/>
         <UsageCount Value="200"/>
       </Unit36>
       <Unit37>
@@ -443,7 +444,8 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
         <EditorIndex Value="-1"/>
-        <CursorPos X="15" Y="26"/>
+        <TopLine Value="11"/>
+        <CursorPos Y="43"/>
         <UsageCount Value="200"/>
       </Unit37>
       <Unit38>
@@ -475,28 +477,28 @@
         <ResourceBaseClass Value="Frame"/>
         <EditorIndex Value="-1"/>
         <CursorPos Y="12"/>
-        <UsageCount Value="174"/>
+        <UsageCount Value="171"/>
       </Unit40>
       <Unit41>
         <Filename Value="..\_language\tra_FormPrincipal.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="156"/>
         <CursorPos Y="189"/>
-        <UsageCount Value="4"/>
+        <UsageCount Value="1"/>
       </Unit41>
       <Unit42>
         <Filename Value="_libraries\SynFacilUtils-1.22\SynFacilHighlighter.pas"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="1184"/>
-        <CursorPos X="15" Y="1208"/>
-        <UsageCount Value="9"/>
+        <TopLine Value="1190"/>
+        <CursorPos X="14" Y="1208"/>
+        <UsageCount Value="10"/>
       </Unit42>
       <Unit43>
         <Filename Value="_libraries\SynFacilUtils-1.22\SynFacilCompletion.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="1667"/>
         <CursorPos X="28" Y="1675"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="6"/>
       </Unit43>
       <Unit44>
         <Filename Value="C:\lazarus\lcl\forms.pp"/>
@@ -504,7 +506,7 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="182"/>
         <CursorPos X="3" Y="200"/>
-        <UsageCount Value="0"/>
+        <UsageCount Value="7"/>
       </Unit44>
       <Unit45>
         <Filename Value="C:\lazarus\lcl\actnlist.pas"/>
@@ -512,166 +514,208 @@
         <EditorIndex Value="-1"/>
         <TopLine Value="104"/>
         <CursorPos X="3" Y="122"/>
-        <UsageCount Value="0"/>
+        <UsageCount Value="10"/>
       </Unit45>
       <Unit46>
-        <Filename Value="_libraries\MiConfig-0.4\MiConfigXML.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="79"/>
-        <CursorPos X="3" Y="85"/>
-        <UsageCount Value="1"/>
-      </Unit46>
-      <Unit47>
         <Filename Value="C:\lazarus\lcl\include\treeview.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="695"/>
         <CursorPos Y="713"/>
-        <UsageCount Value="4"/>
-      </Unit47>
-      <Unit48>
+        <UsageCount Value="1"/>
+      </Unit46>
+      <Unit47>
         <Filename Value="C:\lazarus\lcl\comctrls.pp"/>
         <UnitName Value="ComCtrls"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="3093"/>
-        <CursorPos X="20" Y="3109"/>
-        <UsageCount Value="3"/>
-      </Unit48>
-      <Unit49>
+        <TopLine Value="553"/>
+        <CursorPos X="3" Y="573"/>
+        <UsageCount Value="10"/>
+      </Unit47>
+      <Unit48>
         <Filename Value="C:\lazarus\lcl\include\customcontrol.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="56"/>
         <CursorPos Y="75"/>
-        <UsageCount Value="9"/>
-      </Unit49>
-      <Unit50>
+        <UsageCount Value="6"/>
+      </Unit48>
+      <Unit49>
         <Filename Value="_libraries\SynFacilUtils-1.22\SynFacilUtils.pas"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="1074"/>
         <CursorPos X="12" Y="1092"/>
+        <UsageCount Value="6"/>
+      </Unit49>
+      <Unit50>
+        <Filename Value="..\_language\tra_FrameEditView.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="36" Y="5"/>
         <UsageCount Value="9"/>
       </Unit50>
+      <Unit51>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="133"/>
+        <CursorPos X="3" Y="214"/>
+        <FoldState Value=" T3jD0L02132415451 T6jH0231122 T0jMIB2P"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+      </Unit51>
+      <Unit52>
+        <Filename Value="C:\lazarus\lcl\extctrls.pp"/>
+        <UnitName Value="ExtCtrls"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="1092"/>
+        <CursorPos X="3" Y="1110"/>
+        <UsageCount Value="10"/>
+      </Unit52>
+      <Unit53>
+        <Filename Value="adapterKickc\FrameCfgAftEditKickc.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="fraCfgAftEditKickc"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Frame"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="46" Y="16"/>
+        <UsageCount Value="21"/>
+      </Unit53>
+      <Unit54>
+        <Filename Value="adapterKickc\FrameCfgCompilerKickc.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="fraCfgCompilerKickc"/>
+        <ResourceBaseClass Value="Frame"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="13"/>
+        <CursorPos X="46" Y="31"/>
+        <UsageCount Value="20"/>
+      </Unit54>
+      <Unit55>
+        <Filename Value="C:\lazarus\lcl\controls.pp"/>
+        <UnitName Value="Controls"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="2407"/>
+        <CursorPos X="3" Y="2425"/>
+        <UsageCount Value="10"/>
+      </Unit55>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="29" HistoryIndex="28">
       <Position1>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="128" Column="5" TopLine="111"/>
+        <Filename Value="adapter6502\adapter6502.pas"/>
+        <Caret Line="89" Column="43" TopLine="64"/>
       </Position1>
       <Position2>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="442" Column="50" TopLine="400"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="83" Column="44" TopLine="64"/>
       </Position2>
       <Position3>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="128" Column="5" TopLine="111"/>
+        <Filename Value="adapter6502\adapter6502.pas"/>
+        <Caret Line="89" Column="68" TopLine="64"/>
       </Position3>
       <Position4>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="440" Column="41" TopLine="429"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="84" Column="27" TopLine="67"/>
       </Position4>
       <Position5>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="442" Column="41" TopLine="429"/>
+        <Filename Value="adapter6502\adapter6502.pas"/>
+        <Caret Line="90" Column="26" TopLine="64"/>
       </Position5>
       <Position6>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="128" Column="5" TopLine="111"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="85" Column="27" TopLine="67"/>
       </Position6>
       <Position7>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="442" Column="50" TopLine="400"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="16" Column="32"/>
       </Position7>
       <Position8>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="128" Column="5" TopLine="111"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="100" Column="11" TopLine="74"/>
       </Position8>
       <Position9>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="442" Column="49" TopLine="400"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="99" Column="17" TopLine="99"/>
       </Position9>
       <Position10>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="128" Column="5" TopLine="111"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="16" Column="29"/>
       </Position10>
       <Position11>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="442" Column="50" TopLine="400"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="122" Column="38" TopLine="79"/>
       </Position11>
       <Position12>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="128" Column="5" TopLine="111"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="497" Column="3" TopLine="470"/>
       </Position12>
       <Position13>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="442" Column="50" TopLine="418"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="127" Column="3" TopLine="93"/>
       </Position13>
       <Position14>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="128" Column="5" TopLine="111"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="134" Column="3" TopLine="100"/>
       </Position14>
       <Position15>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="442" Column="50" TopLine="400"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="147" Column="3" TopLine="98"/>
       </Position15>
       <Position16>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="128" Column="5" TopLine="111"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="151" TopLine="135"/>
       </Position16>
       <Position17>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="442" Column="50" TopLine="400"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="159" Column="3" TopLine="137"/>
       </Position17>
       <Position18>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="128" Column="5" TopLine="111"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="165" Column="3" TopLine="146"/>
       </Position18>
       <Position19>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="442" Column="50" TopLine="400"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="210" Column="3" TopLine="149"/>
       </Position19>
       <Position20>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="128" Column="5" TopLine="111"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="214" Column="3" TopLine="166"/>
       </Position20>
       <Position21>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="442" Column="34" TopLine="426"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="220" Column="13" TopLine="166"/>
       </Position21>
       <Position22>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="519" Column="46" TopLine="498"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="226" TopLine="159"/>
       </Position22>
       <Position23>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="516" TopLine="486"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="255" Column="3" TopLine="208"/>
       </Position23>
       <Position24>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="306" Column="19" TopLine="289"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="280" Column="3" TopLine="248"/>
       </Position24>
       <Position25>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="307" TopLine="289"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="294" Column="7" TopLine="276"/>
       </Position25>
       <Position26>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="308" TopLine="289"/>
+        <Filename Value="adapter6502\adapter6502.pas"/>
+        <Caret Line="90" Column="26" TopLine="64"/>
       </Position26>
       <Position27>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="331" TopLine="296"/>
+        <Filename Value="adapter6502\adapter6502.pas"/>
+        <Caret Line="319" Column="43" TopLine="286"/>
       </Position27>
       <Position28>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="292" Column="17" TopLine="259"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="301" Column="44" TopLine="280"/>
       </Position28>
       <Position29>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="289" Column="6" TopLine="271"/>
+        <Filename Value="adapterKickc\adapterKickc.pas"/>
+        <Caret Line="285" Column="18" TopLine="280"/>
       </Position29>
-      <Position30>
-        <Filename Value="FormConfig.pas"/>
-        <Caret Line="246" Column="5" TopLine="170"/>
-      </Position30>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
@@ -686,27 +730,6 @@
         <WatchKind Value="wpkWrite"/>
         <Source Value="_libraries\SynFacilUtils-1.22\SynFacilHighlighter.pas"/>
         <Line Value="1208"/>
-      </Item>
-      <Item>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="FormConfig.pas"/>
-        <Line Value="516"/>
-      </Item>
-      <Item>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="FormConfig.pas"/>
-        <Line Value="307"/>
-      </Item>
-      <Item>
-        <Kind Value="bpkSource"/>
-        <WatchScope Value="wpsLocal"/>
-        <WatchKind Value="wpkWrite"/>
-        <Source Value="FormConfig.pas"/>
-        <Line Value="331"/>
       </Item>
     </BreakPoints>
   </Debugging>

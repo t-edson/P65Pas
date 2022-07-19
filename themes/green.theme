@@ -1,99 +1,111 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <language Val="en - English"/>
-  <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\PicPas-0.8.3\temp\NewFile3.pas
-D:\Proyectos_Software\Lazarus\PicPas-0.8.3\TestCode\Simul_1\Test4_Asm.pas
-D:\Proyectos_Software\Lazarus\PicPas-0.8.3\samples\LCD_test\LCD_test.pas
-"/>
+  <grpToolbarSta Val="1"/>
+  <PanelsCol Val="32768"/>
   <SplitterCol Val="32768"/>
-  <MessPanPan Val="32768"/>
+  <TextPanel Val="16777215"/>
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
+"/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="279"/>
+  <SynTreeWidth Val="224"/>
+  <EditAsmWidth Val="603"/>
   <ViewPanAssem Val="True"/>
-  <viewMode Val="2"/>
-  <MessPanBack Val="-2147483643"/>
-  <MessPanText Val="536870912"/>
-  <MessPanErr Val="255"/>
-  <MessPanSel Val="-2147483633"/>
+  <winXpos Val="94"/>
+  <winYpos Val="0"/>
+  <winWidth Val="1274"/>
+  <winHeight Val="790"/>
+  <winState Val="2"/>
+  <themLoaded Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\themes\green.theme"/>
   <CodExplBack Val="-2147483643"/>
   <CodExplText Val="536870912"/>
   <grpFiltypes Val="0"/>
+  <MessPanBack Val="-2147483643"/>
+  <MessPanText Val="16777215"/>
+  <MessPanErr Val="255"/>
+  <MessPanSel Val="-2147483633"/>
+  <ShowErMsg Val="False"/>
+  <TabEdiState Val="0"/>
   <TamLet Val="10"/>
   <TipLet Val="Courier New"/>
   <VerBarDesV Val="True"/>
   <VerBarDesH Val="False"/>
-  <TabEdiState Val="0"/>
-  <AutSynChk Val="False"/>
   <Edit>
     <cTxtNor Val="0"/>
     <cFonEdi Val="16777215"/>
     <cLinAct Val="65535"/>
     <Autoindent Val="True"/>
-    <MarLinAct Val="False"/>
+    <MarLinAct Val="True"/>
     <ResPalCur Val="True"/>
     <ResPalCFon Val="15780518"/>
     <ResPalCTxt Val="0"/>
     <ResPalCBor Val="15780518"/>
-    <ResPalFWord Val="True"/>
+    <ResPalFWord Val="False"/>
     <VerPanVer Val="True"/>
     <VerNumLin Val="True"/>
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\PicPas-0.8.3\temp\NewFile3.pas
-D:\Proyectos_Software\Lazarus\PicPas-0.8.3\TestCode\Simul_1\Test4_Asm.pas
-D:\Proyectos_Software\Lazarus\PicPas-0.8.3\samples\LCD_test\LCD_test.pas
-D:\Proyectos_Software\Lazarus\PicPas-0.8.3\temp\NewFile2.pas
-D:\Proyectos_Software\Lazarus\PicPas-0.8.3\temp\NewFile1.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.lst
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
 "/>
   </Edit>
-  <IncHeadMpu Val="True"/>
-  <IncDecVar Val="True"/>
-  <VarDecType Val="1"/>
-  <IncAddress Val="True"/>
-  <IncComment Val="True"/>
-  <IncComment2 Val="False"/>
-  <ExcUnused Val="True"/>
-  <IncVarName Val="True"/>
-  <ShowErMsg Val="False"/>
-  <OptimLev Val="1"/>
-  <OptBnkAftIF Val="True"/>
-  <OptBnkBefPro Val="True"/>
-  <OptBnkAftPro Val="True"/>
-  <ReuProcVar Val="True"/>
-  <OptRetProc Val="True"/>
   <ExternTool>
-    <extern_tools Val="Editor	                        	notepad	$(MainFile)	F	V					
+    <extern_tools Val="SImulate	                        	C:\Program Files (x86)\Computerbrains\CCS64 v3.9.3\CCS64.exe	$(hexFile)	F	V					
 "/>
   </ExternTool>
+  <AftChg6502>
+    <actAfterChg Val="3"/>
+  </AftChg6502>
+  <Compiler6502>
+    <OptimLev Val="1"/>
+    <OptBnkAftIF Val="True"/>
+    <OptBnkBefPro Val="True"/>
+    <OptBnkAftPro Val="True"/>
+    <ReuProcVar Val="False"/>
+    <OptRetProc Val="True"/>
+  </Compiler6502>
+  <AsmOutput6502>
+    <IncDecVar Val="True"/>
+    <VarDecType Val="0"/>
+    <IncAddress Val="True"/>
+    <IncComment Val="False"/>
+    <IncComment2 Val="False"/>
+    <ExcUnused Val="True"/>
+    <IncVarName Val="True"/>
+  </AsmOutput6502>
 </CONFIG>
 <!-->
-f:D:\Proyectos_Software\Lazarus\PicPas-0.8.3\syntax\P65Pas_AsmPic.xml
+f:D:\Proyectos_Software\Lazarus\P65Pas-trunk\syntax\P65Pas_Asm.xml
 Keyword	65280	0	V	F	F				
 Comment	8421504	0	F	F	F				
 Number	16711935	0	F	F	F				
 String	65280	0	F	F	F				
 Directive	16711935	0	F	F	F				
 Label	28672	0	F	F	F				
-f:D:\Proyectos_Software\Lazarus\PicPas-0.8.3\syntax\P65Pas_C.xml
+f:D:\Proyectos_Software\Lazarus\P65Pas-trunk\syntax\P65Pas_C.xml
 Keyword	0	0	F	F	F				
 Comment	16232448	0	F	F	F				
 Number	29919	0	F	F	F				
 Directive	16199422	0	F	F	F				
-f:D:\Proyectos_Software\Lazarus\PicPas-0.8.3\syntax\P65Pas_P6502.xml
+f:D:\Proyectos_Software\Lazarus\P65Pas-trunk\syntax\P65Pas_P6502.xml
 Keyword	15901696	0	V	F	F				
 Comment	9276813	0	F	F	F				
 Number	16711935	0	F	F	F				
-String	65280	0	F	F	F				
-Boolean	65535	0	F	F	F				
+String	32768	0	F	F	F				
+Boolean	32768	0	F	F	F				
 Directive	16199422	0	F	F	F				
-Asm	6340704	0	F	V	F				
-Types	65535	0	F	F	F				
+Asm	32768	0	F	V	F				
+Types	32768	0	F	F	F				
 Symbol	32768	0	F	F	F				
 
 <-->

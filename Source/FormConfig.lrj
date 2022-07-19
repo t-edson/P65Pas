@@ -7,16 +7,16 @@
 {"hash":129143604,"name":"tconfig.chkloadlast.caption","sourcebytes":[76,111,97,100,32,108,97,115,116,32,102,105,108,101,32,101,100,105,116,101,100],"value":"Load last file edited"},
 {"hash":104552506,"name":"tconfig.lblsplitcol.caption","sourcebytes":[83,112,108,105,116,116,101,114,115,32,99,111,108,111,114,58],"value":"Splitters color:"},
 {"hash":35845466,"name":"tconfig.lblpanelcol.caption","sourcebytes":[80,97,110,101,108,115,32,67,111,108,111,114,58],"value":"Panels Color:"},
-{"hash":128903667,"name":"tconfig.cmbthemes.text","sourcebytes":[99,109,98,84,104,101,109,101,115],"value":"cmbThemes"},
-{"hash":95109098,"name":"tconfig.label3.caption","sourcebytes":[83,101,116,32,84,104,101,109,101,58],"value":"Set Theme:"},
 {"hash":82521866,"name":"tconfig.label2.caption","sourcebytes":[76,97,110,103,117,97,103,101,58],"value":"Language:"},
 {"hash":136610037,"name":"tconfig.cmblanguage.text","sourcebytes":[99,109,98,76,97,110,103,117,97,103,101],"value":"cmbLanguage"},
 {"hash":191244498,"name":"tconfig.grptoolbarsta.caption","sourcebytes":[84,111,111,108,98,97,114],"value":"Toolbar"},
 {"hash":84597258,"name":"tconfig.label1.caption","sourcebytes":[85,110,105,116,115,32,80,97,116,104,58],"value":"Units Path:"},
 {"hash":65821903,"name":"tconfig.edit1.text","sourcebytes":[123,65,112,112,80,97,116,104,125,47,117,110,105,116,115,47],"value":"{AppPath}/units/"},
-{"hash":153737390,"name":"tconfig.butsavecurthem.caption","sourcebytes":[38,83,97,118,101,32,99,117,114,114,101,110,116,32,99,111,110,102,105,103,46],"value":"&Save current config."},
-{"hash":235281194,"name":"tconfig.label4.caption","sourcebytes":[67,114,101,97,116,101,84,104,101,109,101,58],"value":"CreateTheme:"},
 {"hash":178945418,"name":"tconfig.lblsplitcol1.caption","sourcebytes":[80,97,110,101,108,32,84,101,120,116,32,67,111,108,111,114,58],"value":"Panel Text Color:"},
+{"hash":201977747,"name":"tconfig.tabenvthemes.caption","sourcebytes":[116,97,98,69,110,118,84,104,101,109,101,115],"value":"tabEnvThemes"},
+{"hash":150044709,"name":"tconfig.butsavecurthem.caption","sourcebytes":[38,83,97,118,101,32,99,117,114,114,101,110,116,32,99,111,110,102,105,103,46,32,97,115,32,116,104,101,109,101],"value":"&Save current config. as theme"},
+{"hash":163290170,"name":"tconfig.lblthemload.caption","sourcebytes":[84,104,101,109,101,32,108,111,97,100,101,100,58],"value":"Theme loaded:"},
+{"hash":255951582,"name":"tconfig.butloadtheme.caption","sourcebytes":[38,76,111,97,100,32,116,104,101,109,101,32,46,46,46],"value":"&Load theme ..."},
 {"hash":225009824,"name":"tconfig.tabenvfilexp.caption","sourcebytes":[116,97,98,69,110,118,70,105,108,69,120,112],"value":"tabEnvFilExp"},
 {"hash":81852730,"name":"tconfig.lblcodexplcol2.caption","sourcebytes":[84,101,120,116,32,67,111,108,111,114,58],"value":"Text Color:"},
 {"hash":116289418,"name":"tconfig.lblcodexplcol1.caption","sourcebytes":[66,97,99,107,32,99,111,108,111,114,58],"value":"Back color:"},
@@ -37,5 +37,5 @@
 {"hash":163830370,"name":"tconfig.tabcmpextra1.caption","sourcebytes":[65,115,115,101,109,98,108,101,114],"value":"Assembler"},
 {"hash":57201154,"name":"tconfig.tabcmpextra2.caption","sourcebytes":[116,97,98,67,109,112,69,120,116,114,97,50],"value":"tabCmpExtra2"},
 {"hash":57201155,"name":"tconfig.tabcmpextra3.caption","sourcebytes":[116,97,98,67,109,112,69,120,116,114,97,51],"value":"tabCmpExtra3"},
-{"hash":186613084,"name":"tconfig.tabexttool.caption","sourcebytes":[69,120,116,101,114,110,97,108,32,84,111,111,108],"value":"External Tool"}
+{"hash":217977660,"name":"tconfig.tabexttool.caption","sourcebytes":[116,97,98,69,120,116,84,111,111,108],"value":"tabExtTool"}
 ]}

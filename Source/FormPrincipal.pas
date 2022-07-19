@@ -34,8 +34,8 @@ type
     acArcCloseProj: TAction;
     acArcCloseFile: TAction;
     acSearFindPrv: TAction;
-    acToolSel_P65pas_65c02: TAction;
-    acToolSel_P65pas_6502: TAction;
+    acToolSel_kickc: TAction;
+    acToolSel_P65pas: TAction;
     acViewPanRight: TAction;
     acToolExt4: TAction;
     acToolExt5: TAction;
@@ -170,8 +170,8 @@ type
     procedure acToolExt4Execute(Sender: TObject);
     procedure acToolExt5Execute(Sender: TObject);
     procedure acToolFindDecExecute(Sender: TObject);
-    procedure acToolSel_P65pas_6502Execute(Sender: TObject);
-    procedure acToolSel_P65pas_65c02Execute(Sender: TObject);
+    procedure acToolSel_P65pasExecute(Sender: TObject);
+    procedure acToolSel_kickcExecute(Sender: TObject);
     procedure acViewPanRightExecute(Sender: TObject);
     procedure acViewPanLeftExecute(Sender: TObject);
     procedure acViewStatbarExecute(Sender: TObject);
@@ -400,7 +400,7 @@ begin
   adapter6502.OnAfterCheckSyn  := @comp_AfterCheckSyn;
   Config.RegisterAdapter(adapter6502);    //Registra adaptador en configuración
   //Fija compilador por defecto
-  acToolSel_P65pas_6502Execute(self);
+  acToolSel_P65pasExecute(self);
   ///////////////////////////////////////////////////////
 
   Config.Init;   //necesario para poder trabajar
@@ -1019,13 +1019,13 @@ begin
      fraEdit_ChangeEditorState(fraEditView1.ActiveEditor);
   end;
 end;
-procedure TfrmPrincipal.acToolSel_P65pas_6502Execute(Sender: TObject);
+procedure TfrmPrincipal.acToolSel_P65pasExecute(Sender: TObject);
 {Se pide seleccionar el compilador P65pas}
 begin
   currComp := adapter6502;         //Apunta a compilador
   //Actualiza lista de compiladores
-  acToolSel_P65pas_6502.Checked := true;
-  acToolSel_P65pas_65c02.Checked := false;
+  acToolSel_P65pas.Checked := true;
+  acToolSel_kickc.Checked := false;
   //Actualiza configuración
   Config.ActivateAdapter(currComp);
   //Configura menús y Toolbar
@@ -1034,13 +1034,13 @@ begin
   //Termina configuración
   UpdateIDE(adapter6502.CompilerName);
 end;
-procedure TfrmPrincipal.acToolSel_P65pas_65c02Execute(Sender: TObject);
+procedure TfrmPrincipal.acToolSel_kickcExecute(Sender: TObject);
 {Se pide seleccionar el compilador PicPas}
 begin
   currComp := adapter6502;         //Apunta a compilador
   //Actualiza lista de compiladores
-  acToolSel_P65pas_6502.Checked := false;
-  acToolSel_P65pas_65c02.Checked := true;
+  acToolSel_P65pas.Checked := false;
+  acToolSel_kickc.Checked := true;
   //Actualiza configuración
   Config.ActivateAdapter(currComp);
   //Configura menús y Toolbar

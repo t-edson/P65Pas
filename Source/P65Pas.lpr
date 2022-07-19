@@ -7,12 +7,14 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, lazcontrols, FormPrincipal, FrameSynTree6502, Globales, FormConfig,
+  Forms, lazcontrols, FormPrincipal, Globales, FormConfig,
   PicPasProject, FrameEditView, FrameMessagesWin, FormElemProperty,
-  FrameCfgExtTool, FormDebugger6502, FormRAMExplorer6502, ParserDirec, Analyzer,
+  FrameCfgExtTool, ParserDirec, Analyzer,
   LexPas, CompContexts, ParserASM_6502, XpresElemP65, FrameLateralPanel,
-  adapter6502, FrameStatist6502, FormAdapter6502, FrameCfgAfterChg6502,
-  FrameCfgCompiler6502, FrameCfgAsmOut6502;
+  //Adaptador para P65Pas
+  adapter6502, FormAdapter6502, FrameStatist6502, FrameCfgAfterChg6502, FrameSynTree6502,
+  FrameCfgCompiler6502, FrameCfgAsmOut6502, FormDebugger6502, FormRAMExplorer6502,
+  adapterKickc, unit1;
 
 {$R *.res}
 
