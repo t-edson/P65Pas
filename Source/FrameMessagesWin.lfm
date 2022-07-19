@@ -45,6 +45,7 @@ object fraMessagesWin: TfraMessagesWin
     BevelOuter = bvNone
     ClientHeight = 126
     ClientWidth = 146
+    ParentColor = False
     TabOrder = 1
     object chkInform: TCheckBox
       Left = 10

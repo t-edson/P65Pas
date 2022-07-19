@@ -4,14 +4,28 @@ unit adapterBase;
 {$mode ObjFPC}{$H+}
 interface
 uses
-  Classes, SysUtils, types, FrameEditView, FrameCfgSynEdit, Menus, ExtCtrls,
-  Controls, Graphics, ComCtrls, Forms ;
+  Classes, SysUtils, types, FrameEditView, FrameCfgSynEdit, MiConfigXML, Menus,
+  ExtCtrls, Controls, Graphics, ComCtrls, Forms ;
 
 type
+  {Define la entidad "Página de configuración". Representa a una de las páginas o
+  "TabSheet" que se tienen en el formulario de configuración.
+  Se usa para ayudar en simplificar la creación de la estructura de páginas de
+  configuración en el FormConfig y para facilitar la comunicación con los adapatadores
+  para permitirles configurar sus propias páginas de configuración.}
+  TConfigPage = object
+    treeNode : TTreeNode;    //Entrada en el TTreeNode que selecciona a la página de config.
+    tabsheet : TTabSheet;    //Página del PageControl donde está el "scrollBox".
+    scrollBox: TScrollBox;   //Contenedor de los controles de configuración.
+    extra    : boolean;      //Bandera para indicar que la página es extra y está disponible.
+  end;
+
   {Adaptador para controlar a diversos compiladores}
+
+  { TAdapterBase }
+
   TAdapterBase = class
   public     //Eventos
-    //*** Se debería eliminar el uso de eventos para hacer la clase más independiente.
     OnBeforeCompile: procedure of object;  //Al iniciar la compilación (No verif. de sintaxis).
     OnAfterCompile: procedure of object;   //Al finalizar la compilación (No verif. de sintaxis).
     OnBeforeCheckSyn: procedure of object; //Al iniciar la verif. de sintaxis.
@@ -38,8 +52,10 @@ type
 //    procedure UpdateCompletionForEditors; virtual; abstract;
 //    procedure DumpCode(lins: TSTrings); virtual; abstract;
   public      //Inicialización
-    procedure ConfigCreate(frmConfig: TComponent; tabEnvExt1, tabAftEdit,
-      tabCompiler, tabCompAsm, tabCompExt2, tabCompExt3: TScrollbox); virtual; abstract;
+    procedure ConfigCreate(frmConfig: TComponent; EnvExt1, EdiExt1,
+      _Compiler, CompExt1, CompExt2, CompExt3: TConfigPage); virtual; abstract;
+    procedure ConfigInit(cfgFile: TMiConfigXML); virtual; abstract;
+    procedure ConfigActivate; virtual; abstract;
     procedure setMenusAndToolbar(menu1, menu2, menu3: TMenuItem; toolbar: TToolBar;
       popupEdit: TPopupMenu; popupEditCount: integer); virtual; abstract;
   end;

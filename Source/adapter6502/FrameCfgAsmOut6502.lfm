@@ -1,10 +1,10 @@
 object fraCfgAsmOut6502: TfraCfgAsmOut6502
   Left = 0
-  Height = 412
+  Height = 379
   Top = 0
-  Width = 502
-  ClientHeight = 412
-  ClientWidth = 502
+  Width = 479
+  ClientHeight = 379
+  ClientWidth = 479
   DesignTimePPI = 120
   ParentFont = False
   TabOrder = 0

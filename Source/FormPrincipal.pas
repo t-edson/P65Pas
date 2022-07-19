@@ -391,6 +391,18 @@ begin
   fraEditView1.Align := alClient;
   fraEditView1.tmpPath := patTemp;   //fija ruta de trabajo
 
+  /////////// Crea adaptadores para compiladores soportados ///////////
+  adapter6502:= TAdapter6502.Create(fraEditView1, panRightPanel);
+  adapter6502.Init(fraLeftPanel.PageControl1, ImgActions16, ImgActions32, ActionList);
+  adapter6502.OnBeforeCompile  := @comp_BeforeCompile;
+  adapter6502.OnAfterCompile   := @comp_AfterCompile;
+  adapter6502.OnBeforeCheckSyn := @comp_BeforeCheckSyn;
+  adapter6502.OnAfterCheckSyn  := @comp_AfterCheckSyn;
+  Config.RegisterAdapter(adapter6502);    //Registra adaptador en configuración
+  //Fija compilador por defecto
+  acToolSel_P65pas_6502Execute(self);
+  ///////////////////////////////////////////////////////
+
   Config.Init;   //necesario para poder trabajar
   Config.OnPropertiesChanges := @ConfigChanged;
   Config.fraCfgExtTool.OnReplaceParams := @ConfigExtTool_RequirePar;
@@ -407,17 +419,6 @@ begin
     AddItemToMenu(mnSamples, '&'+ChangeFileExt(SR.name,''),@DoSelectSample);
     Hay := FindNext(SR) = 0;
   end;
-  /////////// Crea adaptadores para compiladores soportados ///////////
-  adapter6502:= TAdapter6502.Create(fraEditView1, panRightPanel);
-  adapter6502.Init(fraLeftPanel.PageControl1, ImgActions16, ImgActions32, ActionList,
-    Config.fraCfgAfterChg6502, Config.fraCfgCompiler6502, Config.fraCfgAsmOut6502);
-  adapter6502.OnBeforeCompile  := @comp_BeforeCompile;
-  adapter6502.OnAfterCompile   := @comp_AfterCompile;
-  adapter6502.OnBeforeCheckSyn := @comp_BeforeCheckSyn;
-  adapter6502.OnAfterCheckSyn  := @comp_AfterCheckSyn;
-  //Fija compilador por defecto
-  acToolSel_P65pas_6502Execute(self);
-  ///////////////////////////////////////////////////////
   ConfigChanged;   //primera actualización
 
   //Carga últimos archivos abiertos
@@ -683,16 +684,15 @@ begin
   end;
   end;
   //Configura Explorador de código
-  fraLeftPanel.BackColor := Config.CodExplBack;;
-  fraLeftPanel.TextColor := Config.CodExplText;
-  fraLeftPanel.fraArcExplor1.Filter.ItemIndex := Config.cexpFiltype;
+  fraLeftPanel.BackColor := Config.FilExplBack;;
+  fraLeftPanel.TextColor := Config.FilExplText;
+  fraLeftPanel.fraArcExplor1.Filter.ItemIndex := Config.FilExpFiltyp;
   fraLeftPanel.fraArcExplor1.FilterChange(self);
   //Configura Visor de Mensajes
   fraMessages.BackColor := Config.MessPanBack;
   fraMessages.TextColor := Config.MessPanText;
   fraMessages.TextErrColor := Config.MessPanErr;
   fraMessages.BackSelColor := Config.MessPanSel;
-
   fraMessages.PanelColor := Config.PanelsCol;
 
   //Set color to Toolbars
@@ -861,7 +861,11 @@ procedure TfrmPrincipal.comp_AfterCompile;
 {Ha terminado el proceso de compilación del compilador actual.}
 begin
   {Desactiva alguna Verif. de sintaxis, en camino, porque si se ha terminado
-  de compilar, ya no tiene sentido hacer una verifiación de sintaxis.}
+  de compilar, ya no tiene sentido hacer una verificación de sintaxis.
+  Si bien se desactivó la verificación en comp_BeforeCompile(), puede que al iniciar la
+  compilación, las rutinas del compilador hayan guardado el archivo actual, y esto se
+  detecta como un cambio en el archivo actual y se temporiza una verificación de sintaxis
+  en comp_BeforeCompile(). }
   ticSynCheck := 1000;
   //Muestra y marca posibles errores
   if fraMessages.HaveErrors then begin
@@ -1023,8 +1027,7 @@ begin
   acToolSel_P65pas_6502.Checked := true;
   acToolSel_P65pas_65c02.Checked := false;
   //Actualiza configuración
-  Config.fraCfgAfterChg6502.Visible := true;
-  Config.fraCfgCompiler6502.Visible := true;
+  Config.ActivateAdapter(currComp);
   //Configura menús y Toolbar
   currComp.setMenusAndToolbar(extraMenu1, extraMenu2, extraMenu3, ToolBar4, PopupEdit,
     PopupEdit_N);
@@ -1039,8 +1042,7 @@ begin
   acToolSel_P65pas_6502.Checked := false;
   acToolSel_P65pas_65c02.Checked := true;
   //Actualiza configuración
-  Config.fraCfgAfterChg6502.Visible := true;
-  Config.fraCfgCompiler6502.Visible := true;
+  Config.ActivateAdapter(currComp);
   //Configura menús y Toolbar
   currComp.setMenusAndToolbar(extraMenu1, extraMenu2, extraMenu3, ToolBar4, PopupEdit,
     PopupEdit_N);

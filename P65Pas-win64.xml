@@ -3,19 +3,19 @@
   <language Val="en - English"/>
   <chkLoadLast Val="True"/>
   <grpToolbarSta Val="1"/>
-  <MessPanels Val="536870912"/>
+  <PanelsCol Val="2368548"/>
   <SplitterCol Val="2368548"/>
   <TextPanel Val="8421504"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\MustPass\directives.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\testcode65\Simul_1\Test6_Directives.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="224"/>
-  <EditAsmWidth Val="787"/>
+  <EditAsmWidth Val="603"/>
   <ViewPanAssem Val="True"/>
   <winXpos Val="94"/>
   <winYpos Val="0"/>
@@ -58,8 +58,12 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.lst
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
 "/>
   </Edit>
+  <ExternTool>
+    <extern_tools Val="SImulate	                        	C:\Program Files (x86)\Computerbrains\CCS64 v3.9.3\CCS64.exe	$(hexFile)	F	V					
+"/>
+  </ExternTool>
   <AftChg6502>
-    <actAfterChg Val="1"/>
+    <actAfterChg Val="3"/>
   </AftChg6502>
   <Compiler6502>
     <OptimLev Val="1"/>
@@ -78,8 +82,4 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile2.pas
     <ExcUnused Val="True"/>
     <IncVarName Val="True"/>
   </AsmOutput6502>
-  <ExternTool>
-    <extern_tools Val="SImulate	                        	C:\Program Files (x86)\Computerbrains\CCS64 v3.9.3\CCS64.exe	$(hexFile)	F	V					
-"/>
-  </ExternTool>
 </CONFIG>

@@ -9,14 +9,26 @@ uses
   Classes, SysUtils, ComCtrls, Controls, ActnList, Menus, ExtCtrls, Graphics,
   Forms, SynEdit, adapterBase, CodeTools6502, Compiler_PIC16, LexPas,
   FrameEditView, Globales, FrameCfgSynEdit, MisUtils, SynFacilHighlighter,
-  SynFacilUtils, FrameStatist6502, FrameSynTree6502, FormAdapter6502,
-  FrameCfgAfterChg6502, FrameCfgCompiler6502, FormDebugger6502,
+  SynFacilUtils, MiConfigXML, FrameStatist6502, FrameSynTree6502,
+  FormAdapter6502, FrameCfgAfterChg6502, FrameCfgCompiler6502, FormDebugger6502,
   FormRAMExplorer6502, FrameCfgAsmOut6502;
 type
   { TAdapter6502 }
   TAdapter6502 = class(TAdapterBase)
   public
     const COMP_NAME = 'P65Pas';
+  private //Referencias a páginas de configuración.
+    {Estas son las páginas que ofrece el form. de configuración para que el adaptador
+    pueda usar. Aunque formalmente deberían ser objetos TTabSheet, en realidad son
+    objetos TScrollbox, porque se están usanddo estos controles como contenedores dentro
+    de cada página del TPageControl, para odrecer la facilidad de "scroll" cuando el
+    frame que se registra es más grande que el tamaño que define frmConfig.}
+    pEnvExt1 : TConfigPage;
+    pEdiExt1 : TConfigPage;
+    pCompiler: TConfigPage;
+    pCompExt1: TConfigPage;
+    pCompExt2: TConfigPage;
+    pCompExt3: TConfigPage;
   private
     //Herramienta de completado y manejo de código
     CodeTool    : TCodeTool;
@@ -70,17 +82,16 @@ type
     procedure NotifyConfigChanged(MessPanBack, MessPanText, MessPanErr,
       MessPanSel: TColor; mainEditorCfg: TfraCfgSynEdit); override;
   public      //Frames de configuración
-    //Por practicidad, estos frames se deben instanciar en el formulario de configuración
-    //de la IDE.
     fraCfgAfterChg: TfraCfgAfterChg6502;
     fraCfgCompiler: TfraCfgCompiler6502;
     fraCfgAsmOut  : TfraCfgAsmOut6502;
   public      //Inicialización
     procedure Init(pagControl: TPageControl; imgList16, imglist32: TImageList;
-      actList: TActionList; frmCfgAfterChg0: TfraCfgAfterChg6502;
-  fraCfgCompiler0: TfraCfgCompiler6502; fraCfgAsmOut0: TfraCfgAsmOut6502);
-    procedure ConfigCreate(frmConfig: TComponent; tabEnvExt1, tabAftEdit,
-      tabCompiler, tabCompAsm, tabCompExt2, tabCompExt3: TScrollbox); override;
+      actList: TActionList);
+    procedure ConfigCreate(frmConfig: TComponent; EnvExt1, EdiExt1,
+      _Compiler, CompExt1, CompExt2, CompExt3: TConfigPage); override;
+    procedure ConfigInit(cfgFile: TMiConfigXML); override;
+    procedure ConfigActivate; override;
     procedure setMenusAndToolbar(menu1, menu2, menu3: TMenuItem; toolbar: TToolBar;
       popupEdit: TPopupMenu; popupEditCount: integer); override;
     constructor Create(fraEdit0: TfraEditView; panRightPanel0: TPanel);
@@ -376,9 +387,7 @@ begin
   end;
 end;
 procedure TAdapter6502.Init(pagControl: TPageControl; imgList16,
-  imglist32: TImageList; actList: TActionList;
-  frmCfgAfterChg0: TfraCfgAfterChg6502; fraCfgCompiler0: TfraCfgCompiler6502;
-  fraCfgAsmOut0: TfraCfgAsmOut6502);
+  imglist32: TImageList; actList: TActionList);
 {Inicializa el adaptador. Eso implica preparar la IDE para que soporte a este nuevo
 compilador que se está registrando.
 Solo se debe ejecutar esta rutina una vez al inicio.
@@ -407,21 +416,74 @@ begin
   fraSynTree.Visible := true;
   fraSynTree.Align := alClient;
   fraSynTree.OnLocateElemen  := @fraSynTreeLocateElemen;
-  //Asigna referencias a formularios de configuración
-  fraCfgAfterChg := frmCfgAfterChg0;
-  fraCfgCompiler := fraCfgCompiler0;
-  fraCfgAsmOut   := fraCfgAsmOut0;
+//  //Asigna referencias a formularios de configuración
+//  fraCfgAfterChg := frmCfgAfterChg0;
+//  fraCfgCompiler := fraCfgCompiler0;
+//  fraCfgAsmOut   := fraCfgAsmOut0;
   //COnfigura editor de ensamblador
   edAsm.Parent := panRightPanel;
   edAsm.Align := alClient;
   edAsm.Highlighter := hlAssem;
   InicEditorC1(edAsm);
 end;
-procedure TAdapter6502.ConfigCreate(frmConfig: TComponent; tabEnvExt1,
-  tabAftEdit, tabCompiler, tabCompAsm, tabCompExt2, tabCompExt3: TScrollbox);
-{Se pide crear los frames de configuración que necesita el formulario de configuración.}
+procedure TAdapter6502.ConfigCreate(frmConfig: TComponent; EnvExt1, EdiExt1,
+  _Compiler, CompExt1, CompExt2, CompExt3: TConfigPage);
+{Se pide crear los frames de configuración, que se usarán en el formulario
+de configuración general de la IDE.
+Notar que al igual que este adaptador, otros adaptadores también deben crear sus
+frames de configuración para que sus configuraciones se guarden en disco.
+Notar también que frames de distintos compiladores pueden crearse en la misma página
+y en la misma posición, pero solo uno se hará visible cuando se elija el compilador
+de trabajo y se llame  a ConfigInit.}
 begin
+  //Guarda las referencias de las páginas disponibles, para usarlas en ConfigInit().
+  pEnvExt1  := EnvExt1;
+  pEdiExt1  := EdiExt1;
+  pCompiler := _Compiler;
+  pCompExt1 := CompExt1;
+  pCompExt2 := CompExt2;
+  pCompExt3 := CompExt3;
 
+  //Crea los frames que vamos a usar en las páginas apropiadas
+  fraCfgAfterChg := TfraCfgAfterChg6502.Create(frmConfig);
+  fraCfgAfterChg.Parent := pEdiExt1.scrollBox;
+  fraCfgAfterChg.Left := 0;
+  fraCfgAfterChg.Top := 0;
+  pEdiExt1.treeNode.Text := 'After Edit';
+
+  fraCfgCompiler := TfraCfgCompiler6502.Create(frmConfig);
+  fraCfgCompiler.Parent := pCompiler.scrollBox;
+  fraCfgCompiler.Left := 0;
+  fraCfgCompiler.Top := 0;
+  pCompiler.treeNode.Text := 'Compiler';
+
+  fraCfgAsmOut := TfraCfgAsmOut6502.Create(frmConfig);
+  fraCfgAsmOut.Parent := pCompExt1.scrollBox;
+  fraCfgAsmOut.Left := 0;
+  fraCfgAsmOut.Top := 0;
+  pCompExt1.treeNode.Text := 'Assembler';
+end;
+procedure TAdapter6502.ConfigInit(cfgFile: TMiConfigXML);
+{Se pide inicializar los frames de configuración}
+begin
+  //Configuración de todos los formularios de configuración creados y registrados.
+  fraCfgAfterChg.Init('AftChg6502', cfgFile);
+  fraCfgCompiler.Init('Compiler6502', cfgFile);
+  fraCfgAsmOut.Init('AsmOutput6502', cfgFile);
+end;
+procedure TAdapter6502.ConfigActivate;
+{Se pide activar los frames creados en las páginas elegidas del formualario de
+configuración.}
+begin
+  //Partimos de que todas las páginas extras se han ocultado
+  //Mostramos las páginas que vamos a usar
+  pEdiExt1 .treeNode.visible := true; //Muestra el acceso
+  pCompiler.treeNode.visible := true;
+  pCompExt1.treeNode.visible := true;
+  //Mostramos también los frames que corresponden a este adaptador
+  fraCfgAfterChg.Visible := true;
+  fraCfgCompiler.Visible := true;
+  fraCfgAsmOut.Visible := true;
 end;
 procedure TAdapter6502.setMenusAndToolbar(menu1, menu2, menu3: TMenuItem;
   toolbar: TToolBar; popupEdit: TPopupMenu; popupEditCount: integer);

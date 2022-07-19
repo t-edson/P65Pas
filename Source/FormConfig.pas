@@ -8,14 +8,16 @@ interface
 uses
   Classes, SysUtils, FileUtil, LazFileUtils, SynEdit, Forms, Controls, Graphics,
   Dialogs, Buttons, StdCtrls, ExtCtrls, ComCtrls, ColorBox, LCLType,
-  FrameCfgSynEdit, Globales, FrameCfgSyntax, FrameCfgExtTool,
-  FrameCfgAfterChg6502, FrameCfgCompiler6502, FrameCfgAsmOut6502, MiConfigXML,
-  MiConfigBasic, MisUtils;
+  FrameCfgSynEdit, Globales, FrameCfgSyntax, FrameCfgExtTool, fgl,
+  MiConfigBasic, MiConfigXML, MisUtils, adapterBase;
 type
   //Tipo de Barra de herramientas
   TStyleToolbar = (stb_SmallIcon, stb_BigIcon);
+  //Lista de adaptadores registrados
+  TAdaptadores = specialize TFPGObjectList<TAdapterBase>;
   { TConfig }
   TConfig = class(TForm)
+  published
     BitAplicar: TBitBtn;
     BitCancel: TBitBtn;
     BitAceptar: TBitBtn;
@@ -26,7 +28,7 @@ type
     colCodExplText: TColorBox;
     colMessPanBack: TColorBox;
     colMessPanErr: TColorBox;
-    colPanels: TColorBox;
+    colPanelsCol: TColorBox;
     colMessPanSel: TColorBox;
     colMessPanText: TColorBox;
     colPanTextCol: TColorBox;
@@ -54,31 +56,44 @@ type
     Panel2: TPanel;
     grpToolbarSta: TRadioGroup;
     grpFilType: TRadioGroup;
-    scrlEdiColor: TScrollBox;
-    scrlEnvExt1: TScrollBox;
+    sclExtTool: TScrollBox;
+    sclEdiAppear: TScrollBox;
+    sclCompiler: TScrollBox;
+    sclCmpExtra1: TScrollBox;
+    sclCmpExtra2: TScrollBox;
+    sclCmpExtra3: TScrollBox;
+    sclEdiSyntax: TScrollBox;
+    sclEnvExtra1: TScrollBox;
+    sclEdiExtra1: TScrollBox;
+    sclEnvFilExp: TScrollBox;
+    sclEditor: TScrollBox;
+    sclEnvMesPan: TScrollBox;
+    sclEnviron: TScrollBox;
     tabEditor: TTabSheet;
-    tabEdiColor: TTabSheet;
-    tabCompAsm: TTabSheet;
+    tabEdiAppear: TTabSheet;
+    tabCmpExtra1: TTabSheet;
     tabCompiler: TTabSheet;
     tabEnviron: TTabSheet;
     tabExtTool: TTabSheet;
-    tabMessPan: TTabSheet;
-    tabCodeExp: TTabSheet;
+    tabEnvMesPan: TTabSheet;
+    tabEnvFilExp: TTabSheet;
     tabEdiSyntax: TTabSheet;
-    tabAftEdit: TTabSheet;
-    tabCompExt2: TTabSheet;
-    tabCompExt3: TTabSheet;
-    tabEnvExt1: TTabSheet;
+    tabEdiExtra1: TTabSheet;
+    tabCmpExtra2: TTabSheet;
+    tabCmpExtra3: TTabSheet;
+    tabEnvExtra1: TTabSheet;
     TreeView1: TTreeView;
     procedure BitAceptarClick(Sender: TObject);
     procedure BitAplicarClick(Sender: TObject);
     procedure butSaveCurThemClick(Sender: TObject);
     procedure SetLanguage;
-    procedure FormCreate(Sender: TObject);
-    procedure FormShow(Sender: TObject);
     procedure TreeView1Click(Sender: TObject);
     procedure TreeView1KeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    //Inicialización
+    procedure FormCreate(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     FViewPanRight: boolean;
     FViewPanMsg: boolean;
@@ -86,6 +101,7 @@ type
     FViewPanLeft: boolean;
     FViewToolbar: boolean;
     ItemIni   : TTreeNode;
+    ConfigPages: array of TConfigPage;
     procedure cfgFilePropertiesChanges;
     procedure FillTree;
     procedure SetViewPanRight(AValue: boolean);
@@ -93,29 +109,37 @@ type
     procedure SetViewStatusbar(AValue: Boolean);
     procedure SetViewPanLeft(AValue: boolean);
     procedure SetViewToolbar(AValue: boolean);
+  private     //Páginas de configuración
+    pEnviron, pEnvFilExp, pEnvMesPan, pEnvExtra1,
+    pEditor, pEdiAppear, pEdiSyntax, pEdiExtra1,
+    pCompiler, pCmpExtra1, pCmpExtra2, pCmpExtra3,
+    pExtTool: TConfigPage;
+
   public  //Configuraciones generales
-    language  : string;   //Lenguaje
     winXpos   : integer;  //Coordenada X de la ventana pricipal.
     winYpos   : integer;  //Coordenada Y de la ventana pricipal.
     winWidth  : integer;
     winHeight : integer;
     winState  : TWindowState;
   public  //Configuraciones de entorno
+    language   : string;  //Lenguaje
     LoadLast   : boolean; //Cargar el último archivo editado
 
-    PanelsCol  : TColor;  //Color de los paneless del Panel de Mensages
+    PanelsCol  : TColor;  //Color de los paneles de toda la IDE.
     SplitterCol: TColor;  //Color de separadores
     PanTextCol : TColor;  //Color del texto mostrado en la barra de herramientas
 
     StateToolbar: TStyleToolbar;
     PanLeftWidth: integer;  //Ancho del panel del árbol de sintaxis.
     PanRightWidth: integer;  //Ancho del editor de ensamblador.
-    CodExplBack: TColor;
-    CodExplText: TColor;
-    cexpFiltype: integer;
     filesClosed: string;  {Lista de archivos cargados. Usado para restaurar los archivos
                           abiertos al abrir nuevamente el programa.}
-    //Porpiedades del panel de mensajes
+    //Propiedades del explorador de archivos
+    FilExplBack: TColor;
+    FilExplText: TColor;
+    FilExpFiltyp: integer;
+
+    //Propiedades del panel de mensajes
     MessPanBack: TColor;  //Color de fondo del panel de mensajes
     MessPanText: TColor;  //Color del texto del panel de mensajes
     MessPanErr : TColor;  //Color del texto de error del panel de mensajes
@@ -130,16 +154,13 @@ type
     property ViewPanLeft: boolean read FViewPanLeft write SetViewPanLeft;
   public  //COnfiguraciones apariencia del editor
     fraCfgSynEdit: TfraCfgSynEdit;
-  public  //Configuraciones después de editar
-    fraCfgAfterChg6502: TfraCfgAfterChg6502;
-  public  //Configuraciones para ensamblador
-    fraCfgAsmOut6502: TfraCfgAsmOut6502;
-  public  //Configuracions del compilador
-    fraCfgCompiler6502: TfraCfgCompiler6502;
   public
     fraCfgSyntax : TfraCfgSyntax;
     fraCfgExtTool: TfraCfgExtTool;
     OnPropertiesChanges: procedure of object;
+    adaptadores: TAdaptadores;
+    procedure RegisterAdapter(adapt: TAdapterBase);
+    procedure ActivateAdapter(adapt: TAdapterBase);
     procedure Init;
     procedure Mostrar;
     procedure SaveToFile;
@@ -154,129 +175,92 @@ implementation
 resourcestring
   LABEL_THEM_NONE   = 'None';
   // Environment Settings
-  TIT_CFG_ENVIRON   = 'Environment';
-  TIT_CFG_FILEXP    = 'File Explorer';
-  TIT_CFG_MESPAN    = 'Message Panel';
-  TIT_CFG_ENV_EXT1  = 'Extra Panel 1'; //Disponible para uso por el compilador
+  CPAGE_ENVIRON    = 'Environment';
+  CPAGE_ENV_FILEXP = 'File Explorer';
+  CPAGE_ENV_MESPAN = 'Message Panel';
+  CPAGE_ENV_EXTRA1 = 'Extra Subpanel 1'; //Disponible para uso por el compilador
   // Editor Settings
-  TIT_CFG_EDITOR    = 'Editor' ;
-  TIT_CFG_EDI_APR   = 'Appearance';
-  TIT_CFG_EDI_SYN   = 'Syntax';
-  TIT_CFG_EDI_AFT   = 'After Edit';    //Disponible para uso por el compilador
+  CPAGE_EDITOR     = 'Editor' ;
+  CPAGE_EDI_APPEAR = 'Appearance';
+  CPAGE_EDI_SYNTAX = 'Syntax';
+  CPAGE_EDI_EXTRA1 = 'Extra Subpanel 1';    //Disponible para uso por el compilador
   // Compiler Settings
-  TIT_CFG_COMPIL    = 'Compiler';      //Disponible para uso por el compilador
-  TIT_CFG_CMP_ASM   = 'Assembler';     //Disponible para uso por el compilador
-  TIT_CFG_CMP_EXT2  = 'Extra Panel 2'; //Disponible para uso por el compilador
-  TIT_CFG_CMP_EXT3  = 'Extra Panel 3'; //Disponible para uso por el compilador
+  CPAGE_COMPIL     = 'Extra Panel';      //Disponible para uso por el compilador
+  CPAGE_CMP_EXTRA1 = 'Extra Subpanel 1';     //Disponible para uso por el compilador
+  CPAGE_CMP_EXTRA2 = 'Extra Subpanel 2'; //Disponible para uso por el compilador
+  CPAGE_CMP_EXTRA3 = 'Extra Subpanel 3'; //Disponible para uso por el compilador
   // External Tool
-  TIT_CFG_EXTOOL    = 'External Tool';
+  CPAGE_EXTOOL     = 'External Tool';
 
 procedure TConfig.SetLanguage;
 begin
   fraCfgSynEdit.SetLanguage;
   fraCfgExtTool.SetLanguage;
   fraCfgSyntax.SetLanguage;
-  FillTree;
-end;
-procedure TConfig.FormCreate(Sender: TObject);
-begin
-  fraCfgSynEdit := TfraCfgSynEdit.Create(self);
-  fraCfgSynEdit.Parent := scrlEdiColor; // tabEdiColor;
-  fraCfgSynEdit.Left := 0;
-  fraCfgSynEdit.Top := 0;
-
-  fraCfgSyntax := TfraCfgSyntax.Create(self);
-  fraCfgSyntax.Parent := tabEdiSyntax;
-  fraCfgSyntax.Left := 5;
-  fraCfgSyntax.Top := 5;
-
-  fraCfgExtTool := TfraCfgExtTool.Create(self);
-  fraCfgExtTool.Parent := tabExtTool;
-  fraCfgExtTool.Left := 5;
-  fraCfgExtTool.Top := 5;
-
-  //Frames de configuración para todos los compiladores soportados.
-  fraCfgAfterChg6502 := TfraCfgAfterChg6502.Create(self);
-  fraCfgAfterChg6502.Parent := tabAftEdit;
-  fraCfgAfterChg6502.Left := 0;
-  fraCfgAfterChg6502.Top := 0;
-
-  fraCfgCompiler6502 := TfraCfgCompiler6502.Create(self);
-  fraCfgCompiler6502.Parent := tabCompiler;
-  fraCfgCompiler6502.Left := 0;
-  fraCfgCompiler6502.Top := 0;
-
-  fraCfgAsmOut6502 := TfraCfgAsmOut6502.Create(self);
-  fraCfgAsmOut6502.Parent := tabCompAsm;
-  fraCfgAsmOut6502.Left := 0;
-  fraCfgAsmOut6502.Top := 0;
-
-  cfgFile.VerifyFile;
 end;
 procedure TConfig.FillTree;
+  function AddConfigPage(title: string; ParentNode: TTreeNode;
+            ImageIndex: integer; tabSht: TTabSheet; scrlBox: TScrollBox): TConfigPage;
+  {Agrega una página de configuración, que consiste en un nodo en el TTreeView lateral y
+  un TTabSheet asociado del PageControl.
+  Devuelve el TreeNode creado}
+  var
+    configPage: TConfigPage;
+    Item: TTreeNode;
+    n: SizeInt;
+  begin
+    //Agrega nodo en el TTreeView
+    Item := TreeView1.Items.AddChild(ParentNode, title);
+    Item.ImageIndex    := ImageIndex;  //cambia ícono del nodo
+    Item.SelectedIndex := ImageIndex;
+    //Llena ConfigPage
+    configPage.treeNode := Item;
+    configPage.tabsheet := tabSht;
+    configPage.scrollBox := scrlBox;
+    configPage.extra := false;
+    //Agrega al arreglo
+    n := length(ConfigPages);
+    SetLength(ConfigPages, n+1);
+    ConfigPages[n] := configPage;
+    //Devuelve Tree node creado
+    exit(configPage);
+  end;
+  function AddConfigExtra(title: string; ParentNode: TTreeNode;
+            ImageIndex: integer; tabSht: TTabSheet; scrlBox: TScrollBox): TConfigPage;
+  {Similar a AddConfigPage(), pero configura el ConfigPage para marcarlo como que es
+  adicional o extra, y que se deja disponible para el complador pueda usarla}
+  begin
+    Result := AddConfigPage(title, ParentNode, ImageIndex, tabSht, scrlBox);
+    Result.extra := true;
+  end;
 var
-  Item, SubItem: TTreeNode;
   SR: TRawByteSearchRec;
   Hay: Boolean;
 begin
   TreeView1.Items.Clear;
-  //Environment
-  Item := TreeView1.Items.AddChild(nil, TIT_CFG_ENVIRON);
-  Item.ImageIndex:=0;
-  Item.SelectedIndex := 0;
-  ItemIni := Item;   //Item inicial
-    //Explorador de archivos
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_FILEXP);
-    SubItem.ImageIndex:=0;    //cambia ícono del nodo
-    SubItem.SelectedIndex := 0;
-    //Panel de mensajes
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_MESPAN);
-    SubItem.ImageIndex:=0;    //cambia ícono del nodo
-    SubItem.SelectedIndex := 0;
-    //Extra panel 1
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_ENV_EXT1);
-    SubItem.ImageIndex:=0;    //cambia ícono del nodo
-    SubItem.SelectedIndex := 0;
-  Item.Expanded := true;
-  //Configura Editor
-  Item := TreeView1.Items.AddChild(nil, TIT_CFG_EDITOR);
-  Item.ImageIndex:=0;
-  Item.SelectedIndex := 0;
-    //Editor-Colores
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EDI_APR);
-    SubItem.ImageIndex:=0;    //cambia ícono del nodo
-    SubItem.SelectedIndex := 0;
-    //Editor-Sintaxis
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EDI_SYN);
-    SubItem.ImageIndex:=0;    //cambia ícono del nodo
-    SubItem.SelectedIndex := 0;
-    //Acciones después de editar
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_EDI_AFT);
-    SubItem.ImageIndex:=0;    //cambia ícono del nodo
-    SubItem.SelectedIndex := 0;
-  Item.Expanded := true;
-  //Compilador
-  Item := TreeView1.Items.AddChild(nil, TIT_CFG_COMPIL);
-  Item.ImageIndex:=0;    //cambia ícono del nodo
-  Item.SelectedIndex := 0;
-    //Assembler
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_CMP_ASM);
-    SubItem.ImageIndex:=0;    //cambia ícono del nodo
-    SubItem.SelectedIndex := 0;
-    //Extra panel 1
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_CMP_EXT2);
-    SubItem.ImageIndex:=0;    //cambia ícono del nodo
-    SubItem.SelectedIndex := 0;
-    //Extra panel 2
-    SubItem := TreeView1.Items.AddChild(Item, TIT_CFG_CMP_EXT3);
-    SubItem.ImageIndex:=0;    //cambia ícono del nodo
-    SubItem.SelectedIndex := 0;
-  Item.Expanded := true;
+  //Configuración de entorno
+  pEnviron := AddConfigPage(CPAGE_ENVIRON,nil, 0, tabEnviron , sclEnviron);
+  ItemIni := pEnviron.treeNode;   //ítem inicial
+    pEnvFilExp := AddConfigPage (CPAGE_ENV_FILEXP, pEnviron.treeNode, 0, tabEnvFilExp, sclEnvFilExp); //Explorador de archivos
+    pEnvMesPan := AddConfigPage (CPAGE_ENV_MESPAN, pEnviron.treeNode, 0, tabEnvMesPan, sclEnvMesPan); //Panel de mensajes
+    pEnvExtra1 := AddConfigExtra(CPAGE_ENV_EXTRA1, pEnviron.treeNode, 0, tabEnvExtra1, sclEnvExtra1); //Extra panel 1
+  pEnviron.treeNode.Expanded := true;
+  //Configuración del Editor principal (editores)
+  pEditor  := AddConfigPage(CPAGE_EDITOR, nil, 0, tabEditor   , sclEditor   );
+    pEdiAppear := AddConfigPage (CPAGE_EDI_APPEAR, pEditor.treeNode, 0, tabEdiAppear, sclEdiAppear); //Apariencia
+    pEdiSyntax := AddConfigPage (CPAGE_EDI_SYNTAX, pEditor.treeNode, 0, tabEdiSyntax, sclEdiSyntax); //Editor-Sintaxis
+    pEdiExtra1 := AddConfigExtra(CPAGE_EDI_EXTRA1, pEditor.treeNode, 0, tabEdiExtra1, sclEdiExtra1); //Acciones extra
+  pEditor.treeNode.Expanded := true;
+  //Configuración del Compilador
+  pCompiler := AddConfigExtra(CPAGE_COMPIL,nil, 0, tabCompiler , sclCompiler );
+    pCmpExtra1 := AddConfigExtra(CPAGE_CMP_EXTRA1, pCompiler.treeNode, 0, tabCmpExtra1, sclCmpExtra1); //Extra panel 1
+    pCmpExtra2 := AddConfigExtra(CPAGE_CMP_EXTRA2, pCompiler.treeNode, 0, tabCmpExtra2, sclCmpExtra2); //Extra panel 2
+    pCmpExtra3 := AddConfigExtra(CPAGE_CMP_EXTRA3, pCompiler.treeNode, 0, tabCmpExtra3, sclCmpExtra3); //Extra panel 3
+  pCompiler.treeNode.Expanded := true;
   //Herramientas externas
-  Item := TreeView1.Items.AddChild(nil, TIT_CFG_EXTOOL);
-  Item.ImageIndex:=0;    //cambia ícono del nodo
-  Item.SelectedIndex := 0;
+  pExtTool := AddConfigPage(CPAGE_EXTOOL, nil, 0, tabExtTool, sclExtTool);
 
+  //Termina llenado.
   ItemIni.Selected := true;
   TreeView1Click(self);
   //Lee lista de temas
@@ -292,25 +276,15 @@ begin
 end;
 procedure TConfig.TreeView1Click(Sender: TObject);
 var
-  nodStr: String;
+  i: Integer;
 begin
-  nodStr := TreeView1.Selected.Text;
-  if nodStr = TIT_CFG_ENVIRON then PageControl1.ActivePage := tabEnviron;
-  if nodStr = TIT_CFG_FILEXP  then PageControl1.ActivePage := tabCodeExp;
-  if nodStr = TIT_CFG_MESPAN  then PageControl1.ActivePage := tabMessPan;
-  if nodStr = TIT_CFG_ENV_EXT1 then PageControl1.ActivePage := tabEnvExt1;
-
-  if nodStr = TIT_CFG_EDITOR  then PageControl1.ActivePage := tabEditor;
-  if nodStr = TIT_CFG_EDI_APR  then PageControl1.ActivePage := tabEdiColor;
-  if nodStr = TIT_CFG_EDI_AFT  then PageControl1.ActivePage := tabAftEdit;
-  if nodStr = TIT_CFG_EDI_SYN  then PageControl1.ActivePage := tabEdiSyntax;
-
-  if nodStr = TIT_CFG_COMPIL  then PageControl1.ActivePage := tabCompiler;
-  if nodStr = TIT_CFG_CMP_ASM then PageControl1.ActivePage := tabCompAsm;
-  if nodStr = TIT_CFG_CMP_EXT2  then PageControl1.ActivePage := tabCompExt2;
-  if nodStr = TIT_CFG_CMP_EXT3  then PageControl1.ActivePage := tabCompExt3;
-
-  if nodStr = TIT_CFG_EXTOOL  then PageControl1.ActivePage := tabExtTool;
+  //Busca el nodo seleccionado para activar la página que corresponde.
+  for i:=0 to length(ConfigPages)-1 do begin
+    if TreeView1.Selected = ConfigPages[i].treeNode then begin
+      //Encontró el nodo seleccionado en la lista de páginas de config.
+      PageControl1.ActivePage := ConfigPages[i].tabsheet;  //Activa
+    end;
+  end;
 end;
 procedure TConfig.TreeView1KeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
@@ -353,7 +327,7 @@ begin
     MsgErr(cfgFile.MsjErr);
     exit;
   end;
-  //Cambiará toda la interafaz incluyendo el idioma, y se recargará el archivo de sintaxis
+  //Cambiará toda la interfaz incluyendo el idioma, y se recargará el archivo de sintaxis
   SaveToFile;
 end;
 procedure TConfig.butSaveCurThemClick(Sender: TObject);
@@ -378,12 +352,6 @@ begin
   Writeln (f, fraCfgSyntax.GetPropertiesForTheme);
   Writeln (f, '<-->');
   CloseFile(f);
-end;
-procedure TConfig.FormShow(Sender: TObject);
-begin
-  if not cfgFile.PropertiesToWindow then begin
-    MsgErr(cfgFile.MsjErr);
-  end;
 end;
 procedure TConfig.cfgFilePropertiesChanges;
 begin
@@ -419,11 +387,51 @@ begin
   FViewToolbar := AValue;
   cfgFilePropertiesChanges;
 end;
+procedure TConfig.RegisterAdapter(adapt: TAdapterBase);
+{Regsitra el adaptador de un compilador nuevo, para poder usar sus frames de
+configuración.}
+begin
+  //Agrega a la lista de adaptadores
+  adaptadores.Add(adapt);
+  //Llama a rutina de creación para que cree sus Frames de configuración.
+  adapt.ConfigCreate(self, pEnvExtra1, pEdiExtra1,
+    pCompiler, pCmpExtra1, pCmpExtra2, pCmpExtra3);
+end;
+procedure TConfig.ActivateAdapter(adapt: TAdapterBase);
+{Inicia el estado de las páginas extras y solicita al adaptador que configure estas
+páginas.}
+  procedure HidePage(pag: TConfigPage);
+  {Oculta una página de configuración y todos los frames de configuración que pueda
+  contener}
+  var
+    i: Integer;
+  begin
+    pag.treeNode.Visible := false;    //Oculta el acceso, no la página
+    //Ahora oculta todos los Frames que se han creado en la página.
+    for i:=0 to pag.scrollBox.ControlCount-1 do begin
+      //Todos deben ser "frames".
+      pag.scrollBox.Controls[i].Visible := false;
+    end;
+  end;
+begin
+  //Primero oculta todos las páginas que se ofrecen a los compiladores.
+  HidePage(pEnvExtra1);
+  HidePage(pEdiExtra1);
+  HidePage(pCompiler );
+  HidePage(pCmpExtra1);
+  HidePage(pCmpExtra2);
+  HidePage(pCmpExtra3);
+  //Llama al adaptador para que active las que va a usar.
+  adapt.ConfigActivate;
+  //Reinicia ítem seleccionado.
+  ItemIni.Selected := true;
+end;
 procedure TConfig.Init;
 //Inicia el formulario de configuración. Debe llamarse antes de usar el formulario y
 //después de haber cargado todos los frames.
 var
   s: TParElem;
+  adapt: TAdapterBase;
 begin
   ///////////////////////////////////////////////////////
   ///////// Configuraciones de Entorno
@@ -431,7 +439,7 @@ begin
   s:=cfgFile.Asoc_Str ('language'    , @language   , cmbLanguage , 'en - English');
   s:=cfgFile.Asoc_Bol ('chkLoadLast' , @LoadLast   , chkLoadLast , true);
   s:=cfgFile.Asoc_Enum('grpToolbarSta',@StateToolbar, SizeOf(TStyleToolbar), grpToolbarSta, 1);
-  s:=cfgFile.Asoc_TCol('MessPanels'  , @PanelsCol  , colPanels   , clDefault);
+  s:=cfgFile.Asoc_TCol('PanelsCol'  , @PanelsCol  , colPanelsCol, clDefault);
   s.categ := 1;   //marca como propiedad de tipo "Tema"
   s:=cfgFile.Asoc_TCol('SplitterCol' , @SplitterCol, colSplitCol , clDefault);
   s.categ := 1;   //marca como propiedad de tipo "Tema"
@@ -452,12 +460,12 @@ begin
   s:=cfgFile.Asoc_Int ('winHeight'   , @winHeight, 600);
   s:=cfgFile.Asoc_Enum('winState'    , @winState , SizeOf(TWindowState), 0);
 
-  ///////// Configuraciones del Explorador de Cödigo
-  s:=cfgFile.Asoc_TCol('CodExplBack',@CodExplBack, colCodExplBack, clWindow);
+  ///////// Configuraciones del Explorador de Archivos
+  s:=cfgFile.Asoc_TCol('CodExplBack',@FilExplBack, colCodExplBack, clWindow);
   s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_TCol('CodExplText',@CodExplText, colCodExplText, clDefault);
+  s:=cfgFile.Asoc_TCol('CodExplText',@FilExplText, colCodExplText, clDefault);
   s.categ := 1;   //marca como propiedad de tipo "Tema"
-  s:=cfgFile.Asoc_Int ('grpFiltypes',@cexpFiltype, grpFiltype, 0);
+  s:=cfgFile.Asoc_Int ('grpFiltypes',@FilExpFiltyp, grpFiltype, 0);
 
   ///////// Configuraciones del Panel de mensajes
   s:=cfgFile.Asoc_TCol('MessPanBack',@MessPanBack, colMessPanBack, clWindow);
@@ -482,22 +490,14 @@ begin
   //Configuración de Sintaxis
   fraCfgSyntax.LoadSyntaxFiles(patSyntax);
 
-  //Configuración por cada compilador
-  fraCfgAfterChg6502.Init('AftChg6502', cfgFile);
-
-  ///////////////////////////////////////////////////////
-  ///////// Configuraciones del compilador
-  ///////////////////////////////////////////////////////
-
-  fraCfgCompiler6502.Init('Compiler6502', cfgFile);
-  ///////////////////////////////////////////////////////
-  ///////// Configuraciones de Ensamblador
-  fraCfgAsmOut6502.Init('AsmOutput6502', cfgFile);
-
   ///////////////////////////////////////////////////////
   ///////// Configuración de Herramienta Externa
   fraCfgExtTool.Init('ExternTool', cfgFile);
 
+  ///////// Configuraciones de los adaptadores registrados
+  for adapt in adaptadores do begin
+     adapt.ConfigInit(cfgFile);
+  end;
   //////////////////////////////////////////////////
   cfgFile.OnPropertiesChanges := @cfgFilePropertiesChanges;
   if not cfgFile.FileToProperties then begin
@@ -512,9 +512,45 @@ begin
 end;
 procedure TConfig.SaveToFile;
 begin
+  msgbox('PanelsCol:' + IntToStr(PanelsCol));
   if not cfgFile.PropertiesToFile then begin
     MsgErr(cfgFile.MsjErr);
   end;
+  msgbox('PanelsCol:' + IntToStr(PanelsCol));
+end;
+//Inicialización
+procedure TConfig.FormCreate(Sender: TObject);
+begin
+  adaptadores:= TAdaptadores.Create(false);
+  //Crea frames de configruación a usar
+  fraCfgSynEdit := TfraCfgSynEdit.Create(self);
+  fraCfgSynEdit.Parent := sclEdiAppear; // tabEdiAppear;
+  fraCfgSynEdit.Left := 0;
+  fraCfgSynEdit.Top := 0;
+
+  fraCfgSyntax := TfraCfgSyntax.Create(self);
+  fraCfgSyntax.Parent := sclEdiSyntax;
+  fraCfgSyntax.Left := 0;
+  fraCfgSyntax.Top := 0;
+
+  fraCfgExtTool := TfraCfgExtTool.Create(self);
+  fraCfgExtTool.Parent := sclExtTool;
+  fraCfgExtTool.Left := 0;
+  fraCfgExtTool.Top := 0;
+
+  // Tareas adicionales
+  cfgFile.VerifyFile;
+  FillTree;
+end;
+procedure TConfig.FormShow(Sender: TObject);
+begin
+  if not cfgFile.PropertiesToWindow then begin
+    MsgErr(cfgFile.MsjErr);
+  end;
+end;
+procedure TConfig.FormDestroy(Sender: TObject);
+begin
+  adaptadores.Destroy;
 end;
 
 end.
