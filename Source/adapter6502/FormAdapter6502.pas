@@ -3,7 +3,7 @@ dinámica en la IDE.
 Incluye rutinas para configurar acciones y menús externos.
 Es necesario crear al menos la opción "Compilar" para poder usar el compilador.
 Normalmente este formulario debe permanecer oculto pues solo se usa como contenedor de
-íconos/acciones, admeás de usar sus rutinas de configuración de acciones y menús.
+íconos/acciones, además de usar sus rutinas de configuración de acciones y menús.
 Sin embargo, si se hace visible, este formulario puede servir también como herramienta
 de depuración pues contiene un menú que da acceso a las herramientas del compilador.}
 unit FormAdapter6502;
