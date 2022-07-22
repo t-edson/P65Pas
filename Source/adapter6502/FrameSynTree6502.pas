@@ -5,7 +5,7 @@ uses
   Classes, SysUtils, FileUtil, TreeFilterEdit, Forms, Controls,
   ComCtrls, Menus, ActnList, ExtCtrls, LCLProc, Graphics,
   Globales, FormElemProperty, CompBase, FormConfig,
-  FrameArcExplor, XpresElemP65, XpresAST, LexPas, MisUtils;
+  FrameFileExplor, XpresElemP65, XpresAST, LexPas, MisUtils;
 type
   { TfraSynxTree6502 }
   TfraSynxTree6502 = class(TFrame)

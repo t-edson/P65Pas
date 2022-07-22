@@ -73,7 +73,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="44">
+    <Units Count="43">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -149,7 +149,7 @@
         <ResourceBaseClass Value="Form"/>
       </Unit13>
       <Unit14>
-        <Filename Value="FrameArcExplor.pas"/>
+        <Filename Value="FrameFileExplor.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraArcExplor"/>
         <HasResources Value="True"/>
@@ -317,12 +317,6 @@
         <ComponentName Value="fraCfgCompilerKickc"/>
         <ResourceBaseClass Value="Frame"/>
       </Unit42>
-      <Unit43>
-        <Filename Value="adapterKickc\FormAdapterKickc.pas"/>
-        <IsPartOfProject Value="True"/>
-        <ComponentName Value="frmAdapterKickc"/>
-        <ResourceBaseClass Value="Form"/>
-      </Unit43>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

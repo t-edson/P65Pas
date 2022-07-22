@@ -48,9 +48,9 @@ unit GenCod_PIC16;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, Graphics, LCLType, LCLProc,
-  SynFacilBasic, P6502utils, CPUCore, GenCodBas_PIC16,
-  CompBase, Globales, XpresElemP65, LexPas, MisUtils;
+  Classes, SysUtils,
+  P6502utils, CPUCore, GenCodBas_PIC16,
+  CompBase, Globales, XpresElemP65, LexPas;
 type
     { TGenCod }
     TGenCod = class(TGenCodBas)

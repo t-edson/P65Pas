@@ -4,10 +4,9 @@ unit Compiler_PIC16;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, lclProc,
-  MisUtils, P6502utils, CPUCore, CompBase, ParserDirec, GenCodBas_PIC16,
-  GenCod_PIC16, ParserDirec_PIC16, Globales, FormConfig,
-  XpresElemP65 {Por diseño, FormConfig, no debería accederse desde aquí};
+  Classes, SysUtils, LazLogger,
+  P6502utils, CPUCore, CompBase, ParserDirec, GenCodBas_PIC16,
+  GenCod_PIC16, ParserDirec_PIC16, Globales, XpresElemP65;
 type
   TCompileLevel = (
     clNull,        //Do nothing

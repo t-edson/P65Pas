@@ -172,7 +172,6 @@ var
 
 procedure SetLanguage;
 begin
-  Analyzer.SetLanguage;
 {$I ..\_language\tra_ParserDirec.pas}
 end;
 { TDirOperand }

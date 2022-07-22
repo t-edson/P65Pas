@@ -11,7 +11,7 @@ técnica.
 unit CompBase;
 interface
 uses
-  Classes, SysUtils, Types, Forms, LCLType, lclProc, MisUtils, LexPas,
+  Classes, SysUtils, Types, LazLogger, MisUtils, LexPas,
   XpresElemP65, XpresAST, Globales, CompContexts;
 type
 //Expression type, according the position it appears.
@@ -212,24 +212,30 @@ public    //Initialization
   destructor Destroy; override;
 end;
 
-procedure SetLanguage;
-
 implementation
 uses Graphics;
-var
-  ER_IDEN_EXPECT,  ER_DUPLIC_IDEN , ER_UNDEF_TYPE_,
-  ER_SEMIC_EXPEC , ER_STR_EXPECTED, ER_TYP_PARM_ER_, ER_UNKNOWN_IDE_, ER_IN_EXPRESSI ,
-  ER_OPERAN_EXPEC, ER_ILLEG_OPERA_, ER_UND_OPER_TY_, ER_CAN_AP_OPER_, ER_IN_CHARACTER,
-  ER_INV_COD_CHAR, ER_RA_HAV_USED,  ER_RX_HAV_USED,  ER_RY_HAV_USED,  ER_CON_EXP_EXP,
-  ER_NOTYPDEF_NU
-  : string;
+resourcestring
+  ER_IDEN_EXPECT  = 'Identifier expected.';
+  ER_DUPLIC_IDEN  = 'Duplicated identifier: "%s"';
+  ER_UNDEF_TYPE_  = 'Undefined type "%s"';
+  ER_SEMIC_EXPEC  = '";" expected.';
+  ER_STR_EXPECTED = '"%s" expected.';
+  ER_IN_EXPRESSI  = 'Error in expression. ")" expected.';
+  ER_OPERAN_EXPEC = 'Operand expected.';
+  ER_UND_OPER_TY_ = 'Undefined operator: %s for type: %s';
+  ER_CAN_AP_OPER_ = 'Cannot apply the operator "%s" to type "%s"';
+  ER_RA_HAV_USED  = 'Register A has been used.';
+  ER_RX_HAV_USED  = 'Register X has been used.';
+  ER_RY_HAV_USED  =  'Register Y has been used.';
+  ER_CON_EXP_EXP  = 'Constant expression expected.';
+  ER_ILLEG_OPERA_ = 'Illegal Operation: %s';
+  ER_UNKNOWN_IDE_ = 'Unknown identifier: %s';
+  ER_TYP_PARM_ER_ = 'Type parameters error on %s';
+  ER_IN_CHARACTER = 'Error in character.';
+  ER_INV_COD_CHAR = 'Invalid code for char.';
+  ER_NOTYPDEF_NU  = 'No type defined to allocate this number.';
 
-procedure SetLanguage;
-begin
-  {$I ..\_language\tra_CompBase.pas}
-end;
 {TCompilerBase}
-//Parser routines
 function TCompilerBase.EOExpres: boolean; inline;
 //Indica si se ha llegado al final de una expresión.
 begin

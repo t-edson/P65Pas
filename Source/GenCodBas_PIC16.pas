@@ -5,8 +5,7 @@ unit GenCodBas_PIC16;
 interface
 uses
   Classes, SysUtils, CPUCore, P6502utils, CompBase, ParserDirec, Globales,
-  XpresElemP65, XpresAST, LexPas, FormConfig, StrUtils, MisUtils, LCLType,
-  LCLProc;
+  XpresElemP65, LexPas, StrUtils, LazLogger;
 const
   STACK_SIZE = 8;      //tamaño de pila para subrutinas en el PIC
   MAX_REGS_AUX_BYTE = 6;   //cantidad máxima de registros a usar

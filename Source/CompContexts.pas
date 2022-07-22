@@ -7,7 +7,7 @@ unit CompContexts;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, LexPas, LCLProc;
+  Classes, SysUtils, LexPas, Lazlogger;
 
 type
   { TContexts }

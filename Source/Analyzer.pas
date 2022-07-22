@@ -3,7 +3,7 @@ unit Analyzer;
 interface
 uses
   Classes, SysUtils, Types, CompBase, Globales, XpresElemP65,
-  LexPas, ParserASM_6502, CPUCore, LCLProc;
+  LexPas, ParserASM_6502, CPUCore{, LCLProc};
 type
 
   { TAnalyzer }
@@ -59,22 +59,37 @@ type
      tener que abrir nuevamente al archivo.}
     OnRequireFileString: procedure(FilePath: string; var strList: TStrings) of object;
   end;
-  procedure SetLanguage;
 
 implementation
-var
-  ER_INV_MEMADDR, ER_EXP_VAR_IDE, ER_NUM_ADD_EXP, ER_CON_EXP_EXP, ER_EQU_EXPECTD,
-  ER_IDEN_EXPECT, ER_NOT_IMPLEM_, ER_SEM_COM_EXP, ER_INV_ARR_SIZ, ER_ARR_SIZ_BIG,
-  ER_IDE_TYP_EXP, ER_IDE_CON_EXP, ER_EQU_COM_EXP, ER_DUPLIC_IDEN,
-  ER_BOOL_EXPECT, ER_EOF_END_EXP, ER_ELS_UNEXPEC, ER_END_EXPECTE, ER_NOT_AFT_END,
-  ER_INST_NEV_EXE,ER_UNKN_STRUCT, ER_DUPLIC_FUNC_, ER_FIL_NOFOUND, ER_PROG_NAM_EX,
-  ER_VARIAB_EXPEC, ER_ONL_BYT_WORD, ER_UNKNOWN_IDE_
-  : string;
-procedure SetLanguage;
-begin
-  CompBase.SetLanguage;
-  {$I ..\_language\tra_CompMain.pas}
-end;
+resourcestring
+  ER_INV_MEMADDR  = 'Invalid memory address.';
+  ER_EXP_VAR_IDE  = 'Identifier of variable expected.';
+  ER_NUM_ADD_EXP  = 'Numeric address expected.';
+  ER_CON_EXP_EXP  = 'Constant expression expected.';
+  ER_EQU_EXPECTD  = '"=" expected.'               ;
+  ER_IDEN_EXPECT  = 'Identifier expected.'        ;
+  ER_NOT_IMPLEM_  = 'Not implemented: "%s"'       ;
+  ER_SEM_COM_EXP  = '":" or "," expected.'        ;
+  ER_INV_ARR_SIZ  = 'Invalid array size.';
+  ER_ARR_SIZ_BIG  = 'Array size to big.';
+  ER_IDE_TYP_EXP  = 'Identifier of type expected.';
+  ER_IDE_CON_EXP  = 'Identifier of constant expected.';
+  ER_EQU_COM_EXP  = '"=" or "," expected.';
+  ER_DUPLIC_IDEN  = 'Duplicated identifier: "%s"';
+  ER_BOOL_EXPECT  = 'Boolean expression expected.';
+  ER_EOF_END_EXP  = 'Unexpected end of file. "end" expected.';
+  ER_ELS_UNEXPEC  = '"else" unexpected.';
+  ER_END_EXPECTE  = '"end" expected.';
+  ER_NOT_AFT_END  = 'Syntax error. Nothing should be after "END."';
+  ER_INST_NEV_EXE = 'Instruction will never execute.';
+  ER_UNKN_STRUCT  = 'Unknown structure.'          ;
+  ER_DUPLIC_FUNC_ = 'Duplicated function: %s'     ;
+  ER_FIL_NOFOUND  = 'File not found: %s'         ;
+  ER_PROG_NAM_EX  = 'Program name expected.'      ;
+  ER_VARIAB_EXPEC = 'Variable expected.'         ;
+  ER_ONL_BYT_WORD = 'Only BYTE or WORD index is allowed in FOR.';
+  ER_UNKNOWN_IDE_ = 'Unknown identifier: %s'    ;
+
 function TAnalyzer.StartOfSection: boolean;
 var
   tokL: String;
