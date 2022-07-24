@@ -14,7 +14,7 @@ uses
   //Adaptador para P65Pas
   adapter6502, FormAdapter6502, FrameStatist6502, FrameCfgAfterChg6502, FrameSynTree6502,
   FrameCfgCompiler6502, FrameCfgAsmOut6502, FormDebugger6502, FormRAMExplorer6502,
-  adapterKickc, FormAdapterKickc;
+  adapterKickc, FormAdapterKickc, EditView;
 
 {$R *.res}
 

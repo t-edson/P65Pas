@@ -1169,6 +1169,7 @@ begin
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
   if enabDirMsgs then msgbox(txtMsg);
+  txtMsg := '';
 end;
 procedure TParserDirecBase.ProcMSGERR;
 var

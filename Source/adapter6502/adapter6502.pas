@@ -9,7 +9,7 @@ uses
   Classes, SysUtils, ComCtrls, Controls, ActnList, Menus, ExtCtrls, Graphics,
   Forms, SynEdit, adapterBase, CodeTools6502, Compiler_PIC16, LexPas,
   FrameEditView, Globales, FrameCfgSynEdit, MisUtils, SynFacilHighlighter,
-  SynFacilUtils, MiConfigXML, FrameStatist6502, FrameSynTree6502,
+  EditView, MiConfigXML, FrameStatist6502, FrameSynTree6502,
   FormAdapter6502, FrameCfgAfterChg6502, FrameCfgCompiler6502, FormDebugger6502,
   FormRAMExplorer6502, FrameCfgAsmOut6502;
 type

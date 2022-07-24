@@ -4,8 +4,8 @@ unit adapterBase;
 {$mode ObjFPC}{$H+}
 interface
 uses
-  Classes, SysUtils, types, FrameEditView, FrameCfgSynEdit, MiConfigXML, Menus,
-  ExtCtrls, Controls, Graphics, ComCtrls, Forms ;
+  Classes, SysUtils, types, FrameEditView, FrameCfgSynEdit, EditView,
+  MiConfigXML, Menus, ExtCtrls, Controls, Graphics, ComCtrls, Forms ;
 
 type
   {Define la entidad "Página de configuración". Representa a una de las páginas o

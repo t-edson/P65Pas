@@ -8,9 +8,9 @@ interface
 uses
   Classes, SysUtils, SynEdit, SynEditTypes, LazUTF8, Forms, Controls, Dialogs,
   Menus, ComCtrls, ActnList, StdActns, ExtCtrls, LCLIntf, LCLType, LCLProc,
-  StdCtrls, Graphics, SynFacilUtils, MisUtils, CompBase,  //Para tener acceso a TCompilerBase
+  StdCtrls, Graphics, MisUtils, CompBase,  //Para tener acceso a TCompilerBase
   Compiler_PIC16, FrameLateralPanel, FormConfig, Globales, PicPasProject,
-  FrameEditView, FrameMessagesWin, adapter6502, FrameCfgExtTool,
+  EditView, FrameEditView, FrameMessagesWin, adapter6502, FrameCfgExtTool,
   ParserASM_6502, Analyzer, adapterBase;
 type
   { TfrmPrincipal }
@@ -195,6 +195,7 @@ type
   private
     tic         : integer;  //Contador para temporización
     ticSynCheck : integer;  //Contador para temporizar la verifiación ed sintaxis
+    actSynCheck : Boolean;  //Activa la verificación de sinatxis
     PopupEdit_N : integer; //Contador de ítems de menú
     curProj     : TPicPasProject; //Proyecto actual
     fraEditView1: TfraEditView;   //Panel de editores
@@ -245,7 +246,6 @@ begin
     exit;  //no ha habido cambio de idioma
   curLanguage := idLang;
   Config.SetLanguage;
-  fraEditView1.SetLanguage;
   fraMessages.SetLanguage;
   Compiler_PIC16.SetLanguage;
   ParserASM_6502.SetLanguage;
@@ -281,7 +281,7 @@ procedure TfrmPrincipal.fraEdit_ChangeEditorState(ed: TSynEditor);
 begin
   {Activamos el contador de verificación de sintaxis, por si se necesita hacer, ya que
    ha habido un cambio en el archivo actual en edición.}
-  ticSynCheck := 0;  //Reinicia cuenta.
+  if actSynCheck then ticSynCheck := 0;  //Reinicia cuenta.
   acArcSave.Enabled := ed.Modified;
   acEdUndo.Enabled  := ed.CanUndo;
   acEdRedo.Enabled  := ed.CanRedo;
@@ -369,6 +369,7 @@ begin
   //Guarda cantidad de ítems en menú contextul del editor para dar esa información a los
   //adaptadores.
   PopupEdit_N := PopupEdit.Items.Count;
+  actSynCheck := true;
 end;
 procedure TfrmPrincipal.FormDestroy(Sender: TObject);
 begin
@@ -855,17 +856,17 @@ procedure TfrmPrincipal.comp_BeforeCompile;
 {Se ha iniciado el proceso de compilación del compilador actual.}
 begin
   fraMessages.InitCompilation(currComp, true);  //Limpia mensajes
-  ticSynCheck := 1000; //Desactiva alguna Verif. de sintaxis, en camino.
+  actSynCheck := false; //Desactiva alguna Verif. de sintaxis, en camino.
 end;
 procedure TfrmPrincipal.comp_AfterCompile;
 {Ha terminado el proceso de compilación del compilador actual.}
 begin
+  actSynCheck := true; //Restaura las verifiaciones de sintaxis
   {Desactiva alguna Verif. de sintaxis, en camino, porque si se ha terminado
   de compilar, ya no tiene sentido hacer una verificación de sintaxis.
-  Si bien se desactivó la verificación en comp_BeforeCompile(), puede que al iniciar la
-  compilación, las rutinas del compilador hayan guardado el archivo actual, y esto se
-  detecta como un cambio en el archivo actual y se temporiza una verificación de sintaxis
-  en comp_BeforeCompile(). }
+  Si bien con "actSynCheck" desactivado no se ejecutará la verificación de sintaxis,
+  puede que haya quedado una cuenta en camino de "ticSynCheck" y generaría una
+  verificación de sintaxis. Por eso fijamos "ticSynCheck" a un valor alto. }
   ticSynCheck := 1000;
   //Muestra y marca posibles errores
   if fraMessages.HaveErrors then begin
