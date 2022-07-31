@@ -58,7 +58,7 @@ begin
     tok := '';
     exit;
   end;
-  sed := fraEdit.ActiveEditor.SynEdit;
+  sed := fraEdit.ActiveEditor.ed;
   if sed.Lines.Count = 0 then begin
     tok := '';
     exit;
@@ -95,42 +95,47 @@ begin
   //Primero ubica el token
   ReadCurIdentif(tok, tokType, lex, curX);
   if tok='' then exit;  //No encontró token
-  if tokType <> lex.tnIdentif then exit;  //No es identificador
-  //Asegurarse que "synTree" está actualizado.
-  cxp.Exec(fraEdit.ActiveEditor.FileName, '', '-Ca' + LineEnding + '-Dn');  //Solo análisis
-  if cxp.HayError then begin
-    //Basta que haya compilado hasta donde se encuentra el identifiacdor, para que funciones.
-//    MsgErr('Compilation error.');  //tal vez debería dar más información sobre el error
-//    exit;
-  end;
-  callPos.col := curX;
-  callPos.row := ed.SynEdit.CaretY;
-  callPos.idCtx := cxp.ctxId(ed.FileName);
-  ele := cxp.TreeElems.GetElementCalledAt(callPos);
-  if ele = nil then begin
-    //No lo ubica, puede ser que esté en la sección de declaración
-    ele := cxp.TreeElems.GetELementDeclaredAt(callPos);
-    if ele <> nil then begin
-      //Es el punto donde se declara
-      if ele.idClass = eleUnit then begin
-        fraEdit.SelectOrLoad(TEleUnit(ele).srcFile);
-//        MsgBox(ele.name);
+  if tokType = lex.tnIdentif then begin
+    //Asegurarse que "synTree" está actualizado.
+    cxp.Exec(fraEdit.ActiveEditor.FileName, '', '-Ca' + LineEnding + '-Dn');  //Solo análisis
+    if cxp.HayError then begin
+      //Basta que haya compilado hasta donde se encuentra el identifiacdor, para que funciones.
+  //    MsgErr('Compilation error.');  //tal vez debería dar más información sobre el error
+  //    exit;
+    end;
+    callPos.col := curX;
+    callPos.row := ed.ed.CaretY;
+    callPos.idCtx := cxp.ctxId(ed.FileName);
+    ele := cxp.TreeElems.GetElementCalledAt(callPos);
+    if ele = nil then begin
+      //No lo ubica, puede ser que esté en la sección de declaración
+      ele := cxp.TreeElems.GetELementDeclaredAt(callPos);
+      if ele <> nil then begin
+        //Es el punto donde se declara
+        if ele.idClass = eleUnit then begin
+          fraEdit.SelectOrLoad(TEleUnit(ele).srcFile);
+  //        MsgBox(ele.name);
+        end else begin
+          //Es otra declaración
+        end;
       end else begin
-        //Es otra declaración
+        MsgExc('Unknown identifier: %s', [tok]);
       end;
+  //    curBody := cxp.TreeElems.GetElementBodyAt(ed.SynEdit.CaretXY);
+  //    if curBody=nil then begin
+  //
+  //    end;
     end else begin
-      MsgExc('Unknown identifier: %s', [tok]);
+      //Ubica la declaración del elemento
+      fileSrc := cxp.ctxFile(ele.srcDec);
+      if not fraEdit.SelectOrLoad(fileSrc, ele.srcDec.row, ele.srcDec.col, false) then begin
+        MsgExc('Cannot load file: %s', [fileSrc]);
+      end;
     end;
-//    curBody := cxp.TreeElems.GetElementBodyAt(ed.SynEdit.CaretXY);
-//    if curBody=nil then begin
-//
-//    end;
+  end else if tokType = lex.tnIdentif then begin
+
   end else begin
-    //Ubica la declaración del elemento
-    fileSrc := cxp.ctxFile(ele.srcDec);
-    if not fraEdit.SelectOrLoad(fileSrc, ele.srcDec.row, ele.srcDec.col, false) then begin
-      MsgExc('Cannot load file: %s', [fileSrc]);
-    end;
+    exit;  //No es identificador
   end;
 end;
 procedure TCodeTool.KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -145,14 +150,14 @@ begin
     //Se pide ubicar la declaración del elemento
     GoToDeclaration;
   end;
-  if not ed.SynEdit.SelAvail then begin
+  if not ed.ed.SelAvail then begin
     //No hay selección. Pero se pulsa ...
     if (Shift = [ssCtrl]) and (Key = VK_C) then begin  //Ctrl+C
-      ed.SynEdit.SelectWord;
+      ed.ed.SelectWord;
       ed.Copy;
     end;
     if (Shift = [ssCtrl]) and (Key = VK_INSERT) then begin  //Ctrl+Insert
-      ed.SynEdit.SelectWord;
+      ed.ed.SelectWord;
       ed.Copy;
     end;
   end;
@@ -342,8 +347,8 @@ begin
   {Calcula las coordenadas actuales del cursor. En X, retrocede 1, porque si hay un error
   con el identificador actual (lo que es normal porque se está empezando a escribir), el
   bloque actual terminará antes}
-  curPos.x := ed.SynEdit.CaretX - 1;
-  curPos.y := ed.SynEdit.CaretY;
+  curPos.x := ed.ed.CaretX - 1;
+  curPos.y := ed.ed.CaretY;
 //  eleBod := cxp.TreeElems.GetElementBodyAt(curPos);
 //  if eleBod = nil then begin
 //    //No identifica a un Body
@@ -385,7 +390,7 @@ begin
   if fraEdit.ActiveEditor=nil then exit;
   ident := curEnv.tok_2^.txt;
   //Calcula la posición del elemento
-  tokPos.row := fraEdit.ActiveEditor.SynEdit.CaretY;
+  tokPos.row := fraEdit.ActiveEditor.ed.CaretY;
   tokPos.col := curEnv.tok_2^.posIni+1;
   tokPos.idCtx := cxp.ctxId(fraEdit.ActiveEditor.FileName);
   //Dispara evento
@@ -401,7 +406,7 @@ begin
   if fraEdit.ActiveEditor=nil then exit;
   ident := curEnv.tok_3^.txt;
   //Calcula la posición del elemento
-  tokPos.row := fraEdit.ActiveEditor.SynEdit.CaretY;
+  tokPos.row := fraEdit.ActiveEditor.ed.CaretY;
   tokPos.col := curEnv.tok_3^.posIni+1;
   tokPos.idCtx := cxp.ctxId(fraEdit.ActiveEditor.FileName);
   //Dispara evento

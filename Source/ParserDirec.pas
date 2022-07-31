@@ -4,9 +4,8 @@ unit ParserDirec;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, fgl, math, Graphics, CompBase, SynFacilHighlighter,
-  LexPas, MisUtils, Globales, Analyzer,
-  XpresElemP65;
+  Classes, SysUtils, fgl, math, Graphics, CompBase,
+  LexPas, MisUtils, Globales, Analyzer, XpresElemP65;
 type  //Tipos para manejo de expresiones
   TDirDatType = (ddtNumber, ddtString);
 
@@ -80,10 +79,12 @@ type
     dirOperator: Integer;
     dirDelimiter: integer;
     WaitForEndIF: integer;
+
+    cpx     : TCompilerBase;   //Reference to compiler
+
     function GetIdent: string;
-    function tokTyp: integer;
+    function tokTyp: TTokenKind;
     function CogOperando: TDirOperand;
-    procedure IniExplorDirec(out lin: string);
     function CogCarERR(car: char): Boolean;
     function CogExpresion(jerar: Integer): TDirOperand;
     function CogExpresionPar: TDirOperand;
@@ -138,7 +139,7 @@ type
     function DefinedVar(cad: string; out dvar: TDirVar): boolean;
     function AsigVariable(VarName: string; const value: TDirOperand): TDirVar;
   public   //Public
-    lexDir : TSynFacilSyn;  //lexer para analizar directivas
+    lexDir : TContext;  //lexer para analizar directivas
     procedure skipWhites;
     procedure GenErrorDir(msg: string);
     procedure GenErrorDir(msg: string; const Args: array of const);
@@ -147,8 +148,8 @@ type
                                                     WriteNum: TDirEveWriteNum);
     procedure AddSysVariableString(varName: string; ReadStr: TDirEveReadStr;
                                                     WriteStr: TDirEveWriteStr);
-    procedure ProcDIRline(const AsmLin: string; out ctxChanged: boolean);
-    procedure DefLexDirectiv;
+    procedure ProcDIRline(const directiveLine: string; out ctxChanged: boolean);
+    function DecodeNext: boolean;
     procedure ClearMacros;
   public   //Initialization
     constructor Create; override;
@@ -246,19 +247,19 @@ end;
 //Parser and Expressions evaluation
 function TParserDirecBase.GetIdent: string;
 begin
-  if tokTyp = lexDir.tnSpace then
+  if lexDir.tokType = tkSpace then
     lexDir.Next;  //quita espacios
   //verifica
-  if lexDir.GetTokenKind <> lexDir.tnIdentif then begin
+  if lexDir.tokType <> tkIdentifier then begin
     GenErrorDir(ER_IDENT_EXPEC);
     exit;
   end;
-  Result := lexDir.GetToken;
+  Result := lexDir.ReadToken;
   lexDir.Next;  //toma identificador
 end;
-function TParserDirecBase.tokTyp: integer;
+function TParserDirecBase.tokTyp: TTokenKind;
 begin
-  Result := lexdir.GetTokenKind;
+  Result := lexdir.tokType;
 end;
 function TParserDirecBase.CogOperando: TDirOperand;
 {Coge un operando en la posición actual del contexto. Si no enceuntra
@@ -268,12 +269,12 @@ var
   num : Double;
   exp : TDirOperand;
   mac: TDirMacro;
-  p: TFaLexerState;
+  p: TContextState;
   dvar: TDirVar;
   delim: Char;
 begin
   skipWhites;   //quita blancos iniciales
-  if lexDir.GetEol then begin
+  if lexDir.Eol then begin
     Result.datTyp := ddtString;
     Result.FvalStr := '';
     exit;
@@ -281,9 +282,9 @@ begin
   if CogNumero(num) then begin
     if HayError then exit;  //pudo haber error en número
     Result.valNum := num;   //fija tipo a número
-  end else if lexDir.GetTokenKind = lexDir.tnString then begin
+  end else if lexDir.tokType= tkString then begin
     //Es cadena
-    tmp := lexDir.GetToken;
+    tmp := lexDir.ReadToken;
     delim := tmp[1];
     tmp := copy(tmp, 2, length(tmp)-2);  //quita delimitadores
     if delim='"' then begin
@@ -299,10 +300,10 @@ begin
     //Busca si es macro
     if DefinedMacro(cad, mac) then begin
       //Es una macro. Hay que expandirla
-      p := lexDir.State;  //guarda estado de lexer
-      lexDir.SetLine(mac.value, 0);  //inicia otra explroación en el contenido de la macro
+      lexDir.GetContextState(p);  //guarda estado de lexer
+      lexDir.SetSource(mac.value);  //inicia otra explroación en el contenido de la macro
       Result := CogExpresion(0);
-      lexDir.State := p;  //restaura estado del lexer, para que siga la expresión
+      lexDir.SetContextState(p);  //restaura estado del lexer, para que siga la expresión
       exit;
     end;
     //Busca si es una variable
@@ -384,10 +385,10 @@ begin
     end;
     //No es variable ni función.
     GenErrorDir(ER_UNKNW_IDENT_, [cad]);
-  end else If lexDir.GetToken = '(' Then begin
+  end else If lexDir.ReadToken= '(' Then begin
     Result := CogExpresionPar;
     exit;  //Puede salir con error
-  end else If lexDir.GetToken = '-' Then begin
+  end else If lexDir.ReadToken = '-' Then begin
     //Puede ser número negativo
     lexDir.Next;  //toma el signo
     Result := CogOperando();
@@ -405,39 +406,10 @@ begin
     exit;  //no devuelve nada
   end;
 end;
-procedure TParserDirecBase.IniExplorDirec(out lin: string);
-(*Inicia la exploración del token de directiva. Extrae el delimitador final "}", y
-posiciona al lexer justo despues del delimitador inicial "{$". Devuelve la línea
-procesada en "lin" (sin delimitador final). Además inicia tokIni
-*)
-var
-  dlin: Integer;
-  p: TSrcPos;
-begin
-  //Fija el inicio del token actual (Esto es válido, porque las directivas son "unilineas")
-  //tokIni := curCon.lex.GetX - 1;
-  tokIni := curCtx.col - 1;
-  //Usa SynFacilSyn como lexer para analizar texto
-  lin := token;
-  dlin := length(lin);
-  if lin[dlin] = '}'  then begin
-    delete(lin, dlin, 1);  //quita delimitador final de directiva
-  end else begin
-    //Es un error, pero es salvable.
-    //Ubicamos el error, "manualmente", porque aún no hemos explorado con el lexer.
-    p := GetSrcPos;
-    p.col := tokIni + dlin + 1;  //columna al final
-    GenError(ER_EXPECTED_BR, [], p);
-  end;
-  //Inicia exploración con el lexer "lexDir"
-  lexDir.SetLine(lin, 0);  //inicia cadena
-  lexDir.Next;  //Salta el "{$"
-  skipWhites;
-end;
 function TParserDirecBase.CogCarERR(car: char): Boolean;
 {Coge el caracter indicado. Si no lo encuentra genera error y devuelve FALSE.}
 begin
-  if lexDir.GetToken=car then begin
+  if lexDir.ReadToken=car then begin
     //Es el caracter buscado
     lexDir.Next;
     exit(true);
@@ -452,7 +424,7 @@ contenido. Si no encuentra una expresión, genera error. }
 var Op1, Op2 : TDirOperand;
     opr, opr2 : String;
     jerOpr, jerOpr2: Integer;
-    pos1, pos2: TFaLexerState;
+    pos1, pos2: TContextState;
 begin
     skipWhites;  //quita blancos iniciales
     Op1 := CogOperando;  //error
@@ -469,21 +441,21 @@ begin
       Exit;
     End;
     while opr <> '' do begin
-        pos1 := lexDir.State;    //Guarda por si lo necesita
+        lexDir.GetContextState(pos1);    //Guarda por si lo necesita
         Op2 := CogOperando;
         if HayError then exit;
-        pos2 := lexDir.State;    //Guarda por si lo necesita
+        lexDir.GetContextState(pos2);    //Guarda por si lo necesita
         opr2 := cogOperador;
         If opr2 <> '' Then begin  //Hay otro operador
             jerOpr2 := jerOp(opr2);
             //¿Delimitado por jerarquía de operador?
             If jerOpr2 <= jerar Then begin  //sigue uno de menor jerarquía, hay que salir
-                lexDir.State:= pos2;   //antes de coger el operador
+                lexDir.SetContextState(pos2);   //antes de coger el operador
                 Result := Evaluar(Op1, opr, Op2);
                 Exit;
             End;
             If jerOpr2 > jerOpr Then begin    //y es de mayor jerarquía, retrocede
-                lexDir.State:= pos1;        //retrocede
+                lexDir.SetContextState(pos1);        //retrocede
                 Op2 := CogExpresion(jerOpr);        //evalua primero
                 opr2 := cogOperador;    //actualiza el siguiente operador
             End;
@@ -511,17 +483,17 @@ Puede generar error al convertir el número}
 var
   m: Longint;
 begin
-  if lexdir.GetTokenKind <> lexdir.tnNumber then exit(false);
-  if lexdir.GetToken[1] = '$' then begin
+  if lexdir.tokType <> tkLitNumber then exit(false);
+  if lexdir.ReadToken[1] = '$' then begin
     //Formato hexadecimal
-    if not TryStrToInt(lexdir.GetToken, m) then begin
-      GenErrorDir(ER_ERIN_NUMBER_, [lexDir.GetToken]);
+    if not TryStrToInt(lexdir.ReadToken, m) then begin
+      GenErrorDir(ER_ERIN_NUMBER_, [lexDir.ReadToken]);
       exit(false);
     end;
-    n := m;
+    n := {%H-}m;
   end else begin
-    if not TryStrToFloat(lexdir.GetToken, n) then begin
-      GenErrorDir(ER_ERIN_NUMBER_, [lexDir.GetToken]);
+    if not TryStrToFloat(lexdir.ReadToken, n) then begin
+      GenErrorDir(ER_ERIN_NUMBER_, [lexDir.ReadToken]);
       exit(false);
     end;
   end;
@@ -531,13 +503,13 @@ end;
 function TParserDirecBase.CogIdentif(out s: string): boolean;
 {Veririfca si lo que sigues es un identificador y de ser así, intenta tomarlo.}
 begin
-  if tokTyp = lexDir.tnSpace then
+  if tokTyp = tkSpace then
     lexDir.Next;  //quita espacios
   //verifica
-  if lexDir.GetTokenKind <> lexDir.tnIdentif then begin
+  if lexDir.tokType <> tkIdentifier then begin
     exit(false);
   end;
-  s := lexDir.GetToken;
+  s := lexDir.ReadToken;
   lexDir.Next;  //toma identificador
   exit(true);
 end;
@@ -547,74 +519,74 @@ function TParserDirecBase.cogOperador: String;
 begin
   Result := '';
   skipWhites;     //quita blancos iniciales
-  Case UpCase(lexDir.GetToken) of //completa con operador de más caracteres
+  Case UpCase(lexDir.ReadToken) of //completa con operador de más caracteres
   '+': begin
-         Result := lexDir.GetToken;
+         Result := lexDir.ReadToken;
          lexDir.next;
         end;
   '-': begin
-         Result := lexDir.GetToken;
+         Result := lexDir.ReadToken;
          lexDir.next;
       end;
   '*': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   '/': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   '\': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   '%': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   '^': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   //Operadores de comparación
   '=': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   '<>': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   '>': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   '<': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   '>=': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   '<=': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   'AND': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   'OR': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   'XOR': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   'NOT': begin
-        Result := lexDir.GetToken;
+        Result := lexDir.ReadToken;
         lexDir.next;
       end;
   end;
@@ -768,15 +740,15 @@ function TParserDirecBase.ScanIFDEF(out tok0: string): boolean;
 {Explora el texto, hasta encontrar la directiva $ENDIF o $ELSE.  Si llega al
  final del contexto, sin encontrar alguna de estas directivas, devuelve FALSE.}
 var
-  tmp, direc: string;
+  direc: string;
 begin
+  //We use the general lexer to find the directive delimiter.
   while not atEof do begin
 //    debugln(tok);
     if tokType = tkDirective then begin
       //Podría ser el delimitador buscado
-      IniExplorDirec(tmp);
-      direc := UpperCase(lexDir.GetToken);
-      if (direc = 'ENDIF') or (direc='ELSE') then begin
+      direc := UpCase(token);
+      if (copy(direc,1,7) = '{$ENDIF') or (copy(direc,1,6)='{$ELSE') then begin
         //Encontró el delimitador
         tok0 := direc;
         Next;  //toma el token
@@ -808,22 +780,22 @@ begin
   Ident := GetIdent;
   if HayError then exit;
   skipWhites;
-  if lexDir.GetEol then begin
+  if lexDir.Eol then begin
     //Se definió un identificador sin valor
     NewMacro(Ident, '');
   end else begin
     //Sigue algo más
-    if lexDir.GetToken <> '=' then begin
+    if lexDir.ReadToken <> '=' then begin
       GenErrorDir(ER_EXPEC_EQUAL);
       exit;
     end;
     lexDir.Next;  //toma símbolo
     skipWhites;
-    if lexDir.GetEol then begin
+    if lexDir.Eol then begin
       GenErrorDir(ER_SYNTAX_ERRO);
     end;
     //Toma definición
-    value := copy(lin, lexDir.GetX, length(lin));
+    value := copy(lin, lexDir.col0, length(lin));
     NewMacro(Ident, value);
   end;
 end;
@@ -852,7 +824,7 @@ begin
   Ident := GetIdent;
   if HayError then exit;
   skipWhites;
-  if lexDir.GetEol then begin
+  if lexDir.Eol then begin
     //Esto es lo normal. Buscamos el identificador
     if EvaluateExp(Ident) then begin
       //Está definido
@@ -893,7 +865,7 @@ procedure TParserDirecBase.ProcIF(lin: string; negated: boolean);
     //Evalúa
     varValue := CogExpresion(0);
     //No debería seguir nada más
-    if not lexDir.GetEol then begin
+    if not lexDir.Eol then begin
       GenErrorDir(ER_SYNTAX_ERRO);
       exit;
     end;
@@ -912,7 +884,7 @@ var
 begin
   lexDir.Next;  //pasa al siguiente
   skipWhites;
-  if lexDir.GetEol then begin
+  if lexDir.Eol then begin
     GenErrorDir(ER_SYNTAX_ERRO);
     exit;
   end;
@@ -984,7 +956,7 @@ begin
   lexDir.Next;  //pasa al siguiente
   skipWhites;
   //Toma el restante de la cadena
-  filPath := copy(lin, lexDir.GetX);
+  filPath := copy(lin, lexDir.col0);
   //Completa ruta, si es relativa
   if (pos('/', filPath)=0) and (pos('\', filPath)=0) then begin
     //No incluye información de ruta. Asume que está en la misma ruta.
@@ -995,18 +967,17 @@ begin
     exit;
   end;
   //Ya se tiene el archivo
-  Next;  //pasa la directiva
-  NewContextFromFile(filPath, notFound);  //Pasa a explorar contenido del archivo
-  if notFound then begin
+  //Pasa la directiva, para que al retornar a este contexto se siga con la Sgte. instrucción.
+  Next;
+  //Abrimos el nuevo archivo y nos quedamos en ese contexto.
+//  NewContextFromFile(filPath, notFound);  //Pasa a explorar contenido del archivo
+  if not OpenContextFrom(filPath) then begin
     GenError('File no found: ' + filPath);
     exit;
   end;
-  curCtx.autoClose := true;   //Para que se cierre, al finalizar
-  //curCon.FixErrPos := true;   //Para que se ignore la posición de los errores
-  //curCon.ErrPosition := p;    //Posición a usar para ubicar el error
-  //curCon.PreErrorMsg := 'Macro '+mac.name+': ';
-  ctxChanged := true;   //Marca bandera para indciar que se ha cambiado de contexto
-
+//ShowContexts;
+  curCtx.autoReturn := true;   //Para que retorne, al finalizar
+  ctxChanged := true;   //Marca bandera para indicar que se ha cambiado de contexto
 end;
 procedure TParserDirecBase.ProcFREQUENCY;
 var
@@ -1014,17 +985,17 @@ var
 begin
   lexDir.Next;  //pasa al siguiente
   skipWhites;
-  if tokTyp <> lexDir.tnNumber then begin
+  if tokTyp <> tkLitNumber then begin
     GenErrorDir(ER_ERROR_DIREC);
     exit;
   end;
-  if not TryStrToInt(lexDir.GetToken, f) then begin
+  if not TryStrToInt(lexDir.ReadToken, f) then begin
     GenErrorDir(ER_ERROR_FREQ);
     exit;
   end;
   lexDir.Next;  //pasa al siguiente
   skipWhites;
-  case UpperCase(lexDir.GetToken) of
+  case UpperCase(lexDir.ReadToken) of
   'KHZ': f := f * 1000;
   'MHZ': f := f * 1000000;
   else
@@ -1043,10 +1014,10 @@ var
 begin
   lexDir.Next;  //pasa al siguiente
   skipWhites;
-  if lexDir.GetTokenKind = lexDir.tnNumber then begin
+  if lexDir.tokType = tkLitNumber then begin
     //Es un valor numérico
-    if not TryStrToInt(lexDir.GetToken, valOrg) then begin
-      GenErrorDir(ER_ERIN_NUMBER_, [lexDir.GetToken]);
+    if not TryStrToInt(lexDir.ReadToken, valOrg) then begin
+      GenErrorDir(ER_ERIN_NUMBER_, [lexDir.ReadToken]);
       exit;
     end;
     //Ya se tiene el valor numérico
@@ -1054,13 +1025,13 @@ begin
     lexDir.Next;
     skipWhites;
     //No debe seguir nada
-    if not lexDir.GetEol then begin
-      GenErrorDir(ER_ERIN_NUMBER_, [lexDir.GetToken]);
+    if not lexDir.Eol then begin
+      GenErrorDir(ER_ERIN_NUMBER_, [lexDir.ReadToken]);
       exit;
     end;
     exit;
   end else begin
-    GenErrorDir(ER_ERIN_NUMBER_, [lexDir.GetToken]);
+    GenErrorDir(ER_ERIN_NUMBER_, [lexDir.ReadToken]);
     exit;
   end;
 end;
@@ -1127,21 +1098,21 @@ var
 begin
   lexDir.Next;  //pasa al siguiente
   skipWhites;
-  if lexDir.GetEol then begin
+  if lexDir.Eol then begin
     GenErrorDir(ER_SYNTAX_ERRO);
     exit;
   end;
-  if lexDir.GetTokenKind <> lexDir.tnIdentif then begin
+  if lexDir.tokType <> tkIdentifier then begin
     GenErrorDir(ER_IDENT_EXPEC);
     exit;
   end;
-  varName :=  lexDir.GetToken;  //lee identificador
+  varName :=  lexDir.ReadToken;  //lee identificador
   lexDir.Next;
   skipWhites;
   if not CogCarERR('=') then exit;  //sale con error
   varValue := CogExpresion(0);
   if HayError then exit;
-  unitInf := lexDir.GetToken;  //Puede que haya unidades
+  unitInf := lexDir.ReadToken;  //Puede que haya unidades
   //Esta facilidad adicional es útil para casos en que se expresa la frecuencia.
   if upcase(unitInf) = 'KHZ' then begin
     lexDir.Next;  //Lo reconcoe
@@ -1150,11 +1121,11 @@ begin
     lexDir.Next;  //Lo reconcoe
     varValue.SetvalNum(varValue.GetvalNum * 1000000);
   end;
-  if not lexdir.GetEol then begin
+  if not lexDir.Eol then begin
     GenErrorDir(ER_SYNTAX_ERRO);
     exit;
   end;
-  if not lexdir.GetEol then begin
+  if not lexDir.Eol then begin
     GenErrorDir(ER_SYNTAX_ERRO);
     exit;
   end;
@@ -1197,8 +1168,8 @@ var
 begin
   lexDir.Next;  //pasa al siguiente
   skipWhites;
-  txtMode := UpCase(lexDir.GetToken);
-  if txtMode = 'PICPAS' then begin
+  txtMode := UpCase(lexDir.ReadToken);
+  if txtMode = 'P65PAS' then begin
     self.mode := modPicPas;
   end else if txtMode = 'PASCAL' then begin
     self.mode := modPascal;
@@ -1347,7 +1318,7 @@ end;
 //Public
 procedure TParserDirecBase.skipWhites;
 begin
-  if tokTyp = lexDir.tnSpace then
+  if tokTyp = tkSpace then
     lexDir.Next;  //quita espacios
 end;
 procedure TParserDirecBase.GenErrorDir(msg: string);
@@ -1356,7 +1327,7 @@ var
   p: TSrcPos;
 begin
   p := GetSrcPos;
-  p.col := tokIni + lexDir.GetX;  //corrige columna
+  p.col := tokIni + lexDir.col0;  //corrige columna
   GenError(msg, [], p);
 end;
 procedure TParserDirecBase.GenErrorDir(msg: string; const Args: array of const);
@@ -1364,7 +1335,7 @@ var
   p: TSrcPos;
 begin
   p := GetSrcPos;
-  p.col := tokIni + lexDir.GetX;  //corrige columna
+  p.col := tokIni + lexDir.col0;  //corrige columna
   GenError(msg, Args, p);
 end;
 procedure TParserDirecBase.AddSysVariableNumber(varName: string;
@@ -1388,7 +1359,7 @@ begin
   dvar.ReflectToString(ReadStr, WriteStr);
   varsList.Add(dvar);
 end;
-procedure TParserDirecBase.ProcDIRline(const AsmLin: string; out ctxChanged: boolean);
+procedure TParserDirecBase.ProcDIRline(const directiveLine: string; out ctxChanged: boolean);
 {Procesa una directiva, que ha sido definida, para que solo ocupe una sola línea,
 para simplificar el procesamiento, ya que si las macros ocupan más de una línea,
 complican tremendamente la exploración del lexer y la ubicación de errores.
@@ -1400,15 +1371,32 @@ var
   p: TSrcPos;
   dvar: TDirVar;
   dins: TDirInstruc;
+  dlin: SizeInt;
 begin
   ctxChanged := false;
-  IniExplorDirec(lin);
-  if tokTyp <> lexDir.tnIdentif then begin
+  //IniExplorDirec(lin);
+  lin := directiveLine;
+  dlin := length(directiveLine);
+  if lin[dlin] = '}'  then begin
+    delete(lin, dlin, 1);  //quita delimitador final de directiva
+  end else begin
+    //Es un error, pero es salvable.
+    //Ubicamos el error, "manualmente", porque aún no hemos explorado con el lexer.
+    p := GetSrcPos;
+    p.col := tokIni + dlin + 1;  //columna al final
+    GenError(ER_EXPECTED_BR, [], p);
+  end;
+  //Inicia exploración con el lexer "lexDir"
+  lexdir.SetSource(directiveLine);
+  lexDir.Next;  //Salta el "{$"
+  skipWhites;
+
+  if tokTyp <> tkIdentifier then begin
     GenErrorDir(ER_ERROR_DIREC);
     exit;
   end;
   //sigue identificador
-  case UpperCase(lexDir.GetToken) of
+  case UpperCase(lexDir.ReadToken) of
   'FREQUENCY'   : ProcFREQUENCY;
   'ORG'         : ProcORG;
   'INCLUDE'     : ProcINCLUDE(lin, ctxChanged);
@@ -1433,21 +1421,21 @@ begin
   'SET_DATA_ADDR': ProcSET_DATA_ADDR;
   else
     //Puede ser una instrucción, macro o variable
-    if DefinedInstruc(lexDir.GetToken, dins) then begin
+    if DefinedInstruc(lexDir.ReadToken, dins) then begin
       dins.OnCall();
-    end else if DefinedMacro(lexDir.GetToken, dmac) then begin
+    end else if DefinedMacro(lexDir.ReadToken, dmac) then begin
       p := GetSrcPos;   //Guarda posición del token
       Next;  //pasa la directiva
       NewContextFromText(
         dmac.value, //Pasa a explorar contenido de la macro como cadena
         ctxFile(dmac.posDef.idCtx) {Fija el archivo de definición de la macro.}
       );
-      curCtx.autoClose := true;   //Para que se cierre, al finalizar
+      curCtx.autoReturn := true;   //Para que se cierre, al finalizar
       curCtx.FixErrPos := true;   //Para que se ignore la posición de los errores
       curCtx.PreErrPosit := p;    //Posición a usar para ubicar el error
       curCtx.PreErrorMsg := 'Macro '+dmac.name+': ';
       ctxChanged := true;  //Marca bandera para indicar que se ha cambiado de contexto
-    end else if DefinedVar(lexDir.GetToken, dvar) then begin
+    end else if DefinedVar(lexDir.ReadToken, dvar) then begin
       //Es variable
       p := GetSrcPos;   //Guarda posición del token
       Next;  //pasa la directiva
@@ -1455,63 +1443,136 @@ begin
         dvar.valor.valStr, //Pasa a explorar valor de la variable como texto
         '' {Fija el archivo de definición.}
       );
-      curCtx.autoClose := true;   //Para que se cierre, al finalizar
+      curCtx.autoReturn := true;   //Para que se cierre, al finalizar
       curCtx.FixErrPos := true;   //Para que se ignore la posición de los errores
       curCtx.PreErrPosit := p;    //Posición a usar para ubicar el error
       curCtx.PreErrorMsg := 'Variable '+dvar.nomb+': ';
       ctxChanged := true;  //Marca bandera para indciar que se ha cambiado de contexto
     end else begin
-      GenErrorDir(ER_UNKNO_DIREC, [lexDir.GetToken]);
+      GenErrorDir(ER_UNKNO_DIREC, [lexDir.ReadToken]);
       exit;
     end;
   end;
 end;
-procedure TParserDirecBase.DefLexDirectiv;
-(*Define la sintaxis del lexer que se usará para analizar las directivas. La que
- debe estar entre los símbolo {$ ... }
-*)
+function TParserDirecBase.DecodeNext: boolean;
+{Decode the token in the current position, indicated by (frow, fcol), and returns:
+ - Token type in "toktyp". Can be:
+     tkIdentifier, tkLitNumber, tkString, tkSpace, tkDirDelim, tkOperator, tkNull, tkEol
+ - Start of next token in (frow, fcol).
+ - Value TRUE if the current line has changed.
+}
+var
+  col1, col2: Integer;
+  tok: String;
 begin
-  lexDir.ClearSpecials;               //para empezar a definir tokens
-  lexDir.CreateAttributes;            //Limpia atributos
-  lexDir.ClearMethodTables;
-
-  dirOperator := lexDir.NewTokType('operator');
-  dirDelimiter:= lexDir.NewTokType('delimiter');
-  lexDir.Attrib[lexDir.tnSymbol].Background := clRed;
-  lexDir.Attrib[dirOperator].Background := clGreen;
-  //solo se requiere identificadores y números
-  lexDir.DefTokIdentif('[A-Za-z_]', '[A-Za-z0-9_]*');
-  lexDir.DefTokContent('[0-9]', '[0-9.]*', lexDir.tnNumber);
-  lexDir.DefTokContent('[$]','[0-9A-Fa-f]*', lexDir.tnNumber);
-  lexDir.DefTokDelim('''', '''', lexDir.tnString);  //cadenas
-  lexDir.DefTokDelim('"', '"', lexDir.tnString);  //cadenas
-
-  lexDir.AddSymbSpec('=', dirOperator);
-  lexDir.AddSymbSpec('+=', dirOperator);
-  lexDir.AddSymbSpec('<>', dirOperator);
-  lexDir.AddSymbSpec('>', dirOperator);
-  lexDir.AddSymbSpec('<', dirOperator);
-  lexDir.AddSymbSpec('>=', dirOperator);
-  lexDir.AddSymbSpec('<=', dirOperator);
-
-  lexDir.AddIdentSpec('AND', dirOperator);
-  lexDir.AddIdentSpec('OR', dirOperator);
-  lexDir.AddIdentSpec('XOR', dirOperator);
-  lexDir.AddIdentSpec('NOT', dirOperator);
-
-  lexDir.AddSymbSpec('+', dirOperator);
-  lexDir.AddSymbSpec('-', dirOperator);
-  lexDir.AddSymbSpec('*', dirOperator);
-  lexDir.AddSymbSpec('/', dirOperator);
-  lexDir.AddSymbSpec('\', dirOperator);
-  lexDir.AddSymbSpec('%', dirOperator);
-  lexDir.AddSymbSpec('^', dirOperator);
-
-  lexDir.AddSymbSpec('(', dirDelimiter);
-  lexDir.AddSymbSpec(')', dirDelimiter);
-  lexDir.AddSymbSpec('{$', dirDelimiter);
-  lexDir.AddSymbSpec('}', dirDelimiter);
-  lexDir.Rebuild;
+  if lexdir._Eof then begin
+    lexdir.tokType := tkNull;
+    exit(false);
+  end else if lexdir._Eol then begin
+    lexdir.tokType := tkEol;
+    if lexdir._LastLine then begin
+      //Cannot advance to a NextChar line. Keep position (EOF)
+    end else begin
+      //In a common line
+      lexdir._setRow(lexdir.frow+1);
+      lexdir._setCol(1);
+    end;
+    exit(true);
+  end;
+  case lexdir.curLine[lexdir.fcol] of
+  #32, #9: begin
+    repeat
+      inc(lexdir.fcol);
+    until lexdir._Eol or not(lexdir.curline[lexdir.fcol] in [#32, #9]);
+    lexdir.tokType := tkSpace;
+    //Leaves (lexdir.frow, lexdir.fcol) in the begin of the next token.
+  end;
+  '0'..'9': begin
+    repeat
+      inc(lexdir.fcol);
+    until lexdir._Eol or not(lexdir.curline[lexdir.fcol] in ['0'..'9','.']);
+    lexdir.tokType := tkLitNumber;
+  end;
+  '$': begin
+    repeat
+      inc(lexdir.fcol);
+    until lexdir._Eol or not(lexdir.curline[lexdir.fcol] in ['0'..'9','A'..'F','a'..'f']);
+    lexdir.tokType := tkLitNumber;
+  end;
+  //'%': begin
+  //  repeat
+  //    inc(lexdir.fcol);
+  //  until lexdir._Eol or not(lexdir.curline[lexdir.fcol] in ['0','1']);
+  //  lexdir.tokType := tkLitNumber;
+  //end;
+  'A'..'Z','_',
+  'a'..'z': begin
+    col1 := lexdir.fcol;   //Token start
+    repeat inc(lexdir.fcol); until lexdir._Eol or not(lexdir.curline[lexdir.fcol] in ['_','a'..'z','A'..'Z','0'..'9']);
+    col2 := lexdir.fcol;   //Token end
+    lexdir.tokType := tkIdentifier;
+    tok := Upcase(copy(lexdir.curLine, col1, col2-col1));
+    if (tok='AND') or (tok='OR') or (tok='XOR') or (tok='NOT') then begin
+      lexdir.tokType := tkOperator;
+    end;
+  end;
+  '=','-','*','/','\','%','^': begin
+    lexdir._NextChar;
+    lexdir.tokType := tkOperator;
+  end;
+  '+': begin
+    lexdir._NextChar;
+    lexdir.tokType := tkOperator;
+    if lexdir.curLine[lexdir.fcol]='=' then lexdir._NextChar;
+  end;
+  '>': begin
+    lexdir._NextChar;
+    lexdir.tokType := tkOperator;
+    if lexdir.curLine[lexdir.fcol]='=' then lexdir._NextChar;
+  end;
+  '<': begin
+    lexdir._NextChar;
+    lexdir.tokType := tkOperator;
+    if lexdir.curLine[lexdir.fcol]='=' then lexdir._NextChar
+    else if lexdir.curLine[lexdir.fcol]='>' then lexdir._NextChar;
+  end;
+  '(',')','}': begin
+    lexdir._NextChar;
+    lexdir.tokType := tkDirDelim;
+  end;
+  '{': begin
+    lexdir._NextChar; //Toma token
+    if lexdir.curLine[lexdir.fcol]='$' then begin
+      lexdir._NextChar;
+      lexdir.tokType := tkDirDelim;
+    end else begin
+      lexdir.tokType := tkNull;    //Unkmown token.
+    end;
+  end;
+  '''': begin
+    repeat inc(lexdir.fcol); until lexdir._Eol or (lexdir.curline[lexdir.fcol] = '''');
+    if lexdir._Eol then begin
+      cpx.GenError('Unclosed string.');  //Don't stop scanning
+    end else begin
+      lexdir._NextChar;  //Go to next character
+    end;
+    lexdir.tokType := tkString;
+  end;
+  '"': begin
+    repeat inc(lexdir.fcol); until lexdir._Eol or (lexdir.curline[lexdir.fcol] = '"');
+    if lexdir._Eol then begin
+      cpx.GenError('Unclosed string.');  //Don't stop scanning
+    end else begin
+      lexdir._NextChar;  //Go to next character
+    end;
+    lexdir.tokType := tkString;
+  end;
+  else
+    //Unkmown token.
+    lexdir.tokType := tkNull;  //WARNING: This make the current token will read as empty.
+    lexdir._NextChar;
+  end;
+  exit(false);
 end;
 procedure TParserDirecBase.ClearMacros;
 begin
@@ -1533,11 +1594,14 @@ end;
 constructor TParserDirecBase.Create;
 begin
   inherited Create;
-  lexDir := TSynFacilSyn.Create(nil);  //crea lexer para analzar directivas
+  //lexDir := TSynFacilSyn.Create(nil);  //crea lexer para analzar directivas
+  //DefLexDirectiv;
+  lexDir := TContext.Create();  //crea lexer para analizar directivas
+  lexDir.OnDecodeNext := @DecodeNext;
+
   macroList := TDirMacro_list.Create(true);
   varsList := TDirVar_list.Create(true);
   instList := TDirInstruc_list.Create(true);
-  DefLexDirectiv;
   //Initialize events and functions of Compiler
   callProcDIRline := @ProcDIRline;
 end;
@@ -1551,4 +1615,4 @@ begin
 end;
 
 end.
-
+//1554

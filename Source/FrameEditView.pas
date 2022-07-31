@@ -18,6 +18,7 @@ type
     imgBookMarks: TImageList;
     ImgCompletion: TImageList;
     lblBackground: TLabel;
+    mnLocFileExp: TMenuItem;
     mnCloseOthers: TMenuItem;
     mnCloseAll: TMenuItem;
     mnNewTab: TMenuItem;
@@ -34,6 +35,7 @@ type
     procedure mnCloseOthersClick(Sender: TObject);
     procedure mnCloseAllClick(Sender: TObject);
     procedure mnCloseTabClick(Sender: TObject);
+    procedure mnLocFileExpClick(Sender: TObject);
     procedure mnNewTabClick(Sender: TObject);
     procedure UpDown1Click(Sender: TObject; Button: TUDBtnType);
   private  //Métodos para dibujo de las lenguetas
@@ -93,6 +95,7 @@ type
     OnSelectEditor: procedure of object;  //Cuando cambia la selección de editor
     OnRequireSynEditConfig: procedure(ed: TsynEdit) of object;
     OnRequireSetCompletion: procedure(ed: TSynEditor) of object;
+    OnLocateInFileExpl: procedure(ed: TSynEditor) of object;
   public  //Administración de archivos
     tmpPath: string;  //ruta usada para crear archivos temporales para los editores
     property Modified: boolean read GetModified;
@@ -166,10 +169,10 @@ begin
   if AValue>editors.Count-1 then AValue := editors.Count-1;
   if FTabIndex = AValue then Exit;
   if FTabIndex<>-1 then begin  //que no sea la primera vez
-    editors[FTabIndex].SynEdit.Visible := false;  //oculta el anterior
+    editors[FTabIndex].ed.Visible := false;  //oculta el anterior
   end;
   FTabIndex := AValue;   //cambia valor
-  editors[FTabIndex].SynEdit.Visible := true;  //muestra el nuevo
+  editors[FTabIndex].ed.Visible := true;  //muestra el nuevo
   if OnSelectEditor<>nil then OnSelectEditor;  //dispara evento
   RefreshTabs;
 end;
@@ -351,7 +354,7 @@ begin
   //Pasa el enfoque al editor que se ha seleccionado
   if TabIndex<>-1 then begin
     try
-      editors[TabIndex].SynEdit.SetFocus;
+      editors[TabIndex].ed.SetFocus;
     except
 
     end;
@@ -498,7 +501,7 @@ begin
   until SearchEditorIdxByTab(Result)=-1;
 end;
 function TfraEditView.AddEdit(ext: string): TSynEditor;
-{Agrega una nueva ventana de eición a la vista, y devuelve la referencia.}
+{Agrega una nueva ventana de edición a la vista, y devuelve la referencia.}
 var
   ed: TSynEditor;
   n: Integer;
@@ -510,43 +513,43 @@ begin
   ed.hl.IconList := ImgCompletion;
 //  ed.SetLanguage(curLanguage);
   //Configura PageControl
-  ed.SynEdit.Parent := self;
-  ed.SynEdit.Align := alClient;
+  ed.ed.Parent := self;
+  ed.ed.Align := alClient;
   //Fija imágenes para marcadores
-  ed.SynEdit.BookMarkOptions.BookmarkImages := imgBookMarks;
+  ed.ed.BookMarkOptions.BookmarkImages := imgBookMarks;
 
   //Configura el borrado de la palabra actual
   n := 46;
-  ed.SynEdit.Keystrokes.BeginUpdate;
-  ed.SynEdit.Keystrokes[n].Key := VK_DELETE;
-  ed.SynEdit.Keystrokes[n].Shift := [ssCtrl];
-  ed.SynEdit.Keystrokes[n].ShiftMask := [];
-  ed.SynEdit.Keystrokes.EndUpdate;
+  ed.ed.Keystrokes.BeginUpdate;
+  ed.ed.Keystrokes[n].Key := VK_DELETE;
+  ed.ed.Keystrokes[n].Shift := [ssCtrl];
+  ed.ed.Keystrokes[n].ShiftMask := [];
+  ed.ed.Keystrokes.EndUpdate;
   //Deshabilita Ctrl+N
-  n := ed.SynEdit.Keystrokes.FindCommand(ecInsertLine);
-  ed.SynEdit.Keystrokes[n].ShortCut := 0;   //Esto debe dehabilitarlo
+  n := ed.ed.Keystrokes.FindCommand(ecInsertLine);
+  ed.ed.Keystrokes[n].ShortCut := 0;   //Esto debe dehabilitarlo
   n := 84;
-  ed.SynEdit.Keystrokes.BeginUpdate;
-  ed.SynEdit.Keystrokes[n].Key := VK_SUBTRACT;
-  ed.SynEdit.Keystrokes[n].Shift := [ssShift,ssAlt];
-  ed.SynEdit.Keystrokes[n].ShiftMask := [];
-  ed.SynEdit.Keystrokes.EndUpdate;
+  ed.ed.Keystrokes.BeginUpdate;
+  ed.ed.Keystrokes[n].Key := VK_SUBTRACT;
+  ed.ed.Keystrokes[n].Shift := [ssShift,ssAlt];
+  ed.ed.Keystrokes[n].ShiftMask := [];
+  ed.ed.Keystrokes.EndUpdate;
   //Configura el desplegado con Alt+Shift+"+"
   n := 85;
-  ed.SynEdit.Keystrokes.BeginUpdate;
-  ed.SynEdit.Keystrokes[n].Key := VK_ADD;
-  ed.SynEdit.Keystrokes[n].Shift := [ssShift,ssAlt];
-  ed.SynEdit.Keystrokes[n].ShiftMask := [];
-  ed.SynEdit.Keystrokes.EndUpdate;
+  ed.ed.Keystrokes.BeginUpdate;
+  ed.ed.Keystrokes[n].Key := VK_ADD;
+  ed.ed.Keystrokes[n].Shift := [ssShift,ssAlt];
+  ed.ed.Keystrokes[n].ShiftMask := [];
+  ed.ed.Keystrokes.EndUpdate;
 
   //Crea un "plugin" de edición síncrona
   fSynchro := TSynPluginSyncroEdit.Create(self);
-  fSynchro.Editor := ed.SynEdit;
+  fSynchro.Editor := ed.ed;
 
   //Configura múltiples cursores
   fMultiCaret := TSynPluginMultiCaret.Create(self);
   with fMultiCaret do begin
-    Editor := ed.SynEdit;
+    Editor := ed.ed;
     with KeyStrokes do begin
       Add.Command    := ecPluginMultiCaretSetCaret;
       Add.Key        := VK_INSERT;
@@ -562,7 +565,7 @@ begin
   ed.Caption := NewName(ext);   //Pone nombre diferente
   ed.FileName := '';  //Pone sin nombre para saber que no se ha guardado
   if OnRequireSynEditConfig<>nil then  //Configura
-    OnRequireSynEditConfig(ed.SynEdit);
+    OnRequireSynEditConfig(ed.ed);
   editors.Add(ed);   //agrega a la lista
   TabIndex := LastIndex;
   //Configura desplazamiento para asegurarse que la pestaña se mostrará visible
@@ -586,11 +589,11 @@ begin
       //Quedó apuntando fuera
       FTabIndex := editors.Count - 1;   //limita
       //No es necesario ocultar el anterior, porque se eliminó
-      editors[FTabIndex].SynEdit.Visible := true;  //muestra el nuevo
+      editors[FTabIndex].ed.Visible := true;  //muestra el nuevo
     end else begin
       //Queda apuntando al siguiente. No es necesario modificar.
       //No es necesario ocultar el anterior, porque se eliminó
-      editors[FTabIndex].SynEdit.Visible := true;  //muestra el nuevo
+      editors[FTabIndex].ed.Visible := true;  //muestra el nuevo
     end;
   end;
   MakeActiveTabVisible;
@@ -685,7 +688,7 @@ var
   i: Integer;
 begin
   for i:=0 to editors.Count-1 do begin
-    if editors[i].SynEdit.Focused then exit(true);
+    if editors[i].ed.Focused then exit(true);
   end;
   exit(false);
 end;
@@ -693,8 +696,8 @@ procedure TfraEditView.SetFocus;
 begin
 //  inherited SetFocus;
   if TabIndex = -1 then exit;
-  if editors[TabIndex].SynEdit.Visible then begin
-    editors[TabIndex].SynEdit.SetFocus;
+  if editors[TabIndex].ed.Visible then begin
+    editors[TabIndex].ed.SetFocus;
   end;
 end;
 procedure TfraEditView.Undo;
@@ -837,12 +840,12 @@ begin
   if Result then begin
     if (row>=0) and (col>=0)  then begin
       //posiciona curosr
-      ActiveEditor.SynEdit.CaretY := row;
-//      ActiveEditor.SynEdit.CaretX := col;
-      ActiveEditor.SynEdit.LogicalCaretXY := Point(col, row);
+      ActiveEditor.ed.CaretY := row;
+//      ActiveEditor.ed.CaretX := col;
+      ActiveEditor.ed.LogicalCaretXY := Point(col, row);
       //Define línea con error
       if highlightLine then ActiveEditor.linErr := row;
-      ActiveEditor.SynEdit.Invalidate;  //refresca
+      ActiveEditor.ed.Invalidate;  //refresca
       SetFocus;
     end;
   end;
@@ -1003,7 +1006,7 @@ begin
   //Pide configuración para todos los editores abiertos
   for i:=0 to editors.Count-1 do begin
     if OnRequireSynEditConfig<>nil then begin
-      OnRequireSynEditConfig(editors[i].SynEdit);
+      OnRequireSynEditConfig(editors[i].ed);
     end;
     //Actualiza resaltador y Completado
     ConfigureSyntax(editors[i]);
@@ -1051,6 +1054,13 @@ begin
   inherited Destroy;
 end;
 //Menú
+procedure TfraEditView.FrameResize(Sender: TObject);
+begin
+  //Configura ubciación de etiquetas
+  if Count>0 then exit;   //Está oculto
+  lblBackground.Left := self.Width div 2 - lblBackground.Width div 2;
+  lblBackground.Top := self.Height div 2;
+end;
 procedure TfraEditView.mnNewTabClick(Sender: TObject);
 begin
   NewPasFile;
@@ -1067,6 +1077,10 @@ procedure TfraEditView.mnCloseTabClick(Sender: TObject);
 begin
   CloseEditor;
   SetFocus;
+end;
+procedure TfraEditView.mnLocFileExpClick(Sender: TObject);
+begin
+  if OnLocateInFileExpl<>nil then OnLocateInFileExpl(ActiveEditor);
 end;
 procedure TfraEditView.mnCloseAllClick(Sender: TObject);
 begin
@@ -1095,13 +1109,6 @@ begin
       break;  //Se canceló
   end;
   SetFocus;
-end;
-procedure TfraEditView.FrameResize(Sender: TObject);
-begin
-  //Configura ubciación de etiquetas
-  if Count>0 then exit;   //Está oculto
-  lblBackground.Left := self.Width div 2 - lblBackground.Width div 2;
-  lblBackground.Top := self.Height div 2;
 end;
 
 end.

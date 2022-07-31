@@ -49,7 +49,7 @@ type
     frmRAMExplorer: TfrmRAMExplorer6502;
   private    //Otros
     Compiling   : Boolean;  //Bandera. Indica que se ha pedido ejceutar una compilación.
-    procedure Compiler16_RequireFileString(FilePath: string;
+    procedure Compiler_RequireFileString(FilePath: string;
       var strList: TStrings);
     procedure CompilerError(errTxt: string; const srcPos: TSrcPos);
     procedure CompilerInfo(infTxt: string; const srcPos: TSrcPos);
@@ -102,7 +102,7 @@ resourcestring
 
 implementation
 { TAdapter6502 }
-procedure TAdapter6502.Compiler16_RequireFileString(FilePath: string;
+procedure TAdapter6502.Compiler_RequireFileString(FilePath: string;
   var strList: TStrings);
 {El compilador está solicitando acceder a un STringList, con el contenido de "FilePath",
 para evitar tener que leerlo de disco, y hacer más rápido el acceso.}
@@ -121,7 +121,7 @@ begin
       {En verificación de sintaxis no es coveniente. Puede resultar molesto al usuario.
       A menos que tenga activada alguna opción de "Autosave".}
     end;
-    strList := ed.SynEdit.Lines;
+    strList := ed.ed.Lines;
   end;
 end;
 procedure TAdapter6502.CompilerError(errTxt: string; const srcPos: TSrcPos);
@@ -177,9 +177,9 @@ var
 begin
   fraEditView1.NewLstFile;
   edit := fraEditView1.ActiveEditor;
-  edit.SynEdit.BeginUpdate;
-  Compiler.GenerateListReport(edit.SynEdit.Lines);
-  edit.SynEdit.EndUpdate;
+  edit.ed.BeginUpdate;
+  Compiler.GenerateListReport(edit.ed.Lines);
+  edit.ed.EndUpdate;
 end;
 procedure TAdapter6502.FindDeclarat;
 begin
@@ -318,7 +318,7 @@ begin
   //Lee configuración de compilación
   if fraCfgCompiler.ReuProcVar then AddLine(pars, '-Ov');  //Reusar variables de proced.
   if fraCfgCompiler.OptRetProc then AddLine(pars, '-Or');  //Optimizar Retorno de proced.
-  if fraCfgAsmOut.IncComment2  then AddLine(pars, '-Ac');  //Comentario detallado
+  if fraCfgAsmOut.IncComment  then AddLine(pars, '-Ac');  //Comentario detallado
 
   //Inicio de compilación
   nErrors := 0;
@@ -340,7 +340,7 @@ begin
   ed := fraEditView1.ActiveEditor;
   if ed.FileName='' then exit;
   //Verifica rápidamente si hay texto en el editor
-  if (ed.SynEdit.Lines.Count<=1) and (trim(ed.Text)='') then exit;
+  if (ed.ed.Lines.Count<=1) and (trim(ed.Text)='') then exit;
   //Lee configuración de verif. de sintaxis.
   case fraCfgAfterChg.actAfterChg of
     0: pars := '-Cn' + LineEnding + '-Dn';  //<No action>
@@ -496,10 +496,10 @@ begin
   fraEditView1 := fraEdit0;
   Compiler:= TCompiler_PIC16.Create;
   //COnfigura eventos
-  Compiler.OnRequireFileString:= @Compiler16_RequireFileString;
-  Compiler.OnError         := @CompilerError;
-  Compiler.OnWarning       := @CompilerWarning;
-  Compiler.OnInfo          := @CompilerInfo;
+  Compiler.OnRequireFileString:=@Compiler_RequireFileString;
+  Compiler.OnError           := @CompilerError;
+  Compiler.OnWarning         := @CompilerWarning;
+  Compiler.OnInfo            := @CompilerInfo;
   //Configura CodeTool
   CodeTool  := TCodeTool.Create(fraEdit0);
   CodeTool.SetCompiler(compiler);  //Asigna compilador

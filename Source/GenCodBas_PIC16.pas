@@ -2047,6 +2047,8 @@ var
   srcLin: String;
   blk: TEleBlock;
 begin
+//  ShowContexts;
+//  ShowCurContInformat;
   for eleSen in sentList do begin
     if eleSen.idClass = eleSenten then begin
       //Generates code to the sentence.
@@ -2056,9 +2058,9 @@ begin
         código fuente a través del contexto al que apunta cada instrucción. }
         idCtx  := sen.srcDec.idCtx;
         rowCtx := sen.srcDec.row-1;
-        srcLin := ctxList[idCtx].curLines[rowCtx];  {Podría fallar si el contenido del archivo
-                    no se encuentra en "curLines". El scanner podría usar otro almacenamiento.
-                    Habría que analizar mejor cuál es el acceso correcto al contenido fuente.}
+        srcLin := ctxList[idCtx].curLines[rowCtx];  {Podría fallar si el contenido del
+         archivo no se encuentra en "curLines". El scanner podría usar otro almacenamiento.
+         Habría que analizar mejor cuál es el acceso correcto al contenido fuente.}
         pic.addTopComm('    ;' + trim(srcLin));
         //MsgBox(srcLin);
       end;

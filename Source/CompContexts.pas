@@ -37,7 +37,7 @@ type
     procedure NewContextFromText(txt: string; fileSrc: String);
     procedure NewContextFromFile(filSrc: String; out notFound: boolean);
     procedure NewContextFromTStrings(lins: Tstrings; filSrc: String);
-    procedure RemoveContext;
+    procedure ReturnToPrevContext(remove: boolean);
     procedure ClearContexts;      //Deletes all contexts.
   public //Scan functions
     token    : string;     //Current Token
@@ -174,12 +174,12 @@ function TContexts.AddContext: TContext;
 Punto único para agregar un contexto}
 begin
   inherited;
-  Result := TContext.Create;  //Creates Context.
+  Result := TContext.Create;   //Creates Context.
   Result.retPos := GetCtxState; //Keep return position.
   Result.onGenError := @GenError;
-  ctxList.Add(Result);        //Register Context.
-  idCount := ctxList.Count-1; //Calculate de index.
-  Result.idCtx := idCount;    //Set reference to index.
+  ctxList.Add(Result);         //Register Context.
+  idCount := ctxList.Count-1;  //Calculate the index.
+  Result.idCtx := idCount;     //Set reference to index.
 end;
 procedure TContexts.NewContextFromText(txt: string; fileSrc: String);
 {Create a new context from a text and set "curCtx" to the new context created.
@@ -228,8 +228,11 @@ begin
   token := curCtx.ReadToken;  //lee el token
   tokType := curCtx.tokType;  //lee atributo
 end;
-procedure TContexts.RemoveContext;
-//Elimina el contexto de entrada actual. Deja apuntando al anterior en la misma posición.
+procedure TContexts.ReturnToPrevContext(remove: boolean);
+{Set the current context to the previous context. The previous context is the context
+that active when the current context was opened. After return to the previous context
+the state es restored too. Is "remove" is set, the current context is deleted from
+"ctxList".}
 var
   retPos: TContextState;
 begin
@@ -244,7 +247,7 @@ begin
   //Hay al menos un contexto abierto
   retPos := curCtx.retPos;  //guarda dirección de retorno
   //ctxList.Delete(ctxList.Count-1);  //elimina contexto superior
-  ctxList.Remove(curCtx);
+  if remove then ctxList.Remove(curCtx);
   if ctxList.Count = 0 then begin
     //No quedan contextos abiertos
     curCtx := nil;
@@ -282,8 +285,8 @@ begin
        (curCtx.tokType in [tkSpace, tkEol, tkComment]) do
   begin
       if atEof then begin
-        if curCtx.autoClose then begin
-          RemoveContext;  //cierra automáticamente
+        if curCtx.autoReturn then begin
+          ReturnToPrevContext(curCtx.autoRemove);  //Retorna al contexto padre.
         end else begin
           break;  //Sale del WHILE
         end;
@@ -314,9 +317,10 @@ begin
   if curCtx.Next then begin   //hubo cambio de línea
     if OnNewLine<>nil then OnNewLine(curCtx.CurLine);
   end;
-  if atEof and curCtx.autoClose then begin
-    //Se debe cerrar automáticamente
-    RemoveContext;
+  if atEof then begin
+    if curCtx.autoReturn then begin
+      ReturnToPrevContext(curCtx.autoRemove);  //Retorna al contexto padre.
+    end;
   end;
   //actualiza token actual
   token := curCtx.ReadToken;    //lee el token
@@ -337,9 +341,9 @@ procedure TContexts.ShowContexts;
 {Función para depuración. Muestra el contenido de los contextos existentes.}
 var ct: TContext;
 begin
-  debugln('=== Openend contexts ===');
+  debugln('=== Opened contexts ===');
   for ct in ctxList do begin
-    debugln('   ' + ct.fileSrc);
+    debugln('idCtx=' + IntToStr(ct.idCtx) + '   ' + ct.fileSrc);
   end;
 end;
 procedure TContexts.ShowCurContInformat;
@@ -351,6 +355,7 @@ begin
   TC_TXT: typStr := 'TC_TXT';
   end;
   debugln('===Current Context ===');
+  debugln('  idCtx=' + IntToStr(curCtx.idCtx));
   debugln('  arc=' + curCtx.fileSrc);
   debugln('  typ=%s pos=[%d,%d]', [typStr, curCtx.row, curCtx.col]);
 //  debugln('  curlines=' + curCon.curLines.Text);

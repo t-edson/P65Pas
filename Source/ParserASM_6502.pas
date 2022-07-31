@@ -744,7 +744,7 @@ begin
     //There are an instruction opened
     cpx.TreeElems.CloseElement;
   end;
-  //Curren token is delimiter END.
+  //Current token is delimiter END.
   cpx.curCtx.OnDecodeNext := nil;   //Restore lexer here, in order to take the "END" with the new lexer and avoid problems of syntax.
   cpx.Next;   //Take END with default lexer.
   cpx.TreeElems.CloseElement;  //Close ASM block

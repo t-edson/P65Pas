@@ -10,21 +10,13 @@ object fraCfgAsmOut6502: TfraCfgAsmOut6502
   TabOrder = 0
   DesignLeft = 398
   DesignTop = 511
-  object chkIncComment2: TCheckBox
-    Left = 244
-    Height = 24
-    Top = 246
-    Width = 206
-    Caption = 'Include &Detailed comments'
-    TabOrder = 0
-  end
   object chkIncVarName: TCheckBox
     Left = 244
     Height = 24
     Top = 206
     Width = 178
     Caption = 'Include &Variable names'
-    TabOrder = 1
+    TabOrder = 0
   end
   object chkIncAddress: TCheckBox
     Left = 24
@@ -32,7 +24,7 @@ object fraCfgAsmOut6502: TfraCfgAsmOut6502
     Top = 206
     Width = 188
     Caption = 'Include &Memory Address'
-    TabOrder = 2
+    TabOrder = 1
   end
   object chkIncComment: TCheckBox
     Left = 24
@@ -40,7 +32,7 @@ object fraCfgAsmOut6502: TfraCfgAsmOut6502
     Top = 246
     Width = 147
     Caption = 'Include &Comments'
-    TabOrder = 3
+    TabOrder = 2
   end
   object chkExcUnused: TCheckBox
     Left = 84
@@ -48,7 +40,7 @@ object fraCfgAsmOut6502: TfraCfgAsmOut6502
     Top = 166
     Width = 126
     Caption = 'Exclude unused'
-    TabOrder = 4
+    TabOrder = 3
   end
   object chkIncDecVar: TCheckBox
     Left = 24
@@ -57,7 +49,7 @@ object fraCfgAsmOut6502: TfraCfgAsmOut6502
     Width = 216
     Caption = 'Include &Variables declaration'
     OnChange = chkIncDecVarChange
-    TabOrder = 5
+    TabOrder = 4
   end
   object RadioGroup2: TRadioGroup
     Left = 24
@@ -80,6 +72,6 @@ object fraCfgAsmOut6502: TfraCfgAsmOut6502
       'Assembler'
       'Basic Loader'
     )
-    TabOrder = 6
+    TabOrder = 5
   end
 end

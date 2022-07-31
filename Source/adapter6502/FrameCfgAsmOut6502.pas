@@ -14,7 +14,6 @@ type
     chkExcUnused: TCheckBox;
     chkIncAddress: TCheckBox;
     chkIncComment: TCheckBox;
-    chkIncComment2: TCheckBox;
     chkIncDecVar: TCheckBox;
     chkIncVarName: TCheckBox;
     RadioGroup2: TRadioGroup;
@@ -26,7 +25,6 @@ type
     IncVarDec  : boolean;  //Incluye declaración de varaibles
     IncAddress : boolean;  //Incluye dirección física en el código desensamblado
     IncComment : boolean;  //Incluye comentarios en el código desensamblado
-    IncComment2: boolean;  //Incluye comentarios detallados en el código desensamblado
     ExcUnused  : boolean;  //Excluye declaración de variables no usadas
     IncVarName : boolean;  //Reemplaza dirección con etiqueta de variables
     procedure Init(section: string; cfgFile: TMiConfigXML);
@@ -50,7 +48,7 @@ begin
   cfgFile.Asoc_Enum(section+'/VarDecType', @AsmType    , Sizeof(TAsmType), RadioGroup2, 1);
   cfgFile.Asoc_Bol (section+'/IncAddress', @IncAddress , chkIncAddress , true);
   cfgFile.Asoc_Bol (section+'/IncComment', @IncComment , chkIncComment , false);
-  cfgFile.Asoc_Bol (section+'/IncComment2',@IncComment2, chkIncComment2, false);
+//  cfgFile.Asoc_Bol (section+'/IncComment2',@IncComment2, chkIncComment2, false);
   cfgFile.Asoc_Bol (section+'/ExcUnused' , @ExcUnused  , chkExcUnused  , true);
   cfgFile.Asoc_Bol (section+'/IncVarName', @IncVarName , chkIncVarName , true);
   chkIncDecVarChange(self);   //Para actualizar

@@ -87,7 +87,7 @@ type
   public   //General fields
     Model    : string;    //modelo de PIC
     frequen  : integer;   //frecuencia del reloj
-    MaxFreq  : integer;   //máxima frecuencia del reloj
+    MaxFreq  : integer;   //Máxima frecuencia del reloj en Hz.
     //Propiedades que definen la arquitectura del CPU.
     MsjError: string;
   public   //Execution control
@@ -467,7 +467,8 @@ constructor TCPUCore.Create;
 begin
   dataAddr1 := -1; //Disable
   hexLines := TStringList.Create;
-  frequen := 1000000;    //4MHz
+  MaxFreq := 10000000;   //10MHz.
+  frequen := 1000000;    // 1MHz.
 end;
 destructor TCPUCore.Destroy;
 begin

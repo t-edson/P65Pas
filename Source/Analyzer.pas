@@ -1955,7 +1955,7 @@ begin
         exit;
       end;
       //Check for possible types generated to move to the declaration section.
-      declarSec := TreeElems.curCodCont.Parent;  //Declaraion section.
+      declarSec := TreeElems.curCodCont.Parent;  //Declaration section.
       declarPos := TreeElems.curCodCont.Index;  //Position before of the body.
       MoveInternalTypes(TreeElems.curNode, declarSec, declarPos);
       //Take the first (should be the unique) element.
@@ -2058,12 +2058,12 @@ begin
       //Primero busca en la misma ubicación del archivo fuente
       uPath := ExtractFileDir(mainFile) + DirectorySeparator + uName;
       if OpenContextFrom(uPath) then begin
-        uni.srcFile := uPath;   //Gaurda el archivo fuente
+        uni.srcFile := uPath;   //Guarda el archivo fuente
       end else begin
         //No lo encontró, busca en la carpeta de dispositivos
         uPath := devicesPath + DirectorySeparator + uName;
         if OpenContextFrom(uPath) then begin
-          uni.srcFile := uPath;   //Gaurda el archivo fuente
+          uni.srcFile := uPath;   //Guarda el archivo fuente
         end else begin
            //No lo encontró, busca en la carpeta de librerías
            uPath := patUnits + DirectorySeparator + uName;
@@ -2078,7 +2078,7 @@ begin
       end;
       //Aquí ya se puede realizar otra exploración, como si fuera el archivo principal
       DoAnalyzeUnit(uni);
-      SetCtxState(p);
+      SetCtxState(p); //*** No debería ser necesario salvar y restaurar estados si se usa "autoReturn" como se hace en TParserDirecBase.ProcINCLUDE().
       if HayError then exit;  //El error debe haber guardado la ubicación del error
 {----}TreeElems.CloseElement; //cierra espacio de nombres de la función
       Next;  //toma nombre

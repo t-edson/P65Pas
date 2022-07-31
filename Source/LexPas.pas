@@ -39,13 +39,8 @@ type
     tkBlkDelim ,  //
     tkChar     ,  //
     tkKeyword  ,  //Reserved words
-    //tkStruct   ,
-    tkOthers{,      //
-    //Aditional ASM lexer token
-    taNumber,    //Number like 123 or $1234 or %0101
-    taIdentif,   //Identifier like mnemonic or label
-    taString,    //String of char
-    taComment}
+    tkDirDelim ,  //Delimitador de directiva. Usado solo para directivas.
+    tkOthers      //
   );
 
   { TScanner }
@@ -202,22 +197,23 @@ type
   public  //Containers for content
     intLines : TStringList;  {Internal containers for text, when not specified an external
                              TStringList. Always created.}
-//    fidfile  : word;
-    retPos   : TContextState;    //Posición de retorno, al contexto padre.
   public  //Scan functions
     OnDecodeNext: function: boolean of object;
     function DecodeNext: boolean;
-    function Next: boolean;
-    function ReadToken: string;     //Pasa al siguiente token
+    function Next: boolean;      //Pasa al siguiente token
+    function ReadToken: string;
     procedure SkipWhites;
     procedure SkipWhitesNoEOL;
   public
     idCtx    : integer;     //Unique identifier for the context.
-    typ      : tTypCon;     //Tipo de contexto
+    retPos   : TContextState; //Return position to parent context.
+    typ      : tTypCon;     //Context type.
     fileSrc  : String;      //Nombre de archivo fuente, incluyendo la ruta. En caso de que el contexto corresponda a uno.
     data     : TObject;     //Campo para información adiciconal que se desee almacenar.
-    autoClose: boolean;     {Indica que este contexto se debe cerrar automáticamente al
-                             llegar al final.}
+    autoReturn: boolean;    {Indica que, al finalizar la exploración, se debe retornar al
+                            contexto que hizo la llamada.}
+    autoRemove: boolean;    {Indica que, al finalizar la exploración, se debe eliminar
+                            este contexto. Solo es válido cuando se activa "autoReturn".}
     function ReadSource: string;    //Lee el contenido del contexto en un string
   public  //Error generation
     onGenError: procedure(msg: string) of object;  //Generates error
@@ -446,7 +442,7 @@ procedure TContext.SkipWhites;
 begin
   while toktype in [tkSpace , tkEol, tkComment] do
   begin
-    DecodeNext;
+    DecodeNext; //Formally, must be OnDecodeNext() but decoding spaces is similar.
   end;
 end;
 procedure TContext.SkipWhitesNoEOL;
@@ -454,7 +450,7 @@ procedure TContext.SkipWhitesNoEOL;
 //If not whites are found, returns FALSE.
 begin
   while toktype = tkSpace do begin
-    DecodeNext;
+    DecodeNext; //Formally, must be OnDecodeNext() but decoding spaces is similar.
   end;
 end;
 function TContext.DecodeNext: boolean;

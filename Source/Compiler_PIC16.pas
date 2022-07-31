@@ -1174,6 +1174,7 @@ begin
     //Default settings
     comp_level := clComplete;
     enabDirMsgs := true;
+    AsmIncComm := false;
     for txt in parsList do begin
       if length(txt)<2 then continue;
       //---Compiling options

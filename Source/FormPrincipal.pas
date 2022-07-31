@@ -206,6 +206,7 @@ type
     procedure comp_BeforeCompile;
     procedure comp_AfterCompile;
     procedure ConfigExtTool_RequirePar(var comLine: string);
+    procedure fraEdit_LocateInFileExpl(ed: TSynEditor);
     procedure fraEdit_RequireSetCompletion(ed: TSynEditor);
     procedure fraMessagesStatisDBlClick;
     procedure fraLeftPanel_selecFileExplorer;
@@ -348,6 +349,12 @@ begin
   comLine := StringReplace(comLine, '$(mainPath)', ExtractFileDir(currComp.mainFilePath), [rfReplaceAll, rfIgnoreCase]);
   comLine := StringReplace(comLine, '$(picModel)', currComp.CPUname, [rfReplaceAll, rfIgnoreCase]);
 end;
+procedure TfrmPrincipal.fraEdit_LocateInFileExpl(ed: TSynEditor);
+begin
+  if ed.FileName<>'' then begin
+    fraLeftPanel.fraArcExplor1.LocateFileOnTree(ed.FileName);
+  end;
+end;
 procedure TfrmPrincipal.FormCreate(Sender: TObject);
 begin
 
@@ -366,6 +373,7 @@ begin
   fraEditView1.OnSelectEditor         := @fraEdit_SelectEditor;
   fraEditView1.OnRequireSynEditConfig := @fraEdit_RequireSynEditConfig;
   fraEditview1.OnRequireSetCompletion := @fraEdit_RequireSetCompletion;
+  fraEditView1.OnLocateInFileExpl     := @fraEdit_LocateInFileExpl;
   //Guarda cantidad de ítems en menú contextul del editor para dar esa información a los
   //adaptadores.
   PopupEdit_N := PopupEdit.Items.Count;
@@ -493,7 +501,7 @@ begin
       else
         StatusBar1.Panels[0].Text := MSG_SAVED;
       //Actualiza cursor
-      StatusBar1.Panels[1].Text := Format('%d,%d', [ed.SynEdit.CaretX, ed.SynEdit.CaretY]);
+      StatusBar1.Panels[1].Text := Format('%d,%d', [ed.ed.CaretX, ed.ed.CaretY]);
     end;
   end;
   if (ticSynCheck = 5) and (fraEditView1.Count>0 ) then begin
@@ -784,7 +792,7 @@ begin
   end;
   if (ed<>nil) and (ed.FileName<>'') then begin
 //*** Verificar si es necesario
-//     fraLeftPanel.LocateFile(ed.FileName);
+     fraLeftPanel.fraArcExplor1.LocateFileOnTree(ed.FileName);
   end;
 end;
 procedure TfrmPrincipal.FindDialog1Find(Sender: TObject);
@@ -795,7 +803,7 @@ var
   curEdit: TSynEdit;
 begin
   if fraEditView1.ActiveEditor = nil then exit;
-  curEdit := fraEditView1.ActiveEditor.SynEdit;
+  curEdit := fraEditView1.ActiveEditor.ed;
   buscado := FindDialog1.FindText;
   opciones := [];
   if not(frDown in FindDialog1.Options) then opciones += [ssoBackwards];
@@ -814,7 +822,7 @@ var
   curEdit: TSynEdit;
 begin
   if fraEditView1.ActiveEditor = nil then exit;
-  curEdit := fraEditView1.ActiveEditor.SynEdit;
+  curEdit := fraEditView1.ActiveEditor.ed;
   buscado := ReplaceDialog1.FindText;
   opciones := [ssoFindContinue];
   if not(frDown in ReplaceDialog1.Options) then opciones += [ssoBackwards];
@@ -881,7 +889,7 @@ end;
 procedure TfrmPrincipal.acArcNewFileExecute(Sender: TObject);
 begin
   fraEditView1.NewPasFile;
-  fraEditView1.ActiveEditor.SynEdit.Text := currComp.SampleCode;
+  fraEditView1.ActiveEditor.ed.Text := currComp.SampleCode;
   fraEditView1.SetFocus;
 end;
 procedure TfrmPrincipal.acArcNewProjExecute(Sender: TObject);
@@ -1117,10 +1125,10 @@ Diálogo con el mensaje de error.}
     //posiciona curosr
   //  ed.SynEdit.CaretY := nLin; //primero la fila
   //  ed.SynEdit.CaretX := nCol;
-    ed.SynEdit.LogicalCaretXY := Point(nCol, nLin);
+    ed.ed.LogicalCaretXY := Point(nCol, nLin);
     //Define línea con error
     ed.linErr := nLin;
-    ed.SynEdit.Invalidate;  //refresca
+    ed.ed.Invalidate;  //refresca
   end;
 var
   msg, filname: string;

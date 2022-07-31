@@ -1,5 +1,4 @@
 {"version":1,"strings":[
-{"hash":2209283,"name":"tfracfgasmout6502.chkinccomment2.caption","sourcebytes":[73,110,99,108,117,100,101,32,38,68,101,116,97,105,108,101,100,32,99,111,109,109,101,110,116,115],"value":"Include &Detailed comments"},
 {"hash":70023443,"name":"tfracfgasmout6502.chkincvarname.caption","sourcebytes":[73,110,99,108,117,100,101,32,38,86,97,114,105,97,98,108,101,32,110,97,109,101,115],"value":"Include &Variable names"},
 {"hash":108689123,"name":"tfracfgasmout6502.chkincaddress.caption","sourcebytes":[73,110,99,108,117,100,101,32,38,77,101,109,111,114,121,32,65,100,100,114,101,115,115],"value":"Include &Memory Address"},
 {"hash":265610499,"name":"tfracfgasmout6502.chkinccomment.caption","sourcebytes":[73,110,99,108,117,100,101,32,38,67,111,109,109,101,110,116,115],"value":"Include &Comments"},

@@ -703,7 +703,7 @@ In this mode when compiling at $0801, the compiler generates the instruction "SY
 Specify the clock frequency, in MHz or KHz. Example:
 
 ```
-{$FREQUENCY 10Mhz}
+{$FREQUENCY 2Mhz}
 ```
 
 Frequency information is used for:
@@ -713,9 +713,9 @@ Frequency information is used for:
 
 If delays are used in the program, only some frequencies are supported. They are:
 
-1MHz, 2Mhz, 4Mhz, 8MHz, 10MHz, 12MHz, 16MHz or 20MHz.
+1MHz, 2Mhz, 4Mhz, 8MHz, 10MHz.
 
-If frequency is not specified, the default value is 4MHz.
+If frequency is not specified, the default value is 1MHz.
 
 #### $MODE
 
