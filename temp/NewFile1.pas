@@ -1,10 +1,12 @@
-//uses bbb;
 var
 //  a : array[4] of char; // 5 instead of 4 or the space is not printed
   i,x : byte;
 begin
-{$INCLUDE aaa.pas}
-i := 3;
+{$IFDEF aaa} 
+x := 1;
+//{$ELSE}
+x := 2;
+{$ENDIF}
 //  a[0] := 'H'; 
 //  a[1] := 'O'; 
 //  a[2] := 'L'; 

@@ -501,7 +501,7 @@ begin
       else
         StatusBar1.Panels[0].Text := MSG_SAVED;
       //Actualiza cursor
-      StatusBar1.Panels[1].Text := Format('%d,%d', [ed.ed.CaretX, ed.ed.CaretY]);
+      StatusBar1.Panels[1].Text := Format('%d,%d', [ed.sedit.CaretX, ed.sedit.CaretY]);
     end;
   end;
   if (ticSynCheck = 5) and (fraEditView1.Count>0 ) then begin
@@ -803,7 +803,7 @@ var
   curEdit: TSynEdit;
 begin
   if fraEditView1.ActiveEditor = nil then exit;
-  curEdit := fraEditView1.ActiveEditor.ed;
+  curEdit := fraEditView1.ActiveEditor.sedit;
   buscado := FindDialog1.FindText;
   opciones := [];
   if not(frDown in FindDialog1.Options) then opciones += [ssoBackwards];
@@ -822,7 +822,7 @@ var
   curEdit: TSynEdit;
 begin
   if fraEditView1.ActiveEditor = nil then exit;
-  curEdit := fraEditView1.ActiveEditor.ed;
+  curEdit := fraEditView1.ActiveEditor.sedit;
   buscado := ReplaceDialog1.FindText;
   opciones := [ssoFindContinue];
   if not(frDown in ReplaceDialog1.Options) then opciones += [ssoBackwards];
@@ -889,7 +889,7 @@ end;
 procedure TfrmPrincipal.acArcNewFileExecute(Sender: TObject);
 begin
   fraEditView1.NewPasFile;
-  fraEditView1.ActiveEditor.ed.Text := currComp.SampleCode;
+  fraEditView1.ActiveEditor.sedit.Text := currComp.SampleCode;
   fraEditView1.SetFocus;
 end;
 procedure TfrmPrincipal.acArcNewProjExecute(Sender: TObject);
@@ -1125,10 +1125,10 @@ Diálogo con el mensaje de error.}
     //posiciona curosr
   //  ed.SynEdit.CaretY := nLin; //primero la fila
   //  ed.SynEdit.CaretX := nCol;
-    ed.ed.LogicalCaretXY := Point(nCol, nLin);
+    ed.sedit.LogicalCaretXY := Point(nCol, nLin);
     //Define línea con error
     ed.linErr := nLin;
-    ed.ed.Invalidate;  //refresca
+    ed.sedit.Invalidate;  //refresca
   end;
 var
   msg, filname: string;

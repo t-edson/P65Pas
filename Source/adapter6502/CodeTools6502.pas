@@ -16,7 +16,7 @@ type
     opEve0: TFaOpenEvent;   //Para pasar parámetro a cxpTreeElemsFindElement´()
   public
     procedure ReadCurIdentif(out tok: string; out tokType: integer; out
-      lex: TSynFacilComplet; out curX: integer);
+      lex: TSynFacilComplet2; out curX: integer);
     procedure GoToDeclaration;
     procedure KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private  //Completado de código
@@ -27,7 +27,7 @@ type
     procedure Fill_IFtemplate(opEve: TFaOpenEvent);
     procedure Fill_THENtemplate(opEve: TFaOpenEvent);
     procedure Fill_templates(opEve: TFaOpenEvent);
-    procedure Fill_SpecialIdentif(opEve: TFaOpenEvent; hl: TSynFacilComplet;
+    procedure Fill_SpecialIdentif(opEve: TFaOpenEvent; hl: TSynFacilComplet2;
       tokName: string; idIcon: integer);
     procedure GeneralIdentifierCompletion(opEve: TFaOpenEvent; curEnv: TFaCursorEnviron;
       out Cancel: boolean);
@@ -45,11 +45,11 @@ type
 implementation
 
 procedure TCodeTool.ReadCurIdentif(out tok: string; out tokType: integer;
-                                   out lex: TSynFacilComplet; out curX: integer);
+                                   out lex: TSynFacilComplet2; out curX: integer);
 {Da infomación sobre el token actual. Si no encuentra información, devuelve cadena
 nula en "tok".}
 var
-  sed: TSynEdit;
+  sedit: TSynEdit;
   toks: TATokInfo;
   hl: TSynCustomHighlighter;
   tokIdx: integer;
@@ -58,24 +58,24 @@ begin
     tok := '';
     exit;
   end;
-  sed := fraEdit.ActiveEditor.ed;
-  if sed.Lines.Count = 0 then begin
+  sedit := fraEdit.ActiveEditor.sedit;
+  if sedit.Lines.Count = 0 then begin
     tok := '';
     exit;
   end;
-  hl := sed.Highlighter;  //toma su resalatdor
-  if hl is TSynFacilComplet then begin
+  hl := sedit.Highlighter;  //toma su resalatdor
+  if hl is TSynFacilComplet2 then begin
     //Es TSynFacilComplet, usamos su propio resaltador como lexer
     //Además el mismo resaltador tiene acceso al contenido del SynEdit
-    lex := TSynFacilComplet(hl);  //accede a TSynFacilComplet
-    lex.ExploreLine(sed.CaretXY, toks, tokIdx);  //Explora línea actual
+    lex := TSynFacilComplet2(hl);  //accede a TSynFacilComplet
+    lex.ExploreLine(sedit.CaretXY, toks, tokIdx);  //Explora línea actual
     tok := toks[tokIdx].txt;
     curX := toks[tokIdx].posIni+1;
     tokType := toks[tokIdx].TokTyp;
 //    MsgBox('%d', [high(toks)]);
   end else begin
     //Es otro resaltador
-//    lin := sed.Lines[sed.CaretY - 1];
+//    lin := sedit.Lines[sedit.CaretY - 1];
     tok := '';
   end;
 end;
@@ -85,11 +85,12 @@ edición actual. Solo salta, si logra identificar al identificador.}
 var
   tok, fileSrc: string;
   tokType, curX: integer;
-  lex: TSynFacilComplet;
+  lex: TSynFacilComplet2;
   callPos: TSrcPos;
   ed: TSynEditor;
   ele: TxpElement;
-//  curBody: TxpEleBody;
+  filPath: string;
+  dlin: SizeInt;
 begin
   ed := fraEdit.ActiveEditor;
   //Primero ubica el token
@@ -104,7 +105,7 @@ begin
   //    exit;
     end;
     callPos.col := curX;
-    callPos.row := ed.ed.CaretY;
+    callPos.row := ed.sedit.CaretY;
     callPos.idCtx := cxp.ctxId(ed.FileName);
     ele := cxp.TreeElems.GetElementCalledAt(callPos);
     if ele = nil then begin
@@ -132,8 +133,21 @@ begin
         MsgExc('Cannot load file: %s', [fileSrc]);
       end;
     end;
-  end else if tokType = lex.tnIdentif then begin
-
+  end else if tokType = lex.tnDirective then begin
+    //Es directiva. Tal vez sea {$INCLUDE ...}
+    if Upcase(copy(tok,1, 9)) = '{$INCLUDE' then begin
+       //Es {$INCLUDE ...}
+      delete(tok, 1, 9);
+      dlin := length(tok);
+      if tok[dlin] = '}' then delete(tok, dlin, 1);  //quita "}".
+      filPath := trim(tok);
+      //Se calcula la ruta completa tal cual se hace en ParserDirec
+      filPath := cxp.ExpandRelPathToMain(filPath);
+      //msgbox(filPath);
+      if not fraEdit.SelectOrLoad(filPath, 1, 1, false) then begin
+        MsgExc('Cannot load file: %s', [filPath]);
+      end;
+    end;
   end else begin
     exit;  //No es identificador
   end;
@@ -150,14 +164,14 @@ begin
     //Se pide ubicar la declaración del elemento
     GoToDeclaration;
   end;
-  if not ed.ed.SelAvail then begin
+  if not ed.sedit.SelAvail then begin
     //No hay selección. Pero se pulsa ...
     if (Shift = [ssCtrl]) and (Key = VK_C) then begin  //Ctrl+C
-      ed.ed.SelectWord;
+      ed.sedit.SelectWord;
       ed.Copy;
     end;
     if (Shift = [ssCtrl]) and (Key = VK_INSERT) then begin  //Ctrl+Insert
-      ed.ed.SelectWord;
+      ed.sedit.SelectWord;
       ed.Copy;
     end;
   end;
@@ -305,13 +319,13 @@ begin
   opEve.AddItem('ord(''A'');', 5);
   opEve.AddItem('SetOrig(\_);', 5);
 end;
-procedure TCodeTool.Fill_SpecialIdentif(opEve: TFaOpenEvent; hl: TSynFacilComplet;
+procedure TCodeTool.Fill_SpecialIdentif(opEve: TFaOpenEvent; hl: TSynFacilComplet2;
                                             tokName: string; idIcon: integer);
 var
   SpecIdent: TArrayTokSpec;
   tipTok, i: Integer;
 begin
-  SpecIdent := TSynFacilComplet2(hl).SpecIdentif;  //Accede a campo protegido
+  SpecIdent := hl.SpecIdentif;  //Accede a campo protegido
   tipTok := hl.GetAttribIDByName(tokName);   //tipo de atributo
   for i:= 0 to high(SpecIdent) do begin
     if SpecIdent[i].tTok = tipTok then begin
@@ -347,8 +361,8 @@ begin
   {Calcula las coordenadas actuales del cursor. En X, retrocede 1, porque si hay un error
   con el identificador actual (lo que es normal porque se está empezando a escribir), el
   bloque actual terminará antes}
-  curPos.x := ed.ed.CaretX - 1;
-  curPos.y := ed.ed.CaretY;
+  curPos.x := ed.sedit.CaretX - 1;
+  curPos.y := ed.sedit.CaretY;
 //  eleBod := cxp.TreeElems.GetElementBodyAt(curPos);
 //  if eleBod = nil then begin
 //    //No identifica a un Body
@@ -390,7 +404,7 @@ begin
   if fraEdit.ActiveEditor=nil then exit;
   ident := curEnv.tok_2^.txt;
   //Calcula la posición del elemento
-  tokPos.row := fraEdit.ActiveEditor.ed.CaretY;
+  tokPos.row := fraEdit.ActiveEditor.sedit.CaretY;
   tokPos.col := curEnv.tok_2^.posIni+1;
   tokPos.idCtx := cxp.ctxId(fraEdit.ActiveEditor.FileName);
   //Dispara evento
@@ -406,7 +420,7 @@ begin
   if fraEdit.ActiveEditor=nil then exit;
   ident := curEnv.tok_3^.txt;
   //Calcula la posición del elemento
-  tokPos.row := fraEdit.ActiveEditor.ed.CaretY;
+  tokPos.row := fraEdit.ActiveEditor.sedit.CaretY;
   tokPos.col := curEnv.tok_3^.posIni+1;
   tokPos.idCtx := cxp.ctxId(fraEdit.ActiveEditor.FileName);
   //Dispara evento

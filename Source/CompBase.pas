@@ -173,22 +173,23 @@ public    //Public attributes of compiler
   ejecProg  : boolean;     //Indicates the compiler is working
   stopEjec  : boolean;     //To stop compilation
 public    //Compiling Options. Deberían ser PROTECTED.
-  GeneralORG  : integer; //Dirección general de origen de código
+  GeneralORG  : integer;   //Dirección general de origen de código
   protected
   mode        : (modPascal, modPicPas);
-  enabDirMsgs : boolean; //Bandera para permitir generar mensajes desde las directivas.
-  incDetComm  : boolean; //Incluir Comentarios detallados.
-  OptBnkAftIF : boolean; //Optimizar instrucciones de cambio de banco al final de IF
-  OptReuProVar: boolean; //Optimiza reutilizando variables locales de procedimientos
-  OptRetProc  : boolean; //Optimiza el último exit de los procedimientos.
-  AsmIncComm  : boolean; //Incluye comentarios en salida de ASM
+  enabDirMsgs : boolean;   //Bandera para permitir generar mensajes desde las directivas.
+  incDetComm  : boolean;   //Incluir Comentarios detallados.
+  OptBnkAftIF : boolean;   //Optimizar instrucciones de cambio de banco al final de IF
+  OptReuProVar: boolean;   //Optimiza reutilizando variables locales de procedimientos
+  OptRetProc  : boolean;   //Optimiza el último exit de los procedimientos.
+  AsmIncComm  : boolean;   //Incluye comentarios en salida de ASM
 protected //Files
   mainFile    : string;    //Archivo inicial que se compila
   hexFile     : string;    //Nombre de archivo de salida
-  function ExpandRelPathTo(BaseFile, FileName: string): string;
 public    //Files
   function hexFilePath: string;
   function mainFilePath: string;
+  function ExpandRelPathTo(BaseFile, FileName: string): string;
+  function ExpandRelPathToMain(FileName: string): string;
 public    //Abstract methods
   function CompilerName: string; virtual; abstract;  //Name of the compiler
   procedure RAMusage(lins: TStrings; ExcUnused: boolean); virtual; abstract;
@@ -1810,7 +1811,8 @@ otro archivo (BaseFile)}
 var
   BasePath: RawByteString;
 begin
-   if pos(DirectorySeparator, FileName)=0 then begin
+   //if pos(DirectorySeparator, FileName)=0 then begin
+   if (pos('/', FileName)=0) and (pos('\', FileName)=0) then begin
      //Ruta relativa. Se completa
      BasePath := ExtractFileDir(BaseFile);
      if BasePath = '' then begin
@@ -1823,6 +1825,11 @@ begin
      //Tiene "DirectorySeparator", se asume que es ruta absoluta, y no se cambia.
      Result := FileName;
    end;
+end;
+function TCompilerBase.ExpandRelPathToMain(FileName: string): string;
+{Convert a relative path to absolute path, considering the base path is "mainFile".}
+begin
+  Result := ExpandRelPathTo(mainFile, FileName);
 end;
 function TCompilerBase.hexFilePath: string;
 begin

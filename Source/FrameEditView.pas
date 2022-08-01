@@ -137,7 +137,6 @@ type
 implementation
 {$R *.lfm}
 
-{ TSynFacilComplet2 }
 resourcestring
   MSG_NOFILES  = 'No files';
   MSG_PASFILES = 'Pascal Files';
@@ -169,10 +168,10 @@ begin
   if AValue>editors.Count-1 then AValue := editors.Count-1;
   if FTabIndex = AValue then Exit;
   if FTabIndex<>-1 then begin  //que no sea la primera vez
-    editors[FTabIndex].ed.Visible := false;  //oculta el anterior
+    editors[FTabIndex].sedit.Visible := false;  //oculta el anterior
   end;
   FTabIndex := AValue;   //cambia valor
-  editors[FTabIndex].ed.Visible := true;  //muestra el nuevo
+  editors[FTabIndex].sedit.Visible := true;  //muestra el nuevo
   if OnSelectEditor<>nil then OnSelectEditor;  //dispara evento
   RefreshTabs;
 end;
@@ -354,7 +353,7 @@ begin
   //Pasa el enfoque al editor que se ha seleccionado
   if TabIndex<>-1 then begin
     try
-      editors[TabIndex].ed.SetFocus;
+      editors[TabIndex].sedit.SetFocus;
     except
 
     end;
@@ -513,43 +512,43 @@ begin
   ed.hl.IconList := ImgCompletion;
 //  ed.SetLanguage(curLanguage);
   //Configura PageControl
-  ed.ed.Parent := self;
-  ed.ed.Align := alClient;
+  ed.sedit.Parent := self;
+  ed.sedit.Align := alClient;
   //Fija imágenes para marcadores
-  ed.ed.BookMarkOptions.BookmarkImages := imgBookMarks;
+  ed.sedit.BookMarkOptions.BookmarkImages := imgBookMarks;
 
   //Configura el borrado de la palabra actual
   n := 46;
-  ed.ed.Keystrokes.BeginUpdate;
-  ed.ed.Keystrokes[n].Key := VK_DELETE;
-  ed.ed.Keystrokes[n].Shift := [ssCtrl];
-  ed.ed.Keystrokes[n].ShiftMask := [];
-  ed.ed.Keystrokes.EndUpdate;
+  ed.sedit.Keystrokes.BeginUpdate;
+  ed.sedit.Keystrokes[n].Key := VK_DELETE;
+  ed.sedit.Keystrokes[n].Shift := [ssCtrl];
+  ed.sedit.Keystrokes[n].ShiftMask := [];
+  ed.sedit.Keystrokes.EndUpdate;
   //Deshabilita Ctrl+N
-  n := ed.ed.Keystrokes.FindCommand(ecInsertLine);
-  ed.ed.Keystrokes[n].ShortCut := 0;   //Esto debe dehabilitarlo
+  n := ed.sedit.Keystrokes.FindCommand(ecInsertLine);
+  ed.sedit.Keystrokes[n].ShortCut := 0;   //Esto debe dehabilitarlo
   n := 84;
-  ed.ed.Keystrokes.BeginUpdate;
-  ed.ed.Keystrokes[n].Key := VK_SUBTRACT;
-  ed.ed.Keystrokes[n].Shift := [ssShift,ssAlt];
-  ed.ed.Keystrokes[n].ShiftMask := [];
-  ed.ed.Keystrokes.EndUpdate;
+  ed.sedit.Keystrokes.BeginUpdate;
+  ed.sedit.Keystrokes[n].Key := VK_SUBTRACT;
+  ed.sedit.Keystrokes[n].Shift := [ssShift,ssAlt];
+  ed.sedit.Keystrokes[n].ShiftMask := [];
+  ed.sedit.Keystrokes.EndUpdate;
   //Configura el desplegado con Alt+Shift+"+"
   n := 85;
-  ed.ed.Keystrokes.BeginUpdate;
-  ed.ed.Keystrokes[n].Key := VK_ADD;
-  ed.ed.Keystrokes[n].Shift := [ssShift,ssAlt];
-  ed.ed.Keystrokes[n].ShiftMask := [];
-  ed.ed.Keystrokes.EndUpdate;
+  ed.sedit.Keystrokes.BeginUpdate;
+  ed.sedit.Keystrokes[n].Key := VK_ADD;
+  ed.sedit.Keystrokes[n].Shift := [ssShift,ssAlt];
+  ed.sedit.Keystrokes[n].ShiftMask := [];
+  ed.sedit.Keystrokes.EndUpdate;
 
   //Crea un "plugin" de edición síncrona
   fSynchro := TSynPluginSyncroEdit.Create(self);
-  fSynchro.Editor := ed.ed;
+  fSynchro.Editor := ed.sedit;
 
   //Configura múltiples cursores
   fMultiCaret := TSynPluginMultiCaret.Create(self);
   with fMultiCaret do begin
-    Editor := ed.ed;
+    Editor := ed.sedit;
     with KeyStrokes do begin
       Add.Command    := ecPluginMultiCaretSetCaret;
       Add.Key        := VK_INSERT;
@@ -565,7 +564,7 @@ begin
   ed.Caption := NewName(ext);   //Pone nombre diferente
   ed.FileName := '';  //Pone sin nombre para saber que no se ha guardado
   if OnRequireSynEditConfig<>nil then  //Configura
-    OnRequireSynEditConfig(ed.ed);
+    OnRequireSynEditConfig(ed.sedit);
   editors.Add(ed);   //agrega a la lista
   TabIndex := LastIndex;
   //Configura desplazamiento para asegurarse que la pestaña se mostrará visible
@@ -589,11 +588,11 @@ begin
       //Quedó apuntando fuera
       FTabIndex := editors.Count - 1;   //limita
       //No es necesario ocultar el anterior, porque se eliminó
-      editors[FTabIndex].ed.Visible := true;  //muestra el nuevo
+      editors[FTabIndex].sedit.Visible := true;  //muestra el nuevo
     end else begin
       //Queda apuntando al siguiente. No es necesario modificar.
       //No es necesario ocultar el anterior, porque se eliminó
-      editors[FTabIndex].ed.Visible := true;  //muestra el nuevo
+      editors[FTabIndex].sedit.Visible := true;  //muestra el nuevo
     end;
   end;
   MakeActiveTabVisible;
@@ -688,7 +687,7 @@ var
   i: Integer;
 begin
   for i:=0 to editors.Count-1 do begin
-    if editors[i].ed.Focused then exit(true);
+    if editors[i].sedit.Focused then exit(true);
   end;
   exit(false);
 end;
@@ -696,8 +695,8 @@ procedure TfraEditView.SetFocus;
 begin
 //  inherited SetFocus;
   if TabIndex = -1 then exit;
-  if editors[TabIndex].ed.Visible then begin
-    editors[TabIndex].ed.SetFocus;
+  if editors[TabIndex].sedit.Visible then begin
+    editors[TabIndex].sedit.SetFocus;
   end;
 end;
 procedure TfraEditView.Undo;
@@ -840,12 +839,12 @@ begin
   if Result then begin
     if (row>=0) and (col>=0)  then begin
       //posiciona curosr
-      ActiveEditor.ed.CaretY := row;
-//      ActiveEditor.ed.CaretX := col;
-      ActiveEditor.ed.LogicalCaretXY := Point(col, row);
+      ActiveEditor.sedit.CaretY := row;
+//      ActiveEditor.sedit.CaretX := col;
+      ActiveEditor.sedit.LogicalCaretXY := Point(col, row);
       //Define línea con error
       if highlightLine then ActiveEditor.linErr := row;
-      ActiveEditor.ed.Invalidate;  //refresca
+      ActiveEditor.sedit.Invalidate;  //refresca
       SetFocus;
     end;
   end;
@@ -1006,7 +1005,7 @@ begin
   //Pide configuración para todos los editores abiertos
   for i:=0 to editors.Count-1 do begin
     if OnRequireSynEditConfig<>nil then begin
-      OnRequireSynEditConfig(editors[i].ed);
+      OnRequireSynEditConfig(editors[i].sedit);
     end;
     //Actualiza resaltador y Completado
     ConfigureSyntax(editors[i]);

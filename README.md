@@ -760,13 +760,13 @@ x := {$INCLUDE expression.txt};
 Defines the name of the output binary file *.prg.
 
 ```
-{$OUTPUTHEX myoutput.prg}  // Relative path
-{$OUTPUTHEX d:\temp\myoutput.prg}  //Absolute path
+{$OUTPUTHEX "myoutput.prg"}  // Relative path
+{$OUTPUTHEX "d:\temp\myoutput.prg"}  //Absolute path
 ```
 
 When relative path is used, the file will be created in the same folder the Pascal program is.
 
-If it's not defined the name of the *.prg file, it will be used the name of the program/unit compiled. So if the program is called "myprogram" (and the file is "myprogram.pas"), then the *.prg file will be "myprogram.prg".
+If it's not defined the name of the \*.prg file, it will be used the name of the program/unit compiled. So if the program is called "myprogram" (and the file is "myprogram.pas"), then the *.prg file will be "myprogram.prg".
 
 Directive {$OUTPUTHEX}, can be placed in any part of the source code and can be used several times. If so, the output file will be the defined by the last directive.
 

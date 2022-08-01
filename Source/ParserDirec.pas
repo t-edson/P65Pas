@@ -79,9 +79,6 @@ type
     dirOperator: Integer;
     dirDelimiter: integer;
     WaitForEndIF: integer;
-
-    cpx     : TCompilerBase;   //Reference to compiler
-
     function GetIdent: string;
     function tokTyp: TTokenKind;
     function CogOperando: TDirOperand;
@@ -958,10 +955,11 @@ begin
   //Toma el restante de la cadena
   filPath := copy(lin, lexDir.col0);
   //Completa ruta, si es relativa
-  if (pos('/', filPath)=0) and (pos('\', filPath)=0) then begin
-    //No incluye información de ruta. Asume que está en la misma ruta.
-    filPath := ExtractFileDir(mainFile) + DirectorySeparator + filPath;
-  end;
+//  if (pos('/', filPath)=0) and (pos('\', filPath)=0) then begin
+//    //No incluye información de ruta. Asume que está en la misma ruta.
+//    filPath := ExtractFileDir(mainFile) + DirectorySeparator + filPath;
+//  end;
+  filPath := ExpandRelPathToMain(filPath);
   if not FileExists(filPath) then begin
     GenErrorDir(ER_FILE_NO_FND_, [filPath]);
     exit;
@@ -1552,7 +1550,7 @@ begin
   '''': begin
     repeat inc(lexdir.fcol); until lexdir._Eol or (lexdir.curline[lexdir.fcol] = '''');
     if lexdir._Eol then begin
-      cpx.GenError('Unclosed string.');  //Don't stop scanning
+      GenError('Unclosed string.');  //Don't stop scanning
     end else begin
       lexdir._NextChar;  //Go to next character
     end;
@@ -1561,7 +1559,7 @@ begin
   '"': begin
     repeat inc(lexdir.fcol); until lexdir._Eol or (lexdir.curline[lexdir.fcol] = '"');
     if lexdir._Eol then begin
-      cpx.GenError('Unclosed string.');  //Don't stop scanning
+      GenError('Unclosed string.');  //Don't stop scanning
     end else begin
       lexdir._NextChar;  //Go to next character
     end;

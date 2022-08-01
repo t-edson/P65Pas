@@ -121,7 +121,7 @@ begin
       {En verificación de sintaxis no es coveniente. Puede resultar molesto al usuario.
       A menos que tenga activada alguna opción de "Autosave".}
     end;
-    strList := ed.ed.Lines;
+    strList := ed.sedit.Lines;
   end;
 end;
 procedure TAdapter6502.CompilerError(errTxt: string; const srcPos: TSrcPos);
@@ -177,9 +177,9 @@ var
 begin
   fraEditView1.NewLstFile;
   edit := fraEditView1.ActiveEditor;
-  edit.ed.BeginUpdate;
-  Compiler.GenerateListReport(edit.ed.Lines);
-  edit.ed.EndUpdate;
+  edit.sedit.BeginUpdate;
+  Compiler.GenerateListReport(edit.sedit.Lines);
+  edit.sedit.EndUpdate;
 end;
 procedure TAdapter6502.FindDeclarat;
 begin
@@ -340,7 +340,7 @@ begin
   ed := fraEditView1.ActiveEditor;
   if ed.FileName='' then exit;
   //Verifica rápidamente si hay texto en el editor
-  if (ed.ed.Lines.Count<=1) and (trim(ed.Text)='') then exit;
+  if (ed.sedit.Lines.Count<=1) and (trim(ed.Text)='') then exit;
   //Lee configuración de verif. de sintaxis.
   case fraCfgAfterChg.actAfterChg of
     0: pars := '-Cn' + LineEnding + '-Dn';  //<No action>
