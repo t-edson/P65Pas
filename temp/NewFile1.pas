@@ -1,17 +1,13 @@
-var
-//  a : array[4] of char; // 5 instead of 4 or the space is not printed
-  i,x : byte;
+uses Commodore64;
+var 
+  i,x : word;
 begin
-{$IFDEF aaa} 
-x := 1;
-//{$ELSE}
-x := 2;
-{$ENDIF}
-//  a[0] := 'H'; 
-//  a[1] := 'O'; 
-//  a[2] := 'L'; 
-//  a[3] := 'A';
-//  {$MSGBOX 'Hello'}
+  i := 5+i+3 +x;
+  i := 5+i+3 +x; 
+  i := 5+i+3 +x;
+  i := 5+i+3 +x; 
+  i := 1;
+  {$MSGBOX 'Hello'} 
 //  for i := 0 to 3 do
 //    ChrOUT(a[i]); 
 //  end;  

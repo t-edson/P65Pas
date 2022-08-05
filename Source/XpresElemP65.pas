@@ -662,13 +662,6 @@ type  //Instructions relative elements
     destructor Destroy; override;
   end;
 
-  { TxpEleDIREC }
-  //Represents a directive. Designed to represent nodes {$IFDEF}
-  TxpEleDIREC = class(TxpElement)
-    ifDefResult  : boolean;   //Boolean value of expression $IFDEF
-    constructor Create; override;
-  end;
-
 type  //Declaration elements (functions)
   //Function parameter
   TxpParFunc = record
@@ -1017,18 +1010,10 @@ begin
   idClass := eleAsmBlock;
   undefInstrucs:= TEleAsmInstrs.Create(false);
 end;
-
 destructor TEleAsmBlock.Destroy;
 begin
   undefInstrucs.Destroy;
   inherited Destroy;
-end;
-
-{ TxpEleDIREC }
-constructor TxpEleDIREC.Create;
-begin
-  inherited Create;
-  idClass := eleBody;
 end;
 { TxpExitCall }
 //function TxpExitCall.IsObligat: boolean;

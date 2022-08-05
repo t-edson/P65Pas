@@ -5,7 +5,7 @@ unit ParserDirec;
 interface
 uses
   Classes, SysUtils, fgl, math, Graphics, CompBase,
-  LexPas, MisUtils, Globales, Analyzer, XpresElemP65;
+  LexPas, Globales, Analyzer, XpresElemP65;
 type  //Tipos para manejo de expresiones
   TDirDatType = (ddtNumber, ddtString);
 
@@ -137,6 +137,7 @@ type
     function AsigVariable(VarName: string; const value: TDirOperand): TDirVar;
   public   //Public
     lexDir : TContext;  //lexer para analizar directivas
+    OnMessageBox: procedure(txt: string; mode: integer) of object;
     procedure skipWhites;
     procedure GenErrorDir(msg: string);
     procedure GenErrorDir(msg: string; const Args: array of const);
@@ -745,9 +746,14 @@ begin
     if tokType = tkDirective then begin
       //Podría ser el delimitador buscado
       direc := UpCase(token);
-      if (copy(direc,1,7) = '{$ENDIF') or (copy(direc,1,6)='{$ELSE') then begin
+      if copy(direc,1,7) = '{$ENDIF' then begin
         //Encontró el delimitador
-        tok0 := direc;
+        tok0 := 'ENDIF';
+        Next;  //toma el token
+        exit(true);  //y continúa
+      end else if copy(direc,1,6)='{$ELSE' then begin
+        //Encontró el delimitador
+        tok0 := 'ELSE';
         Next;  //toma el token
         exit(true);  //y continúa
       end;
@@ -801,18 +807,10 @@ procedure TParserDirecBase.ProcIFDEF(lin: string; negated: boolean);
   {Evalúa el resultado de la expresión de la directiva $IFDEF.
   Debería ejecutarse solo una vez, en ProcIFDEF(()}
   var
-    xDirec: TxpEleDIREC;
-    ele: TxpElement;
     dvar: TDirVar;
   begin
-    //Agrega el nodo para guardar información para la segunda pasada
-    xDirec := TxpEleDIREC.Create;
-    xDirec.srcDec := GetSrcPos;   //guarda posición de aparición
-    TreeDirec.AddElement(xDirec);  //Agrega sin verificación de nombre
     //Evalúa
     Result := (DefinedMacro(Ident) or DefinedVar(Ident, dvar)) xor negated;
-    //Guarda resultado
-    xDirec.ifDefResult := Result;
   end;
 var
   Ident, direc: String;
@@ -851,14 +849,8 @@ procedure TParserDirecBase.ProcIF(lin: string; negated: boolean);
   {Evalúa el resultado de la expresión de la directiva $IFDEF.
   Debería ejecutarse solo una vez, en ProcIFDEF(()}
   var
-    xDirec: TxpEleDIREC;
-    ele: TxpElement;
     varValue: TDirOperand;
   begin
-    //Agrega el nodo para guardar información para la segunda pasada
-    xDirec := TxpEleDIREC.Create;
-    xDirec.srcDec := GetSrcPos;   //guarda posición de aparición
-    TreeDirec.AddElement(xDirec);  //Agrega sin verificación de nombre
     //Evalúa
     varValue := CogExpresion(0);
     //No debería seguir nada más
@@ -873,8 +865,6 @@ procedure TParserDirecBase.ProcIF(lin: string; negated: boolean);
       //En cadenas, cualquier cadena no nula se considera verdadero
       Result := (varValue.valStr<>'') xor negated;
     end;
-    //Guarda resultado
-    xDirec.ifDefResult := Result;
   end;
 var
   direc: String;
@@ -1137,18 +1127,10 @@ begin
   txtMsg := CogExpresion(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
-  if enabDirMsgs then msgbox(txtMsg);
+  if enabDirMsgs then begin
+    if OnMessageBox<>nil then OnMessageBox(txtMsg, 0);
+  end;
   txtMsg := '';
-end;
-procedure TParserDirecBase.ProcMSGERR;
-var
-  txtMsg: String;
-begin
-  lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
-  if HayError then Exit;
-  //Solo muestra en compilación y en la primera pasada
-  if enabDirMsgs then MsgErr(txtMsg);
 end;
 procedure TParserDirecBase.ProcMSGWAR;
 var
@@ -1158,7 +1140,21 @@ begin
   txtMsg := CogExpresion(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
-  if enabDirMsgs then MsgExc(txtMsg);
+  if enabDirMsgs then begin
+    if OnMessageBox<>nil then OnMessageBox(txtMsg, 1);
+  end;
+end;
+procedure TParserDirecBase.ProcMSGERR;
+var
+  txtMsg: String;
+begin
+  lexDir.Next;  //pasa al siguiente
+  txtMsg := CogExpresion(0).valStr;
+  if HayError then Exit;
+  //Solo muestra en compilación y en la primera pasada
+  if enabDirMsgs then begin
+    if OnMessageBox<>nil then OnMessageBox(txtMsg, 2);
+  end;
 end;
 procedure TParserDirecBase.ProcMODE;
 var

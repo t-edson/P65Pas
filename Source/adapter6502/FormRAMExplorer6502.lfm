@@ -1,12 +1,11 @@
 object frmRAMExplorer6502: TfrmRAMExplorer6502
-  Left = 332
-  Height = 610
-  Top = 134
-  Width = 758
-  AutoSize = True
+  Left = 406
+  Height = 685
+  Top = 259
+  Width = 472
   Caption = 'RAM Explorer'
-  ClientHeight = 610
-  ClientWidth = 758
+  ClientHeight = 685
+  ClientWidth = 472
   DesignTimePPI = 120
   Icon.Data = {
     BE1000000000010001002020000001002000A810000016000000280000002000
@@ -152,63 +151,75 @@ object frmRAMExplorer6502: TfrmRAMExplorer6502
   object panStatBar: TPanel
     Left = 0
     Height = 39
-    Top = 571
-    Width = 758
+    Top = 646
+    Width = 472
     Align = alBottom
     ClientHeight = 39
-    ClientWidth = 758
+    ClientWidth = 472
     TabOrder = 0
     object Label2: TLabel
-      Left = 50
+      Left = 170
       Height = 20
-      Top = 5
-      Width = 24
-      Caption = 'SFR'
-    end
-    object Label3: TLabel
-      Left = 150
-      Height = 20
-      Top = 5
-      Width = 27
-      Caption = 'GPR'
+      Top = 8
+      Width = 84
+      Caption = 'Special RAM'
     end
     object Label4: TLabel
-      Left = 380
+      Left = 310
       Height = 20
-      Top = 5
+      Top = 8
       Width = 72
       Caption = 'Unimplem.'
     end
-    object Shape1: TShape
-      Left = 10
+    object shpSpecRAM: TShape
+      Left = 136
       Height = 22
-      Top = 5
+      Top = 8
       Width = 30
     end
-    object Shape2: TShape
-      Left = 110
+    object shpUnimplem: TShape
+      Left = 274
       Height = 22
-      Top = 5
+      Top = 8
       Width = 30
     end
-    object Shape3: TShape
-      Left = 340
+    object shpRamUsed: TShape
+      Left = 16
       Height = 22
-      Top = 5
-      Width = 30
-    end
-    object Shape4: TShape
-      Left = 210
-      Height = 22
-      Top = 5
+      Top = 8
       Width = 30
     end
     object Label5: TLabel
-      Left = 250
+      Left = 50
       Height = 20
-      Top = 5
-      Width = 64
-      Caption = 'GPR Used'
+      Top = 8
+      Width = 69
+      Caption = 'Used RAM'
+    end
+  end
+  object ScrollBox1: TScrollBox
+    Left = 0
+    Height = 646
+    Top = 0
+    Width = 472
+    HorzScrollBar.Page = 1
+    VertScrollBar.Increment = 50
+    VertScrollBar.Page = 1
+    Align = alClient
+    PopupMenu = PopupMenu1
+    TabOrder = 1
+    OnMouseWheel = ScrollBox1MouseWheel
+  end
+  object PopupMenu1: TPopupMenu
+    Left = 183
+    Top = 289
+    object mnZoomPos: TMenuItem
+      Caption = 'Zoom +'
+      OnClick = mnZoomPosClick
+    end
+    object mnZommNeg: TMenuItem
+      Caption = 'Zoom -'
+      OnClick = mnZommNegClick
     end
   end
 end

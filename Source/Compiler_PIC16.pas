@@ -873,7 +873,6 @@ begin
     if p <> 0 then TreeElems.main.name := copy(TreeElems.main.name, 1, p-1);
     TreeElems.main.srcDec := GetSrcPos;
     //Continúa con preparación
-    TreeDirec.Clear;
 //    EndCountElapsed('** Setup in: ');
 //    StartCountElapsed;  //Start timer
     CreateSystemElements;  //Crea los elementos del sistema. 3ms aprox.

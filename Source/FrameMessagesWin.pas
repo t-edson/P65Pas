@@ -4,7 +4,7 @@ unit FrameMessagesWin;
 interface
 uses
   Classes, SysUtils, FileUtil, LazFileUtils, Forms, Controls, Grids, Graphics,
-  ExtCtrls, StdCtrls, Menus, Clipbrd, EpikTimer, CompBase, Globales, LexPas,
+  ExtCtrls, StdCtrls, Menus, Clipbrd, EpikTimer, Globales, LexPas,
   adapterBase, UtilsGrilla, BasicGrilla, MisUtils;
 type
 

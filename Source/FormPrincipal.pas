@@ -8,10 +8,10 @@ interface
 uses
   Classes, SysUtils, SynEdit, SynEditTypes, LazUTF8, Forms, Controls, Dialogs,
   Menus, ComCtrls, ActnList, StdActns, ExtCtrls, LCLIntf, LCLType, LCLProc,
-  StdCtrls, Graphics, MisUtils, CompBase,  //Para tener acceso a TCompilerBase
+  StdCtrls, Graphics, MisUtils,
   Compiler_PIC16, FrameLateralPanel, FormConfig, Globales, PicPasProject,
   EditView, FrameEditView, FrameMessagesWin, adapter6502, FrameCfgExtTool,
-  ParserASM_6502, Analyzer, adapterBase;
+  ParserASM_6502, adapterBase;
 type
   { TfrmPrincipal }
   TfrmPrincipal = class(TForm)
@@ -227,10 +227,17 @@ type
 
 var
   frmPrincipal: TfrmPrincipal;
-var
-  MSG_MODIFIED, MSG_SAVED, MSG_NOFILES, MSG_NOFOUND_ : string;
-  MSG_REPTHIS, MSG_N_REPLAC, MSG_SYNFIL_NOF, MSG_FILSAVCOMP: string;
-  MSG_PROJECT : String;
+
+resourcestring
+  MSG_MODIFIED   = '(*)Modified';
+  MSG_SAVED      = 'Saved';
+  MSG_NOFILES    = 'No files.';
+  MSG_NOFOUND_   = 'No found "%s"';
+  MSG_N_REPLAC   = '%d words replaced';
+  MSG_REPTHIS    = 'Replace this?'    ;
+  MSG_SYNFIL_NOF = 'Syntax file not found: %s';
+  MSG_FILSAVCOMP = 'File must be saved before compiling.';
+  MSG_PROJECT    = 'Project: ';
 
 implementation
 {$R *.lfm}
@@ -250,8 +257,6 @@ begin
   fraMessages.SetLanguage;
   Compiler_PIC16.SetLanguage;
   ParserASM_6502.SetLanguage;
-  //ParserDirec_PIC16.SetLanguage;
-  {$I ..\_language\tra_FormPrincipal.pas}
 end;
 procedure TfrmPrincipal.fraLeftPanel_OpenFile(filname: string);
 {El explorador de código, solicita abrir un archivo.}

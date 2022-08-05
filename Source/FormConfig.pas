@@ -203,7 +203,6 @@ resourcestring
 procedure TConfig.SetLanguage;
 begin
   fraCfgSynEdit.SetLanguage;
-  fraCfgExtTool.SetLanguage;
   fraCfgSyntax.SetLanguage;
 end;
 procedure TConfig.FillTree;

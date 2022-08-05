@@ -115,9 +115,7 @@ protected  //Containers
   procedure UpdateFunLstCalled;
   procedure SeparateUsedFunctions;
 public     //Containers
-  TreeElems  : TXpTreeElements; //Árbol de sintaxis del lenguaje
-  TreeDirec  : TXpTreeElements; //Árbol de sinatxis para directivas
-
+  TreeElems  : TXpTreeElements; //Abstract syntax tree.
   usedFuncs  : TEleFuns;    //Store only used functions
   unusedFuncs: TEleFuns;    //Store only unused functions
   interruptFunct: TEleFun;  //Store ths only Interrupt function
@@ -288,7 +286,6 @@ begin
       {Hubo cambio de contexto. Procesamos nuevamente, porque ahora estamos ya en
       otro contexto y se supone que esta llamada a ProcComments(), se hace precisamente
       para saltar blancos, comentarios, directivas, o bloques ASM.}
-//        SkipWhites;   {En el nuevo contexto puede haber nuevos comentarios.}
       ProcComments;   {En el nuevo contexto puede haber nuevos comentarios o bloques Asm.}
       exit;
     end;
@@ -721,8 +718,8 @@ The location where the type is created is before the current node.
 var
   xtyp: TEleTypeDec;
   consDec: TEleConsDec;
-  tmp, progFrame: TxpElement;
-  ipos: Integer;
+  //tmp, progFrame: TxpElement;
+  //ipos: Integer;
 begin
   xtyp := OpenTypeDec(srcPos, typName, -1, tctArray, t_object, tlParentNode);
     //Crea campo "length".
@@ -1042,7 +1039,7 @@ y a RemoveUnusedFunc(). }
   var
     cons: TEleConsDec;
     xvar: TEleVarDec;
-    xtyp, xtyp2, ntyp: TEleTypeDec;
+    xtyp, xtyp2{, ntyp}: TEleTypeDec;
     fun : TEleFun;
   begin
 //TreeElems.OpenElement(TreeElems.main);
@@ -1958,7 +1955,6 @@ begin
   ClearError;   //inicia motor de errores
   //Crea arbol de elementos y listas
   TreeElems  := TXpTreeElements.Create;
-  TreeDirec  := TXpTreeElements.Create;
   ejecProg := false;
   //Containers for functions
   usedFuncs := TEleFuns.Create(false);     //Only references
@@ -1968,7 +1964,6 @@ destructor TCompilerBase.Destroy;
 begin
   unusedFuncs.Destroy;
   usedFuncs.Destroy;
-  TreeDirec.Destroy;
   TreeElems.Destroy;
   inherited Destroy;
 end;

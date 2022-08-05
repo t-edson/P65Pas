@@ -29,6 +29,7 @@ type
     pCompExt1: TConfigPage;
     pCompExt2: TConfigPage;
     pCompExt3: TConfigPage;
+    procedure CompilerMessageBox(txt: string; mode: integer);
   private
     //Herramienta de completado y manejo de código
     CodeTool    : TCodeTool;
@@ -169,7 +170,7 @@ begin
 end;
 procedure TAdapter6502.acRamExpExecute(Sender: TObject);
 begin
-     frmRAMExplorer.Exec(Compiler);
+     frmRAMExplorer.Exec(Compiler, 1);
 end;
 procedure TAdapter6502.ListReport;
 var
@@ -278,7 +279,7 @@ end;
 procedure TAdapter6502.UpdateTools;
 {Actualiza las herramientas adicionales que se incluyen con el compilador.}
 var
-  usedRAM, usedROM, usedSTK: single;
+  usedRAM, usedROM, usedSTK, zoom: single;
 begin
   //Actualiza el árbol de sintaxis
   fraSynTree.Refresh;
@@ -298,6 +299,9 @@ begin
                     fraCfgAsmOut.IncVarDec , fraCfgAsmOut.ExcUnused,
                     fraCfgAsmOut.IncAddress, true, fraCfgAsmOut.IncVarName );
   edAsm.EndUpdate;
+  //Actualiza explorador de RAM
+  zoom := frmRAMExplorer.zoom; //Zoom actual
+  if frmRAMExplorer.Visible then frmRAMExplorer.UpdateScreen(compiler);
 end;
 procedure TAdapter6502.Compile;
 {Ejecuta el compilador para generar un archivo binario de salida.}
@@ -371,6 +375,13 @@ begin
   de la IDE y aprovechamos sus facilidades de manejo de temas.}
   mainEditorCfg.ConfigEditor(edAsm);
   LoadAsmSyntaxEd;
+end;
+procedure TAdapter6502.CompilerMessageBox(txt: string; mode: integer);
+{Se pide mostrar un cuadro de diálogo con mensaje.}
+begin
+  if mode = 0 then MsgBox(txt);
+  if mode = 1 then MsgExc(txt);
+  if mode = 2 then MsgErr(txt);
 end;
 //Inicialización
 procedure TAdapter6502.LoadAsmSyntaxEd;
@@ -500,6 +511,7 @@ begin
   Compiler.OnError           := @CompilerError;
   Compiler.OnWarning         := @CompilerWarning;
   Compiler.OnInfo            := @CompilerInfo;
+  Compiler.OnMessageBox  := @CompilerMessageBox;
   //Configura CodeTool
   CodeTool  := TCodeTool.Create(fraEdit0);
   CodeTool.SetCompiler(compiler);  //Asigna compilador

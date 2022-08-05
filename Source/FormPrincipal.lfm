@@ -666,37 +666,38 @@ object frmPrincipal: TfrmPrincipal
     end
     object acEdUndo: TAction
       Category = 'Edit'
-      Caption = '&Deshacer'
-      Hint = 'Deshacer'
+      Caption = '&Undo'
+      Hint = 'Undo'
       ImageIndex = 8
       OnExecute = acEdUndoExecute
       ShortCut = 16474
     end
     object acEdRedo: TAction
       Category = 'Edit'
-      Caption = '&Rehacer'
-      Hint = 'Rehacer'
+      Caption = '&Redo'
+      Hint = 'Redo'
       ImageIndex = 9
       OnExecute = acEdRedoExecute
       ShortCut = 24666
     end
     object acEdCut: TEditCut
       Category = 'Edit'
-      Caption = 'Cor&tar'
-      Hint = 'Cortar'
+      Caption = 'C&ut'
+      Hint = 'Cut'
       ImageIndex = 10
       ShortCut = 16472
     end
     object acEdCopy: TEditCopy
       Category = 'Edit'
-      Caption = '&Copiar'
-      Hint = 'Copiar'
+      Caption = '&Copy'
+      Hint = 'Copy'
       ImageIndex = 11
       ShortCut = 16451
     end
     object acSearFind: TAction
       Category = 'Sear'
       Caption = 'Find...'
+      Hint = 'Find'
       ImageIndex = 15
       OnExecute = acSearFindExecute
       ShortCut = 16450
@@ -704,13 +705,14 @@ object frmPrincipal: TfrmPrincipal
     object acSearFindNxt: TAction
       Category = 'Sear'
       Caption = 'Find &Next'
+      Hint = 'Find Next'
       ImageIndex = 16
       OnExecute = acSearFindNxtExecute
       ShortCut = 114
     end
     object acViewMsgPan: TAction
       Category = 'View'
-      Caption = '&Panel de Mensajes'
+      Caption = '&Messages Panel'
       OnExecute = acViewMsgPanExecute
     end
     object acViewToolbar: TAction
@@ -740,7 +742,7 @@ object frmPrincipal: TfrmPrincipal
     object acArcOpen: TAction
       Category = 'Arc'
       Caption = '&Open...'
-      Hint = 'Abrir Archivo'
+      Hint = 'Open File'
       ImageIndex = 3
       OnExecute = acArcOpenExecute
       ShortCut = 16449
@@ -748,7 +750,7 @@ object frmPrincipal: TfrmPrincipal
     object acArcSave: TAction
       Category = 'Arc'
       Caption = '&Save'
-      Hint = 'Guardar Archivo'
+      Hint = 'Save File'
       ImageIndex = 4
       OnExecute = acArcSaveExecute
       ShortCut = 16455
@@ -756,46 +758,49 @@ object frmPrincipal: TfrmPrincipal
     object acArcSaveAs: TAction
       Category = 'Arc'
       Caption = 'Save &as...'
-      Hint = 'Guardar como...'
+      Hint = 'Save as...'
       ImageIndex = 5
       OnExecute = acArcSaveAsExecute
     end
     object acArcCloseFile: TAction
       Category = 'Arc'
       Caption = 'Close &File'
+      Hint = 'Close File'
       ImageIndex = 7
       OnExecute = acArcCloseFileExecute
     end
     object acArcCloseProj: TAction
       Category = 'Arc'
       Caption = '&Close Project'
+      Hint = 'Close Project'
       ImageIndex = 7
       OnExecute = acArcCloseProjExecute
     end
     object acArcQuit: TAction
       Category = 'Arc'
-      Caption = '&Salir'
+      Caption = '&Quit'
       Hint = 'Salir'
       ImageIndex = 6
       OnExecute = acArcQuitExecute
     end
     object acEdPaste: TEditPaste
       Category = 'Edit'
-      Caption = '&Pegar'
-      Hint = 'Pegar'
+      Caption = '&Paste'
+      Hint = 'Paste'
       ImageIndex = 12
       ShortCut = 16470
     end
     object acEdSelecAll: TAction
       Category = 'Edit'
-      Caption = 'Seleccionar &Todo'
-      Hint = 'Selecciona todo el texto'
+      Caption = 'Select &All'
+      Hint = 'Select all'
       ImageIndex = 13
       OnExecute = acEdSelecAllExecute
     end
     object acSearFindPrv: TAction
       Category = 'Sear'
       Caption = 'Find &Previous'
+      Hint = 'Find Previous'
       ImageIndex = 16
       OnExecute = acSearFindPrvExecute
       ShortCut = 8306
@@ -803,6 +808,7 @@ object frmPrincipal: TfrmPrincipal
     object acSearReplac: TAction
       Category = 'Sear'
       Caption = '&Replace...'
+      Hint = 'Replace'
       ImageIndex = 17
       OnExecute = acSearReplacExecute
       ShortCut = 16466
@@ -815,7 +821,8 @@ object frmPrincipal: TfrmPrincipal
     end
     object acToolConfig: TAction
       Category = 'Tool'
-      Caption = '&Confi&gurar'
+      Caption = '&Settings'
+      Hint = 'Settings'
       ImageIndex = 22
       OnExecute = acToolConfigExecute
     end
@@ -865,7 +872,7 @@ object frmPrincipal: TfrmPrincipal
     Left = 88
     Top = 112
     object mnFile: TMenuItem
-      Caption = '&Archivo'
+      Caption = '&File'
       object MenuItem3: TMenuItem
         Action = acArcNewFile
       end
@@ -940,7 +947,7 @@ object frmPrincipal: TfrmPrincipal
       end
     end
     object mnEdit: TMenuItem
-      Caption = '&Edicion'
+      Caption = '&Edit'
       object MenuItem9: TMenuItem
         Action = acEdUndo
       end
@@ -967,7 +974,7 @@ object frmPrincipal: TfrmPrincipal
       end
     end
     object mnFind: TMenuItem
-      Caption = '&Buscar'
+      Caption = '&Search'
       object MenuItem1: TMenuItem
         Action = acSearFind
       end
@@ -982,7 +989,7 @@ object frmPrincipal: TfrmPrincipal
       end
     end
     object mnView: TMenuItem
-      Caption = '&Ver'
+      Caption = '&View'
       object MenuItem20: TMenuItem
         Action = acViewMsgPan
       end
@@ -1000,7 +1007,7 @@ object frmPrincipal: TfrmPrincipal
       end
     end
     object mnTools: TMenuItem
-      Caption = 'Herramientas'
+      Caption = '&Tools'
       object Separator1: TMenuItem
         Caption = '-'
       end

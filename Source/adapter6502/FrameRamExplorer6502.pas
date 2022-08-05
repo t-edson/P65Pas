@@ -2,8 +2,8 @@ unit FrameRamExplorer6502;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, StdCtrls, LCLProc,
-  LCLIntf, LCLType, ExtCtrls, Buttons, CPUCore, CompBase, Analyzer;
+  Classes, SysUtils, Math, FileUtil, Forms, Controls, Graphics, StdCtrls,
+  LCLProc, LCLIntf, LCLType, ExtCtrls, Buttons, CPUCore, CompBase, Analyzer;
 type
   //Define a un bloque de RAM, que servirá para dibujo
   {Los bloques de RAM se usan para separar la memoria en bloques de acuerdo a
@@ -37,6 +37,13 @@ type
     procedure DrawBlock(const marcoRam: TRect; ancMargenDir: integer; dirIni,
       dirFin, BankSize: integer);
     procedure panGraphPaint(Sender: TObject);
+  public
+  const
+    COL_USED_DATA = $80FF80;
+    COL_USED_CODE = $80FF80;
+    COL_IMPLE_GPR = clNone;
+    COL_IMPLE_SFR = $FF8080;
+    COL_UNIMPLEM  = clGray;
   public
     OnCloseFrame: procedure of object;   //Evento de cierre
     procedure SetCompiler(cxp0: TAnalyzer);
@@ -253,15 +260,16 @@ begin
   end;
   //Dibuja primero los bloques de memoria usadas
   SplitInUsedRAM(0, pic.CPUMAXRAM-1);
-  cv.Pen.Color := $80FF80;
   cv.Brush.Style := bsSolid;
   for i:=0 to high(blockUse) do begin
     if blockUse[i].used = ruCode then begin
-      cv.Brush.Color := $80FF80;
+      cv.Pen.Color := COL_USED_CODE;
+      cv.Brush.Color := COL_USED_CODE;
       DrawBlock(marcoRam, ancMargenDir,
                 blockUse[i].add1, blockUse[i].add2, pic.CPUMAXRAM);  //dibuja;
     end else if blockUse[i].used = ruData then begin
-      cv.Brush.Color := $FF8080;
+      cv.Pen.Color := COL_USED_DATA;
+      cv.Brush.Color := COL_USED_DATA;
       DrawBlock(marcoRam, ancMargenDir,
                 blockUse[i].add1, blockUse[i].add2, pic.CPUMAXRAM);  //dibuja;
     end;
@@ -276,13 +284,16 @@ begin
     //Crea etiqueta
     case blockSta[i].blkType of
     cs_impleGPR: begin
-//      cv.Brush.Color := clWhite;
-      cv.Brush.Color := clNone;
+      cv.Brush.Color := COL_IMPLE_GPR;
+      lbl := 'RAM';
+    end;
+    cs_impleSFR: begin
+      cv.Brush.Color := COL_IMPLE_SFR;
       lbl := 'RAM';
     end;
     cs_unimplem: begin
-      cv.Brush.Color := clGray;
-      lbl := 'Uninplemented';
+      cv.Brush.Color := COL_UNIMPLEM;
+      lbl := 'Unimplemented';
     end;
     end;
     tmp := pic.CPUMAXRAM;
@@ -311,7 +322,7 @@ begin
     Dec(ancPag,5);
   end;
 
-  bordSup := panGraph.height div 30;  //espacio superior
+  bordSup := min(panGraph.height div 30, 20);  //espacio superior
   alto := panGraph.height - 2* bordSup;
 //debugln('panGraph.width: %d bordLat: %d', [panGraph.width, bordlat]);
   x0 := bordlat;

@@ -1,7 +1,8 @@
 {"version":1,"strings":[
 {"hash":169384962,"name":"tfrmramexplorer6502.caption","sourcebytes":[82,65,77,32,69,120,112,108,111,114,101,114],"value":"RAM Explorer"},
-{"hash":22450,"name":"tfrmramexplorer6502.label2.caption","sourcebytes":[83,70,82],"value":"SFR"},
-{"hash":19538,"name":"tfrmramexplorer6502.label3.caption","sourcebytes":[71,80,82],"value":"GPR"},
+{"hash":254033357,"name":"tfrmramexplorer6502.label2.caption","sourcebytes":[83,112,101,99,105,97,108,32,82,65,77],"value":"Special RAM"},
 {"hash":4683694,"name":"tfrmramexplorer6502.label4.caption","sourcebytes":[85,110,105,109,112,108,101,109,46],"value":"Unimplem."},
-{"hash":88460660,"name":"tfrmramexplorer6502.label5.caption","sourcebytes":[71,80,82,32,85,115,101,100],"value":"GPR Used"}
+{"hash":162943901,"name":"tfrmramexplorer6502.label5.caption","sourcebytes":[85,115,101,100,32,82,65,77],"value":"Used RAM"},
+{"hash":102129451,"name":"tfrmramexplorer6502.mnzoompos.caption","sourcebytes":[90,111,111,109,32,43],"value":"Zoom +"},
+{"hash":102129453,"name":"tfrmramexplorer6502.mnzommneg.caption","sourcebytes":[90,111,111,109,32,45],"value":"Zoom -"}
 ]}

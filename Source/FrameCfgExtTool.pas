@@ -60,14 +60,16 @@ type
     procedure Execute(const tool: TExternTool);
   public  //Inicialización
     procedure Init(section: string; cfgFile: TMiConfigXML);
-    procedure SetLanguage;
     constructor Create(AOwner: TComponent) ; override;
     destructor Destroy; override;
   end;
 
 implementation
 {$R *.lfm}
-{$I ..\_language\tra_CfgExtTool.pas}
+resourcestring
+  ER_FAIL_EXEC_ = 'Fail executing: %s';
+  PRE_TOOL_NAME = 'Tool'        ;
+
 { TExternTool }
 procedure TExternTool.ReadFromString(const str: string);
 var
