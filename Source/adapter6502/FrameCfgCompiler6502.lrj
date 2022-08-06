@@ -5,5 +5,6 @@
 {"hash":25562867,"name":"tfracfgcompiler6502.chkoptbnkbefpro.caption","sourcebytes":[66,101,102,111,114,101,32,80,114,111,99,101,100,117,114,101,115],"value":"Before Procedures"},
 {"hash":100322867,"name":"tfracfgcompiler6502.chkoptbnkaftpro.caption","sourcebytes":[65,102,116,101,114,32,80,114,111,99,101,100,117,114,101,115],"value":"After Procedures"},
 {"hash":94512499,"name":"tfracfgcompiler6502.chkreuprocvar.caption","sourcebytes":[82,101,117,115,101,32,80,114,111,99,101,100,117,114,101,115,32,86,97,114,105,97,98,108,101,115],"value":"Reuse Procedures Variables"},
-{"hash":188796819,"name":"tfracfgcompiler6502.chkoptretproc.caption","sourcebytes":[79,112,116,105,109,105,122,101,32,82,69,84,85,82,78,32,105,110,32,112,114,111,99,101,100,117,114,101,115],"value":"Optimize RETURN in procedures"}
+{"hash":188796819,"name":"tfracfgcompiler6502.chkoptretproc.caption","sourcebytes":[79,112,116,105,109,105,122,101,32,82,69,84,85,82,78,32,105,110,32,112,114,111,99,101,100,117,114,101,115],"value":"Optimize RETURN in procedures"},
+{"hash":84597258,"name":"tfracfgcompiler6502.label1.caption","sourcebytes":[85,110,105,116,115,32,80,97,116,104,58],"value":"Units Path:"}
 ]}

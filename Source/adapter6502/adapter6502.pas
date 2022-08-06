@@ -30,6 +30,7 @@ type
     pCompExt2: TConfigPage;
     pCompExt3: TConfigPage;
     procedure CompilerMessageBox(txt: string; mode: integer);
+    procedure ReadCompilerSettings(var pars: string);
   private
     //Herramienta de completado y manejo de código
     CodeTool    : TCodeTool;
@@ -303,6 +304,18 @@ begin
   zoom := frmRAMExplorer.zoom; //Zoom actual
   if frmRAMExplorer.Visible then frmRAMExplorer.UpdateScreen(compiler);
 end;
+procedure TAdapter6502.ReadCompilerSettings(var pars: string);
+{Read the compiler setting from the Setting frame and add them to "pars".}
+var
+  upath, apppath: String;
+begin
+  if fraCfgCompiler.ReuProcVar then AddLine(pars, '-Ov');  //Reusar variables de proced.
+  if fraCfgCompiler.OptRetProc then AddLine(pars, '-Or');  //Optimizar Retorno de proced.
+  if fraCfgAsmOut.IncComment  then AddLine(pars, '-Ac');   //Comentario detallado
+  apppath := ExtractFileDir(Application.ExeName);
+  upath := StringReplace(fraCfgCompiler.unitPath, '{AppPath}', apppath, [rfReplaceAll, rfIgnoreCase]);
+  AddLine(pars, '-Fu"' + upath + '"');    //Agrega esta ruta a las rutas de unidades del compilador.
+end;
 procedure TAdapter6502.Compile;
 {Ejecuta el compilador para generar un archivo binario de salida.}
 var
@@ -320,10 +333,7 @@ begin
     end;
   end;
   //Lee configuración de compilación
-  if fraCfgCompiler.ReuProcVar then AddLine(pars, '-Ov');  //Reusar variables de proced.
-  if fraCfgCompiler.OptRetProc then AddLine(pars, '-Or');  //Optimizar Retorno de proced.
-  if fraCfgAsmOut.IncComment  then AddLine(pars, '-Ac');  //Comentario detallado
-
+  ReadCompilerSettings(pars);
   //Inicio de compilación
   nErrors := 0;
   if OnBeforeCompile<>nil then OnBeforeCompile();
@@ -347,10 +357,25 @@ begin
   if (ed.sedit.Lines.Count<=1) and (trim(ed.Text)='') then exit;
   //Lee configuración de verif. de sintaxis.
   case fraCfgAfterChg.actAfterChg of
-    0: pars := '-Cn' + LineEnding + '-Dn';  //<No action>
-    1: pars := '-Ca' + LineEnding + '-Dn';  //Do Only Analysis
-    2: pars := '-Cao'+ LineEnding + '-Dn'; //Do Analysis and Optimization.
-    3: pars := '-C'  + LineEnding + '-Dn';   //Do complete compilation.
+    0: begin  //No actions
+      //pars := '-Cn' + LineEnding + '-Dn';  //<No action>
+      exit;
+    end;
+    1: begin  //Do Only Analysis
+      AddLine(pars, '-Ca');
+      AddLine(pars, '-Dn');  //Disable directive messages
+      ReadCompilerSettings(pars);
+    end;
+    2: begin  //Do Analysis and Optimization.
+      AddLine(pars, '-Cao');
+      AddLine(pars, '-Dn');  //Disable directive messages
+      ReadCompilerSettings(pars);
+    end;
+    3: begin  //Do complete compilation.
+      AddLine(pars, '-C');
+      AddLine(pars, '-Dn');  //Disable directive messages
+      ReadCompilerSettings(pars);
+    end;
   end;
   //Inicio de compilación
   nErrors := 0;

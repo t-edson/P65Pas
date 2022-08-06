@@ -4,7 +4,7 @@ unit GenCodBas_PIC16;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, CPUCore, P6502utils, CompBase, ParserDirec, Globales,
+  Classes, SysUtils, CPUCore, P6502utils, CompBase, ParserDirec, CompGlobals,
   XpresElemP65, LexPas, StrUtils, LazLogger;
 const
   STACK_SIZE = 8;      //tamaño de pila para subrutinas en el PIC
@@ -2142,7 +2142,6 @@ var
 begin
   inherited Create;
   ID := 16;  //Identifica al compilador PIC16
-  devicesPath := patDevices16;
   pic := TP6502.Create;
   picCore := pic;   //Referencia picCore
 end;

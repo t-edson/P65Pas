@@ -9,7 +9,7 @@ unit ParserASM_6502;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, fgl, LexPas, CompBase, P6502utils, Globales, XpresElemP65;
+  Classes, SysUtils, fgl, LexPas, CompBase, P6502utils, CompGlobals, XpresElemP65;
 type
   { TParserAsm_6502 }
   TParserAsm_6502 = class

@@ -1,0 +1,14 @@
+{"version":1,"strings":[
+{"hash":132081668,"name":"tfraarcexplor.mnfolexpandcol.caption","sourcebytes":[69,38,120,112,97,110,100],"value":"E&xpand"},
+{"hash":39642450,"name":"tfraarcexplor.mnfolopeninexplor.caption","sourcebytes":[79,112,101,110,32,111,110,32,38,87,105,110,100,111,119,115,32,69,120,112,108,111,114,101,114],"value":"Open on &Windows Explorer"},
+{"hash":211084645,"name":"tfraarcexplor.mnfolnewfile.caption","sourcebytes":[38,78,101,119,32,70,105,108,101],"value":"&New File"},
+{"hash":178447330,"name":"tfraarcexplor.mnfolnewfolder.caption","sourcebytes":[78,101,119,32,38,70,111,108,100,101,114],"value":"New &Folder"},
+{"hash":166427509,"name":"tfraarcexplor.mnfolchanname.caption","sourcebytes":[67,104,97,38,110,103,101,32,78,97,109,101],"value":"Cha&nge Name"},
+{"hash":179055749,"name":"tfraarcexplor.mnfoldelete.caption","sourcebytes":[38,68,101,108,101,116,101],"value":"&Delete"},
+{"hash":146640424,"name":"tfraarcexplor.mnfolrefresh.caption","sourcebytes":[38,82,101,102,114,101,115,104],"value":"&Refresh"},
+{"hash":2844350,"name":"tfraarcexplor.mnfilopen.caption","sourcebytes":[38,79,112,101,110],"value":"&Open"},
+{"hash":153727093,"name":"tfraarcexplor.mnfilchanname.caption","sourcebytes":[67,38,104,97,110,103,101,32,78,97,109,101],"value":"C&hange Name"},
+{"hash":227078925,"name":"tfraarcexplor.mnfilcrecopfrom.caption","sourcebytes":[67,114,101,97,116,101,32,67,111,38,112,121,32,102,114,111,109],"value":"Create Co&py from"},
+{"hash":218353506,"name":"tfraarcexplor.mnfildelete.caption","sourcebytes":[69,108,38,105,109,105,110,97,114],"value":"El&iminar"},
+{"hash":227418418,"name":"tfraarcexplor.mnfilrefrescar.caption","sourcebytes":[38,82,101,102,114,101,115,99,97,114],"value":"&Refrescar"}
+]}

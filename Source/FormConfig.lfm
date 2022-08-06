@@ -60,10 +60,10 @@ object Config: TConfig
     Height = 439
     Top = 0
     Width = 514
-    ActivePage = tabEnvThemes
+    ActivePage = tabEnviron
     Align = alClient
     ShowTabs = False
-    TabIndex = 1
+    TabIndex = 0
     TabOrder = 1
     object tabEnviron: TTabSheet
       Caption = 'Enviroment'
@@ -75,7 +75,7 @@ object Config: TConfig
         Top = 0
         Width = 506
         HorzScrollBar.Page = 442
-        VertScrollBar.Page = 368
+        VertScrollBar.Page = 306
         Align = alClient
         BorderStyle = bsNone
         ClientHeight = 431
@@ -168,22 +168,6 @@ object Config: TConfig
           )
           TabOrder = 4
         end
-        object Label1: TLabel
-          Left = 20
-          Height = 20
-          Top = 320
-          Width = 68
-          Caption = 'Units Path:'
-        end
-        object Edit1: TEdit
-          Left = 16
-          Height = 28
-          Top = 340
-          Width = 370
-          Enabled = False
-          TabOrder = 5
-          Text = '{AppPath}/units/'
-        end
         object lblSplitCol1: TLabel
           Left = 288
           Height = 20
@@ -199,7 +183,7 @@ object Config: TConfig
           DefaultColorColor = clGray
           Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
           ItemHeight = 20
-          TabOrder = 6
+          TabOrder = 5
         end
       end
     end

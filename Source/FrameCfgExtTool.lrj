@@ -1,0 +1,13 @@
+{"version":1,"strings":[
+{"hash":18340,"name":"tfracfgexttool.butadd.caption","sourcebytes":[65,100,100],"value":"Add"},
+{"hash":93079237,"name":"tfracfgexttool.butremove.caption","sourcebytes":[82,101,109,111,118,101],"value":"Remove"},
+{"hash":39225225,"name":"tfracfgexttool.label5.caption","sourcebytes":[84,111,32,114,101,102,101,114,101,110,99,101,32,116,104,101,32,115,111,117,114,99,101,32,102,105,108,101,44,32,117,115,101,32,36,40,109,97,105,110,70,105,108,101,41],"value":"To reference the source file, use $(mainFile)"},
+{"hash":5538698,"name":"tfracfgexttool.label1.caption","sourcebytes":[78,97,109,101,58],"value":"Name:"},
+{"hash":149119642,"name":"tfracfgexttool.label2.caption","sourcebytes":[80,114,111,103,114,97,109,32,112,97,116,104,58],"value":"Program path:"},
+{"hash":204921994,"name":"tfracfgexttool.label3.caption","sourcebytes":[67,111,109,109,97,110,100,32,76,105,110,101,58],"value":"Command Line:"},
+{"hash":2862244,"name":"tfracfgexttool.buttest.caption","sourcebytes":[38,84,101,115,116],"value":"&Test"},
+{"hash":95839082,"name":"tfracfgexttool.label4.caption","sourcebytes":[84,111,111,108,115,58],"value":"Tools:"},
+{"hash":266127732,"name":"tfracfgexttool.chkwaitexit.caption","sourcebytes":[38,87,97,105,116,32,79,110,32,69,120,105,116],"value":"&Wait On Exit"},
+{"hash":231895330,"name":"tfracfgexttool.chkshowtbar.caption","sourcebytes":[38,83,104,111,119,32,105,110,32,84,111,111,108,98,97,114],"value":"&Show in Toolbar"},
+{"hash":20117385,"name":"tfracfgexttool.label6.caption","sourcebytes":[84,111,32,114,101,102,101,114,101,110,99,101,32,116,104,101,32,111,117,116,112,117,116,32,42,46,104,101,120,32,102,105,108,101,44,32,117,115,101,32,36,40,104,101,120,70,105,108,101,41],"value":"To reference the output *.hex file, use $(hexFile)"}
+]}

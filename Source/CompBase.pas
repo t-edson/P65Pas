@@ -44,6 +44,13 @@ TLastASMcode = (
                            from C (inverted).}
              lacInvAtoA   {Value of regA is inverted in all bits to regA}
              );
+TCompileLevel = (
+  clNull,        //Do nothing
+  clAnalys,      //Only Analysis
+  clAnalOptim,   //Analysis and Optimization
+  clComplete     //Analysis, Optimization and Synthesis
+);
+
 { TCompilerBase }
 {Clase base para crear a los objetos compiladores.
 Esta clase debe ser el ancestro común de todos los compialdores a usar en PicPas.
@@ -174,6 +181,7 @@ public    //Compiling Options. Deberían ser PROTECTED.
   GeneralORG  : integer;   //Dirección general de origen de código
   protected
   mode        : (modPascal, modPicPas);
+  comp_level  : TCompileLevel;  //Compilation level
   enabDirMsgs : boolean;   //Bandera para permitir generar mensajes desde las directivas.
   incDetComm  : boolean;   //Incluir Comentarios detallados.
   OptBnkAftIF : boolean;   //Optimizar instrucciones de cambio de banco al final de IF

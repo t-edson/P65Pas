@@ -6,14 +6,8 @@ interface
 uses
   Classes, SysUtils, LazLogger,
   P6502utils, CPUCore, CompBase, ParserDirec, GenCodBas_PIC16,
-  GenCod_PIC16, ParserDirec_PIC16, Globales, XpresElemP65, ParserASM_6502;
+  GenCod_PIC16, ParserDirec_PIC16, CompGlobals, XpresElemP65, ParserASM_6502;
 type
-  TCompileLevel = (
-    clNull,        //Do nothing
-    clAnalys,      //Only Analysis
-    clAnalOptim,   //Analysis and Optimization
-    clComplete     //Analysis, Optimization and Synthesis
-  );
   { TCompiler_PIC16 }
   TCompiler_PIC16 = class(TParserDirec)
   private  //Funciones básicas
@@ -26,7 +20,7 @@ type
     procedure ConstanPropagation;
     procedure DoOptimize;
     procedure DoGenerateCode;
-    procedure Compile(srcFile: string; level: TCompileLevel);
+    procedure Compile(srcFile: string);
   public      //Events
     OnAfterCompile: procedure of object;   //Al finalizar la compilación.
   public      //Override methods
@@ -837,12 +831,12 @@ begin
   {No es necesario hacer más validaciones, porque ya se hicieron en la primera pasada}
   //_RTS();   //agrega instrucción final
 end;
-procedure TCompiler_PIC16.Compile(srcFile: string; level: TCompileLevel);
+procedure TCompiler_PIC16.Compile(srcFile: string);
 //Compila el contenido de un archivo.
 var
   p: SizeInt;
 begin
-  if level = clNull then exit;
+  if comp_level = clNull then exit;
   debugln('');
   StartCountElapsed;  //Start timer
   DefCompiler;   //Debe hacerse solo una vez al inicio
@@ -888,7 +882,7 @@ begin
     if HayError then exit;
     UpdateCallersToUnits;
     EndCountElapsed('-- Analyzed in: ');
-    if level >= clAnalOptim then begin  //Hay optimización
+    if comp_level >= clAnalOptim then begin  //Hay optimización
       if not IsUnit then begin
         {Compila solo los procedimientos usados, leyendo la información del árbol de sintaxis,
         que debe haber sido actualizado en la primera pasada.}
@@ -898,7 +892,7 @@ begin
         EndCountElapsed('-- Optimized in: ');
       end;
     end;
-    if level >= clComplete then begin  //Hay síntesis
+    if comp_level >= clComplete then begin  //Hay síntesis
       if not IsUnit then begin
         StartCountElapsed;
         DoGenerateCode;
@@ -1160,54 +1154,57 @@ string "pars". Pars must contain a parameter each line.
 This must be the main entry point to the compiler.}
 var
   parsList: TStringList;
-  txt: string;
-  comp_level: TCompileLevel;
+  txt, tmp: string;
 begin
   //Load parameters in a list
   parsList := TStringList.Create;
   parsList.Text := trim(pars);
 //debugln('--Executing:('+ StringReplace(pars, LineEnding,' ',[rfReplaceAll])+')');
   //Extract and set parameters
-  if parsList.Count=0 then begin
-     //No parameters.
-    Compile(srcFile, clComplete);   //Complete compilation
-  end else begin
-    //Default settings
-    comp_level := clComplete;
-    enabDirMsgs := true;
-    AsmIncComm := false;
-    for txt in parsList do begin
-      if length(txt)<2 then continue;
-      //---Compiling options
-      if copy(txt,1,2) = '-C' then begin
-        case txt of
-          '-Cn' : comp_level := clNull;
-          '-Ca' : comp_level := clAnalys;
-          '-Cao': comp_level := clAnalOptim;
-          '-C'  : comp_level := clComplete;
-        end;
-      end else
-      //---Optimization options
-      if copy(txt,1,2) = '-O' then begin
-        case txt of
-          '-On' : comp_level := clNull;
-          '-Oa' : comp_level := clAnalys;
-          '-Oao': comp_level := clAnalOptim;
-          '-O'  : comp_level := clComplete;
-        end;
-      end else
-      //---Other options
-      if txt = '-Ac' then begin
-        AsmIncComm := true;   //Include commnents in ASM output
-      end else
-      if txt = '-Dn' then begin
-        enabDirMsgs := false;  //Disable directive messages
+  //Default settings
+  comp_level  := clComplete;
+  enabDirMsgs := true;
+  AsmIncComm  := false;
+  unitPaths.Clear;
+  //Read parameters
+  for txt in parsList do begin
+    if length(txt)<2 then continue;
+    //---Compiling options
+    if copy(txt,1,2) = '-C' then begin
+      case txt of
+        '-Cn' : comp_level := clNull;
+        '-Ca' : comp_level := clAnalys;
+        '-Cao': comp_level := clAnalOptim;
+        '-C'  : comp_level := clComplete;
       end;
+    //---Optimization options
+    end else if copy(txt,1,2) = '-O' then begin
+      case txt of
+        '-On' : comp_level := clNull;
+        '-Oa' : comp_level := clAnalys;
+        '-Oao': comp_level := clAnalOptim;
+        '-O'  : comp_level := clComplete;
+      end;
+    //---Other options
+    end else if copy(txt,1,2) = '-F' then begin  //File names and paths
+      if copy(txt,1,3) = '-Fu' then begin  //Add unit path
+        tmp := copy(txt,4,length(txt));
+        if tmp='' then continue;
+        if tmp[1]='"' then delete(tmp,1,1);
+        if tmp[length(tmp)]='"' then delete(tmp,length(tmp),1);
+        unitPaths.Add(tmp);
+      end;
+    end else if txt = '-Ac' then begin  //Include commnents in ASM output
+      AsmIncComm := true;
+    end else if txt = '-Dn' then begin  //Disable directive messages
+      enabDirMsgs := false;
+    end else begin         //Other.
+
     end;
-    //Compile
-    Compile(srcFile, comp_level);
   end;
-  //Destroy lits
+  //Compile
+  Compile(srcFile);
+  //Destroy list
   parsList.Destroy;
 end;
 procedure TCompiler_PIC16.PrintHelp;

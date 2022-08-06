@@ -50,7 +50,7 @@ interface
 uses
   Classes, SysUtils,
   P6502utils, CPUCore, GenCodBas_PIC16,
-  CompBase, Globales, XpresElemP65, LexPas;
+  CompBase, CompGlobals, XpresElemP65, LexPas;
 type
     { TGenCod }
     TGenCod = class(TGenCodBas)

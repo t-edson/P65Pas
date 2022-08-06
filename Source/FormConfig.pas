@@ -35,11 +35,9 @@ type
     colPanTextCol: TColorBox;
     colSplitCol: TColorBox;
     cmbLanguage: TComboBox;
-    Edit1: TEdit;
     txtThemLoaded: TEdit;
     grpTabEdiState: TRadioGroup;
     ImageList1: TImageList;
-    Label1: TLabel;
     Label2: TLabel;
     lblThemLoad: TLabel;
     lblCodExplCol1: TLabel;

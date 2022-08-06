@@ -1,0 +1,8 @@
+{"version":1,"strings":[
+{"hash":151230590,"name":"tfraeditview.lblbackground.caption","sourcebytes":[60,60,78,111,32,102,105,108,101,115,62,62],"value":"<<No files>>"},
+{"hash":177351,"name":"tfraeditview.mnnewtab.caption","sourcebytes":[38,78,101,119],"value":"&New"},
+{"hash":44709525,"name":"tfraeditview.mnclosetab.caption","sourcebytes":[38,67,108,111,115,101],"value":"&Close"},
+{"hash":158729548,"name":"tfraeditview.mncloseall.caption","sourcebytes":[67,108,111,115,101,32,38,65,108,108],"value":"Close &All"},
+{"hash":22838259,"name":"tfraeditview.mncloseothers.caption","sourcebytes":[67,108,111,115,101,32,38,79,116,104,101,114,115],"value":"Close &Others"},
+{"hash":188155330,"name":"tfraeditview.mnlocfileexp.caption","sourcebytes":[38,76,111,99,97,116,101,32,111,110,32,70,105,108,101,32,69,120,112,108,111,114,101,114],"value":"&Locate on File Explorer"}
+]}

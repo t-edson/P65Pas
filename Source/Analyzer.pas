@@ -3,14 +3,13 @@ unit Analyzer;
 interface
 uses
   Classes, SysUtils, Types, CompBase, XpresElemP65,
-  LexPas, ParserASM_6502, CPUCore;
+  LexPas, ParserASM_6502, CPUCore, CompGlobals;
 type
 
   { TAnalyzer }
   TAnalyzer = class(TCompilerBase)
   public    //Access to CPU hardware.
     picCore    : TCPUCore;   //Objeto PIC Core. This is an abstraction. Real CPU is not yet specified.
-    devicesPath: string;     //path to untis for this device
     function PICName: string; virtual; abstract;
     function RAMmax: integer; virtual; abstract;
   private
@@ -2030,6 +2029,7 @@ var
   uPath: String;
   uName: String;
   p: TContextState;
+  ufound: Boolean;
 begin
   if lowercase(token) = 'uses' then begin
     Next;  //pasa al nombre
@@ -2060,21 +2060,19 @@ begin
       if OpenContextFrom(uPath) then begin
         uni.srcFile := uPath;   //Guarda el archivo fuente
       end else begin
-        //No lo encontró, busca en la carpeta de dispositivos
-        uPath := devicesPath + DirectorySeparator + uName;
-        if OpenContextFrom(uPath) then begin
-          uni.srcFile := uPath;   //Guarda el archivo fuente
-        end else begin
-           //No lo encontró, busca en la carpeta de librerías
-           uPath := patUnits + DirectorySeparator + uName;
-           if OpenContextFrom(uPath) then begin
-             uni.srcFile := uPath;   //Gaurda el archivo fuente
-           end else begin
-             //No lo encuentra
-             GenError(ER_FIL_NOFOUND, [uName]);
-             exit;
+         //No lo encontró, busca en las carpetas de librerías.
+         ufound := false;
+         for upath in unitPaths do begin
+           if OpenContextFrom(uPath + DirectorySeparator + uName) then begin
+             uni.srcFile := uPath + DirectorySeparator + uName;  //Guarda el archivo fuente
+             ufound := true;
+             break;
            end;
-        end;
+         end;
+         if not ufound then begin
+           GenError(ER_FIL_NOFOUND, [uName]);
+           exit;
+         end;
       end;
       //Aquí ya se puede realizar otra exploración, como si fuera el archivo principal
       DoAnalyzeUnit(uni);

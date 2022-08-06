@@ -187,7 +187,7 @@ end;
 
 initialization
   //inicia directorios de la aplicación
-  patApp      :=  ExtractFilePath(Application.ExeName);  //incluye el '\' final
+  patApp      := ExtractFilePath(Application.ExeName);  //incluye el '\' final
   patSamples  := patApp + 'samples';
   patUnits    := patApp + 'units';
   patTemp     := patApp + 'temp';

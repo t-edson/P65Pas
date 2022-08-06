@@ -5,7 +5,7 @@ unit ParserDirec;
 interface
 uses
   Classes, SysUtils, fgl, math, Graphics, CompBase,
-  LexPas, Globales, Analyzer, XpresElemP65;
+  LexPas, CompGlobals, Analyzer;
 type  //Tipos para manejo de expresiones
   TDirDatType = (ddtNumber, ddtString);
 

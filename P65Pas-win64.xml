@@ -62,9 +62,10 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
 "/>
   </ExternTool>
   <AftChg6502>
-    <actAfterChg Val="3"/>
+    <actAfterChg Val="2"/>
   </AftChg6502>
   <Compiler6502>
+    <unitPath Val="{AppPath}/units/"/>
     <OptimLev Val="1"/>
     <OptBnkAftIF Val="True"/>
     <OptBnkBefPro Val="True"/>

@@ -216,22 +216,6 @@ begin
     until FindNext(SearchRec) <> 0;
     FindClose(SearchRec);
   end;
-  //Directorio /devices
-  directorio := cxp.devicesPath;
-  if FindFirst(directorio + '\*.pas', faDirectory, SearchRec) = 0 then begin
-    repeat
-      nomArc := SysToUTF8(SearchRec.Name);
-      if SearchRec.Attr and faDirectory = faDirectory then begin
-        //directorio
-      end else begin //archivo
-        //Argega nombre de archivo
-        nomArc := copy(nomArc, 1, length(nomArc)-4);
-        opEve.AddItem(nomArc, -1);
-      end;
-    until FindNext(SearchRec) <> 0;
-    FindClose(SearchRec);
-  end;
-
 end;
 procedure TCodeTool.CopyListItems(OpEve, OpEveSrc: TFaOpenEvent);
 var
