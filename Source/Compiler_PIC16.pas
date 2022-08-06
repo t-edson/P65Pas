@@ -6,7 +6,7 @@ interface
 uses
   Classes, SysUtils, LazLogger,
   P6502utils, CPUCore, CompBase, ParserDirec, GenCodBas_PIC16,
-  GenCod_PIC16, ParserDirec_PIC16, Globales, XpresElemP65;
+  GenCod_PIC16, ParserDirec_PIC16, Globales, XpresElemP65, ParserASM_6502;
 type
   TCompileLevel = (
     clNull,        //Do nothing
@@ -54,11 +54,13 @@ var
   ER_COMPIL_PROC, ER_CON_EXP_EXP: String;
   ER_FIL_NOFOUND, WA_UNUSED_CON_, WA_UNUSED_PRO_: String;
   MSG_RAM_USED, MSG_FLS_USED: String;
-//Funciones básicas
+
+  //Funciones básicas
 procedure SetLanguage;
 begin
   ParserDirec_PIC16.SetLanguage;
-  {$I ..\_language\tra_Compiler.pas}
+  ParserASM_6502.SetLanguage;
+  {$I _language\tra_Compiler.pas}
 end;
 procedure TCompiler_PIC16.ConstantFoldExpr(eleExp: TEleExpress);
 {Performs:

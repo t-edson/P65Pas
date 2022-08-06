@@ -35,10 +35,6 @@ type
     procedure UtilGrillaKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
     function UtilGrillaLeerColorFondo(col, fil: integer): TColor;
-  private
-    TIT_ADD: string;
-    TIT_NAM: string;
-    TIT_VAL: string;
   private  //Índice de columnas
     pic: TCPUCore;
     cxp: TAnalyzer;
@@ -54,7 +50,6 @@ type
     procedure SetCompiler(cxp0: TAnalyzer);
     procedure AddWatch(varName: string);
     procedure Refrescar;
-    procedure SetLanguage;
     constructor Create(AOwner: TComponent) ; override;
     destructor Destroy; override;
   end;
@@ -62,13 +57,6 @@ type
 implementation
 {$R *.lfm}
 { TfraRegWatcher }
-procedure TfraRegWatcher.SetLanguage;
-begin
-  {$I ..\_language\tra_RegWatcher.pas}
-  grilla.Cells[COL_ADD, 0] := TIT_ADD;
-  grilla.Cells[COL_NAM, 0] := TIT_NAM;
-  grilla.Cells[COL_VAL, 0] := TIT_VAL;
-end;
 procedure TfraRegWatcher.Refrescar;
 //Refresca el valor de los registros, en base a la dirección de memoria que tengan
 var

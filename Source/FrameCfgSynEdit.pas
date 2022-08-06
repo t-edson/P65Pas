@@ -41,8 +41,8 @@ type
     Label12: TLabel;
     Label2: TLabel;
     Label3: TLabel;
-    Label6: TLabel;
-    Label7: TLabel;
+    lblFontName: TLabel;
+    lblFontSize: TLabel;
     Label8: TLabel;
     Label9: TLabel;
     spFontSize: TSpinEdit;
@@ -81,7 +81,6 @@ type
     procedure PropToWindow;
     procedure Iniciar(section: string; cfgFile: TMiConfigXML); //Inicia el frame
     procedure ConfigEditor(ed: TSynEdit);
-    procedure SetLanguage;
   public
     //genera constructor y destructor
     constructor Create(AOwner: TComponent) ; override;
@@ -94,11 +93,6 @@ implementation
 //  MAX_ARC_REC = 5;  //si se cambia, actualizar ActualMenusReciente()
 
 { TfraCfgSynEdit }
-procedure TfraCfgSynEdit.SetLanguage;
-//Rutina de traducción
-begin
-   {$I ..\_language\tra_CfgSynEdit.pas}
-end;
 procedure TfraCfgSynEdit.Iniciar(section: string; cfgFile: TMiConfigXML);
 var
   s: TParElem;

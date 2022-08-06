@@ -85,11 +85,18 @@ type
   public //Inicialización
     constructor Create(AOwner: TComponent) ; override;
     destructor Destroy; override;
-    procedure SetLanguage;
   end;
 
 implementation
 {$R *.lfm}
+resourcestring
+  MSG_INICOMP = 'Starting Compilation...';
+  MSG_WARN    = 'Warning'                ;
+  MSG_WARNS   = 'Warnings'               ;
+  MSG_ERROR   = 'Error'                  ;
+  MSG_ERRORS  = 'Errors'                 ;
+  MSG_COMPIL  = 'Compiled in: '          ;
+
 const
   ROW_HEIGH = 19;
   //Constantes para identificar íconos
@@ -105,13 +112,6 @@ var
   GCOL_COL: integer;  //número ed columna
   GCOL_MSG: integer;  //mensaje
 
-var  //Cadenas de traducción
-  MSG_INICOMP: string;
-  MSG_WARN   : string;
-  MSG_WARNS  : string;
-  MSG_ERROR  : string;
-  MSG_ERRORS : string;
-  MSG_COMPIL : string;
 { TUtilGrillaFil2 }
 procedure TUtilGrillaFil2.grillaDrawCell(Sender: TObject; aCol, aRow: Integer;
   aRect: TRect; aState: TGridDrawState);
@@ -168,10 +168,6 @@ begin
   BackSelColor := clBtnFace;
 end;
 { TfraMessagesWin }
-procedure TfraMessagesWin.SetLanguage;
-begin
- {$I ..\_language\tra_FrameMessagesWin.pas}
-end;
 procedure TfraMessagesWin.AddInformation(infTxt, fname: string; row, col: integer);
 var
   f: Integer;

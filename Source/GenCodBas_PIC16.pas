@@ -213,7 +213,7 @@ var
 procedure SetLanguage;
 begin
   ParserDirec.SetLanguage;
-  {$I ..\_language\tra_GenCodBas.pas}
+  {$I _language\tra_GenCodBas.pas}
 end;
 { TGenCodPic }
 function TGenCodBas.BinOperationStr(fun: TEleExpress): string;

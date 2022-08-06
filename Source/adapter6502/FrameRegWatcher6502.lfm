@@ -1,18 +1,20 @@
 object fraRegWatcher: TfraRegWatcher
   Left = 0
-  Height = 359
+  Height = 449
   Top = 0
-  Width = 287
-  ClientHeight = 359
-  ClientWidth = 287
+  Width = 359
+  ClientHeight = 449
+  ClientWidth = 359
+  DesignTimePPI = 120
+  ParentFont = False
   TabOrder = 0
   DesignLeft = 350
   DesignTop = 272
   object grilla: TStringGrid
     Left = 0
-    Height = 339
-    Top = 20
-    Width = 287
+    Height = 424
+    Top = 25
+    Width = 359
     Align = alClient
     ColCount = 3
     FixedCols = 0
@@ -20,9 +22,9 @@ object fraRegWatcher: TfraRegWatcher
     RowCount = 3
     TabOrder = 0
     ColWidths = (
-      40
-      64
-      64
+      50
+      80
+      80
     )
     Cells = (
       3
@@ -39,37 +41,36 @@ object fraRegWatcher: TfraRegWatcher
   end
   object panTitle: TPanel
     Left = 0
-    Height = 20
+    Height = 25
     Top = 0
-    Width = 287
+    Width = 359
     Align = alTop
-    ClientHeight = 20
-    ClientWidth = 287
+    ClientHeight = 25
+    ClientWidth = 359
     TabOrder = 1
     object Label1: TLabel
       Left = 1
-      Height = 18
+      Height = 23
       Top = 1
-      Width = 265
+      Width = 332
       Align = alClient
       AutoSize = False
       Caption = 'Register Watcher'
       Color = clActiveCaption
-      ParentColor = False
       Transparent = False
     end
     object SpeedButton1: TSpeedButton
-      Left = 266
-      Height = 18
+      Left = 333
+      Height = 23
       Top = 1
-      Width = 20
+      Width = 25
       Align = alRight
       Caption = 'X'
     end
   end
   object PopupMenu1: TPopupMenu
-    left = 56
-    top = 136
+    Left = 70
+    Top = 170
     object mnClearAll: TMenuItem
       Caption = '&Clear All'
       OnClick = mnClearAllClick

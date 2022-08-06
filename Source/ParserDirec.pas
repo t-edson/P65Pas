@@ -171,7 +171,7 @@ var
 
 procedure SetLanguage;
 begin
-{$I ..\_language\tra_ParserDirec.pas}
+{$I _language\tra_ParserDirec.pas}
 end;
 { TDirOperand }
 function TDirOperand.GetvalNum: Double;

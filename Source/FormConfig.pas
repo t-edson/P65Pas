@@ -90,7 +90,6 @@ type
     procedure BitAplicarClick(Sender: TObject);
     procedure butLoadThemeClick(Sender: TObject);
     procedure butSaveCurThemClick(Sender: TObject);
-    procedure SetLanguage;
     procedure TreeView1Click(Sender: TObject);
     procedure TreeView1KeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
@@ -200,11 +199,6 @@ resourcestring
   // External Tool
   CPAGE_EXTOOL     = 'External Tool';
 
-procedure TConfig.SetLanguage;
-begin
-  fraCfgSynEdit.SetLanguage;
-  fraCfgSyntax.SetLanguage;
-end;
 procedure TConfig.FillTree;
   function AddConfigPage(title: string; ParentNode: TTreeNode;
             ImageIndex: integer; tabSht: TTabSheet; scrlBox: TScrollBox): TConfigPage;

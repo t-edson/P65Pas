@@ -56,7 +56,7 @@ var  //Mensajes
 
 procedure SetLanguage;
 begin
-  {$I ..\_language\tra_ParserAsm.pas}
+  {$I _language\tra_ParserAsm.pas}
 end;
 
 { TParserAsm_6502 }

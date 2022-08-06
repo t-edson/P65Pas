@@ -16,9 +16,9 @@
 {"hash":39761194,"name":"tfracfgsynedit.label12.caption","sourcebytes":[70,114,97,109,101,32,99,111,108,111,114,58],"value":"Frame color:"},
 {"hash":48606020,"name":"tfracfgsynedit.chkfullword.caption","sourcebytes":[70,117,108,108,32,87,111,114,100],"value":"Full Word"},
 {"hash":216172629,"name":"tfracfgsynedit.chkhighcurlin.caption","sourcebytes":[72,105,103,104,108,105,103,104,116,32,99,117,114,114,101,110,116,32,108,105,110,101],"value":"Highlight current line"},
-{"hash":86816842,"name":"tfracfgsynedit.label6.caption","sourcebytes":[76,101,116,114,97,58],"value":"Letra:"},
+{"hash":105952730,"name":"tfracfgsynedit.lblfontname.caption","sourcebytes":[70,111,110,116,32,78,97,109,101,58],"value":"Font Name:"},
 {"hash":104035045,"name":"tfracfgsynedit.cmbfontname.text","sourcebytes":[99,109,98,70,111,110,116,78,97,109,101],"value":"cmbFontName"},
-{"hash":138273674,"name":"tfracfgsynedit.label7.caption","sourcebytes":[84,97,109,97,195,177,111,58],"value":"Tama\u00F1o:"},
-{"hash":221847182,"name":"tfracfgsynedit.chkviewvscroll.caption","sourcebytes":[66,97,114,114,97,32,100,101,32,100,101,115,112,108,97,122,32,38,86,101,114,116,46],"value":"Barra de desplaz &Vert."},
-{"hash":46927390,"name":"tfracfgsynedit.chkviewhscroll.caption","sourcebytes":[66,97,114,114,97,32,100,101,32,100,101,115,112,108,97,122,32,38,72,111,114,105,122,46],"value":"Barra de desplaz &Horiz."}
+{"hash":106882778,"name":"tfracfgsynedit.lblfontsize.caption","sourcebytes":[70,111,110,116,32,83,105,122,101,58],"value":"Font Size:"},
+{"hash":200403954,"name":"tfracfgsynedit.chkviewvscroll.caption","sourcebytes":[38,86,101,114,116,105,99,97,108,32,83,99,114,111,108,108,98,97,114],"value":"&Vertical Scrollbar"},
+{"hash":97399170,"name":"tfracfgsynedit.chkviewhscroll.caption","sourcebytes":[38,72,111,114,105,122,111,110,116,97,108,32,83,99,114,111,108,108,98,97,114],"value":"&Horizontal Scrollbar"}
 ]}

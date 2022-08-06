@@ -188,7 +188,7 @@ var
 procedure SetLanguage;
 begin
   GenCodBas_PIC16.SetLanguage;
-  {$I ..\_language\tra_GenCod.pas}
+  {$I _language\tra_GenCod.pas}
 end;
 procedure TGenCod.Invert_A_to_A;
 {Invert all the bits of A register (as boolean expression) .

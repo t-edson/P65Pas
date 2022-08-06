@@ -8,8 +8,8 @@ object fraMessagesWin: TfraMessagesWin
   DesignTimePPI = 120
   ParentFont = False
   TabOrder = 0
-  DesignLeft = 334
-  DesignTop = 264
+  DesignLeft = 162
+  DesignTop = 290
   object panStatis: TPanel
     Left = 726
     Height = 126

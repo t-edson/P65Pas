@@ -2,8 +2,8 @@ unit Analyzer;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, Types, CompBase, Globales, XpresElemP65,
-  LexPas, ParserASM_6502, CPUCore{, LCLProc};
+  Classes, SysUtils, Types, CompBase, XpresElemP65,
+  LexPas, ParserASM_6502, CPUCore;
 type
 
   { TAnalyzer }

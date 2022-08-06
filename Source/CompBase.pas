@@ -11,8 +11,8 @@ técnica.
 unit CompBase;
 interface
 uses
-  Classes, SysUtils, Types, LazLogger, MisUtils, LexPas,
-  XpresElemP65, XpresAST, Globales, CompContexts;
+  Classes, SysUtils, Types, LazLogger, LexPas,
+  XpresElemP65, XpresAST, CompContexts;
 type
 //Expression type, according the position it appears.
 TPosExpres = (pexINDEP,  //Expresión independiente

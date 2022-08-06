@@ -253,10 +253,7 @@ begin
   if curLanguage = idLang then
     exit;  //no ha habido cambio de idioma
   curLanguage := idLang;
-  Config.SetLanguage;
-  fraMessages.SetLanguage;
   Compiler_PIC16.SetLanguage;
-  ParserASM_6502.SetLanguage;
 end;
 procedure TfrmPrincipal.fraLeftPanel_OpenFile(filname: string);
 {El explorador de código, solicita abrir un archivo.}

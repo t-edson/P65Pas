@@ -75,7 +75,6 @@ type
     procedure picExecutionMsg(message: string);
     procedure RefreshScreen(SetGridRow: boolean = true);
   public
-    procedure SetLanguage;
     procedure Exec(cxp0: TAnalyzer);
   end;
 
@@ -85,10 +84,6 @@ var
 implementation
 {$R *.lfm}
 { TfrmDebugger6502 }
-procedure TfrmDebugger6502.SetLanguage;
-begin
-  fraRegWat.SetLanguage;
-end;
 procedure TfrmDebugger6502.Timer1Timer(Sender: TObject);
 {temporizador para eleditor de diagramas }
 var

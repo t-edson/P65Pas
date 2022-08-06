@@ -125,7 +125,6 @@ type
     procedure SetPropertiesForTheme(themeFile: string);
   public  //Inicialización
     procedure LoadSyntaxFiles(pathSyn0: string);
-    procedure SetLanguage;
     constructor Create(AOwner: TComponent) ; override;
     destructor Destroy; override;
   end;
@@ -344,11 +343,6 @@ begin
   inherited Destroy;
 end;
 { TfraCfgSyntax }
-procedure TfraCfgSyntax.SetLanguage;
-begin
-  //curLang := idLang;
-  //
-end;
 procedure TfraCfgSyntax.chkAutoCompChange(Sender: TObject);
 begin
   if curLang = nil then exit;
