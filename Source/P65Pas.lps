@@ -4,7 +4,7 @@
     <PathDelim Value="\"/>
     <Version Value="12"/>
     <BuildModes Active="Debug"/>
-    <Units Count="62">
+    <Units Count="57">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -18,10 +18,9 @@
         <ComponentName Value="frmPrincipal"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="239"/>
-        <CursorPos X="31" Y="253"/>
-        <FoldState Value=" TL003 T8H2}0112l"/>
+        <TopLine Value="247"/>
+        <CursorPos X="24" Y="256"/>
+        <FoldState Value=" TL003 T8H2}0111+"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -33,14 +32,15 @@
           <Item0 X="6" Y="581" ID="5"/>
           <Item1 Y="796" ID="6"/>
         </Bookmarks>
+        <Loaded Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="Compiler_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="1178"/>
-        <CursorPos X="23" Y="1189"/>
-        <FoldState Value=" TL0010113211141B p0vY0222]D311]Fsg02 T5i008 T7BKR T8C235 TMiV8104291h[t44440315121E14]671123341 T3i9052 pk5kD0w]9l5iI2K3 pjIkG0}p2]A4jA2e4]96kf0{#215 pieoa0{;013 T6iK03O T0iPYg9]Scaa47]8Xi7g4A]9Yk5D28],HiGTIB]95l6Z88[R4iVk2F]I4kaUE6]IZi8e33111E[V4m8q25]VY]M1D THo3OK1 TE;426u"/>
+        <CursorPos X="72" Y="1189"/>
+        <FoldState Value=" T7BKR T8C235 T5i008 TMiV8104291 T3i9052 pk5kD0w]9l5iI2K3 pjIkG0}p2]A4jA2e4]96kf0{#21]%6iK03O T0iPYg9 picaa47]8Xi7g4A]9Yk5D28]sHiGTIB]95l6Z88[R4iVk2F]I4kaUE6]IZi8e33111E THo3OK1 TE;426I"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -49,12 +49,11 @@
           <FoldState Value=" T8D21011 T5c07 TMla]G21E1I]K3i304241 piaoG04022 T0iBS2075174428 T6iN0201314f"/>
         </ExtraEditor1>
         <UsageCount Value="200"/>
-        <Loaded Value="True"/>
       </Unit2>
       <Unit3>
         <Filename Value="GenCod_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="1"/>
+        <EditorIndex Value="-1"/>
         <WindowIndex Value="1"/>
         <TopLine Value="38"/>
         <CursorPos X="24" Y="53"/>
@@ -68,11 +67,11 @@
         <Bookmarks Count="1">
           <Item0 Y="5721" ID="7"/>
         </Bookmarks>
-        <Loaded Value="True"/>
       </Unit3>
       <Unit4>
         <Filename Value="GenCodBas_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
         <WindowIndex Value="1"/>
         <CursorPos Y="7"/>
         <ExtraEditorCount Value="2"/>
@@ -89,20 +88,18 @@
           <CursorPos X="6" Y="624"/>
         </ExtraEditor2>
         <UsageCount Value="200"/>
-        <Loaded Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="CompBase.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="2"/>
-        <CursorPos X="42" Y="20"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="27" Y="15"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
-          <CursorPos X="27" Y="15"/>
+          <CursorPos X="40" Y="17"/>
         </ExtraEditor1>
         <UsageCount Value="200"/>
-        <Loaded Value="True"/>
       </Unit5>
       <Unit6>
         <Filename Value="adapter6502\FrameSynTree6502.pas"/>
@@ -118,9 +115,9 @@
       <Unit7>
         <Filename Value="Globales.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="3"/>
-        <TopLine Value="182"/>
-        <CursorPos X="7" Y="196"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="52"/>
+        <CursorPos X="2" Y="70"/>
         <UsageCount Value="202"/>
         <Loaded Value="True"/>
       </Unit7>
@@ -369,11 +366,10 @@
       <Unit30>
         <Filename Value="ParserASM_6502.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="-1"/>
         <WindowIndex Value="1"/>
         <CursorPos X="55" Y="12"/>
         <UsageCount Value="203"/>
-        <Loaded Value="True"/>
       </Unit30>
       <Unit31>
         <Filename Value="XpresElemP65.pas"/>
@@ -387,10 +383,10 @@
       <Unit32>
         <Filename Value="adapter6502\adapter6502.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="249"/>
-        <CursorPos Y="316"/>
-        <FoldState Value=" TL003011127222 p0sb01 T4706 T5jF02 T8H213131]BMlK0Q1I1513]c3jK0LA pj2ja03935]BNnF074 T6jO0253]q0jTIB742!"/>
+        <TopLine Value="335"/>
+        <CursorPos X="19" Y="346"/>
         <UsageCount Value="205"/>
         <Loaded Value="True"/>
       </Unit32>
@@ -508,10 +504,9 @@
       <Unit44>
         <Filename Value="CompGlobals.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="4"/>
+        <EditorIndex Value="-1"/>
         <CursorPos X="4" Y="10"/>
-        <UsageCount Value="55"/>
-        <Loaded Value="True"/>
+        <UsageCount Value="91"/>
       </Unit44>
       <Unit45>
         <Filename Value="adapter6502\FrameCfgChkSyntax6502.pas"/>
@@ -520,7 +515,7 @@
         <ResourceBaseClass Value="Frame"/>
         <EditorIndex Value="-1"/>
         <CursorPos Y="12"/>
-        <UsageCount Value="134"/>
+        <UsageCount Value="130"/>
       </Unit45>
       <Unit46>
         <Filename Value="_libraries\SynFacilUtils-1.24\SynFacilHighlighter.pas"/>
@@ -528,104 +523,69 @@
         <WindowIndex Value="1"/>
         <TopLine Value="1189"/>
         <CursorPos Y="1207"/>
-        <UsageCount Value="10"/>
+        <UsageCount Value="6"/>
       </Unit46>
       <Unit47>
-        <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\fgl.pp"/>
-        <EditorIndex Value="-1"/>
-        <CursorPos Y="25"/>
-        <UsageCount Value="3"/>
-      </Unit47>
-      <Unit48>
-        <Filename Value="C:\lazarus\lcl\include\wincontrol.inc"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="4318"/>
-        <CursorPos X="33" Y="4336"/>
-        <UsageCount Value="1"/>
-      </Unit48>
-      <Unit49>
-        <Filename Value="C:\lazarus\lcl\controls.pp"/>
-        <UnitName Value="Controls"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="2339"/>
-        <CursorPos X="15" Y="2355"/>
-        <UsageCount Value="1"/>
-      </Unit49>
-      <Unit50>
-        <Filename Value="_libraries\P65Utils-0.5\CPUCore.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="239"/>
-        <CursorPos X="20" Y="283"/>
-        <UsageCount Value="3"/>
-      </Unit50>
-      <Unit51>
-        <Filename Value="C:\lazarus\lcl\include\brush.inc"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="8"/>
-        <CursorPos Y="38"/>
-        <UsageCount Value="1"/>
-      </Unit51>
-      <Unit52>
         <Filename Value="..\_language\tra_FormPrincipal.pas"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="6"/>
-      </Unit52>
-      <Unit53>
+        <UsageCount Value="2"/>
+      </Unit47>
+      <Unit48>
         <Filename Value="..\_language\tra_CfgExtTool.pas"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="6"/>
-      </Unit53>
-      <Unit54>
+        <UsageCount Value="2"/>
+      </Unit48>
+      <Unit49>
         <Filename Value="..\_language\tra_CfgSynEdit.pas"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="6"/>
-      </Unit54>
-      <Unit55>
+        <UsageCount Value="2"/>
+      </Unit49>
+      <Unit50>
         <Filename Value="..\_language\tra_FrameMessagesWin.pas"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="6"/>
-      </Unit55>
-      <Unit56>
+        <UsageCount Value="2"/>
+      </Unit50>
+      <Unit51>
         <Filename Value="..\_language\tra_RegWatcher.pas"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="6"/>
-      </Unit56>
-      <Unit57>
+        <UsageCount Value="2"/>
+      </Unit51>
+      <Unit52>
         <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\sysutils\sysstr.inc"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="2376"/>
         <CursorPos X="80" Y="2384"/>
-        <UsageCount Value="9"/>
-      </Unit57>
-      <Unit58>
+        <UsageCount Value="5"/>
+      </Unit52>
+      <Unit53>
         <Filename Value="C:\lazarus\fpc\3.2.2\source\rtl\objpas\sysutils\sysstrh.inc"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="54" Y="28"/>
-        <UsageCount Value="9"/>
-      </Unit58>
-      <Unit59>
+        <UsageCount Value="5"/>
+      </Unit53>
+      <Unit54>
         <Filename Value="_language\tra_ParserDirec.pas"/>
         <EditorIndex Value="-1"/>
         <WindowIndex Value="1"/>
         <CursorPos Y="2"/>
-        <UsageCount Value="9"/>
-      </Unit59>
-      <Unit60>
+        <UsageCount Value="5"/>
+      </Unit54>
+      <Unit55>
         <Filename Value="_language\tra_GenCodBas.pas"/>
         <EditorIndex Value="-1"/>
         <WindowIndex Value="1"/>
         <CursorPos X="20" Y="2"/>
-        <UsageCount Value="9"/>
-      </Unit60>
-      <Unit61>
+        <UsageCount Value="5"/>
+      </Unit55>
+      <Unit56>
         <Filename Value="_language\tra_GenCod.pas"/>
         <EditorIndex Value="-1"/>
         <WindowIndex Value="1"/>
         <CursorPos X="19"/>
-        <UsageCount Value="10"/>
-      </Unit61>
+        <UsageCount Value="6"/>
+      </Unit56>
     </Units>
-    <JumpHistory Count="29" HistoryIndex="28">
+    <JumpHistory Count="16" HistoryIndex="15">
       <Position1>
         <Filename Value="adapter6502\adapter6502.pas"/>
         <Caret Line="316" TopLine="267"/>
@@ -651,97 +611,44 @@
         <Caret Line="317" TopLine="249"/>
       </Position6>
       <Position7>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1191" TopLine="1165"/>
+        <Filename Value="adapter6502\adapter6502.pas"/>
+        <Caret Line="316" TopLine="249"/>
       </Position7>
       <Position8>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1170" TopLine="1162"/>
-      </Position8>
-      <Position9>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1195" Column="12" TopLine="1171"/>
-      </Position9>
-      <Position10>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1191" Column="9" TopLine="1173"/>
-      </Position10>
-      <Position11>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1192" Column="12" TopLine="1174"/>
-      </Position11>
-      <Position12>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1195" Column="26" TopLine="1177"/>
-      </Position12>
-      <Position13>
-        <Filename Value="adapter6502\adapter6502.pas"/>
-        <Caret Line="316" TopLine="249"/>
-      </Position13>
-      <Position14>
         <Filename Value="adapter6502\adapter6502.pas"/>
         <Caret Line="317" TopLine="249"/>
-      </Position14>
-      <Position15>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1191" TopLine="1177"/>
-      </Position15>
-      <Position16>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1192" TopLine="1177"/>
-      </Position16>
-      <Position17>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1193" TopLine="1177"/>
-      </Position17>
-      <Position18>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1194" TopLine="1177"/>
-      </Position18>
-      <Position19>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1195" TopLine="1177"/>
-      </Position19>
-      <Position20>
-        <Filename Value="CompBase.pas"/>
-        <Caret Line="26" Column="15" TopLine="18"/>
-      </Position20>
-      <Position21>
+      </Position8>
+      <Position9>
         <Filename Value="adapter6502\adapter6502.pas"/>
         <Caret Line="316" TopLine="249"/>
-      </Position21>
-      <Position22>
-        <Filename Value="GenCodBas_PIC16.pas"/>
-        <Caret Line="7" Column="66"/>
-      </Position22>
-      <Position23>
-        <Filename Value="GenCodBas_PIC16.pas"/>
-        <Caret Line="2145" Column="5" TopLine="2120"/>
-      </Position23>
-      <Position24>
-        <Filename Value="GenCodBas_PIC16.pas"/>
-        <Caret Line="2145" TopLine="2119"/>
-      </Position24>
-      <Position25>
-        <Filename Value="GenCodBas_PIC16.pas"/>
-        <Caret Line="2144" Column="25" TopLine="2119"/>
-      </Position25>
-      <Position26>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="191" Column="7" TopLine="173"/>
-      </Position26>
-      <Position27>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <Caret Line="53" Column="13" TopLine="38"/>
-      </Position27>
-      <Position28>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <Caret Line="1189" Column="23" TopLine="1177"/>
-      </Position28>
-      <Position29>
-        <Filename Value="ParserASM_6502.pas"/>
-        <Caret Line="60" Column="5" TopLine="41"/>
-      </Position29>
+      </Position9>
+      <Position10>
+        <Filename Value="FormPrincipal.pas"/>
+        <Caret Line="253" Column="31" TopLine="238"/>
+      </Position10>
+      <Position11>
+        <Filename Value="FormPrincipal.pas"/>
+        <Caret Line="408" Column="36" TopLine="378"/>
+      </Position11>
+      <Position12>
+        <Filename Value="FormPrincipal.pas"/>
+        <Caret Line="649" Column="27" TopLine="633"/>
+      </Position12>
+      <Position13>
+        <Filename Value="FormPrincipal.pas"/>
+        <Caret Line="471" TopLine="469"/>
+      </Position13>
+      <Position14>
+        <Filename Value="FormPrincipal.pas"/>
+      </Position14>
+      <Position15>
+        <Filename Value="FormPrincipal.pas"/>
+        <Caret Line="225" Column="26" TopLine="17"/>
+      </Position15>
+      <Position16>
+        <Filename Value="FormPrincipal.pas"/>
+        <Caret Line="255" Column="5" TopLine="243"/>
+      </Position16>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
