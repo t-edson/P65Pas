@@ -1,4 +1,4 @@
-uses Commodore64;
+//uses Commodore64;
 var 
   i,x : word;
 begin

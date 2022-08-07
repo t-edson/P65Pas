@@ -19,7 +19,7 @@
   <winYpos Val="15"/>
   <winWidth Val="1166"/>
   <winHeight Val="790"/>
-  <winState Val="0"/>
+  <winState Val="2"/>
   <themLoaded Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\themes\dark.theme"/>
   <CodExplBack Val="2434341"/>
   <CodExplText Val="12632256"/>
@@ -50,11 +50,11 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\aaa.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\HolaMundo.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\bbb.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile-1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\aaa.pas
 "/>
   </Edit>
   <ExternTool>
