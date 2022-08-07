@@ -1,0 +1,95 @@
+{ This is an automatically generated lazarus resource file }
+
+
+LazarusResources.Add('TForm2','FORMDATA',[
+
+  'TPF0'#6'TForm2'#5'Form2'#7'Caption'#6#5'Form2'#12'ClientHeight'#3'T'#1#11'Cl'
+
+  +'ientWidth'#3'g'#1#8'OnCreate'#7#11'Form2CREATE'#9'OnDestroy'#7#12'Form2DEST'
+
+  +'ROY'#13'PixelsPerInch'#2'`'#18'HorzScrollBar.Page'#3'f'#1#18'VertScrollBar.'
+
+  +'Page'#3'S'#1#4'Left'#3#164#1#6'Height'#3'T'#1#3'Top'#3'l'#1#5'Width'#3'g'#1
+
+  +#0#9'TGroupBox'#9'Groupbox1'#22'BorderSpacing.OnChange'#13#7'Caption'#6#20'U'
+
+  +'sing Built-in timer'#12'ClientHeight'#3#137#0#11'ClientWidth'#3'P'#1#11'Par'
+
+  +'entColor'#9#11'ParentCtl3D'#8#8'TabOrder'#2#0#4'Left'#2#10#6'Height'#3#155#0
+
+  +#3'Top'#2#10#5'Width'#3'T'#1#0#7'TButton'#7'Button1'#22'BorderSpacing.OnChan'
+
+  +'ge'#13#25'BorderSpacing.InnerBorder'#2#2#7'Caption'#6#7'Elapsed'#7'OnClick'
+
+  +#7#12'Button1CLICK'#8'TabOrder'#2#0#4'Left'#3#173#0#6'Height'#2#25#3'Top'#2
+
+  +#10#5'Width'#2'K'#0#0#7'TButton'#7'Button2'#22'BorderSpacing.OnChange'#13#25
+
+  +'BorderSpacing.InnerBorder'#2#2#7'Caption'#6#5'Start'#7'OnClick'#7#12'Button'
+
+  +'2CLICK'#8'TabOrder'#2#1#4'Left'#2#18#6'Height'#2#25#3'Top'#2#10#5'Width'#2
+
+  +'K'#0#0#7'TButton'#7'Button3'#22'BorderSpacing.OnChange'#13#25'BorderSpacing'
+
+  +'.InnerBorder'#2#2#7'Caption'#6#4'Stop'#7'OnClick'#7#12'Button3CLICK'#8'TabO'
+
+  +'rder'#2#2#4'Left'#2#18#6'Height'#2#25#3'Top'#2'('#5'Width'#2'K'#0#0#7'TButt'
+
+  +'on'#7'Button4'#22'BorderSpacing.OnChange'#13#25'BorderSpacing.InnerBorder'#2
+
+  +#2#7'Caption'#6#5'Clear'#7'OnClick'#7#12'Button4CLICK'#8'TabOrder'#2#3#4'Lef'
+
+  +'t'#2#18#6'Height'#2#25#3'Top'#2'I'#5'Width'#2'K'#0#0#5'TEdit'#5'Edit1'#22'B'
+
+  +'orderSpacing.OnChange'#13#8'TabOrder'#2#4#4'Left'#2'q'#6'Height'#2#23#3'Top'
+
+  +#2'-'#5'Width'#3#205#0#0#0#5'TEdit'#5'Edit2'#22'BorderSpacing.OnChange'#13#8
+
+  +'TabOrder'#2#5#4'Left'#2'q'#6'Height'#2#23#3'Top'#2'K'#5'Width'#3#205#0#0#0#5
+
+  +'TEdit'#5'Edit4'#22'BorderSpacing.OnChange'#13#8'TabOrder'#2#6#4'Left'#2#18#6
+
+  +'Height'#2#23#3'Top'#2'i'#5'Width'#3','#1#0#0#0#9'TGroupBox'#9'Groupbox2'#22
+
+  +'BorderSpacing.OnChange'#13#7'Caption'#6#27'Using program created timer'#12
+
+  +'ClientHeight'#3#137#0#11'ClientWidth'#3'P'#1#11'ParentColor'#9#11'ParentCtl'
+
+  +'3D'#8#8'TabOrder'#2#1#4'Left'#2#10#6'Height'#3#155#0#3'Top'#3#175#0#5'Width'
+
+  +#3'T'#1#0#7'TButton'#7'Button5'#22'BorderSpacing.OnChange'#13#25'BorderSpaci'
+
+  +'ng.InnerBorder'#2#2#7'Caption'#6#7'Elapsed'#7'OnClick'#7#12'Button5CLICK'#8
+
+  +'TabOrder'#2#0#4'Left'#3#173#0#6'Height'#2#25#3'Top'#2#10#5'Width'#2'K'#0#0#7
+
+  +'TButton'#7'Button6'#22'BorderSpacing.OnChange'#13#25'BorderSpacing.InnerBor'
+
+  +'der'#2#2#7'Caption'#6#5'Start'#7'OnClick'#7#12'Button6CLICK'#8'TabOrder'#2#1
+
+  +#4'Left'#2#18#6'Height'#2#25#3'Top'#2#10#5'Width'#2'K'#0#0#7'TButton'#7'Butt'
+
+  +'on7'#22'BorderSpacing.OnChange'#13#25'BorderSpacing.InnerBorder'#2#2#7'Capt'
+
+  +'ion'#6#4'Stop'#7'OnClick'#7#12'Button7CLICK'#8'TabOrder'#2#2#4'Left'#2#18#6
+
+  +'Height'#2#25#3'Top'#2'('#5'Width'#2'K'#0#0#7'TButton'#7'Button8'#22'BorderS'
+
+  +'pacing.OnChange'#13#25'BorderSpacing.InnerBorder'#2#2#7'Caption'#6#5'Clear'
+
+  +#7'OnClick'#7#12'Button8CLICK'#8'TabOrder'#2#3#4'Left'#2#18#6'Height'#2#25#3
+
+  +'Top'#2'K'#5'Width'#2'K'#0#0#5'TEdit'#5'Edit3'#22'BorderSpacing.OnChange'#13
+
+  +#8'TabOrder'#2#4#4'Left'#2'q'#6'Height'#2#23#3'Top'#2'-'#5'Width'#3#205#0#0#0
+
+  +#5'TEdit'#5'Edit5'#22'BorderSpacing.OnChange'#13#8'TabOrder'#2#5#4'Left'#2'q'
+
+  +#6'Height'#2#23#3'Top'#2'K'#5'Width'#3#205#0#0#0#5'TEdit'#5'Edit6'#22'Border'
+
+  +'Spacing.OnChange'#13#8'TabOrder'#2#6#4'Left'#2#18#6'Height'#2#23#3'Top'#2'i'
+
+  +#5'Width'#3','#1#0#0#0#0
+
+]);
+

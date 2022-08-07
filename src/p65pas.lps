@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Release"/>
+    <Units>
+      <Unit>
+        <Filename Value="p65pas.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="102"/>
+        <CursorPos Y="136"/>
+        <FoldState Value=" T4201 T3T2H01331p"/>
+        <UsageCount Value="61"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="XpresElemP65.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="716"/>
+        <CursorPos X="12" Y="722"/>
+        <UsageCount Value="26"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="Compiler_PIC16.pas"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="17"/>
+        <CursorPos Y="35"/>
+        <UsageCount Value="30"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="CompContexts.pas"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="433"/>
+        <CursorPos Y="451"/>
+        <UsageCount Value="27"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="_libraries\P65Utils-0.5\P6502utils.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="22" Y="19"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="_libraries\P65Utils-0.5\CPUCore.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="20" Y="10"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="LexPas.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="226"/>
+        <CursorPos X="13" Y="244"/>
+        <UsageCount Value="10"/>
+      </Unit>
+      <Unit>
+        <Filename Value="XpresAST.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="14"/>
+        <CursorPos X="36" Y="14"/>
+        <UsageCount Value="6"/>
+      </Unit>
+      <Unit>
+        <Filename Value="CompBase.pas"/>
+        <EditorIndex Value="4"/>
+        <UsageCount Value="30"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="ParserDirec.pas"/>
+        <EditorIndex Value="5"/>
+        <CursorPos X="33" Y="7"/>
+        <UsageCount Value="30"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="CompGlobals.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="13" Y="23"/>
+        <UsageCount Value="30"/>
+      </Unit>
+      <Unit>
+        <Filename Value="..\version.txt"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="20"/>
+        <UsageCount Value="7"/>
+        <DefaultSyntaxHighlighter Value="None"/>
+      </Unit>
+      <Unit>
+        <Filename Value="GenCod_PIC16.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="4526"/>
+        <CursorPos X="33" Y="4518"/>
+        <UsageCount Value="13"/>
+      </Unit>
+    </Units>
+    <JumpHistory HistoryIndex="24">
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="273" Column="17" TopLine="215"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="271" Column="17" TopLine="213"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="213" Column="17" TopLine="199"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="272" Column="6" TopLine="202"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="273" Column="17" TopLine="214"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="283" Column="37" TopLine="214"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="327" Column="37" TopLine="280"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="400" Column="36" TopLine="280"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="327" Column="23" TopLine="280"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="399" Column="29" TopLine="324"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="400" Column="36" TopLine="324"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="518" Column="30" TopLine="433"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="529" Column="23" TopLine="454"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="537" Column="35" TopLine="454"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="529" Column="35" TopLine="512"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="537" Column="36" TopLine="512"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="529" Column="14" TopLine="512"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="400" Column="16" TopLine="326"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="327" Column="17" TopLine="302"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="283" Column="17" TopLine="209"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="327" Column="38" TopLine="209"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="400" Column="37" TopLine="280"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="529" Column="35" TopLine="434"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="665" TopLine="216"/>
+      </Position>
+      <Position>
+        <Filename Value="XpresElemP65.pas"/>
+        <Caret Line="734" Column="10" TopLine="716"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+  <Debugging>
+    <BreakPoints>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="Compiler_PIC16.pas"/>
+        <Line Value="860"/>
+      </Item>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="CompContexts.pas"/>
+        <Line Value="451"/>
+      </Item>
+    </BreakPoints>
+  </Debugging>
+</CONFIG>
