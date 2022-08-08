@@ -335,7 +335,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="_libraries\SynFacilUtils-1.24;_libraries\MisUtils-0.6;_libraries\MiConfig-0.4;_libraries\P65Utils-0.5;_libraries\UtilsGrilla-0.8;_libraries\epiktimer;adapter6502;adapterKickc;..\src"/>
+      <OtherUnitFiles Value="_libraries\SynFacilUtils-1.24;_libraries\MisUtils-0.6;_libraries\MiConfig-0.4;_libraries\P65Utils-0.5;_libraries\UtilsGrilla-0.8;_libraries\epiktimer;adapter6502;adapterKickc;..\comp_p65pas\src"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>

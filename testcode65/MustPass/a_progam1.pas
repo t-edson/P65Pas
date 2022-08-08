@@ -1,4 +1,0 @@
-program aaa;
-begin
-	
-end.

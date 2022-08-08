@@ -15,15 +15,12 @@ var
    //Variables globales
 //   MsjError    : String;    //Bandera - Mensaje de error
    //Rutas sin "/" final
-   patApp     : string;     //ruta de la aplicación
-   patSamples : string;     //ruta de la carpeta de scripts
-   patUnits   : string;     //ruta para guardar las sintaxis
-   patTemp    : string;     //ruta para los archivos temporales
-   patSyntax  : string;     //ruta de los archivos de sintaxis
-   patThemes  : string;     //ruta de los archivos de temas
-   patDevices16: string;    //ruta para guardar unidades
+   patApp     : string;     //Ruta de la aplicación
+   patTemp    : string;     //Ruta para los archivos temporales del frame de edición.
+   patSyntax  : string;     //Ruta de los archivos de sintaxis
+   patThemes  : string;     //Ruta de los archivos de temas
 
-   archivoEnt  : string;    //archivo de entrada
+   archivoEnt  : string;    //Archivo de entrada
    MostrarError: Boolean;   //Bandera para mostrar mensajes de error.
    ActConsSeg  : Boolean;   //Activa consultas en segundo plano
 
@@ -188,27 +185,12 @@ end;
 initialization
   //inicia directorios de la aplicación
   patApp      := ExtractFilePath(Application.ExeName);  //incluye el '\' final
-  patSamples  := patApp + 'samples';
-  patUnits    := patApp + 'units';
   patTemp     := patApp + 'temp';
   patSyntax   := patApp + 'syntax';
   patThemes   := patApp + 'themes';
-  patDevices16 := patApp + 'devices65';
   archivoEnt  := '';    //archivo de entrada
   //verifica existencia de carpetas de trabajo
   try
-    if not DirectoryExists(patSamples) then begin
-       msgexc(WA_DIR_NOEXIST, [patSamples]);
-       CreateDir(patSamples);
-    end;
-    if not DirectoryExists(patUnits) then begin
-       msgexc(WA_DIR_NOEXIST, [patUnits]);
-       CreateDir(patUnits);
-    end;
-    if not DirectoryExists(patDevices16) then begin
-       msgexc(WA_DIR_NOEXIST, [patDevices16]);
-       CreateDir(patDevices16);
-    end;
     if not DirectoryExists(patTemp) then begin
        msgexc(WA_DIR_NOEXIST, [patTemp]);
        CreateDir(patTemp);
@@ -230,9 +212,6 @@ finalization
   //Por algún motivo, la unidad HeapTrc indica que hay gotera de memoria si no se liberan
   //estas cadenas:
   patApp :=  '';
-  patSamples := '';
-  patUnits := '';
-  patDevices16 := '';
   patTemp := '';
   patSyntax := '';
   ET.Destroy;

@@ -179,7 +179,6 @@ type
     procedure acViewMsgPanExecute(Sender: TObject);
     procedure FindDialog1Find(Sender: TObject);
     procedure fraEdit_ChangeEditorState(ed: TSynEditor);
-    procedure DoSelectSample(Sender: TObject);
     procedure editChangeFileInform;
     procedure ReplaceDialog1Replace(Sender: TObject);
     procedure ToolBar5PaintButton(Sender: TToolButton; State: integer);
@@ -423,30 +422,12 @@ begin
   fraLeftPanel.Init;
   //Termina configuración
   fraEditView1.InitMenuRecents(mnRecents, Config.fraCfgSynEdit.ArcRecientes);  //inicia el menú "Recientes"
-  //Carga lista de ejemplos
-  Hay := FindFirst(patSamples + DirectorySeparator + '*.pas', faAnyFile - faDirectory, SR) = 0;
-  while Hay do begin
-     //encontró archivo
-    AddItemToMenu(mnSamples, '&'+ChangeFileExt(SR.name,''),@DoSelectSample);
-    Hay := FindNext(SR) = 0;
-  end;
+
   ConfigChanged;   //primera actualización
 
   //Carga últimos archivos abiertos
   if Config.LoadLast then fraEditView1.LoadListFiles(Config.filesClosed);
   Timer1.Enabled := true;
-end;
-procedure TfrmPrincipal.DoSelectSample(Sender: TObject);
-//Se ha seleccionado un archivo de ejemplo.
-var
-  SamFil: String;
-  it: TMenuItem;
-begin
-  it := TMenuItem(Sender);
-  SamFil := patSamples + DirectorySeparator + it.Caption + '.pas';
-  SamFil := StringReplace(SamFil,'&','',[rfReplaceAll]);
-  //Carga archivo
-  fraEditView1.LoadFile(SamFil);
 end;
 procedure TfrmPrincipal.FormCloseQuery(Sender: TObject; var CanClose: boolean);
 var

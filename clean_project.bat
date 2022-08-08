@@ -1,7 +1,11 @@
-del .\TestCode\*.hex /s
-del .\temp\*.hex /s
-del .\samples\*.hex /s
 del .\*.dbg
 rd .\Source\lib /s /Q
 rd .\Source\backup /s /Q
+
+del .\comp_p65pas\testcode65\*.hex /s
+del .\comp_p65pas\temp\*.hex /s
+del .\comp_p65pas\samples\*.hex /s
+rd  .\comp_p65pas\src\lib /s /Q
+rd  .\comp_p65pas\src\backup /s /Q
+
 pause

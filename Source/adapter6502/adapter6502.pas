@@ -506,6 +506,8 @@ begin
   fraCfgAfterChg.Init('AftChg6502', cfgFile);
   fraCfgCompiler.Init('Compiler6502', cfgFile);
   fraCfgAsmOut.Init('AsmOutput6502', cfgFile);
+  //Aprovechamos para inicializar "patUnits" ahora que ya tenemos creado "fraCfgCompiler".
+  CodeTool.patUnits := fraCfgCompiler.unitPath;
 end;
 procedure TAdapter6502.ConfigActivate;
 {Se pide activar los frames creados en las páginas elegidas del formualario de
@@ -525,7 +527,29 @@ procedure TAdapter6502.setMenusAndToolbar(menu1, menu2, menu3: TMenuItem;
   toolbar: TToolBar; popupEdit: TPopupMenu; popupEditCount: integer);
 begin
   adapterForm.setMenusAndToolbar(menu1, menu2, menu3, toolbar, popupEdit, popupEditCount);
+
+  //Carga lista de ejemplos
+//  Hay := FindFirst(patSamples + DirectorySeparator + '*.pas', faAnyFile - faDirectory, SR) = 0;
+//  while Hay do begin
+//     //encontró archivo
+//    AddItemToMenu(mnSamples, '&'+ChangeFileExt(SR.name,''),@DoSelectSample);
+//    Hay := FindNext(SR) = 0;
+//  end;
+
 end;
+//procedure TfrmPrincipal.DoSelectSample(Sender: TObject);
+////Se ha seleccionado un archivo de ejemplo.
+//var
+//  SamFil: String;
+//  it: TMenuItem;
+//begin
+//  it := TMenuItem(Sender);
+//  SamFil := patSamples + DirectorySeparator + it.Caption + '.pas';
+//  SamFil := StringReplace(SamFil,'&','',[rfReplaceAll]);
+//  //Carga archivo
+//  fraEditView1.LoadFile(SamFil);
+//end;
+
 constructor TAdapter6502.Create(fraEdit0: TfraEditView; panRightPanel0: TPanel);
 begin
   inherited Create;
@@ -536,10 +560,10 @@ begin
   Compiler.OnError           := @CompilerError;
   Compiler.OnWarning         := @CompilerWarning;
   Compiler.OnInfo            := @CompilerInfo;
-  Compiler.OnMessageBox  := @CompilerMessageBox;
+  Compiler.OnMessageBox      := @CompilerMessageBox;
   //Configura CodeTool
   CodeTool  := TCodeTool.Create(fraEdit0);
-  CodeTool.SetCompiler(compiler);  //Asigna compilador
+  CodeTool.Init(compiler);  //Asigna compilador
   //Crea frame de estadísticas
   fraStatis  := TfraStatist6502.Create(nil);
   //Crea frame del árbol de sintaxis

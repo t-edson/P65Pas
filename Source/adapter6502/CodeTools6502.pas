@@ -15,6 +15,7 @@ type
     cxp       : TCompiler_PIC16;
     opEve0: TFaOpenEvent;   //Para pasar parámetro a cxpTreeElemsFindElement´()
   public
+    patUnits  : string;
     procedure ReadCurIdentif(out tok: string; out tokType: integer; out
       lex: TSynFacilComplet2; out curX: integer);
     procedure GoToDeclaration;
@@ -38,7 +39,7 @@ type
   public
     procedure SetCompletion(ed: TSynEditor);
   public  //Inicialización
-    procedure SetCompiler(cxp0: TCompiler_PIC16);
+    procedure Init(cxp0: TCompiler_PIC16);
     constructor Create(fraEdit0: TfraEditView);
   end;
 
@@ -446,7 +447,7 @@ begin
 
 end;
 
-procedure TCodeTool.SetCompiler(cxp0: TCompiler_PIC16);
+procedure TCodeTool.Init(cxp0: TCompiler_PIC16);
 begin
   cxp     := cxp0;
   //Habría que cambiar algunas configuraciones de acuerdo al compilador usado
