@@ -128,13 +128,14 @@ type
     PanLeftWidth: integer;  //Ancho del panel del árbol de sintaxis.
     PanRightWidth:integer;  //Ancho del editor de ensamblador.
     //Propiedades sin control
-    filesClosed : string;  {Lista de archivos cargados. Usado para restaurar los archivos
-                          abiertos al abrir nuevamente el programa.}
-    winXpos   : integer;  //Coordenada X de la ventana pricipal.
-    winYpos   : integer;  //Coordenada Y de la ventana pricipal.
-    winWidth  : integer;
-    winHeight : integer;
-    winState  : TWindowState;
+    currPath   : string;   //Folder de trabajo actual
+    filesClosed: string;   {Lista de archivos cargados. Usado para restaurar los archivos
+                            abiertos al abrir nuevamente el programa.}
+    winXpos    : integer;  //Coordenada X de la ventana pricipal.
+    winYpos    : integer;  //Coordenada Y de la ventana pricipal.
+    winWidth   : integer;
+    winHeight  : integer;
+    winState   : TWindowState;
     //Propiedades de temas
     themLoaded  : string; //Nombre del último tema cargado
     //Propiedades del explorador de archivos
@@ -303,21 +304,6 @@ procedure TConfig.BitAplicarClick(Sender: TObject);
 var
   filTheme: String;
 begin
-  //Verifica primero si hay tema, para cargarlo antes que nada
-//  if cmbThemes.ItemIndex > 0 then begin
-//    filTheme := patThemes + DirectorySeparator + cmbThemes.Text + '.theme';
-//    //Lee de archivo, solo las propiedades marcadas con categoría 1.
-//    if not cfgFile.FileToPropertiesCat(filTheme, 1) then begin
-//      MsgErr(cfgFile.MsjErr);
-//    end;
-//    //Mueva valor de las propiedades, a los controles.
-//    if not cfgFile.PropertiesToWindowCat(1) then begin
-//      MsgErr(cfgFile.MsjErr);
-//    end;
-//    //Las propiedades de colores de las sintaxis se leen del final del archivo
-//    //Actualiza las propiedades leídas del tema, en fraCfgSyntax
-//    fraCfgSyntax.SetPropertiesForTheme(filTheme);
-//  end;
   //Guarda primero los posibles cambios en la sintaxis, para tener actualizado los
   //archivos de sintaxis, cuando se dispare "OnPropertiesChanges".
   fraCfgSyntax.SaveChanges;
@@ -475,6 +461,7 @@ begin
   s:=cfgFile.Asoc_TCol('TextPanel'   , @PanTextCol , colPanTextCol, clGray);
   s.categ := 1;   //marca como propiedad de tipo "Tema"
   //Propiedades sin control
+  s:=cfgFile.asoc_str ('currPath'    , @currPath     , '');
   s:=cfgFile.Asoc_Str ('filesClosed' , @filesClosed  , '');
   s:=cfgFile.Asoc_Bol ('VerPanMensaj', @FViewPanMsg  , true);
   s:=cfgFile.Asoc_Bol ('VerStatusbar', @ViewStatusbar, true);

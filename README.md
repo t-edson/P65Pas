@@ -3,7 +3,7 @@
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=7LKYWG9LXNQ9C&lc=ES&item_name=Tito%20Hinostroza&item_number=2153&no_note=0&cn=Dar%20instrucciones%20especiales%20al%20vendedor%3a&no_shipping=2&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
 
 
-P65Pas 0.9.1
+P65Pas 1.0.0
 ============
 
 Cross-platform Pascal cross-compiler for 6502 CPU.
@@ -953,7 +953,7 @@ Commands are separated by commas. One command have the syntax:
 One valid example, for this directive, would be:
 
 ```
-{$SET_STATE_RAM '0100-01FF:SFR'};
+{$SET_STATE_RAM '0100-01FF:SFR'}
 ```
 
 That indicates the bytes in RAM from $0100 to $01FF are special RAM and cannot be used by the compiler.

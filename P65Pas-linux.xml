@@ -1,19 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <language Val="en - English"/>
-  <winXpos Val="171"/>
-  <winYpos Val="249"/>
-  <winWidth Val="1152"/>
-  <winHeight Val="641"/>
-  <winState Val="2"/>
-  <StateStatusbar Val="1"/>
   <chkLoadLast Val="True"/>
-  <filesClosed Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_Vars.pas
-/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_HelloWorld.pas
-/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
-"/>
+  <grpToolbarSta Val="1"/>
+  <PanelsCol Val="536870912"/>
   <SplitterCol Val="536870912"/>
-  <MessPanPan Val="536870912"/>
+  <TextPanel Val="8421504"/>
+  <currPath Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk"/>
+  <filesClosed Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
+"/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
@@ -21,21 +16,25 @@
   <SynTreeWidth Val="250"/>
   <EditAsmWidth Val="300"/>
   <ViewPanAssem Val="True"/>
-  <viewMode Val="0"/>
+  <winXpos Val="171"/>
+  <winYpos Val="249"/>
+  <winWidth Val="1152"/>
+  <winHeight Val="641"/>
+  <winState Val="2"/>
+  <themLoaded Val=""/>
+  <CodExplBack Val="-2147483643"/>
+  <CodExplText Val="536870912"/>
+  <grpFiltypes Val="0"/>
   <MessPanBack Val="-2147483643"/>
   <MessPanText Val="536870912"/>
   <MessPanErr Val="255"/>
   <MessPanSel Val="-2147483633"/>
-  <CodExplBack Val="-2147483643"/>
-  <CodExplText Val="536870912"/>
-  <grpFiltypes Val="0"/>
+  <ShowErMsg Val="True"/>
+  <TabEdiState Val="0"/>
   <TamLet Val="10"/>
   <TipLet Val="Courier New"/>
   <VerBarDesV Val="True"/>
   <VerBarDesH Val="False"/>
-  <TabEdiState Val="0"/>
-  <AutSynChk Val="False"/>
-  <AutCompile Val="False"/>
   <Edit>
     <cTxtNor Val="0"/>
     <cFonEdi Val="16777215"/>
@@ -52,26 +51,34 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_Vars.pas
-/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_HelloWorld.pas
+    <recient Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/Source/EditView.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/Source/CibGrillas.pas
 /tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_Vars.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_HelloWorld.pas
 "/>
   </Edit>
-  <IncDecVar Val="True"/>
-  <VarDecType Val="0"/>
-  <IncAddress Val="True"/>
-  <IncComment Val="False"/>
-  <IncComment2 Val="False"/>
-  <ExcUnused Val="True"/>
-  <IncVarName Val="True"/>
-  <ShowErMsg Val="True"/>
-  <OptimLev Val="1"/>
-  <OptBnkAftIF Val="True"/>
-  <OptBnkBefPro Val="True"/>
-  <OptBnkAftPro Val="True"/>
-  <ReuProcVar Val="False"/>
-  <OptRetProc Val="True"/>
   <ExternTool>
     <extern_tools Val=""/>
   </ExternTool>
+  <AftChg6502>
+    <actAfterChg Val="1"/>
+  </AftChg6502>
+  <Compiler6502>
+    <unitPath Val="{AppPath}/comp_p65pas/units/"/>
+    <OptimLev Val="1"/>
+    <OptBnkAftIF Val="True"/>
+    <OptBnkBefPro Val="True"/>
+    <OptBnkAftPro Val="True"/>
+    <ReuProcVar Val="False"/>
+    <OptRetProc Val="True"/>
+  </Compiler6502>
+  <AsmOutput6502>
+    <IncDecVar Val="True"/>
+    <VarDecType Val="1"/>
+    <IncAddress Val="True"/>
+    <IncComment Val="False"/>
+    <ExcUnused Val="True"/>
+    <IncVarName Val="True"/>
+  </AsmOutput6502>
 </CONFIG>

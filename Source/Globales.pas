@@ -33,7 +33,6 @@ procedure EndCountElapsed(msg: string);
 
 function Trans(const strEn, strEs, strQu, strDe, strUk, strRu, strFr: string): string;
 //////////////////////////////////////////////////////
-function LeerParametros: boolean;
 function NombDifArc(nomBase: String): String;
 procedure AddLine(var baseStr: string; newStr: string);
 
@@ -103,51 +102,6 @@ begin
     Result := ClearLangId(strEn);
   end;
 end;
-function LeerParametros: boolean;
-{lee la linea de comandos
- Si hay error devuelve TRUE}
-var
-   par : String;
-   i   : Integer;
-begin
-   Result := false;    //valor por defecto
-   //valores por defecto
-   archivoEnt := '';
-   MostrarError := True;
-   ActConsSeg := False;
-   //Lee parámetros de entrada
-   par := ParamStr(1);
-   if par = '' then begin
-     MsgErr('Nombre de archivo vacío.');
-     Result := true;
-     exit;  //sale con error
-   end;
-   if par[1] = '/' then begin  //es parámetro
-      i := 1;  //para que explore desde el principio
-   end else begin  //es archivo
-      archivoEnt := par;  //el primer elemento es el archivo de entrada
-      i := 2;  //explora siguientes
-   end;
-   while i <= ParamCount do begin
-      par := ParamStr(i);
-      If par[1] = '/' Then begin
-         Case UpCase(par) of
-            '/NOERROR': MostrarError := False;
-            '/ERROR': MostrarError := True;
-            '/CONSEG': ActConsSeg := True;
-            '/NOCONSEG': ActConsSeg := False;
-         Else begin
-                MsgErr('Error. Parámetro desconocido: ' + par);
-                Result := true;
-                exit;  //sale con error
-              End
-         End
-      end Else begin
-//         archivoSal := par;
-      End;
-      inc(i);  //pasa al siguiente
-   end;
-End;
 function NombDifArc(nomBase: String): String;
 {Genera un nombre diferente de archivo, tomando el nombre dado como raiz.}
 const MAX_ARCH = 10;

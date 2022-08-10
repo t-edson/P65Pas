@@ -49,9 +49,11 @@ type
 
   { TExplorNode }
   TExplorNode = class(TTreeNode)  //tipo de nodo personalizado para el arbol
+  private
   public
-    NodType : TNodeType;
-    function Path: string;       //Ruta del archivo o carpeta
+    txtPath : string;            //Campo que guarda ubicación física en disco.
+    NodType : TNodeType;         //Tipo de nodo.
+    function GetPath: string;    //Ruta del archivo o carpeta
     function IsFile: boolean;    //Indica si el nodo es archivo (no carpeta)
     function IsFolder: boolean;  //Indica si el nodo es carpeta
 //    function IsDrive: boolean;  //Indica si el nodo es una unidad
@@ -64,6 +66,7 @@ type
 
   TfraArcExplor = class(TFrame)
   published
+    btnOpenFolder: TButton;
     Filter: TComboBox;
     ImageList2: TImageList;
     MenuItem1: TMenuItem;
@@ -83,6 +86,7 @@ type
     PopupFolder: TPopupMenu;
     PopupFile: TPopupMenu;
     TreeView1: TTreeView;
+    procedure btnOpenFolderClick(Sender: TObject);
     procedure mnFilCreCopFromClick(Sender: TObject);
     procedure mnFilOpenClick(Sender: TObject);
     procedure mnFilChanNameClick(Sender: TObject);
@@ -108,35 +112,29 @@ type
     procedure FilterChange(Sender: TObject);
     procedure TreeView1MouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-
-{    procedure acPArcAbrirExecute(Sender: TObject);
-    procedure acPArcAbrNueExecute(Sender: TObject);
-    procedure acPArcCamNomExecute(Sender: TObject);
-    procedure acPArcElimExecute(Sender: TObject);
-    procedure acPArcNueCarExecute(Sender: TObject);
-    procedure acPArcNueConExecute(Sender: TObject);
-    procedure acPArcNueEncExecute(Sender: TObject);
-    procedure acPArcRefresExecute(Sender: TObject);}
+  private    //Funciones básicas
+    function AddNodeTo(ParentNode: TTreeNode; const txt: string;
+      nodType: TNodeType): TExplorNode;
+    function AddNodeBehind(friendNode: TTreeNode; const txt: string;
+      nodType: TNodeType): TExplorNode;
+    function SelectedNode: TExplorNode;
+    function SelectedFile: TExplorNode;
+  public
+    procedure LocateFileOnTree(arch8: string);
+    function NodRuta(rut: string): TExplorNode;
   private
     FTextColor: TColor;
     NombNodEdi: String;    //nombre actual de nodo en edición
     procedure ActualPanelArc;
-    function AddNodeTo(ParentNode: TTreeNode; const S: string): TExplorNode;
     procedure ExpandirNodArc(Node: TTreeNode; expan: Boolean);
     procedure LeeFilt(lfil: TStringList);
     procedure LeerDirectorio(Item0: TTreeNode; filtro: TStringList;
       expandir: boolean=false);
-    function NodRuta(rut: string): TExplorNode;
     procedure SetTextColor(AValue: TColor);
     procedure TreeView1AdvancedCustomDrawItem(Sender: TCustomTreeView;
       Node: TTreeNode; State: TCustomDrawState; Stage: TCustomDrawStage;
       var PaintImages, DefaultDraw: Boolean);
   public
-    NewFileName  : string;       //nombre por defecto de archivo nuevo
-    NewFolderName: string;       //nombre pord efecto de carpeta nueva
-    InternalPopupFolder: boolean; //perimte activar el menú contextual interno
-    InternalPopupFile: boolean;   //perimte activar el menú contextual interno
-    curNod       : TExplorNode;   //Nodo actual. Se usa como variable temporal
     //Eventos
     OnMenuOpenFile    : TevClickOnFile;  //Se seleccionó "Abrir" desde el menú
     OnDoubleClickFile : TevClickOnFile;  //Se hizo doble click en un archivo
@@ -144,11 +142,15 @@ type
     OnRightClickFolder: TevClickOnFile;  //Click derecho en carpeta
     OnKeyEnterOnFile  : TevClickOnFile;  //Se presionó la tecla enter en un archivo
     OnCloseFile       : TevClickOnFile;  //Se pide cerrar un archivo
-//    OnKeyDown         : TKeyEvent;       //TEcla pulsada
+    OnOpenDirectory   : procedure of object;  //Se pide abrir un folder
+  public
+    NewFileName  : string;       //nombre por defecto de archivo nuevo
+    NewFolderName: string;       //nombre pord efecto de carpeta nueva
+    InternalPopupFolder: boolean; //perimte activar el menú contextual interno
+    InternalPopupFile: boolean;   //perimte activar el menú contextual interno
+    curNod       : TExplorNode;   //Nodo actual. Se usa como variable temporal
     property TextColor: TColor read FTextColor write SetTextColor;
-    function SelectedNode: TExplorNode;
-    function SelectedFile: TExplorNode;
-    procedure LocateFileOnTree(arch8: string);
+    procedure Init(currPath: string);
     constructor Create(AOwner: TComponent) ; override;
   end;
 
@@ -162,6 +164,7 @@ resourcestring
   TXT_UNFOLD      = 'E&xpand';
   TXT_NOTDELFOL   = 'Cannot delete folders';
   TXT_DELFILE     = 'Delete file "%s"?';
+  TXT_DIR_NOTEXIST = 'Directory doesn''t exist.';
 
 procedure TrozaRuta(rut: string; lrut: TStringList); //devuelve una ruta trozada
 begin
@@ -178,9 +181,28 @@ begin
 end;
 
 { TExplorNode }
-function TExplorNode.Path: string;
+function TExplorNode.GetPath: string;
+{Devuelve una cadena con una ruta de directorio completa, construida a partir de la
+estructura de los nodos.
+Esta rutina es similar a TTreeNode.GetTextPath() pero no se usa esa rutina, porque esa
+rutina reconstruye la ruta a partir del "Caption" de todos los nodos, así que se fuerza
+a usar nodos con nombres exactos de directorios.
+Noostros en esta rutina usamos un campo adicional (TExplorNode.txtPath) para guardar
+información de directorio, mientras que podemos poner cualquier valor en el título del
+nodo.}
+var
+  Node: TTreeNode;
 begin
-  Result := StringReplace(GetTextPath,'/', PathDelim,[rfReplaceAll]);
+  Result := '';
+  Node := Self;
+  while Assigned(Node) do begin
+    if Result <> '' then begin
+      Result := DirectorySeparator + Result;
+    end;
+    //Result := Node.Text + Result;
+    Result := TExplorNode(Node).txtPath + Result;
+    Node := Node.Parent;
+  end;
 //  Result := UTF8ToSys(Result);   //devuelve en codificación del sistema
 end;
 function TExplorNode.IsFile: boolean;
@@ -193,7 +215,31 @@ begin
 end;
 
 { TfraArcExplor }
-//funciones básicas
+//Funciones básicas
+function TfraArcExplor.AddNodeTo(parentNode: TTreeNode; const txt: string;
+                                 nodType: TNodeType): TExplorNode;
+{Agrega un nodo al TreeView del frame. El nodo se agrega como nodo hijo de "ParentNode".
+Devuelve una referencia de tipo 'TExplorNode'.
+Esta función y AddNodeBehind() deberían ser las únicas rutinas para agregar nodos a
+TreeView1.
+}
+begin
+  Result := TExplorNode(TreeView1.Items.AddChild(parentNode, txt));
+  Result.txtPath := txt;    //Por defecto
+  Result.NodType := nodType;
+end;
+function TfraArcExplor.AddNodeBehind(friendNode: TTreeNode; const txt: string;
+                                 nodType: TNodeType): TExplorNode;
+{Agrega un nodo al TreeView del frame. El nodo se agrega al lado de "friendNode".
+Devuelve una referencia de tipo 'TExplorNode'.
+Esta función y AddNodeBehind() deberían ser las únicas rutinas para agregar nodos a
+TreeView1.
+}
+begin
+  Result := TExplorNode(TreeView1.Items.InsertBehind(friendNode, txt));
+  Result.txtPath := txt;    //Por defecto
+  Result.NodType := nodType;
+end;
 function TfraArcExplor.SelectedNode: TExplorNode;
 //Lee el nodo seleccionado actualmente. Si no hay ninguno seleccionado, devuelve NIL.
 var
@@ -212,6 +258,46 @@ begin
   if nod = nil then exit(nil);     //verifica
   if not nod.IsFile then exit(nil);     //verifica
   Result := TExplorNode(nod);
+end;
+procedure TfraArcExplor.LocateFileOnTree(arch8: string);
+//Configura el árbol de archivos para ubicar la ruta del archivo indicado.
+//El parámetro "arch8", debe estar en UTF-8
+var nod: TTreeNode;
+   cadNodos: TStringList;  //cadena de los nodos
+   cadNod: string;
+   nivel: integer;
+   encontro: boolean;
+begin
+  if ExtractFilePath(arch8) = '' then begin
+    //no tiene ruta, es relativo al aruta actual
+    arch8 := ExtractFilePath(Application.ExeName) + arch8;
+  end;
+  cadNodos := TStringList.Create;
+  TrozaRuta(arch8, cadNodos);
+  //desenrrolla en la ruta
+  nivel := 0;
+  for cadNod in cadNodos do begin
+    //busca nodo
+    encontro := false;
+    for nod in TreeView1.Items do begin
+      if nod.Level = nivel then
+        if UpCase(nod.Text) = UpCase(cadNod) then begin
+          if TExplorNode(nod).NodType in [ntyFolder,ntyDrive] then  //es folder o unidad
+            ExpandirNodArc(nod, true)   //expande para ubicar
+          else  begin  //debe ser el archivo buscado
+            nod.Selected:=true;
+          end;
+          encontro := true;
+          break;  //sale del for, para buscar siguienet nivel
+        end;
+    end;
+    if not encontro then begin
+      cadNodos.Destroy;
+      exit;  //no vale la pena seguir buscando
+    end;
+    inc(nivel);
+  end;
+  cadNodos.Destroy;
 end;
 function TfraArcExplor.NodRuta(rut: string): TExplorNode;
 //Devuelve el nodo a partir de la ruta completa
@@ -248,6 +334,11 @@ begin
 end;
 procedure TfraArcExplor.SetTextColor(AValue: TColor);
 begin
+  TreeView1.ExpandSignColor := AValue;
+  TreeView1.DisabledFontColor := AValue;
+  TreeView1.SeparatorColor := AValue;
+  TreeView1.TreeLineColor := AValue;
+
   FTextColor := AValue;
   Invalidate;
 end;
@@ -304,39 +395,40 @@ procedure TfraArcExplor.LeerDirectorio(Item0: TTreeNode; filtro: TStringList;
   end;
 var
   SearchRec: TSearchRec;
-  Item     : TTreeNode;
+  Item     : TExplorNode;
   nomArc   : string;
-  ultFol   : TTreeNode = nil;  //última carpeta agegada
+  ultFol   : TExplorNode = nil;  //última carpeta agegada
   directorio: String;
 begin
-  directorio := TExplorNode(Item0).Path;
+  directorio := TExplorNode(Item0).GetPath;
   directorio := UTF8ToSys(directorio);
   TreeView1.Items.BeginUpdate;
   Screen.Cursor := crHourGlass;  //cambia puntero, para indicar trabajo
   if Item0 <> nil then Item0.DeleteChildren;
   try
     if directorio[Length(directorio)] <> PathDelim then directorio +=  PathDelim;
-    if FindFirst(directorio + '*.*', faDirectory, SearchRec) = 0 then begin
+    if FindFirst(directorio + '*', faDirectory, SearchRec) = 0 then begin
       repeat
         nomArc := SysToUTF8(SearchRec.Name);
         if SearchRec.Attr and faDirectory = faDirectory then
         begin  //directorio
           if nomArc[1] <> '.' then begin
-            if ultFol = nil then
+            if ultFol = nil then begin
               //es el primer directorio que se va a agregar.
-              ultFol := TreeView1.Items.AddChild(Item0, nomArc)
-            else
-              //se agrega el directorio, después del último agregado
-              ultFol := TreeView1.Items.InsertBehind(ultFol, nomArc);
-            ultFol.HasChildren:=true;  //para que se pueda abrir
-            ultFol.ImageIndex:=0;  //fija ícono
-            ultFol.SelectedIndex:=0;  //fija ícono cuando está seleccionado
-            TExplorNode(ultFol).NodType:=ntyFolder;  //tipo de nodo
+              ultFol := AddNodeTo(Item0, nomArc, ntyFolder)
+            end else begin
+              //Se agrega el directorio, después del último agregado. De esta forma se
+              //mantienen a los directorios juntos.
+              ultFol := AddNodeBehind(ultFol, nomArc, ntyFolder);
+            end;
+            ultFol.HasChildren:=true; //Para que se pueda abrir
+            ultFol.ImageIndex:=0;     //Fija ícono
+            ultFol.SelectedIndex:=0;  //Fija ícono cuando está seleccionado
           end;
         end else begin //archivo
           //los archivos van al final
           if Coincide(nomArc) then begin
-            Item := TreeView1.Items.AddChild(Item0, nomArc);
+            Item := AddNodeTo(Item0, nomArc, ntyFile);
             if AnsiEndsText('.psql',nomArc) then begin
               Item.ImageIndex:=4;       //ícono de archivo
               Item.SelectedIndex:=4;    //fija ícono cuando está seleccionado
@@ -366,7 +458,6 @@ begin
               Item.ImageIndex:=6;       //ícono de archivo
               Item.SelectedIndex:=6;    //fija ícono cuando está seleccionado
             end;
-            TExplorNode(Item).NodType:=ntyFile;
           end;
         end;
       until FindNext(SearchRec) <> 0;
@@ -374,9 +465,9 @@ begin
     end;
     if (Item0 <> nil) and (Item0.Count=0) then
       //no hubo elementos. Agrega etiqueta
-      TreeView1.Items.AddChild(Item0, TXT_EMPTY);
+      AddNodeTo(Item0, TXT_EMPTY, ntyFile);
   finally
-//    TreeView1.Items.AddChild(Item0, '<error>'); //indica error
+//    AddNodeTo(Item0, '<error>'); //indica error
     if expandir and (Item0 <> nil) then Item0.Expand(false);
     Screen.Cursor := crDefault;  //retorna puntero
     TreeView1.Items.EndUpdate;
@@ -399,7 +490,7 @@ begin
     if nod.Visible and nod.Expanded then begin
       //mantiene expansión
 //      LeerDirectorio(nod, filtros, true);
-      nodExpan.Add(TExplorNode(nod).Path);  //agrega nodo
+      nodExpan.Add(TExplorNode(nod).GetPath);  //agrega nodo
     end;
   //refresca solo los que estaban expandidos
   for nods in nodExpan do begin
@@ -457,7 +548,7 @@ var
   NuevoNom: String;
   nodEx: TExplorNode;
 begin
-  NuevoNom := TExplorNode(Node).Path;
+  NuevoNom := TExplorNode(Node).GetPath;
   if NombNodEdi <> NuevoNom then
     try
       RenameFile(NombNodEdi, NuevoNom);
@@ -507,101 +598,87 @@ begin
     if nodEx.IsFolder then PopupFolder.PopUp(a.x, a.y);
   end;
 end;
-procedure TfraArcExplor.LocateFileOnTree(arch8: string);
-//Configura el árbol de archivos para ubicar la ruta del archivo indicado.
-//El parámetro "arch8", debe estar en UTF-8
-var nod: TTreeNode;
-   cadNodos: TStringList;  //cadena de los nodos
-   cadNod: string;
-   nivel: integer;
-   encontro: boolean;
-begin
-  if ExtractFilePath(arch8) = '' then begin
-    //no tiene ruta, es relativo al aruta actual
-    arch8 := ExtractFilePath(Application.ExeName) + arch8;
-  end;
-  cadNodos := TStringList.Create;
-  TrozaRuta(arch8, cadNodos);
-  //desenrrolla en la ruta
-  nivel := 0;
-  for cadNod in cadNodos do begin
-    //busca nodo
-    encontro := false;
-    for nod in TreeView1.Items do begin
-      if nod.Level = nivel then
-        if UpCase(nod.Text) = UpCase(cadNod) then begin
-          if TExplorNode(nod).NodType in [ntyFolder,ntyDrive] then  //es folder o unidad
-            ExpandirNodArc(nod, true)   //expande para ubicar
-          else  begin  //debe ser el archivo buscado
-            nod.Selected:=true;
-          end;
-          encontro := true;
-          break;  //sale del for, para buscar siguienet nivel
-        end;
+procedure TfraArcExplor.Init(currPath: string);
+{Hace el llenado inicial del árbol de archivos, a partir de la ruta "currPath".}
+  procedure FillWindowsDrives;
+  var
+    Drive: Char;
+    DriveLetter: string;
+    unidades: TStringList;
+    Nodo: TExplorNode;
+  begin
+    //Crea lista de unidades
+    {$IFDEF MSWINDOWS}
+    unidades := TStringList.Create;
+    for Drive := 'A' to 'Z' do begin
+      DriveLetter := Drive + ':\';
+      case GetDriveType(PChar(DriveLetter)) of
+       DRIVE_REMOVABLE: unidades.Add(DriveLetter + ' Floppy Drive');
+       DRIVE_FIXED:     unidades.Add(DriveLetter + ' Fixed Drive');
+       DRIVE_REMOTE:    unidades.Add(DriveLetter + ' Network Drive');
+       DRIVE_CDROM:     unidades.Add(DriveLetter + ' CD-ROM Drive');
+       DRIVE_RAMDISK:   unidades.Add(DriveLetter + ' RAM Disk');
+      end;
     end;
-    if not encontro then begin
-      cadNodos.Destroy;
-      exit;  //no vale la pena seguir buscando
+    //Prepara nodos iniciales
+    TreeView1.Items.Clear;
+    for DriveLetter in unidades do begin
+      //Crea nodo de unidad
+      Nodo := AddNodeTo(nil, DriveLetter[1] + ':', ntyDrive);
+      Nodo.HasChildren:=true; //Para que se expanda.
+      if DriveLetter[5] = 'C' then begin  // E:\ CD-ROM ...
+        Nodo.ImageIndex:=3;   //Fija ícono de CD
+        Nodo.SelectedIndex:=3;
+      end else begin
+        Nodo.ImageIndex:=2;   //Fija ícono de Unidad
+        Nodo.SelectedIndex:=2;
+      end;
     end;
-    inc(nivel);
+    unidades.Free;
+    {$ENDIF}
   end;
-  cadNodos.Destroy;
-end;
-function TfraArcExplor.AddNodeTo(ParentNode: TTreeNode; const S: string): TExplorNode;
-//Agrega un nodo al TreeView del frame. Devuelve una referencia de tipo 'TExplorNode'
+var
+  Nodo: TExplorNode;
 begin
-  Result := TExplorNode(TreeView1.Items.AddChild(ParentNode, S));
+  btnOpenFolder.Visible := false;
+  if currPath='' then begin
+    //Ruta vacía
+    TreeView1.Items.Clear;
+    btnOpenFolder.Visible := true;
+    exit;
+  end;
+  if not DirectoryExists(currPath) then begin
+    MsgExc(TXT_DIR_NOTEXIST);
+    TreeView1.Items.Clear;
+    btnOpenFolder.Visible := true;
+    exit;
+  end;
+//  FillWindowsDrives;
+  //Abre la ruta especificada.
+  TreeView1.Items.Clear;
+  Nodo := AddNodeTo(nil, '', ntyFolder);
+  Nodo.HasChildren:=true;     //Para que se expanda.
+  Nodo.ImageIndex   := 13;    //Fija ícono
+  Nodo.SelectedIndex:= 13;
+
+  //Fija ruta en disco para la exploración
+  Nodo.txtPath := currPath;
+  //Para el nombre, toma la última parte del directorio
+  Nodo.Text := Upcase(extractFileName(currPath));
 end;
 constructor TfraArcExplor.Create(AOwner: TComponent);
-var
-//  Nodo: TTreeNode;
-  Drive: Char;
-  DriveLetter: string;
-  unidades: TStringList;
-  Nodo: TExplorNode;
 begin
   inherited Create(AOwner);
   //asigna eventos
   TreeView1.OnCreateNodeClass:=@TreeView1CreateNodeClass;
-  TreeView1.OnExpanding:=@TreeView1Expanding;  //asigna evento
-  TreeView1.OnDblClick:= @TreeView1DblClick;
+  TreeView1.OnExpanding  :=@TreeView1Expanding;  //asigna evento
+  TreeView1.OnDblClick   := @TreeView1DblClick;
   TreeView1.OnEditingEnd := @TreeView1EditingEnd;
-  TreeView1.OnKeyDown := @TreeView1KeyDown;
-  TreeView1.OnMouseUp:=@TreeView1MouseUp;
-  TreeView1.Images:=ImageList2;   //asigna íconos
-  TreeView1.Options:= TreeView1.Options + [tvoReadOnly];  //para que no permita editar el nodo
+  TreeView1.OnKeyDown    := @TreeView1KeyDown;
+  TreeView1.OnMouseUp    := @TreeView1MouseUp;
+  TreeView1.Images       := ImageList2;   //asigna íconos
+  TreeView1.Options      := TreeView1.Options + [tvoReadOnly];  //para que no permita editar el nodo
 
-  //Crea lista de unidades
-  unidades := TStringList.Create;
-  {$IFDEF MSWINDOWS}
-  for Drive := 'A' to 'Z' do
-  begin
-    DriveLetter := Drive + ':\';
-    case GetDriveType(PChar(DriveLetter)) of
-     DRIVE_REMOVABLE: unidades.Add(DriveLetter + ' Floppy Drive');
-     DRIVE_FIXED:     unidades.Add(DriveLetter + ' Fixed Drive');
-     DRIVE_REMOTE:    unidades.Add(DriveLetter + ' Network Drive');
-     DRIVE_CDROM:     unidades.Add(DriveLetter + ' CD-ROM Drive');
-     DRIVE_RAMDISK:   unidades.Add(DriveLetter + ' RAM Disk');
-    end;
-  end;
-  {$ENDIF}
-  //prepara nodos iniciales
-  TreeView1.Items.Clear;
-  for DriveLetter in unidades do begin
-    //crea nodo de unidad
-    Nodo := AddNodeTo(nil, DriveLetter[1] + ':') as TExplorNode;
-    Nodo.HasChildren:=true;  //para que se expanda
-    Nodo.NodType := ntyDrive;  //marca como unidad
-    if DriveLetter[5] = 'C' then begin
-      Nodo.ImageIndex:=3;  //fija ícono de CD
-      Nodo.SelectedIndex:=3;
-    end else begin
-      Nodo.ImageIndex:=2;  //fija ícono de Unidad
-      Nodo.SelectedIndex:=2;
-    end;
-  end;
-  unidades.Free;
   TreeView1.OnAdvancedCustomDrawItem := @TreeView1AdvancedCustomDrawItem;
   TreeView1.Options := TreeView1.Options - [tvoThemedDraw];
   InternalPopupFolder := false;  //desactiva el menú interno
@@ -633,8 +710,8 @@ begin
   curNod := SelectedNode;
   if curNod = nil then exit;
   //Hay problemas al abrir rutas con tildes
-  tmp := curNod.Path;
-//  tmp := UTF8ToSys(curNod.Path);
+  tmp := curNod.GetPath;
+//  tmp := UTF8ToSys(curNod.GetPath);
   Exec('explorer', '"' + tmp + '"');
 end;
 procedure TfraArcExplor.mnFolNewFileClick(Sender: TObject);
@@ -646,7 +723,7 @@ begin
   if not curNod.IsFolder then exit;  //solo permite en carpetas
   //crea archivo nuevo
   try
-    archivo := GetNewFileName(curNod.Path +  PathDelim + NewFilename);
+    archivo := GetNewFileName(curNod.GetPath +  PathDelim + NewFilename);
     archivo := UTF8ToSys(archivo);
     if not FileExists(archivo) then
       StringToFile('', archivo);
@@ -664,7 +741,7 @@ begin
   if not curNod.IsFolder then exit;  //solo permite en carpetas
   //crea carpeta
   try
-    carpeta := GetNewFolderName(curNod.Path + PathDelim + NewFolderName);
+    carpeta := GetNewFolderName(curNod.GetPath + PathDelim + NewFolderName);
     carpeta := UTF8ToSys(carpeta);
     If not DirectoryExists(carpeta) then
        CreateDir(carpeta);
@@ -677,7 +754,7 @@ begin
   curNod := SelectedNode;
   if curNod = nil then exit;
   curNod.EditText;           //inicia edición
-  NombNodEdi := curNod.Path; //Guarda nombre de nodo editado
+  NombNodEdi := curNod.GetPath; //Guarda nombre de nodo editado
 end;
 procedure TfraArcExplor.mnFolDeleteClick(Sender: TObject);
 begin
@@ -707,7 +784,7 @@ begin
   if curNod = nil then exit;
   if not curNod.IsFile then exit;  //no es archivo
   try
-    archivo := UTF8ToSys(curNod.Path);
+    archivo := UTF8ToSys(curNod.GetPath);
     if FileExists(archivo) then begin
       newFile := GetNewFileName(archivo);
       CopyFile(archivo, newFile);
@@ -715,6 +792,12 @@ begin
   finally
   end;
   if curNod.Parent.Expanded then ExpandirNodArc(curNod.parent, true);   //refresca
+end;
+procedure TfraArcExplor.btnOpenFolderClick(Sender: TObject);
+begin
+  if OnOpenDirectory<>nil then begin
+    OnOpenDirectory();
+  end;
 end;
 procedure TfraArcExplor.mnFilChanNameClick(Sender: TObject);
 begin
@@ -730,7 +813,7 @@ begin
   //eliminar archivo
   if MsgYesNo(TXT_DELFILE, [curNod.Text]) <> 1 then exit;
   try
-    archivo := UTF8ToSys(curNod.Path);
+    archivo := UTF8ToSys(curNod.GetPath);
     if FileExists(archivo) then
 //      DeleteToBin(PChar(archivo));  //envía a papelera
       DeleteFile(archivo);

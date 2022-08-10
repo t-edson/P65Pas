@@ -28,7 +28,7 @@ type
     function HasFocus: boolean;
     property BackColor: TColor read FBackColor write SetBackColor;
     property TextColor: TColor read FTextColor write SetTextColor;
-    procedure Init();
+    procedure Init(currPath: string);
     constructor Create(AOwner: TComponent) ; override;
   end;
 
@@ -37,9 +37,11 @@ implementation
 { TfraLateralPanel }
 procedure TfraLateralPanel.frmArcExplor1DoubleClickFile(nod: TExplorNode);
 begin
-  if OnOpenFile<>nil then OnOpenFile(nod.Path);
+  if OnOpenFile<>nil then OnOpenFile(nod.GetPath);
 end;
-procedure TfraLateralPanel.Init;
+procedure TfraLateralPanel.Init(currPath: string);
+{Inicializa el panel lateral. El parámetro "currPath" indica cual es la ruta de trabajo
+que se debe usar en el explorador de archivos.}
 begin
   //Configura filtros del explorador de archivos
   fraArcExplor1.Filter.Items.Add('*.pas,*.pp,*.inc');  //los filtros se separan por comas
@@ -51,6 +53,8 @@ begin
   fraArcExplor1.OnDoubleClickFile:= @frmArcExplor1DoubleClickFile;
   fraArcExplor1.OnKeyEnterOnFile := @frmArcExplor1DoubleClickFile;
   fraArcExplor1.OnMenuOpenFile   := @frmArcExplor1DoubleClickFile;
+  //Configura ruta de trabajo
+  fraArcExplor1.Init(currPath);
 end;
 procedure TfraLateralPanel.SetBackColor(AValue: TColor);
 {Configura el color de fondo}

@@ -38,7 +38,7 @@ implementation
 
 procedure TfraCfgCompiler6502.Init(section: string; cfgFile: TMiConfigXML);
 begin
-  cfgFile.Asoc_Str (section+ '/unitPath'    , @unitPath    , txtUnitpath, '{AppPath}/units/');
+  cfgFile.Asoc_Str (section+ '/unitPath'    , @unitPath    , txtUnitpath, '{AppPath}/comp_p65pas/units/');
   cfgFile.Asoc_Enum(section+ '/OptimLev'    , @OptimLev    , Sizeof(TOptimLev), grpOptimLev, 1);
   cfgFile.Asoc_Bol (section+ '/OptBnkAftIF' , @OptBnkAftIF , chkOptBnkAftIF   , true);
   cfgFile.Asoc_Bol (section+ '/OptBnkBefPro', @OptBnkBefPro, chkOptBnkBefPro  , true);

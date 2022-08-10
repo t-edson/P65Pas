@@ -16,11 +16,11 @@ type
   { TfrmPrincipal }
   TfrmPrincipal = class(TForm)
   published
-    acArcOpen: TAction;
-    acArcSaveAs: TAction;
-    acArcSave: TAction;
-    acArcNewFile: TAction;
-    acArcQuit: TAction;
+    acFilOpen: TAction;
+    acFilSaveAs: TAction;
+    acFilSave: TAction;
+    acFilNewFile: TAction;
+    acFilQuit: TAction;
     acSearFind: TAction;
     acSearFindNxt: TAction;
     acSearReplac: TAction;
@@ -30,10 +30,9 @@ type
     acEdRedo: TAction;
     acEdSelecAll: TAction;
     acEdUndo: TAction;
-    acArcNewProj: TAction;
-    acArcCloseProj: TAction;
-    acArcCloseFile: TAction;
+    acFilCloseFile: TAction;
     acSearFindPrv: TAction;
+    acFilOpenDir: TAction;
     acToolSel_kickc: TAction;
     acToolSel_P65pas: TAction;
     acViewPanRight: TAction;
@@ -70,9 +69,8 @@ type
     MenuItem21: TMenuItem;
     MenuItem22: TMenuItem;
     extraMenu3: TMenuItem;
-    MenuItem25: TMenuItem;
+    MenuItem24: TMenuItem;
     MenuItem26: TMenuItem;
-    MenuItem27: TMenuItem;
     MenuItem28: TMenuItem;
     MenuItem29: TMenuItem;
     MenuItem30: TMenuItem;
@@ -90,13 +88,13 @@ type
     MenuItem45: TMenuItem;
     MenuItem46: TMenuItem;
     panRightPanel: TPanel;
+    SelectDirectoryDialog1: TSelectDirectoryDialog;
     Separator1: TMenuItem;
     MenuItem51: TMenuItem;
     MenuItem52: TMenuItem;
     MenuItem53: TMenuItem;
     MenuItem54: TMenuItem;
     MenuItem8: TMenuItem;
-    mnSamples: TMenuItem;
     mnView: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem23: TMenuItem;
@@ -145,14 +143,13 @@ type
     ToolButton40: TToolButton;
     ToolButton41: TToolButton;
     ToolButton43: TToolButton;
-    procedure acArcCloseFileExecute(Sender: TObject);
-    procedure acArcCloseProjExecute(Sender: TObject);
-    procedure acArcOpenExecute(Sender: TObject);
-    procedure acArcSaveAsExecute(Sender: TObject);
-    procedure acArcSaveExecute(Sender: TObject);
-    procedure acArcNewFileExecute(Sender: TObject);
-    procedure acArcNewProjExecute(Sender: TObject);
-    procedure acArcQuitExecute(Sender: TObject);
+    procedure acFilCloseFileExecute(Sender: TObject);
+    procedure acFilOpenDirExecute(Sender: TObject);
+    procedure acFilOpenExecute(Sender: TObject);
+    procedure acFilSaveAsExecute(Sender: TObject);
+    procedure acFilSaveExecute(Sender: TObject);
+    procedure acFilNewFileExecute(Sender: TObject);
+    procedure acFilQuitExecute(Sender: TObject);
     procedure acSearFindExecute(Sender: TObject);
     procedure acSearFindNxtExecute(Sender: TObject);
     procedure acSearFindPrvExecute(Sender: TObject);
@@ -207,6 +204,7 @@ type
     procedure ConfigExtTool_RequirePar(var comLine: string);
     procedure fraEdit_LocateInFileExpl(ed: TSynEditor);
     procedure fraEdit_RequireSetCompletion(ed: TSynEditor);
+    procedure fraLeftPanelfraArcExplor1OpenDirectory;
     procedure fraMessagesStatisDBlClick;
     procedure fraLeftPanel_selecFileExplorer;
     procedure fraEdit_RequireSynEditConfig(ed: TsynEdit);
@@ -284,7 +282,7 @@ begin
   {Activamos el contador de verificación de sintaxis, por si se necesita hacer, ya que
    ha habido un cambio en el archivo actual en edición.}
   if actSynCheck then ticSynCheck := 0;  //Reinicia cuenta.
-  acArcSave.Enabled := ed.Modified;
+  acFilSave.Enabled := ed.Modified;
   acEdUndo.Enabled  := ed.CanUndo;
   acEdRedo.Enabled  := ed.CanRedo;
   //Para estas acciones no es necesario controlarlas, porque son acciones pre-determinadas
@@ -303,10 +301,10 @@ begin
   if fraEditView1.Count = 0 then begin
     //No hay ventanas de edición abiertas
 //    fraEditView1.Visible := false;
-    acArcSaveAs.Enabled := false;
+    acFilSaveAs.Enabled := false;
     acEdSelecAll.Enabled := false;
 
-    acArcSave.Enabled := false;
+    acFilSave.Enabled := false;
     acEdUndo.Enabled  := false;
     acEdRedo.Enabled  := false;
 
@@ -315,7 +313,7 @@ begin
   end else begin
     //Hay ventanas de edición abiertas
     ed := fraEditView1.ActiveEditor;
-    acArcSaveAs.Enabled := true;
+    acFilSaveAs.Enabled := true;
     acEdSelecAll.Enabled := true;
 
     fraEdit_ChangeEditorState(ed);  //Actualiza botones
@@ -336,6 +334,10 @@ procedure TfrmPrincipal.fraEdit_RequireSetCompletion(ed: TSynEditor);
 begin
   //Pasa requerimiento al compilador actual
   currComp.SetCompletion(ed);
+end;
+procedure TfrmPrincipal.fraLeftPanelfraArcExplor1OpenDirectory;
+begin
+  acFilOpenDirExecute(self);
 end;
 procedure TfrmPrincipal.fraMessagesStatisDBlClick;
 //Doble clcik en la sección de estadísticas
@@ -419,7 +421,8 @@ begin
   //Configura Panel lateral
   fraLeftPanel.OnOpenFile := @fraLeftPanel_OpenFile;
   fraLeftPanel.OnSelecFileExplorer := @fraLeftPanel_selecFileExplorer;
-  fraLeftPanel.Init;
+  fraLeftPanel.fraArcExplor1.OnOpenDirectory  := @fraLeftPanelfraArcExplor1OpenDirectory;
+  fraLeftPanel.Init(Config.currPath);
   //Termina configuración
   fraEditView1.InitMenuRecents(mnRecents, Config.fraCfgSynEdit.ArcRecientes);  //inicia el menú "Recientes"
 
@@ -558,7 +561,7 @@ begin
     if fraEditView1.HasFocus then fraEditView1.SelectPrevEditor;
   end;
   if (Shift = [ssCtrl]) and (Key = VK_F4) then begin
-    if fraEditView1.HasFocus then acArcCloseFileExecute(self);
+    if fraEditView1.HasFocus then acFilCloseFileExecute(self);
 //*** Comportamiento en el explorador de archivos.
 //    if fraLeftPanel.HasFocus and (fraLeftPanel.FileSelected<>'') then
 //       //Hay un archivo seleccionado
@@ -585,8 +588,8 @@ procedure TfrmPrincipal.ConfigChanged;
 //Se han cambiado las opciones de configuración.
   procedure SetStateActionsProject(state: boolean);
   begin
-    acArcSave.Enabled := state;
-    acArcCloseProj.Enabled := state;
+    acFilSave.Enabled := state;
+    //acFilCloseProj.Enabled := state;
     acEdUndo.Enabled := state;
     acEdRedo.Enabled := state;
     acEdCut.Enabled := state;
@@ -869,49 +872,41 @@ begin
   fraMessages.EndCompilation(true);  //Muestra resúmenes.
 end;
 /////////////////// Acciones de Archivo /////////////////////
-procedure TfrmPrincipal.acArcNewFileExecute(Sender: TObject);
+procedure TfrmPrincipal.acFilNewFileExecute(Sender: TObject);
 begin
   fraEditView1.NewPasFile;
   fraEditView1.ActiveEditor.sedit.Text := currComp.SampleCode;
   fraEditView1.SetFocus;
 end;
-procedure TfrmPrincipal.acArcNewProjExecute(Sender: TObject);
-begin
-  if curProj<>nil then begin
-    if not curProj.Close then exit;
-    curProj.Destroy;
-  end;
-  curProj := TPicPasProject.Create;
-  curProj.Open;
-  fraEditView1.NewPasFile;
-end;
-procedure TfrmPrincipal.acArcOpenExecute(Sender: TObject);
+procedure TfrmPrincipal.acFilOpenExecute(Sender: TObject);
 begin
   fraEditView1.OpenDialog;
   fraEditView1.SetFocus;
   Config.SaveToFile;  //para que guarde el nombre del último archivo abierto
 end;
-procedure TfrmPrincipal.acArcCloseFileExecute(Sender: TObject);
+procedure TfrmPrincipal.acFilCloseFileExecute(Sender: TObject);
 begin
   fraEditView1.CloseEditor;
   fraEditView1.SetFocus;
 end;
-procedure TfrmPrincipal.acArcCloseProjExecute(Sender: TObject);
+procedure TfrmPrincipal.acFilOpenDirExecute(Sender: TObject);
+{Abre un folder.}
 begin
-  if curProj<>nil then begin
-    if not curProj.Close then exit;
-    curProj.Destroy;
+  if SelectDirectoryDialog1.Execute then begin
+    //msgbox(SelectDirectoryDialog1.FileName);
+    Config.currPath := SelectDirectoryDialog1.FileName;
+    fraLeftPanel.Init(Config.currPath);
   end;
 end;
-procedure TfrmPrincipal.acArcSaveExecute(Sender: TObject);
+procedure TfrmPrincipal.acFilSaveExecute(Sender: TObject);
 begin
   fraEditView1.SaveFile;
 end;
-procedure TfrmPrincipal.acArcSaveAsExecute(Sender: TObject);
+procedure TfrmPrincipal.acFilSaveAsExecute(Sender: TObject);
 begin
   fraEditView1.SaveAsDialog;
 end;
-procedure TfrmPrincipal.acArcQuitExecute(Sender: TObject);
+procedure TfrmPrincipal.acFilQuitExecute(Sender: TObject);
 begin
   frmPrincipal.Close;
 end;
