@@ -1,15 +1,8 @@
-//uses Commodore64;
-var 
-  i,x : word;
+type
+  string3 = array[3] of char;
+  tarr2 = [3]char;    //Alternate syntax
+const 
+  ATYP_NAM: string3 = ('a','b','c');
 begin
-  i := 5+i+3 +x;
-  i := 5+i+3 +x; 
-  i := 5+i+3 +x;
-  i := 5+i+3 +x; 
-  i := 1;
-  {$MSGBOX 'Hello'} 
-//  for i := 0 to 3 do
-//    ChrOUT(a[i]); 
-//  end;  
-//  asm RTS end
+	 
 end.

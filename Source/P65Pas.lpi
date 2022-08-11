@@ -73,7 +73,7 @@
         <PackageName Value="LCL"/>
       </Item3>
     </RequiredPackages>
-    <Units Count="45">
+    <Units Count="32">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -86,245 +86,193 @@
         <ResourceBaseClass Value="Form"/>
       </Unit1>
       <Unit2>
-        <Filename Value="Compiler_PIC16.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit2>
-      <Unit3>
-        <Filename Value="GenCod_PIC16.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit3>
-      <Unit4>
-        <Filename Value="GenCodBas_PIC16.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit4>
-      <Unit5>
-        <Filename Value="CompBase.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit5>
-      <Unit6>
         <Filename Value="adapter6502\FrameSynTree6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraSynxTree6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit6>
-      <Unit7>
+      </Unit2>
+      <Unit3>
         <Filename Value="Globales.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit7>
-      <Unit8>
-        <Filename Value="XpresAST.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit8>
-      <Unit9>
+      </Unit3>
+      <Unit4>
         <Filename Value="FormConfig.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="Config"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-      </Unit9>
-      <Unit10>
+      </Unit4>
+      <Unit5>
         <Filename Value="PicPasProject.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit10>
-      <Unit11>
+      </Unit5>
+      <Unit6>
         <Filename Value="FrameEditView.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraEditView"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit11>
-      <Unit12>
+      </Unit6>
+      <Unit7>
         <Filename Value="FrameMessagesWin.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraMessagesWin"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit12>
-      <Unit13>
+      </Unit7>
+      <Unit8>
         <Filename Value="adapter6502\FormElemProperty.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmElemProperty"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-      </Unit13>
-      <Unit14>
+      </Unit8>
+      <Unit9>
         <Filename Value="FrameFileExplor.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraArcExplor"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit14>
-      <Unit15>
+      </Unit9>
+      <Unit10>
         <Filename Value="FrameCfgSyntax.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraCfgSyntax"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit15>
-      <Unit16>
+      </Unit10>
+      <Unit11>
         <Filename Value="FrameCfgSynEdit.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraCfgSynEdit"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit16>
-      <Unit17>
+      </Unit11>
+      <Unit12>
         <Filename Value="adapter6502\CodeTools6502.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit17>
-      <Unit18>
-        <Filename Value="ParserDirec_PIC16.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit18>
-      <Unit19>
+      </Unit12>
+      <Unit13>
         <Filename Value="FrameCfgExtTool.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraCfgExtTool"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit19>
-      <Unit20>
+      </Unit13>
+      <Unit14>
         <Filename Value="adapter6502\FormDebugger6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmDebugger6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-      </Unit20>
-      <Unit21>
+      </Unit14>
+      <Unit15>
         <Filename Value="adapter6502\FrameRamExplorer6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraRamExplorer6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit21>
-      <Unit22>
+      </Unit15>
+      <Unit16>
         <Filename Value="adapter6502\FormRAMExplorer6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmRAMExplorer6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-      </Unit22>
-      <Unit23>
+      </Unit16>
+      <Unit17>
         <Filename Value="adapter6502\FrameRegisters6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraPicRegisters"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit23>
-      <Unit24>
+      </Unit17>
+      <Unit18>
         <Filename Value="adapter6502\FrameRegWatcher6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraRegWatcher"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit24>
-      <Unit25>
-        <Filename Value="ParserDirec.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit25>
-      <Unit26>
+      </Unit18>
+      <Unit19>
         <Filename Value="adapter6502\FrameAsm6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraPicAsm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit26>
-      <Unit27>
-        <Filename Value="Analyzer.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit27>
-      <Unit28>
-        <Filename Value="LexPas.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit28>
-      <Unit29>
-        <Filename Value="CompContexts.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit29>
-      <Unit30>
-        <Filename Value="ParserASM_6502.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit30>
-      <Unit31>
-        <Filename Value="XpresElemP65.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit31>
-      <Unit32>
+      </Unit19>
+      <Unit20>
         <Filename Value="adapter6502\adapter6502.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit32>
-      <Unit33>
+      </Unit20>
+      <Unit21>
         <Filename Value="adapterBase.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit33>
-      <Unit34>
+      </Unit21>
+      <Unit22>
         <Filename Value="adapter6502\FrameStatist6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraStatist6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit34>
-      <Unit35>
+      </Unit22>
+      <Unit23>
         <Filename Value="adapter6502\FormAdapter6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmAdapter6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-      </Unit35>
-      <Unit36>
+      </Unit23>
+      <Unit24>
         <Filename Value="adapter6502\FrameCfgAfterChg6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraCfgAfterChg6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit36>
-      <Unit37>
+      </Unit24>
+      <Unit25>
         <Filename Value="adapter6502\FrameCfgCompiler6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraCfgCompiler6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit37>
-      <Unit38>
+      </Unit25>
+      <Unit26>
         <Filename Value="adapter6502\FrameCfgAsmOut6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraCfgAsmOut6502"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit38>
-      <Unit39>
+      </Unit26>
+      <Unit27>
         <Filename Value="FrameLateralPanel.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraLateralPanel"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit39>
-      <Unit40>
+      </Unit27>
+      <Unit28>
         <Filename Value="adapterKickc\adapterKickc.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit40>
-      <Unit41>
+      </Unit28>
+      <Unit29>
         <Filename Value="adapterKickc\FrameCfgAftEditKickc.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraCfgAftEditKickc"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit41>
-      <Unit42>
+      </Unit29>
+      <Unit30>
         <Filename Value="adapterKickc\FrameCfgCompilerKickc.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraCfgCompilerKickc"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit42>
-      <Unit43>
+      </Unit30>
+      <Unit31>
         <Filename Value="EditView.pas"/>
         <IsPartOfProject Value="True"/>
-      </Unit43>
-      <Unit44>
-        <Filename Value="CompGlobals.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit44>
+      </Unit31>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

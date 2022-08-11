@@ -611,8 +611,10 @@ begin
         end;
       end;
     end else if sen.sntType = sntExit then begin
-      _exp := TEleExpress(sen.elements[0]);  //The first item is a TEleExpress
-      SplitExpress(sen, _exp)
+      if sen.elements.Count>0 then begin   //If there is argument
+        _exp := TEleExpress(sen.elements[0]);  //The first item is a TEleExpress
+        SplitExpress(sen, _exp)
+      end;
     end;
   end;
 end;
