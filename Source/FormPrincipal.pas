@@ -9,9 +9,10 @@ uses
   Classes, SysUtils, SynEdit, SynEditTypes, LazUTF8, Forms, Controls, Dialogs,
   Menus, ComCtrls, ActnList, StdActns, ExtCtrls, LCLIntf, LCLType, LCLProc,
   StdCtrls, Graphics, MisUtils,
-  Compiler_PIC16, FrameLateralPanel, FormConfig, Globales, PicPasProject,
-  EditView, FrameEditView, FrameMessagesWin, adapter6502, FrameCfgExtTool,
-  ParserASM_6502, adapterBase;
+  FrameLateralPanel, FormConfig, EditView, FrameEditView, FrameMessagesWin,
+  FrameCfgExtTool, Globales, adapterBase
+  , adapter6502
+  ;
 type
   { TfrmPrincipal }
   TfrmPrincipal = class(TForm)
@@ -193,7 +194,6 @@ type
     ticSynCheck : integer;  //Contador para temporizar la verifiación ed sintaxis
     actSynCheck : Boolean;  //Activa la verificación de sinatxis
     PopupEdit_N : integer; //Contador de ítems de menú
-    curProj     : TPicPasProject; //Proyecto actual
     fraEditView1: TfraEditView;   //Panel de editores
     fraLeftPanel: TfraLateralPanel; //Panel lateral para explorador de archivos y Árbol de sintaxis
     fraMessages : TfraMessagesWin;
@@ -218,8 +218,6 @@ type
   public     //Compilers adapters
     currComp   : TAdapterBase;   //Compialdor actual
     adapter6502: TAdapter6502;  //Adaptador para compilado 6502
-  public
-    procedure SetLanguage(idLang: string);
   end;
 
 var
@@ -239,19 +237,6 @@ resourcestring
 implementation
 {$R *.lfm}
 { TfrmPrincipal }
-procedure TfrmPrincipal.SetLanguage(idLang: string);
-{Este método es usado para cambiar el idioma. La idea es llamar al método SetLanguage()
-de todas las unidades accesibles desde aquí. A las unidades a las que no se tiene acceso,
-se les llama de forma indirecta, mediante las unidades que si son accesibles.
-Se puede poner este método (y los demás SetLanguage() ) en la seccion INITIALIZATION de
-las unidades, pero se pone como un método independiente, para poder realizar cambio de
-idioma, en tiempo de ejecución.}
-begin
-  if curLanguage = idLang then
-    exit;  //no ha habido cambio de idioma
-  curLanguage := idLang;
-  Compiler_PIC16.SetLanguage;
-end;
 procedure TfrmPrincipal.fraLeftPanel_OpenFile(filname: string);
 {El explorador de código, solicita abrir un archivo.}
 begin
@@ -387,9 +372,6 @@ begin
   adapter6502.Destroy;
 end;
 procedure TfrmPrincipal.FormShow(Sender: TObject);
-var
-  Hay: Boolean;
-  SR: TSearchRec;
 begin
   //Alineamiento de panel izquierdo
   fraLeftPanel.Align := alLeft;
@@ -436,13 +418,6 @@ procedure TfrmPrincipal.FormCloseQuery(Sender: TObject; var CanClose: boolean);
 var
   lstClosedFiles: string;
 begin
-  if curProj<>nil then begin
-    if not curProj.Close then begin
-      CanClose := False;  //Cancela
-      exit;
-    end;
-    curProj.Destroy;
-  end;
   if fraEditView1.CloseAll(lstClosedFiles) then begin
      CanClose := false;   //cancela
   end else begin
@@ -615,13 +590,8 @@ var
   i: Integer;
   tool : TExternTool;
 begin
-  SetLanguage(copy(Config.language, 1, 2));
-  if curProj = nil then begin
-    SetStateActionsProject(false);
-//    exit;
-  end else begin
-    SetStateActionsProject(true);
-  end;
+//  SetLanguage(copy(Config.language, 1, 2));
+  SetStateActionsProject(false);
   //Posición y tamaño de ventana
   self.WindowState := Config.winState;
   if Config.winState = wsMinimized then begin
@@ -762,19 +732,14 @@ var
   ed: TSynEditor;
 begin
   ed := fraEditView1.ActiveEditor;
-  if curProj= nil then begin
-    //Modo de archivos. Actualiza nombre de archivo
-    if fraEditView1.Count = 0 then begin
-      Caption := NOM_PROG + ' - ' + VER_PROG  + ' - ' +MSG_NOFILES;
-    end else begin  //Hay varios
-      if ed.FileName='' then
-        Caption := NOM_PROG + ' - ' + VER_PROG  + ' - ' + ed.Caption
-      else
-        Caption := NOM_PROG + ' - ' + VER_PROG  + ' - ' + ed.FileName;
-    end;
-  end else begin
-    //Hay un proyecto abierto
-    Caption := NOM_PROG + ' - ' + VER_PROG  + ' - ' + MSG_PROJECT + curProj.name;
+  //Actualiza nombre de archivo
+  if fraEditView1.Count = 0 then begin
+    Caption := NOM_PROG + ' - ' + VER_PROG  + ' - ' +MSG_NOFILES;
+  end else begin  //Hay varios
+    if ed.FileName='' then
+      Caption := NOM_PROG + ' - ' + VER_PROG  + ' - ' + ed.Caption
+    else
+      Caption := NOM_PROG + ' - ' + VER_PROG  + ' - ' + ed.FileName;
   end;
   if (ed<>nil) and (ed.FileName<>'') then begin
 //*** Verificar si es necesario

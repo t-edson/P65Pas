@@ -441,6 +441,9 @@ Parámetros:
 var
   tab: TTabSheet;
 begin
+  //Configura idioma
+  curLanguage := 'en';
+  Compiler_PIC16.SetLanguage;
   //Agrega los íconos de "adapterForm" a los ImageList
   adapterForm.AddActions(imgList16, imgList32, actList, COMP_NAME);
   //Agrega las herramientas de este compilador
