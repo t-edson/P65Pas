@@ -48,12 +48,12 @@ This repository includes all the files for both development and execution. It al
 
 IDE files:
 
-"/" -> Includes the binaries and config files.
-"/Source" -> Source files for the IDE.
-"/syntax" -> Syntax files for highlighter and completion code.
-"/temp" -> Temporal folder for new files.
-"/themes" -> Themes files for the IDE.
-"/comp_p65pas" -> Files and binaries of the compiler.
+* "/" -> Includes the binaries and config files.
+* "/Source" -> Source files for the IDE.
+* "/syntax" -> Syntax files for highlighter and completion code.
+* "/temp" -> Temporal folder for new files.
+* "/themes" -> Themes files for the IDE.
+* "/comp_p65pas" -> Files and binaries of the compiler.
 
 ## Hello World
 
