@@ -732,26 +732,26 @@ begin
   pic.iRam := GeneralORG;  //Inicia puntero a RAM
   compMod := cmGenCode;    //Generates code.
   pic.disableCodegen := false;  //Enable the code generation
-  if Commodore64 then begin
-    //En modo Commodore 64
-    if pic.iRam = $801 then begin
-      //Se pide compilar en el espacio de memoria del BASIC
-      PutTopComm('      ;BASIC starter code: 10 SYS 2062');
-      pic.codByte($0C, true);  //Dirección de siguiente línea
-      pic.codByte($08, true);
-      pic.codByte($0A, true);  //Número de línea
-      pic.codByte($00, true);
-      pic.codByte($9e, true);  //Token de instrucción SYS
-      pic.codByte($20, true);  //Espacio
-      pic.codByte($32, true);  //2
-      pic.codByte($30, true);  //0
-      pic.codByte($36, true);  //6
-      pic.codByte($32, true);  //2
-      pic.codByte($00, true);  //Fin de instrucción
-      pic.codByte($00, true);  //Sgte línea BASIC
-      pic.codByte($00, true);  //Sgte línea BASIC
-    end;
-  end;
+//  if Commodore64 then begin
+//    //En modo Commodore 64
+//    if pic.iRam = $801 then begin
+//      //Se pide compilar en el espacio de memoria del BASIC
+//      PutTopComm('      ;BASIC starter code: 10 SYS 2062');
+//      pic.codByte($0C, true);  //Dirección de siguiente línea
+//      pic.codByte($08, true);
+//      pic.codByte($0A, true);  //Número de línea
+//      pic.codByte($00, true);
+//      pic.codByte($9e, true);  //Token de instrucción SYS
+//      pic.codByte($20, true);  //Espacio
+//      pic.codByte($32, true);  //2
+//      pic.codByte($30, true);  //0
+//      pic.codByte($36, true);  //6
+//      pic.codByte($32, true);  //2
+//      pic.codByte($00, true);  //Fin de instrucción
+//      pic.codByte($00, true);  //Sgte línea BASIC
+//      pic.codByte($00, true);  //Sgte línea BASIC
+//    end;
+//  end;
   _JMP_post(iniMain);   //Salto hasta después del espacio de variables
   //Asigna memoria a registros
   //Asigna memoria para las variables, buscando memoria libre a partir de "GeneralORG".

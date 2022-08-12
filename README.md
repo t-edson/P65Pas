@@ -28,9 +28,32 @@ P65Pas doesn't need installation, and have not dependencies, except the commons 
 
 To run, it's only needed to download the folder from GitHub. There is compiled binaries for Windows-64 version (P65Pas-win64.exe) and Ubuntu version (P65Pas-linux).
 
-If it's required other platform, it need to be compiled from the source code.
+If it's required other platform, it needs to be compiled from the source code.
 
-When starting, P65Pas could generate warning messsages, if not needed folders exist.
+The binaries for the IDE are located in root "/" of the folder downloaded:
+* P65Pas-win64.exe -> Executable of the IDE for Windows.
+* P65Pas-linux -> Executable of the IDE for Linux.
+
+The binaries for the compiler are located in the folder /comp_p65pas:
+* p65pas-win64.exe -> Executable of the Compiler for Windows.
+* p65pas-linux -> Executable of the compiler for Linux.
+
+The IDE binary includes the compiler too, so the compiler executable is not used when compiling from the IDE.
+
+When starting the IDE, P65Pas could generate warning messsages, if needed folders doesn't exist.
+
+### Folder structure
+
+This repository includes all the files for both development and execution. It also includes the IDE and compiler files.
+
+IDE files:
+
+"/" -> Includes the binaries and config files.
+"/Source" -> Source files for the IDE.
+"/syntax" -> Syntax files for highlighter and completion code.
+"/temp" -> Temporal folder for new files.
+"/themes" -> Themes files for the IDE.
+"/comp_p65pas" -> Files and binaries of the compiler.
 
 ## Hello World
 
@@ -99,15 +122,11 @@ Some features of the IDE are:
 
 •	Several setting options.
 
-•	Translated to english, french, spanish and german.
-
 ![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/06/P65Pas-0.7_en.png "P65Pas with dark skin")
 
 ![P65Pas](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2019/06/Sin-título2.png "P65Pas for Ubuntu")
 
 ![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2018/05/P65PasMac.jpg "P65Pas for Mac")
-
-Some functions like the "File Explorer" is implemented only for the Windows version.
 
 ## Debugger/Simulator
 
@@ -124,8 +143,6 @@ F8 -> Step by step over subroutine.
 F9 -> Run the program in real time.
 
 ## Compiler
-
-The P65pas compiler is integrated with the IDE. It cannot be used separated.
 
 The compiler implements a simplified and adpated version of the Pascal language.
 
@@ -1037,7 +1054,13 @@ There is still, much work for development or documentation, so any help will be 
 
 ## Source Code
 
-The source code of the compiler is located in the folder /Source.
+All the source code is divided in two projects. Both projects can be compiled independently.
+
+The source code of the IDE is located in the folder /Source.
+
+The source code of the compiler (Command line) is located in the folder /comp_p65pas/src.
+
+When compiling the IDE, the source code of the compiler is compiled two so the IDE executable embeds the compiler binary too.
 
 P65Pas has been compiled, using the version 2.0.12 of Lazarus. Tested in Windows, Ubuntu and Mac.
 

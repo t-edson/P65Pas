@@ -101,11 +101,11 @@ begin
 end;
 function TParserAsm_6502.CaptureOperand(inst: TEleAsmInstr): boolean;
 {Captura una dirección o parámetro de una instrucción. Reconoce los formatos:
-  $ [+|- <literal numñerico>]
+  $ [+|- <literal numérico>]
   <literal numérico>
-  <identificador> [+|- <literal numñerico>]
+  <identificador> [+|- <literal numérico>]
 
-Actualiza los campos "inst.param" y, si aplica, agrega los elementos:
+Actualiza el campo inst.operVal" y, si aplica, agrega los elementos:
 <operando> y <operación>, de acuerdo a como se indica en la documentación.
 Si no encuentra operando, genera error y devuelve FALSE.}
 
@@ -351,7 +351,7 @@ begin
       end;
     end;
   end else begin
-    cpx.GenError(ER_EXPECT_ADDR);
+    cpx.GenError(ER_EXP_CON_VAL);
     Result := false;
     exit;
   end;
@@ -589,10 +589,13 @@ begin
       if not CaptureOperand(curInst) then exit;
       exit;
     end else if tok = 'DB' then begin
-      //Define a byte
-      cpx.Next;
-      AddDirectiveDB(0);  //Operand of ORG will be updated with CaptureOperand().
-      if not CaptureOperand(curInst) then exit;
+      //Define a byte. Could be multiples bytes.
+      repeat
+        cpx.Next;
+        AddDirectiveDB(0);  //Operand of DB will be updated with CaptureOperand().
+        if not CaptureOperand(curInst) then exit;
+        cpx.SkipWhitesNoEOL;
+      until cpx.token<>',';
       exit;
     end else begin
       //Must be a label

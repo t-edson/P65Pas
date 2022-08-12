@@ -262,42 +262,114 @@ end;
 procedure TfraArcExplor.LocateFileOnTree(arch8: string);
 //Configura el árbol de archivos para ubicar la ruta del archivo indicado.
 //El parámetro "arch8", debe estar en UTF-8
-var nod: TTreeNode;
-   cadNodos: TStringList;  //cadena de los nodos
-   cadNod: string;
-   nivel: integer;
-   encontro: boolean;
+   function ExtractNodePath(var fPath: string; nod: TExplorNode): boolean;
+   {Returns TRUE if the full Path of "nod" can be extracted of "fPath".}
+   var
+     nodpath: string;
+   begin
+     nodpath := nod.GetPath;
+     if copy(fPath, 1, length(nodpath)) = nodpath then begin
+       fPath := copy(fPath, length(nodpath)+2);  //Extract path including "/"
+       exit(true);
+     end else begin
+       exit(false);
+     end;
+   end;
+   function ExtractNodeText(var fPath: string; nod: TExplorNode): boolean;
+   {Returns TRUE if the text of "nod" can be extracted of "fPath".}
+   var
+     nodpath: string;
+   begin
+     nodpath := nod.TxtPath;
+     if copy(fPath, 1, length(nodpath)) = nodpath then begin
+       fPath := copy(fPath, length(nodpath)+2);  //Extract path including "/"
+       exit(true);
+     end else begin
+       exit(false);
+     end;
+   end;
+   function ExtractNodePathInChildren(var fPath: string; nod: TExplorNode): TTreeNode;
+   {Similar to ExtractNodePath, but find in the children nodes of "nod". If found returns
+   the node where it's found, otherwise returns NIL.}
+   var
+     nod2: TTreeNode;
+   begin
+     if nod = nil then exit(nil);
+     if not nod.HasChildren then exit(nil);
+     ExpandirNodArc(nod, true);
+     nod2 := nod.GetFirstChild;
+     while nod2 <> nil do begin
+       if ExtractNodeText(fPath, TExplorNode(nod2)) then begin
+         exit(nod2);
+       end;
+       nod2 := nod2.GetNextSibling
+     end;
+     exit(nil);
+   end;
+   function LocateInNode(nod: TExplorNode; fPath: string): boolean;
+   var
+     nod2: TTreeNode;
+   begin
+     if ExtractNodePath(fPath, nod) then begin
+       //Could be
+       while fPath<>'' do begin
+         nod2 := ExtractNodePathInChildren(fPath, nod);
+         if nod2 = nil then begin
+           break;
+         end else begin
+           nod := TExplorNode(nod2);
+           continue;
+         end;
+       end;
+       if fPath='' then begin
+         nod.Selected := true;
+         exit(true);
+       end else begin
+         exit(false);
+       end;
+     end else begin
+       exit(false);
+     end;
+   end;
+var
+  nod: TTreeNode;
 begin
   if ExtractFilePath(arch8) = '' then begin
     //no tiene ruta, es relativo al aruta actual
     arch8 := ExtractFilePath(Application.ExeName) + arch8;
   end;
-  cadNodos := TStringList.Create;
-  TrozaRuta(arch8, cadNodos);
-  //desenrrolla en la ruta
-  nivel := 0;
-  for cadNod in cadNodos do begin
-    //busca nodo
-    encontro := false;
-    for nod in TreeView1.Items do begin
-      if nod.Level = nivel then
-        if UpCase(nod.Text) = UpCase(cadNod) then begin
-          if TExplorNode(nod).NodType in [ntyFolder,ntyDrive] then  //es folder o unidad
-            ExpandirNodArc(nod, true)   //expande para ubicar
-          else  begin  //debe ser el archivo buscado
-            nod.Selected:=true;
-          end;
-          encontro := true;
-          break;  //sale del for, para buscar siguienet nivel
-        end;
-    end;
-    if not encontro then begin
-      cadNodos.Destroy;
-      exit;  //no vale la pena seguir buscando
-    end;
-    inc(nivel);
-  end;
-  cadNodos.Destroy;
+//  cadNodos := TStringList.Create;
+//  TrozaRuta(arch8, cadNodos);
+//  //desenrrolla en la ruta
+//  nivel := 0;
+//  for cadNod in cadNodos do begin
+//    //busca nodo
+//    encontro := false;
+//    for nod in TreeView1.Items do begin
+//      if nod.Level = nivel then
+//        if UpCase(nod.Text) = UpCase(cadNod) then begin
+//          if TExplorNode(nod).NodType in [ntyFolder,ntyDrive] then  //es folder o unidad
+//            ExpandirNodArc(nod, true)   //expande para ubicar
+//          else  begin  //debe ser el archivo buscado
+//            nod.Selected:=true;
+//          end;
+//          encontro := true;
+//          break;  //sale del for, para buscar siguienet nivel
+//        end;
+//    end;
+//    if not encontro then begin
+//      cadNodos.Destroy;
+//      exit;  //no vale la pena seguir buscando
+//    end;
+//    inc(nivel);
+//  end;
+//  cadNodos.Destroy;
+   //Find in one root node
+   nod := TreeView1.Items[0];
+   while nod <> nil do begin
+     if LocateInNode(TExplorNode(nod), arch8) then break;
+     nod := nod.GetNextSibling
+   end;
 end;
 function TfraArcExplor.NodRuta(rut: string): TExplorNode;
 //Devuelve el nodo a partir de la ruta completa

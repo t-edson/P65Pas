@@ -8,8 +8,6 @@
   <TextPanel Val="8421504"/>
   <currPath Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas"/>
   <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\NewFile1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test5_Arrays.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk/comp_p65pas/units/Commodore64.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
@@ -18,8 +16,8 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk/comp_p65pas/units/Commodore64.pas
   <SynTreeWidth Val="233"/>
   <EditAsmWidth Val="417"/>
   <ViewPanAssem Val="True"/>
-  <winXpos Val="31"/>
-  <winYpos Val="39"/>
+  <winXpos Val="34"/>
+  <winYpos Val="43"/>
   <winWidth Val="1166"/>
   <winHeight Val="710"/>
   <winState Val="0"/>
@@ -53,9 +51,9 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk/comp_p65pas/units/Commodore64.pas
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk/comp_p65pas/units/Commodore64.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\NewFile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk/comp_p65pas/units/Commodore64.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test5_Arrays.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\NewFile1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test6_Directives.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test4_Asm.pas
 "/>
