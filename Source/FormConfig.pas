@@ -117,16 +117,16 @@ type
     pExtTool: TConfigPage;
 
   public  //Configuraciones de entorno
-    language   : string;  //Lenguaje
-    LoadLast   : boolean; //Cargar el último archivo editado
+    language   : string;   //Lenguaje
+    LoadLast   : boolean;  //Cargar el último archivo editado
 
-    PanelsCol  : TColor;  //Color de los paneles de toda la IDE.
-    SplitterCol: TColor;  //Color de separadores
-    PanTextCol : TColor;  //Color del texto mostrado en la barra de herramientas
+    PanelsCol  : TColor;   //Color de los paneles de toda la IDE.
+    SplitterCol: TColor;   //Color de separadores
+    PanTextCol : TColor;   //Color del texto mostrado en la barra de herramientas
 
     StateToolbar: TStyleToolbar;
-    PanLeftWidth: integer;  //Ancho del panel del árbol de sintaxis.
-    PanRightWidth:integer;  //Ancho del editor de ensamblador.
+    PanLeftWidth: integer; //Ancho del panel del árbol de sintaxis.
+    PanRightWidth:integer; //Ancho del editor de ensamblador.
     //Propiedades sin control
     currPath   : string;   //Folder de trabajo actual
     filesClosed: string;   {Lista de archivos cargados. Usado para restaurar los archivos
@@ -137,16 +137,16 @@ type
     winHeight  : integer;
     winState   : TWindowState;
     //Propiedades de temas
-    themLoaded  : string; //Nombre del último tema cargado
+    themLoaded  : string;  //Nombre del último tema cargado
     //Propiedades del explorador de archivos
     FilExplBack : TColor;
     FilExplText : TColor;
     FilExpFiltyp: integer;
     //Propiedades del panel de mensajes
-    MessPanBack: TColor;  //Color de fondo del panel de mensajes
-    MessPanText: TColor;  //Color del texto del panel de mensajes
-    MessPanErr : TColor;  //Color del texto de error del panel de mensajes
-    MessPanSel : TColor;  //Color del fonde de la selección del panel de mensajes
+    MessPanBack: TColor;   //Color de fondo del panel de mensajes
+    MessPanText: TColor;   //Color del texto del panel de mensajes
+    MessPanErr : TColor;   //Color del texto de error del panel de mensajes
+    MessPanSel : TColor;   //Color del fonde de la selección del panel de mensajes
   public //Configuraciones de Editor
     TabEdiMode : integer;  //Estado de pestañas del editor
     ShowErMsg   : boolean; //Muestra diálogo con mensaje de error

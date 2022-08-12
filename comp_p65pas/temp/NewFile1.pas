@@ -1,8 +1,6 @@
-type
-  string3 = array[3] of char;
-  tarr2 = [3]char;    //Alternate syntax
-const 
-  ATYP_NAM: string3 = ('a','b','c');
 begin
-	 
-end.
+  asm 
+AAA:
+	DB $0C
+  end; 
+end. 

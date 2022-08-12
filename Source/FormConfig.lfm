@@ -124,15 +124,17 @@ object Config: TConfig
         object Label2: TLabel
           Left = 20
           Height = 20
-          Top = 31
+          Top = 32
           Width = 68
           Caption = 'Language:'
+          Enabled = False
         end
         object cmbLanguage: TComboBox
           Left = 110
           Height = 28
           Top = 30
           Width = 125
+          Enabled = False
           ItemHeight = 20
           Items.Strings = (
             'en - English'
@@ -143,8 +145,8 @@ object Config: TConfig
             'fr - French'
             'qu - Quechua'
           )
+          Style = csDropDownList
           TabOrder = 3
-          Text = 'cmbLanguage'
         end
         object grpToolbarSta: TRadioGroup
           Left = 16

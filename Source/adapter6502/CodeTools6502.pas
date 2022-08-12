@@ -5,7 +5,8 @@ interface
 uses
   Classes, SysUtils, LCLType, LCLProc, SynEdit, SynEditHighlighter, LazUTF8,
   MisUtils, SynFacilCompletion, SynFacilHighlighter, SynFacilBasic,
-  FrameEditView, Globales, XpresElemP65, LexPas, Compiler_PIC16, EditView;
+  FrameEditView, Globales, XpresElemP65, LexPas, Compiler_PIC16, EditView,
+  FrameCfgCompiler6502;
 type
   { TCodeTool }
   TCodeTool = class
@@ -15,7 +16,8 @@ type
     cxp       : TCompiler_PIC16;
     opEve0: TFaOpenEvent;   //Para pasar parámetro a cxpTreeElemsFindElement´()
   public
-    patUnits  : string;
+    //patUnits  : string;
+    fraCfgCompiler: TfraCfgCompiler6502; //Referencia al form. de configuración
     procedure ReadCurIdentif(out tok: string; out tokType: integer; out
       lex: TSynFacilComplet2; out curX: integer);
     procedure GoToDeclaration;
@@ -99,7 +101,8 @@ begin
   if tok='' then exit;  //No encontró token
   if tokType = lex.tnIdentif then begin
     //Asegurarse que "synTree" está actualizado.
-    cxp.Exec(fraEdit.ActiveEditor.FileName, '', '-Ca' + LineEnding + '-Dn');  //Solo análisis
+    cxp.Exec(fraEdit.ActiveEditor.FileName, '', '-Ca' + LineEnding + '-Dn' + lineending +
+             '-Fu"' + fraCfgCompiler.unitPathExpanded + '"');  //Solo análisis
     if cxp.HayError then begin
       //Basta que haya compilado hasta donde se encuentra el identifiacdor, para que funciones.
   //    MsgErr('Compilation error.');  //tal vez debería dar más información sobre el error
@@ -203,7 +206,7 @@ var
 begin
   if OpEve=nil then exit;
   //Directorio /units
-  directorio := patUnits;
+  directorio := fraCfgCompiler.unitPathExpanded;
   if FindFirst(directorio + '\*.pas', faDirectory, SearchRec) = 0 then begin
     repeat
       nomArc := SysToUTF8(SearchRec.Name);
@@ -237,7 +240,8 @@ var
 begin
   opEve.ClearItems;  //limpia primero
   //Asegurarse que "synTree" está actualizado.
-  cxp.Exec(fraEdit.ActiveEditor.FileName, '', '-Ca' + LineEnding + '-Dn');  //Solo análisis
+  cxp.Exec(fraEdit.ActiveEditor.FileName, '', '-Ca' + LineEnding + '-Dn' + lineending +
+           '-Fu"' + fraCfgCompiler.unitPathExpanded + '"');  //Solo análisis
   if cxp.HayError then begin
     //Basta que haya compilado hasta donde se encuentra el identificador, para que funciones.
 //    MsgErr('Compilation error.');  //tal vez debería dar más información sobre el error
@@ -336,7 +340,8 @@ begin
   opEve.ClearAvails;
   opEve.ClearItems;  //limpia primero
   //Asegurarse que "synTree" está actualizado.
-  cxp.Exec(ed.FileName, '', '-Ca' + LineEnding + '-Dn');  //Solo análisis
+  cxp.Exec(ed.FileName, '', '-Ca' + LineEnding + '-Dn' + lineending +
+           '-Fu"' + fraCfgCompiler.unitPathExpanded + '"');  //Solo análisis
   if cxp.HayError then begin
     //Basta que haya compilado hasta donde se encuentra el identificador, para que funciones.
 //    MsgErr('Compilation error.');  //tal vez debería dar más información sobre el error

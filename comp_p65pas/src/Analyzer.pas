@@ -2063,8 +2063,8 @@ begin
          //No lo encontró, busca en las carpetas de librerías.
          ufound := false;
          for upath in unitPaths do begin
-           if OpenContextFrom(uPath + DirectorySeparator + uName) then begin
-             uni.srcFile := uPath + DirectorySeparator + uName;  //Guarda el archivo fuente
+           if OpenContextFrom(uPath + uName) then begin
+             uni.srcFile := uPath + uName;  //Guarda el archivo fuente
              ufound := true;
              break;
            end;

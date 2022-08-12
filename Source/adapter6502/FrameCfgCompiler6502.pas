@@ -30,11 +30,23 @@ type
     OptBnkAftPro: boolean;
     ReuProcVar  : boolean;
     OptRetProc  : boolean;
+    function unitPathExpanded: string;
     procedure Init(section: string; cfgFile: TMiConfigXML);
   end;
 
 implementation
 {$R *.lfm}
+
+function TfraCfgCompiler6502.unitPathExpanded: string;
+{Devuelve la propiedad "unitPath" expandiendo las posibles variables que puede
+contener.}
+var
+  apppath, tmp: string;
+begin
+  apppath := ExtractFileDir(Application.ExeName);
+  tmp := StringReplace(unitPath, '{AppPath}', apppath, [rfReplaceAll, rfIgnoreCase]);
+  exit(tmp);
+end;
 
 procedure TfraCfgCompiler6502.Init(section: string; cfgFile: TMiConfigXML);
 begin
@@ -46,6 +58,7 @@ begin
   cfgFile.Asoc_Bol (section+ '/ReuProcVar'  , @ReuProcVar  , chkReuProcVar    , false);
   cfgFile.Asoc_Bol (section+ '/OptRetProc'  , @OptRetProc  , chkOptRetProc    , true);
 end;
+
 
 end.
 

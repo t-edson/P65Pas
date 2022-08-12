@@ -743,7 +743,7 @@ object frmPrincipal: TfrmPrincipal
     end
     object acViewPanLeft: TAction
       Category = 'View'
-      Caption = '&Code Explorer'
+      Caption = '&File Explorer'
       OnExecute = acViewPanLeftExecute
       ShortCut = 32881
     end

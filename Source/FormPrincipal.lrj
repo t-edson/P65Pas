@@ -23,7 +23,7 @@
 {"hash":167719500,"name":"tfrmprincipal.acviewmsgpan.caption","sourcebytes":[38,77,101,115,115,97,103,101,115,32,80,97,110,101,108],"value":"&Messages Panel"},
 {"hash":191244850,"name":"tfrmprincipal.acviewtoolbar.caption","sourcebytes":[38,84,111,111,108,98,97,114],"value":"&Toolbar"},
 {"hash":146678306,"name":"tfrmprincipal.acviewstatbar.caption","sourcebytes":[38,83,116,97,116,117,115,98,97,114],"value":"&Statusbar"},
-{"hash":88678050,"name":"tfrmprincipal.acviewpanleft.caption","sourcebytes":[38,67,111,100,101,32,69,120,112,108,111,114,101,114],"value":"&Code Explorer"},
+{"hash":40967842,"name":"tfrmprincipal.acviewpanleft.caption","sourcebytes":[38,70,105,108,101,32,69,120,112,108,111,114,101,114],"value":"&File Explorer"},
 {"hash":107746238,"name":"tfrmprincipal.acfilopen.caption","sourcebytes":[38,79,112,101,110,46,46,46],"value":"&Open..."},
 {"hash":201628229,"name":"tfrmprincipal.acfilopen.hint","sourcebytes":[79,112,101,110,32,70,105,108,101],"value":"Open File"},
 {"hash":45517477,"name":"tfrmprincipal.acedpaste.caption","sourcebytes":[38,80,97,115,116,101],"value":"&Paste"},

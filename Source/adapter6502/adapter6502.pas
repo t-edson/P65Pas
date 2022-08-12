@@ -306,15 +306,11 @@ begin
 end;
 procedure TAdapter6502.ReadCompilerSettings(var pars: string);
 {Read the compiler setting from the Setting frame and add them to "pars".}
-var
-  upath, apppath: String;
 begin
   if fraCfgCompiler.ReuProcVar then AddLine(pars, '-Ov');  //Reusar variables de proced.
   if fraCfgCompiler.OptRetProc then AddLine(pars, '-Or');  //Optimizar Retorno de proced.
+  AddLine(pars, '-Fu"' + fraCfgCompiler.unitPathExpanded + '"');    //Agrega esta ruta a las rutas de unidades del compilador.
   if fraCfgAsmOut.IncComment  then AddLine(pars, '-Ac');   //Comentario detallado
-  apppath := ExtractFileDir(Application.ExeName);
-  upath := StringReplace(fraCfgCompiler.unitPath, '{AppPath}', apppath, [rfReplaceAll, rfIgnoreCase]);
-  AddLine(pars, '-Fu"' + upath + '"');    //Agrega esta ruta a las rutas de unidades del compilador.
 end;
 procedure TAdapter6502.Compile;
 {Ejecuta el compilador para generar un archivo binario de salida.}
@@ -510,7 +506,8 @@ begin
   fraCfgCompiler.Init('Compiler6502', cfgFile);
   fraCfgAsmOut.Init('AsmOutput6502', cfgFile);
   //Aprovechamos para inicializar "patUnits" ahora que ya tenemos creado "fraCfgCompiler".
-  CodeTool.patUnits := fraCfgCompiler.unitPath;
+  //CodeTool.patUnits := fraCfgCompiler.unitPath;
+  CodeTool.fraCfgCompiler := fraCfgCompiler;
 end;
 procedure TAdapter6502.ConfigActivate;
 {Se pide activar los frames creados en las páginas elegidas del formualario de

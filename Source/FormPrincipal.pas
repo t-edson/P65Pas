@@ -392,14 +392,14 @@ begin
   adapter6502.OnAfterCompile   := @comp_AfterCompile;
   adapter6502.OnBeforeCheckSyn := @comp_BeforeCheckSyn;
   adapter6502.OnAfterCheckSyn  := @comp_AfterCheckSyn;
-  Config.RegisterAdapter(adapter6502);    //Registra adaptador en configuración
-  //Fija compilador por defecto
-  acToolSel_P65pasExecute(self);
+  Config.RegisterAdapter(adapter6502);    //Registra adaptador en configuración. Se debe hacer antes de Config.Init.
   ///////////////////////////////////////////////////////
 
-  Config.Init;   //necesario para poder trabajar
+  Config.Init;   //Carga propiedades.
   Config.OnPropertiesChanges := @ConfigChanged;
   Config.fraCfgExtTool.OnReplaceParams := @ConfigExtTool_RequirePar;
+  //Fija compilador por defecto
+  acToolSel_P65pasExecute(self);
   //Configura Panel lateral
   fraLeftPanel.OnOpenFile := @fraLeftPanel_OpenFile;
   fraLeftPanel.OnSelecFileExplorer := @fraLeftPanel_selecFileExplorer;
@@ -407,9 +407,8 @@ begin
   fraLeftPanel.Init(Config.currPath);
   //Termina configuración
   fraEditView1.InitMenuRecents(mnRecents, Config.fraCfgSynEdit.ArcRecientes);  //inicia el menú "Recientes"
-
-  ConfigChanged;   //primera actualización
-
+  //Primera actualización.
+  ConfigChanged;
   //Carga últimos archivos abiertos
   if Config.LoadLast then fraEditView1.LoadListFiles(Config.filesClosed);
   Timer1.Enabled := true;
