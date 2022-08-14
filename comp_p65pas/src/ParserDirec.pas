@@ -5,7 +5,7 @@ unit ParserDirec;
 interface
 uses
   Classes, SysUtils, fgl, math, CompBase,
-  LexPas, CompGlobals, Analyzer;
+  LexPas, CompGlobals, Analyzer, LazLogger;
 type  //Tipos para manejo de expresiones
   TDirDatType = (ddtNumber, ddtString);
 
@@ -76,18 +76,17 @@ type
   TParserDirecBase = class(TAnalyzer)
   private  //Parser and Expressions evaluation
     tokIni : integer;  //Posición inicial del token actual
-    dirOperator: Integer;
-    dirDelimiter: integer;
     WaitForEndIF: integer;
     function GetIdent: string;
+    procedure ProcBOOTLOADER;
     function tokTyp: TTokenKind;
-    function CogOperando: TDirOperand;
-    function CogCarERR(car: char): Boolean;
-    function CogExpresion(jerar: Integer): TDirOperand;
-    function CogExpresionPar: TDirOperand;
-    function CogIdentif(out s: string): boolean;
-    function CogNumero(var n: Double): boolean;
-    function cogOperador: String;
+    function GetDOperand: TDirOperand;
+    function GetDCharERR(car: char): Boolean;
+    function GetDExpression(jerar: Integer): TDirOperand;
+    function GetDExpressionPar: TDirOperand;
+    function GetDIdentif(out s: string): boolean;
+    function GetDNNumber(var n: Double): boolean;
+    function GetDOperator: String;
     function jerOp(operad: String): Integer;
     function Evaluar(Op1: TDirOperand; opr: String; Op2: TDirOperand): TDirOperand;
   private  //Instructions implementation
@@ -171,7 +170,7 @@ var
 
 procedure SetLanguage;
 begin
-{$I _language\tra_ParserDirec.pas}
+  {$I _language\tra_ParserDirec.pas}
 end;
 { TDirOperand }
 function TDirOperand.GetvalNum: Double;
@@ -259,7 +258,7 @@ function TParserDirecBase.tokTyp: TTokenKind;
 begin
   Result := lexdir.tokType;
 end;
-function TParserDirecBase.CogOperando: TDirOperand;
+function TParserDirecBase.GetDOperand: TDirOperand;
 {Coge un operando en la posición actual del contexto. Si no enceuntra
 el operando o es erróneo, genera Error.}
 var
@@ -277,7 +276,7 @@ begin
     Result.FvalStr := '';
     exit;
   end;
-  if CogNumero(num) then begin
+  if GetDNNumber(num) then begin
     if HayError then exit;  //pudo haber error en número
     Result.valNum := num;   //fija tipo a número
   end else if lexDir.tokType= tkString then begin
@@ -293,14 +292,14 @@ begin
     end;
     Result.valStr := tmp;
     lexDir.Next;
-  end else if CogIdentif(cad) then begin
+  end else if GetDIdentif(cad) then begin
     {Es un identificador}
     //Busca si es macro
     if DefinedMacro(cad, mac) then begin
       //Es una macro. Hay que expandirla
       lexDir.GetContextState(p);  //guarda estado de lexer
       lexDir.SetSource(mac.value);  //inicia otra explroación en el contenido de la macro
-      Result := CogExpresion(0);
+      Result := GetDExpression(0);
       lexDir.SetContextState(p);  //restaura estado del lexer, para que siga la expresión
       exit;
     end;
@@ -315,67 +314,67 @@ begin
     //No es variable, ni macro, busca si es función
     case cad of
     'ABS': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valNum := abs(exp.valNum);
       exit;  //sale sin error
     end;
     'SGN': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valNum := Sign(exp.valNum);
       exit;  //sale sin error
     end;
     'SIN': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valNum := sin(exp.valNum);
       exit;  //sale sin error
     end;
     'COS': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valNum := cos(exp.valNum);
       exit;  //sale sin error
     end;
     'TAN': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valNum := tan(exp.valNum);
       exit;  //sale sin error
     end;
     'LOG': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valNum := ln(exp.valNum);
       exit;  //sale sin error
     end;
     'ROUND': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valNum := round(exp.valNum);
       exit;  //sale sin error
     end;
     'TRUNC': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valNum := trunc(exp.valNum);
       exit;  //sale sin error
     end;
     'LENGTH': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valNum := length(exp.valStr);
       exit;  //sale sin error
     end;
     'UPCASE': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valStr := upcase(exp.valStr);
       exit;  //sale sin error
     end;
     'LOWCASE': begin
-      exp := CogExpresionPar;
+      exp := GetDExpressionPar;
       if HayError then exit;
       Result.valStr := LowerCase(exp.valStr);
       exit;  //sale sin error
@@ -384,12 +383,12 @@ begin
     //No es variable ni función.
     GenErrorDir(ER_UNKNW_IDENT_, [cad]);
   end else If lexDir.ReadToken= '(' Then begin
-    Result := CogExpresionPar;
+    Result := GetDExpressionPar;
     exit;  //Puede salir con error
   end else If lexDir.ReadToken = '-' Then begin
     //Puede ser número negativo
     lexDir.Next;  //toma el signo
-    Result := CogOperando();
+    Result := GetDOperand();
     if HayError then exit;
     if Result.datTyp <> ddtNumber then begin
       GenErrorDir(ER_SYNTAX_ERRO);
@@ -404,7 +403,7 @@ begin
     exit;  //no devuelve nada
   end;
 end;
-function TParserDirecBase.CogCarERR(car: char): Boolean;
+function TParserDirecBase.GetDCharERR(car: char): Boolean;
 {Coge el caracter indicado. Si no lo encuentra genera error y devuelve FALSE.}
 begin
   if lexDir.ReadToken=car then begin
@@ -416,7 +415,7 @@ begin
     exit(false);
   end;
 end;
-function TParserDirecBase.CogExpresion(jerar: Integer): TDirOperand;
+function TParserDirecBase.GetDExpression(jerar: Integer): TDirOperand;
 { Evaluador de expresiones. Toma una expresión completa, en la posición actual del
 contenido. Si no encuentra una expresión, genera error. }
 var Op1, Op2 : TDirOperand;
@@ -425,9 +424,9 @@ var Op1, Op2 : TDirOperand;
     pos1, pos2: TContextState;
 begin
     skipWhites;  //quita blancos iniciales
-    Op1 := CogOperando;  //error
+    Op1 := GetDOperand;  //error
     if HayError then exit;
-    opr := cogOperador;
+    opr := GetDOperator;
     if opr = '' Then begin
       Result := Op1;
       Exit
@@ -440,10 +439,10 @@ begin
     End;
     while opr <> '' do begin
         lexDir.GetContextState(pos1);    //Guarda por si lo necesita
-        Op2 := CogOperando;
+        Op2 := GetDOperand;
         if HayError then exit;
         lexDir.GetContextState(pos2);    //Guarda por si lo necesita
-        opr2 := cogOperador;
+        opr2 := GetDOperator;
         If opr2 <> '' Then begin  //Hay otro operador
             jerOpr2 := jerOp(opr2);
             //¿Delimitado por jerarquía de operador?
@@ -454,8 +453,8 @@ begin
             End;
             If jerOpr2 > jerOpr Then begin    //y es de mayor jerarquía, retrocede
                 lexDir.SetContextState(pos1);        //retrocede
-                Op2 := CogExpresion(jerOpr);        //evalua primero
-                opr2 := cogOperador;    //actualiza el siguiente operador
+                Op2 := GetDExpression(jerOpr);        //evalua primero
+                opr2 := GetDOperator;    //actualiza el siguiente operador
             End;
         End;
 
@@ -466,16 +465,16 @@ begin
     end;
     Result := Op1;
 end;
-function TParserDirecBase.CogExpresionPar: TDirOperand;
+function TParserDirecBase.GetDExpressionPar: TDirOperand;
 {Coge una expresión que debe estar encerrada entre paréntesis. Puede genera error}
 begin
-  if not CogCarERR('(') then exit;  //sale con error
-  Result := CogExpresion(0);
+  if not GetDCharERR('(') then exit;  //sale con error
+  Result := GetDExpression(0);
   if HayError then exit;  //sale con error
   skipWhites;
-  if not CogCarERR(')') then exit;  //sale con error
+  if not GetDCharERR(')') then exit;  //sale con error
 end;
-function TParserDirecBase.CogNumero(var n: Double): boolean;
+function TParserDirecBase.GetDNNumber(var n: Double): boolean;
 {Veririfca si lo que sigues es un número y de ser así, intenta tomarlo.
 Puede generar error al convertir el número}
 var
@@ -498,20 +497,20 @@ begin
   lexdir.Next;
   Result := true;  //indica que hubo número
 end;
-function TParserDirecBase.CogIdentif(out s: string): boolean;
+function TParserDirecBase.GetDIdentif(out s: string): boolean;
 {Veririfca si lo que sigues es un identificador y de ser así, intenta tomarlo.}
 begin
   if tokTyp = tkSpace then
-    lexDir.Next;  //quita espacios
-  //verifica
+    lexDir.Next;  //Skip spaces
+  //Verify
   if lexDir.tokType <> tkIdentifier then begin
     exit(false);
   end;
   s := lexDir.ReadToken;
-  lexDir.Next;  //toma identificador
+  lexDir.Next;  //Take identifier
   exit(true);
 end;
-function TParserDirecBase.cogOperador: String;
+function TParserDirecBase.GetDOperator: String;
 {Coge un operador en la posición del contexto actual. Si no encuentra
  devuelve cadena vacía y no coge caracteres, salvo espacios iniciales.}
 begin
@@ -768,7 +767,7 @@ var
   filPath: String;
 begin
   lexDir.Next;  //pasa al siguiente
-  filPath := CogExpresion(0).valStr;
+  filPath := GetDExpression(0).valStr;
   if HayError then Exit;
   filPath := ExpandRelPathTo(mainFile, filPath);  //Completa ruta, si es relativa
   //Por simplicidad se permite realizar esto en la primera y segunda pasada
@@ -852,7 +851,7 @@ procedure TParserDirecBase.ProcIF(lin: string; negated: boolean);
     varValue: TDirOperand;
   begin
     //Evalúa
-    varValue := CogExpresion(0);
+    varValue := GetDExpression(0);
     //No debería seguir nada más
     if not lexDir.Eol then begin
       GenErrorDir(ER_SYNTAX_ERRO);
@@ -1028,7 +1027,7 @@ var
   txtMsg: String;
 begin
   lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
+  txtMsg := GetDExpression(0).valStr;
   if HayError then exit;
   picCore.SetStatRAMCom(txtMsg);
   if picCore.MsjError<>'' then GenErrorDir(picCore.MsjError);
@@ -1037,11 +1036,103 @@ procedure TParserDirecBase.ProcSET_DATA_ADDR;
 var
   txtMsg: String;
 begin
-  lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
+  lexDir.Next;  //Get SET_DATA_ADDR
+  txtMsg := GetDExpression(0).valStr;
   if HayError then exit;
   picCore.SetDataAddr(txtMsg);
   if picCore.MsjError<>'' then GenErrorDir(picCore.MsjError);
+end;
+procedure TParserDirecBase.ProcBOOTLOADER;
+  function ReadValue: integer;
+  {Read a value from the input context. Translate the value if it's a special
+  string. If not a valid value is found, an error is geenrated.}
+  var
+    n: Longint;
+    tok: string;
+  begin
+    if lexdir.tokType = tkLitNumber then begin
+      if not TryStrToInt(lexdir.ReadToken, n) then begin
+        GenErrorDir(ER_SYNTAX_ERRO);
+        exit(0);
+      end;
+      if n>255 then begin
+        GenErrorDir(ER_ERIN_NUMBER_, [lexdir.ReadToken]);
+        exit(0);
+      end;
+      lexdir.Next;
+      exit(n);
+    end else if lexdir.tokType = tkString then begin
+      tok := lexdir.ReadToken;
+//      tok := copy(tok, 2, length(tok)-2);
+      case copy(tok, 2, length(tok)-2) of  //Without quotes
+      'JMP': begin  //Absolute JMP instruction.
+        lexdir.Next;
+        exit(-$4C);
+      end;
+      'COD_HL': begin  //2 bytes address for entry point.
+        lexdir.Next;
+        exit(-1001);
+      end;
+      'COD_5A': begin  //5 bytes ASCII address for entry point.
+        lexdir.Next;
+        exit(-1002);
+      end;
+      'COD_4A': begin  //4 bytes ASCII address for entry point.
+        lexdir.Next;
+        exit(-1003);
+      end;
+      else
+        GenErrorDir(ER_SYNTAX_ERRO);
+        exit;
+      end;
+    end else begin
+      GenErrorDir(ER_SYNTAX_ERRO);
+      exit;
+    end;
+  end;
+var
+  parstr: String;
+  n: Longint;
+  siz: SizeInt;
+begin
+  lexDir.Next;  //Get BOOTLOADER
+  if tokTyp = tkSpace then lexDir.Next;  //Skip spaces
+  if lexDir.tokType = tkIdentifier then begin
+    //Can be one of the predefined labels
+    parstr := UpCase(lexdir.ReadToken);
+    if          parstr = 'NONE' then begin
+      bootloader := bldNone;
+    end else if parstr = 'JMP' then begin
+      bootloader := bldJMP;
+    end else if parstr = 'C64' then begin
+      bootloader := bldC64;
+    end else begin
+      GenErrorDir(ER_SYNTAX_ERRO);
+      exit;
+    end;
+  end else if lexdir.tokType in [tkLitNumber, tkString] then begin
+    //Must be a list of values for a custom bootloader.
+    bootloader := bldCUSTOM;
+    n := ReadValue();
+    if HayError then exit;
+    siz := 0;  //Initial size
+    setlength(loaderBytes, siz+1);
+    loaderBytes[siz] := n;
+    skipWhites;
+    while lexDir.ReadToken = ',' do begin
+      lexdir.Next;
+      skipWhites;
+      n := ReadValue();
+      if HayError then exit;
+      inc(siz);
+      setlength(loaderBytes, siz+1);
+      loaderBytes[siz] := n;
+      skipWhites;
+    end;
+  end else begin
+    GenErrorDir(ER_SYNTAX_ERRO);
+    exit;
+  end;
 end;
 procedure TParserDirecBase.ProcCLEAR_STATE_RAM;
 {Limpia el estado de la memoria RAM}
@@ -1053,7 +1144,7 @@ var
   txtMsg: String;
 begin
   lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
+  txtMsg := GetDExpression(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
   if enabDirMsgs then GenInfo(txtMsg);
@@ -1063,7 +1154,7 @@ var
   txtMsg: String;
 begin
   lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
+  txtMsg := GetDExpression(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
   if enabDirMsgs then GenWarn(txtMsg);
@@ -1073,7 +1164,7 @@ var
   txtMsg: String;
 begin
   lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
+  txtMsg := GetDExpression(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
   if enabDirMsgs then GenError(txtMsg);
@@ -1097,8 +1188,8 @@ begin
   varName :=  lexDir.ReadToken;  //lee identificador
   lexDir.Next;
   skipWhites;
-  if not CogCarERR('=') then exit;  //sale con error
-  varValue := CogExpresion(0);
+  if not GetDCharERR('=') then exit;  //sale con error
+  varValue := GetDExpression(0);
   if HayError then exit;
   unitInf := lexDir.ReadToken;  //Puede que haya unidades
   //Esta facilidad adicional es útil para casos en que se expresa la frecuencia.
@@ -1124,7 +1215,7 @@ var
   txtMsg: String;
 begin
   lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
+  txtMsg := GetDExpression(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
   if enabDirMsgs then begin
@@ -1137,7 +1228,7 @@ var
   txtMsg: String;
 begin
   lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
+  txtMsg := GetDExpression(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
   if enabDirMsgs then begin
@@ -1149,7 +1240,7 @@ var
   txtMsg: String;
 begin
   lexDir.Next;  //pasa al siguiente
-  txtMsg := CogExpresion(0).valStr;
+  txtMsg := GetDExpression(0).valStr;
   if HayError then Exit;
   //Solo muestra en compilación y en la primera pasada
   if enabDirMsgs then begin
@@ -1312,8 +1403,9 @@ end;
 //Public
 procedure TParserDirecBase.skipWhites;
 begin
-  if tokTyp = tkSpace then
+  if tokTyp = tkSpace then begin
     lexDir.Next;  //quita espacios
+  end;
 end;
 procedure TParserDirecBase.GenErrorDir(msg: string);
 {Genera un error corrigiendo la posición horizontal}
@@ -1413,6 +1505,7 @@ begin
   'CLEAR_STATE_RAM':ProcCLEAR_STATE_RAM;
   'SET_STATE_RAM': ProcSET_STATE_RAM;
   'SET_DATA_ADDR': ProcSET_DATA_ADDR;
+  'BOOTLOADER'  : ProcBOOTLOADER;
   else
     //Puede ser una instrucción, macro o variable
     if DefinedInstruc(lexDir.ReadToken, dins) then begin
@@ -1474,6 +1567,10 @@ begin
     exit(true);
   end;
   case lexdir.curLine[lexdir.fcol] of
+  ',': begin
+    lexdir._NextChar;
+    lexdir.tokType := tkSymbol;
+  end;
   #32, #9: begin
     repeat
       inc(lexdir.fcol);

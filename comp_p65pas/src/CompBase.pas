@@ -50,7 +50,12 @@ TCompileLevel = (
   clAnalOptim,   //Analysis and Optimization
   clComplete     //Analysis, Optimization and Synthesis
 );
-
+TBootloader = (
+  bldNone,  //No bootloader code
+  bldJMP,   //Insert a JMP to the start of the code
+  bldC64,   //Insert a bootlaoder for run from Commodore64 system
+  bldCustom //Insert a custom bootlaoder
+);
 { TCompilerBase }
 {Clase base para crear a los objetos compiladores.
 Esta clase debe ser el ancestro común de todos los compialdores a usar en PicPas.
@@ -180,6 +185,8 @@ public    //Public attributes of compiler
 public    //Compiling Options. Deberían ser PROTECTED.
   GeneralORG  : integer;   //Dirección general de origen de código
   protected
+  bootloader  : TBootloader; //Bootloader code for the compiled binary.
+  loaderBytes : array of integer;  //Custom Bootloader bytes.
   mode        : (modPascal, modPicPas);
   comp_level  : TCompileLevel;  //Compilation level
   enabDirMsgs : boolean;   //Bandera para permitir generar mensajes desde las directivas.

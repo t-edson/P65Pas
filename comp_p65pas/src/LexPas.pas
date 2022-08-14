@@ -202,6 +202,7 @@ type
     function DecodeNext: boolean;
     function Next: boolean;      //Pasa al siguiente token
     function ReadToken: string;
+    function tokTypeStr: string;
     procedure SkipWhites;
     procedure SkipWhitesNoEOL;
   public
@@ -853,6 +854,12 @@ begin
     tmp += LineEnding + copy(line, 1, fcol);
     exit(tmp);
   end;
+end;
+function TContext.tokTypeStr: string;
+{Returns tokType as string}
+begin
+  //Result := GetEnumName(TypeInfo(TTokenKind),Ord(tokType));
+  WriteStr(Result, tokType)
 end;
 procedure TContext.GetContextState(out c: TContextState);
 begin

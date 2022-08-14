@@ -98,7 +98,10 @@
 	</OpenOn>	
 	<!-- Completado de directivas-->
 	<OpenOn AfterPattern="Directive" Iconindex='3'>
-      "{$COMMODORE64}"
+      "{$BOOTLOADER NONE}"
+      "{$BOOTLOADER JMP}"
+      "{$BOOTLOADER C64}"
+      "{$BOOTLOADER $10,$20,$30}"
       "{$FREQUENCY \_10Mhz}"
 	  "{$ORG \_$0801}"
 	  "{$IFDEF \_}"

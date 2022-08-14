@@ -203,6 +203,7 @@ type
     disableCodegen: boolean;   //Flag to disable the Code generation.
     procedure useRAMCode;
     procedure codByte(const value: byte; isData: boolean);
+    procedure codByte(const value: byte; used: TCPURamUsed; name: string = '');
     procedure codAsm(const inst: TP6502Inst; addMode: TP6502AddMode; param: word);
     procedure cod_JMP_at(iRam0: integer; const k: word);
     procedure cod_REL_JMP_at(iRam0: integer; const k: word);
@@ -299,6 +300,18 @@ begin
   ram[iRam].value := value;
   if isData then ram[iRam].name := 'data';
   ram[iRam].used := ruData;  //Mark as used.
+  inc(iRam);
+end;
+procedure TP6502.codByte(const value: byte; used: TCPURamUsed; name: string = '');
+{Write a byte to the RAM memory.}
+begin
+  if iRam >= CPUMAXRAM then begin
+    MsjError := 'RAM Memory limit exceeded.';
+    exit;
+  end;
+  ram[iRam].value := value;
+  ram[iRam].used := used;  //Mark as used.
+  if name<>'' then ram[iRam].name := name;
   inc(iRam);
 end;
 procedure TP6502.codAsm(const inst: TP6502Inst; addMode: TP6502AddMode; param: word);

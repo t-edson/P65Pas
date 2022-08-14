@@ -6,10 +6,10 @@ interface
 uses
   Classes, SysUtils, LazLogger,
   P6502utils, CPUCore, CompBase, ParserDirec, GenCodBas_PIC16,
-  GenCod_PIC16, ParserDirec_PIC16, CompGlobals, XpresElemP65, ParserASM_6502;
+  GenCod_PIC16, CompGlobals, XpresElemP65, ParserASM_6502;
 type
   { TCompiler_PIC16 }
-  TCompiler_PIC16 = class(TParserDirec)
+  TCompiler_PIC16 = class(TGenCod)
   private  //Funciones básicas
     procedure ConstantFoldExpr(eleExp: TEleExpress);
     procedure SplitExpresBody(body: TxpEleCodeCont);
@@ -51,7 +51,7 @@ var
   //Funciones básicas
 procedure SetLanguage;
 begin
-  ParserDirec_PIC16.SetLanguage;
+  GenCod_PIC16.SetLanguage;
   ParserASM_6502.SetLanguage;
   {$I _language\tra_Compiler.pas}
 end;
@@ -713,12 +713,113 @@ Must be called after DoOptimize().}
       codRTS(isInt);  //RTS instruction
     end;
   end;
+  procedure GenBootloaderC64;
+  begin
+    PutTopComm('      ;BASIC starter code: 10 SYS 2062');
+    pic.codByte($0C, true);  //Dirección de siguiente línea
+    pic.codByte($08, true);
+    pic.codByte($0A, true);  //Número de línea
+    pic.codByte($00, true);
+    pic.codByte($9e, true);  //Token de instrucción SYS
+    pic.codByte($20, true);  //Espacio
+    pic.codByte($32, true);  //2
+    pic.codByte($30, true);  //0
+    pic.codByte($36, true);  //6
+    pic.codByte($32, true);  //2
+    pic.codByte($00, true);  //Fin de instrucción
+    pic.codByte($00, true);  //Sgte línea BASIC
+    pic.codByte($00, true);  //Sgte línea BASIC
+
+    pic.codByte(76, ruCode);  //Opcode JMP
+    pic.codByte(0, ruData, 'COD_HL');   //To complete later
+    pic.codByte(0, ruData);             //To complete later
+  end;
+  procedure GenBootloader(out add1, add2: word);
+  {Generates the bootloader. Returns in "add1" and "add2" the start address and the end
+  address of the bootloader;}
+  var
+    i: Integer;
+  begin
+    add1 := pic.iRam;
+    if          bootloader = bldNone then begin
+      //No bootloader
+    end else if bootloader = bldJMP then begin
+      pic.codByte(76, ruCode);  //Opcode JMP
+      pic.codByte(0, ruData, 'COD_HL');   //To complete later
+      pic.codByte(0, ruData);             //To complete later
+    end else if bootloader = bldC64 then begin
+      //GenBootloaderC64;    //Commodore 64 bootloader.
+      PutTopComm('      ;BASIC starter code: 10 SYS 2062');
+      pic.codByte($0C, true);  //Dirección de siguiente línea
+      pic.codByte($08, true);
+      pic.codByte($0A, true);  //Número de línea
+      pic.codByte($00, true);
+      pic.codByte($9e, true);  //Token de instrucción SYS
+      pic.codByte(0, ruData, 'COD_4A'); //To complete later
+      pic.codByte(0, ruData);           //To complete later
+      pic.codByte(0, ruData);           //To complete later
+      pic.codByte(0, ruData);           //To complete later
+      pic.codByte($00, true);  //Fin de instrucción
+      pic.codByte($00, true);  //Sgte línea BASIC
+      pic.codByte($00, true);  //Sgte línea BASIC
+    end else if bootloader = bldCustom then begin
+      for i:=0 to high(loaderBytes) do begin
+        if loaderBytes[i]=-76 then begin
+          pic.codByte(76, ruCode);  //Opcode JMP
+        end else if loaderBytes[i]=-1001 then begin  //2 bytes address for entry point.
+          pic.codByte(0, ruData, 'COD_HL');  //To complete later
+          pic.codByte(0, ruData);            //To complete later
+        end else if loaderBytes[i]=-1002 then begin  //5 bytes ASCII address for entry point.
+          pic.codByte(0, ruData, 'COD_5A');  //To complete later
+          pic.codByte(0, ruData);            //To complete later
+          pic.codByte(0, ruData);            //To complete later
+          pic.codByte(0, ruData);            //To complete later
+          pic.codByte(0, ruData);            //To complete later
+        end else if loaderBytes[i]=-1003 then begin  //4 bytes ASCII address for entry point.
+          pic.codByte(0, ruData, 'COD_4A');  //To complete later
+          pic.codByte(0, ruData);            //To complete later
+          pic.codByte(0, ruData);            //To complete later
+          pic.codByte(0, ruData);            //To complete later
+        end else begin  //Common byte
+          pic.codByte(loaderBytes[i], true);
+        end;
+      end;
+    end;
+    add2 := pic.iRam;
+  end;
+  procedure CompleteBootloader(add1, add2: word; cod_entrypoint: word);
+  {Complete the sections of the bootloader that need to be completed.
+  "cod_entrypoint" is the address for the entry point of the compiled code.}
+  var
+    i: Word;
+    tmp: string;
+  begin
+    for i:= add1 to add2 do begin
+      if pic.ram[i].name = 'COD_HL' then begin
+        pic.ram[i].value := lo(cod_entrypoint);
+        pic.ram[i+1].value := hi(cod_entrypoint);
+      end else if pic.ram[i].name = 'COD_5A' then begin
+        tmp := RightStr('0000' + IntToStr(cod_entrypoint), 5);
+        pic.ram[i  ].value := ord(tmp[1]);
+        pic.ram[i+1].value := ord(tmp[2]);
+        pic.ram[i+2].value := ord(tmp[3]);
+        pic.ram[i+3].value := ord(tmp[4]);
+        pic.ram[i+4].value := ord(tmp[5]);
+      end else if pic.ram[i].name = 'COD_4A' then begin
+        tmp := RightStr('000' + IntToStr(cod_entrypoint), 4);
+        pic.ram[i  ].value := ord(tmp[1]);
+        pic.ram[i+1].value := ord(tmp[2]);
+        pic.ram[i+2].value := ord(tmp[3]);
+        pic.ram[i+3].value := ord(tmp[4]);
+      end;
+    end;
+  end;
 var
-  add, addr: word;
+  add , addr: word;
+  add1, add2: word;
   fun    : TEleFun;
   i      : Integer;
   bod    : TEleBody;
-  iniMain: integer;
   elem   : TxpElement;
 begin
   if IsUnit then exit;
@@ -732,27 +833,8 @@ begin
   pic.iRam := GeneralORG;  //Inicia puntero a RAM
   compMod := cmGenCode;    //Generates code.
   pic.disableCodegen := false;  //Enable the code generation
-//  if Commodore64 then begin
-//    //En modo Commodore 64
-//    if pic.iRam = $801 then begin
-//      //Se pide compilar en el espacio de memoria del BASIC
-//      PutTopComm('      ;BASIC starter code: 10 SYS 2062');
-//      pic.codByte($0C, true);  //Dirección de siguiente línea
-//      pic.codByte($08, true);
-//      pic.codByte($0A, true);  //Número de línea
-//      pic.codByte($00, true);
-//      pic.codByte($9e, true);  //Token de instrucción SYS
-//      pic.codByte($20, true);  //Espacio
-//      pic.codByte($32, true);  //2
-//      pic.codByte($30, true);  //0
-//      pic.codByte($36, true);  //6
-//      pic.codByte($32, true);  //2
-//      pic.codByte($00, true);  //Fin de instrucción
-//      pic.codByte($00, true);  //Sgte línea BASIC
-//      pic.codByte($00, true);  //Sgte línea BASIC
-//    end;
-//  end;
-  _JMP_post(iniMain);   //Salto hasta después del espacio de variables
+  //Create Bootloader
+  GenBootloader(add1, add2);
   //Asigna memoria a registros
   //Asigna memoria para las variables, buscando memoria libre a partir de "GeneralORG".
   CreateVarsAndPars;  //Primero a las variables locales (y parámetros) de las funciones
@@ -820,7 +902,7 @@ begin
     end;
   end;
   //Compila cuerpo del programa principal
-  _LABEL_post(iniMain);   //Termina de codificar el salto
+  CompleteBootloader(add1, add2, pic.iRam);  //Complete bootloader
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   if bod = nil then begin
     GenError('Body program not found.');
@@ -829,7 +911,6 @@ begin
   bod.adrr := pic.iRam;  //guarda la dirección de codificación
   GenCodeMainBody(bod);
   //if HayError then exit;     //Puede haber error
-  {No es necesario hacer más validaciones, porque ya se hicieron en la primera pasada}
   //_RTS();   //agrega instrucción final
 end;
 procedure TCompiler_PIC16.Compile(srcFile: string);
@@ -1166,6 +1247,7 @@ begin
   comp_level  := clComplete;
   enabDirMsgs := true;
   AsmIncComm  := false;
+  bootloader := bldJMP;
   unitPaths.Clear;
   //Read parameters
   for txt in parsList do begin
