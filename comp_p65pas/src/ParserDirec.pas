@@ -79,6 +79,7 @@ type
     WaitForEndIF: integer;
     function GetIdent: string;
     procedure ProcBOOTLOADER;
+    procedure ProcSTRING;
     function tokTyp: TTokenKind;
     function GetDOperand: TDirOperand;
     function GetDCharERR(car: char): Boolean;
@@ -1134,6 +1135,32 @@ begin
     exit;
   end;
 end;
+procedure TParserDirecBase.ProcSTRING;
+var
+  parstr: String;
+  n: Longint;
+  siz: SizeInt;
+begin
+  lexDir.Next;  //Get STRING
+  if tokTyp = tkSpace then lexDir.Next;  //Skip spaces
+  if lexDir.tokType = tkIdentifier then begin
+    //Can be one of the predefined labels
+    parstr := UpCase(lexdir.ReadToken);
+    if          parstr = 'NULL_TERMINATED' then begin
+      lexDir.Next;  //Get option
+      str_nullterm := true;
+    end else if parstr = 'NONE' then begin
+      lexDir.Next;  //Get option
+      str_nullterm := false;
+    end else begin
+      GenErrorDir(ER_SYNTAX_ERRO);
+      exit;
+    end;
+  end else begin
+    GenErrorDir(ER_SYNTAX_ERRO);
+    exit;
+  end;
+end;
 procedure TParserDirecBase.ProcCLEAR_STATE_RAM;
 {Limpia el estado de la memoria RAM}
 begin
@@ -1506,6 +1533,7 @@ begin
   'SET_STATE_RAM': ProcSET_STATE_RAM;
   'SET_DATA_ADDR': ProcSET_DATA_ADDR;
   'BOOTLOADER'  : ProcBOOTLOADER;
+  'STRING'      : ProcSTRING;
   else
     //Puede ser una instrucción, macro o variable
     if DefinedInstruc(lexDir.ReadToken, dins) then begin

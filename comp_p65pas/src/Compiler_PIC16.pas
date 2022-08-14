@@ -1248,6 +1248,7 @@ begin
   enabDirMsgs := true;
   AsmIncComm  := false;
   bootloader := bldJMP;
+  str_nullterm := false;
   unitPaths.Clear;
   //Read parameters
   for txt in parsList do begin

@@ -1,14 +1,18 @@
-uses Commodore64;
+//uses Commodore64;
+{$STRING NULL_TERMINATED}
+//  procedure proc1(var n: BYTE);
+//  begin
+//  end; 
 var
-  x: BYTE;
+  a: array of char = 'aba';
+  w: word;
 begin
 //  x := 1;
 //  CHROUT('H');
-//  STROUT(@'HOLA MUNDO'#0);
-  STROUT(@'CRUEL'#0);
-//  for X:=0 to 200 do
-//    CHROUT('A');
-//  end; 
-  asm rts end;
+//  STROUT(@'HOLA');
+//  STROUT(@'CRUEL'#0);
+//  PutChar(10,8,'X');
+  w := @a;
+//  asm rts end;
 end.
 

@@ -391,6 +391,9 @@ begin
   //Find the memory address where to place the variable.
   pic.freeStart := GeneralORG;  //Find at the current program block.
   nbytes := typ.size;
+  if (typ.catType = tctArray) and (typ.itmType = typChar) and str_nullterm then begin
+    inc(nbytes);  //On more byte for the NULL character
+  end;
   if xVar.adicPar.hasAdic = decAbsol then begin
     //It's ABSOLUTE to something
     if xVar.adicPar.absVar<>nil then begin
@@ -451,6 +454,12 @@ begin
     //Here, we need to know the type
     WriteVaLueToRAM(@pic.ram, startAdd, typ, xVar.adicPar.constDec.value);
     if HayError then  exit;
+    if (typ.catType = tctArray) and (typ.itmType = typChar) and str_nullterm then begin
+      //Special case. Literal arrays of chars (strings) with Null character
+      pic.ram[pic.iRam+nbytes].used := ruData;
+      pic.ram[pic.iRam+nbytes].value := 0;
+      inc(nBytes);
+    end;
   end;
 end;
 procedure TGenCodBas.CreateValueInCode(typ: TEleTypeDec;
@@ -467,6 +476,12 @@ begin
   WriteVaLueToRAM(@pic.ram, pic.iRam, typ, value);
   for i:=pic.iRam to pic.iRam+nbytes-1 do begin
     pic.ram[i].used := ruData;
+  end;
+  if (typ.catType = tctArray) and (typ.itmType = typChar) and str_nullterm then begin
+    //Special case. Literal arrays of chars (strings) with Null character
+    pic.ram[pic.iRam+nbytes].used := ruData;
+    pic.ram[pic.iRam+nbytes].value := 0;
+    inc(nBytes);
   end;
   inc(pic.iRam, nBytes);  //Move pointer.
 _LABEL_post(j1);   //Termina de codificar el salto

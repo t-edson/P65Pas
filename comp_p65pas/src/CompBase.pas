@@ -186,6 +186,7 @@ public    //Compiling Options. Deberían ser PROTECTED.
   GeneralORG  : integer;   //Dirección general de origen de código
   protected
   bootloader  : TBootloader; //Bootloader code for the compiled binary.
+  str_nullterm: boolean;     //Flag to activate the Null-terminated string for literals.
   loaderBytes : array of integer;  //Custom Bootloader bytes.
   mode        : (modPascal, modPicPas);
   comp_level  : TCompileLevel;  //Compilation level

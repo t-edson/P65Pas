@@ -124,6 +124,8 @@
 	  "{$MSGERR 'Error'}"
 	  "{$SET \_}"
 	  "{$SET variable = 'valor'}"
+	  "{$STRING NONE}"
+	  "{$STRING NULL_TERMINATED}"
 	  "{$INFO \_}"
 	  "{$INFO 'Hello'}"
 	  "{$WARNING \_}"
