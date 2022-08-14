@@ -713,27 +713,27 @@ Must be called after DoOptimize().}
       codRTS(isInt);  //RTS instruction
     end;
   end;
-  procedure GenBootloaderC64;
-  begin
-    PutTopComm('      ;BASIC starter code: 10 SYS 2062');
-    pic.codByte($0C, true);  //Dirección de siguiente línea
-    pic.codByte($08, true);
-    pic.codByte($0A, true);  //Número de línea
-    pic.codByte($00, true);
-    pic.codByte($9e, true);  //Token de instrucción SYS
-    pic.codByte($20, true);  //Espacio
-    pic.codByte($32, true);  //2
-    pic.codByte($30, true);  //0
-    pic.codByte($36, true);  //6
-    pic.codByte($32, true);  //2
-    pic.codByte($00, true);  //Fin de instrucción
-    pic.codByte($00, true);  //Sgte línea BASIC
-    pic.codByte($00, true);  //Sgte línea BASIC
-
-    pic.codByte(76, ruCode);  //Opcode JMP
-    pic.codByte(0, ruData, 'COD_HL');   //To complete later
-    pic.codByte(0, ruData);             //To complete later
-  end;
+//  procedure GenBootloaderC64; //Not used
+//  begin
+//    PutTopComm('      ;BASIC starter code: 10 SYS 2062');
+//    pic.codByte($0C, true);  //Dirección de siguiente línea
+//    pic.codByte($08, true);
+//    pic.codByte($0A, true);  //Número de línea
+//    pic.codByte($00, true);
+//    pic.codByte($9e, true);  //Token de instrucción SYS
+//    pic.codByte($20, true);  //Espacio
+//    pic.codByte($32, true);  //2
+//    pic.codByte($30, true);  //0
+//    pic.codByte($36, true);  //6
+//    pic.codByte($32, true);  //2
+//    pic.codByte($00, true);  //Fin de instrucción
+//    pic.codByte($00, true);  //Sgte línea BASIC
+//    pic.codByte($00, true);  //Sgte línea BASIC
+//
+//    pic.codByte(76, ruCode);  //Opcode JMP
+//    pic.codByte(0, ruData, 'COD_HL');   //To complete later
+//    pic.codByte(0, ruData);             //To complete later
+//  end;
   procedure GenBootloader(out add1, add2: word);
   {Generates the bootloader. Returns in "add1" and "add2" the start address and the end
   address of the bootloader;}
@@ -749,7 +749,7 @@ Must be called after DoOptimize().}
       pic.codByte(0, ruData);             //To complete later
     end else if bootloader = bldC64 then begin
       //GenBootloaderC64;    //Commodore 64 bootloader.
-      PutTopComm('      ;BASIC starter code: 10 SYS 2062');
+      PutTopComm('      ;BASIC starter code: 10 SYS <entry point>');
       pic.codByte($0C, true);  //Dirección de siguiente línea
       pic.codByte($08, true);
       pic.codByte($0A, true);  //Número de línea

@@ -4,7 +4,7 @@ Include some routines from the Kernal.
 Based on information of: http://sta.c64.org/cbm64krnfunc.html
 }
 {$ORG $0801}
-{$COMMODORE64}
+{$BOOTLOADER C64}
 //Set RAM for Commodore 64
 //{$CLEAR_STATE_RAM} If we clears, we'll need to define all RAM map
 {$SET_DATA_ADDR ''}
@@ -122,8 +122,8 @@ implementation
   {Prints a string delimited by NULL}
   begin
     asm 
-	  LDA str.low
-    LDY str.high
+	  LDA str
+    LDY str+1
     JSR $AB1E 
     end 
   end; 

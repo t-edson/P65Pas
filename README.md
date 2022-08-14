@@ -1111,7 +1111,7 @@ end.
 
 The binary code generated for this program can be loaded and run directly from Commodore 64 BASIC after loading the PRG file.
 
-* {$BOOTLOADER <<content>>} 
+* {$BOOTLOADER \<content\>} 
 
 This is the more general form to define a bootloader. 
 

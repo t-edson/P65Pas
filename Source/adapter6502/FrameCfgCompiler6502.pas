@@ -44,7 +44,10 @@ var
   apppath, tmp: string;
 begin
   apppath := ExtractFileDir(Application.ExeName);
-  tmp := StringReplace(unitPath, '{AppPath}', apppath, [rfReplaceAll, rfIgnoreCase]);
+  if DirectorySeparator = '\' then begin  //Estamos en Windows.
+    tmp := StringReplace(unitPath, '/', DirectorySeparator, [rfReplaceAll, rfIgnoreCase]);
+  end;
+  tmp := StringReplace(tmp, '{AppPath}', apppath, [rfReplaceAll, rfIgnoreCase]);
   exit(tmp);
 end;
 
