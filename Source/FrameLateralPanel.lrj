@@ -1,4 +1,4 @@
 {"version":1,"strings":[
-{"hash":40967234,"name":"tfralateralpanel.label1.caption","sourcebytes":[70,105,108,101,32,69,120,112,108,111,114,101,114],"value":"File Explorer"},
+{"hash":40967746,"name":"tfralateralpanel.label1.caption","sourcebytes":[32,70,105,108,101,32,69,120,112,108,111,114,101,114],"value":" File Explorer"},
 {"hash":40967234,"name":"tfralateralpanel.tabsheet1.caption","sourcebytes":[70,105,108,101,32,69,120,112,108,111,114,101,114],"value":"File Explorer"}
 ]}

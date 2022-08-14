@@ -2032,8 +2032,8 @@ var
   ufound: Boolean;
 begin
   if lowercase(token) = 'uses' then begin
-    Next;  //pasa al nombre
-    //Toma una a una las unidades
+    Next;  //Go to the name
+    //Takes each unit
     repeat
       ProcComments;
       //ahora debe haber un identificador

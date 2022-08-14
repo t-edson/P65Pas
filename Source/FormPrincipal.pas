@@ -340,7 +340,7 @@ end;
 procedure TfrmPrincipal.fraEdit_LocateInFileExpl(ed: TSynEditor);
 begin
   if ed.FileName<>'' then begin
-    fraLeftPanel.fraArcExplor1.LocateFileOnTree(ed.FileName);
+    fraLeftPanel.fraFileExplor1.LocateFileOnTree(ed.FileName);
   end;
 end;
 procedure TfrmPrincipal.FormCreate(Sender: TObject);
@@ -403,7 +403,7 @@ begin
   //Configura Panel lateral
   fraLeftPanel.OnOpenFile := @fraLeftPanel_OpenFile;
   fraLeftPanel.OnSelecFileExplorer := @fraLeftPanel_selecFileExplorer;
-  fraLeftPanel.fraArcExplor1.OnOpenDirectory  := @fraLeftPanelfraArcExplor1OpenDirectory;
+  fraLeftPanel.fraFileExplor1.OnOpenDirectory  := @fraLeftPanelfraArcExplor1OpenDirectory;
   fraLeftPanel.Init(Config.currPath);
   //Termina configuración
   fraEditView1.InitMenuRecents(mnRecents, Config.fraCfgSynEdit.ArcRecientes);  //inicia el menú "Recientes"
@@ -545,8 +545,8 @@ begin
 //         acArcCloseFileExecute(self);  //Cierra archivo actual
 //         fraLeftPanel.LocateFile(curNode);  //Restaura nodo seleccionado, porque
 //         //Despues de cerrar
-//         if fraLeftPanel.fraArcExplor1.TreeView1.Visible then
-//           fraLeftPanel.fraArcExplor1.TreeView1.SetFocus;
+//         if fraLeftPanel.fraFileExplor1.TreeView1.Visible then
+//           fraLeftPanel.fraFileExplor1.TreeView1.SetFocus;
 //       end;
     Shift := []; Key := 0;  //para qie no pase
   end;
@@ -647,11 +647,14 @@ begin
     CoolBar1.AutosizeBands;  //Update size
   end;
   end;
-  //Configura Explorador de código
-  fraLeftPanel.BackColor := Config.FilExplBack;;
+  //Configura el panel lateral izquierdo
+  fraLeftPanel.PanelColor:= Config.PanelsCol;
   fraLeftPanel.TextColor := Config.FilExplText;
-  fraLeftPanel.fraArcExplor1.Filter.ItemIndex := Config.FilExpFiltyp;
-  fraLeftPanel.fraArcExplor1.FilterChange(self);
+  //Configura Explorador de archivos
+  fraLeftPanel.fraFileExplor1.BackColor := Config.FilExplBack;;
+  fraLeftPanel.fraFileExplor1.TextColor := Config.FilExplText;
+  fraLeftPanel.fraFileExplor1.Filter.ItemIndex := Config.FilExpFiltyp;
+  fraLeftPanel.fraFileExplor1.FilterChange(self);
   //Configura Visor de Mensajes
   fraMessages.BackColor := Config.MessPanBack;
   fraMessages.TextColor := Config.MessPanText;
@@ -675,7 +678,7 @@ begin
   CoolBar1.Bands[4].Color := Config.PanelsCol;
 
   fraEditView1.Panel1.Color := Config.PanelsCol;
-  //fraEditView1.Color :=  Config.PanelsCol;
+
   //Color de separadores
   Splitter2.Color := Config.SplitterCol;
   splLeft.Color := Config.SplitterCol;
@@ -742,7 +745,7 @@ begin
   end;
   if (ed<>nil) and (ed.FileName<>'') then begin
 //*** Verificar si es necesario
-     fraLeftPanel.fraArcExplor1.LocateFileOnTree(ed.FileName);
+     fraLeftPanel.fraFileExplor1.LocateFileOnTree(ed.FileName);
   end;
 end;
 procedure TfrmPrincipal.FindDialog1Find(Sender: TObject);

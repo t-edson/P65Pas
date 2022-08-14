@@ -46,6 +46,8 @@ begin
   apppath := ExtractFileDir(Application.ExeName);
   if DirectorySeparator = '\' then begin  //Estamos en Windows.
     tmp := StringReplace(unitPath, '/', DirectorySeparator, [rfReplaceAll, rfIgnoreCase]);
+  end else begin
+    tmp := unitPath;
   end;
   tmp := StringReplace(tmp, '{AppPath}', apppath, [rfReplaceAll, rfIgnoreCase]);
   exit(tmp);

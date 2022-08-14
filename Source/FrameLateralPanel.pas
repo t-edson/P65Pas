@@ -14,20 +14,21 @@ type
     procedure PageControl1Change(Sender: TObject);
   private
     FBackColor: TColor;
+    FPanelColor: TColor;
     FTextColor: TColor;
     procedure frmArcExplor1DoubleClickFile(nod: TExplorNode);
-    procedure SetBackColor(AValue: TColor);
+    procedure SetPanelColor(AValue: TColor);
     procedure SetTextColor(AValue: TColor);
   public
-    fraArcExplor1: TfraArcExplor;
+    fraFileExplor1: TfraFileExplor;
     //Eventos del explorador de archivo
     OnOpenFile: procedure(filname: string) of object;
     OnSelecFileExplorer: procedure of object;
     //Se requiere información del archivo actual
 //    OnReqCurFile: procedure(var filname: string) of object;
     function HasFocus: boolean;
-    property BackColor: TColor read FBackColor write SetBackColor;
     property TextColor: TColor read FTextColor write SetTextColor;
+    property PanelColor: TColor read FPanelColor write SetPanelColor;
     procedure Init(currPath: string);
     constructor Create(AOwner: TComponent) ; override;
   end;
@@ -44,35 +45,36 @@ procedure TfraLateralPanel.Init(currPath: string);
 que se debe usar en el explorador de archivos.}
 begin
   //Configura filtros del explorador de archivos
-  fraArcExplor1.Filter.Items.Add('*.pas,*.pp,*.inc');  //los filtros se separan por comas
-  fraArcExplor1.Filter.Items.Add('*');  //para seleccionar todos
-  fraArcExplor1.Filter.ItemIndex:=0;    //selecciona la primera opción por defecto
-  fraArcExplor1.Filter.Visible := false;
-  fraArcExplor1.InternalPopupFile := true;
-  fraArcExplor1.InternalPopupFolder := true;
-  fraArcExplor1.OnDoubleClickFile:= @frmArcExplor1DoubleClickFile;
-  fraArcExplor1.OnKeyEnterOnFile := @frmArcExplor1DoubleClickFile;
-  fraArcExplor1.OnMenuOpenFile   := @frmArcExplor1DoubleClickFile;
+  fraFileExplor1.Filter.Items.Add('*.pas,*.pp,*.inc');  //los filtros se separan por comas
+  fraFileExplor1.Filter.Items.Add('*');  //para seleccionar todos
+  fraFileExplor1.Filter.ItemIndex:=0;    //selecciona la primera opción por defecto
+  fraFileExplor1.Filter.Visible := false;
+  fraFileExplor1.InternalPopupFile := true;
+  fraFileExplor1.InternalPopupFolder := true;
+  fraFileExplor1.OnDoubleClickFile:= @frmArcExplor1DoubleClickFile;
+  fraFileExplor1.OnKeyEnterOnFile := @frmArcExplor1DoubleClickFile;
+  fraFileExplor1.OnMenuOpenFile   := @frmArcExplor1DoubleClickFile;
   //Configura ruta de trabajo
-  fraArcExplor1.Init(currPath);
-end;
-procedure TfraLateralPanel.SetBackColor(AValue: TColor);
-{Configura el color de fondo}
-begin
-  fraArcExplor1.TreeView1.BackgroundColor := AValue;
+  fraFileExplor1.Init(currPath);
 end;
 procedure TfraLateralPanel.SetTextColor(AValue: TColor);
 begin
 //  if FTextColor = AValue then Exit;
+  Label1.Font.Color := AValue;
   FTextColor := AValue;
-  fraArcExplor1.TextColor := AValue;
+end;
+procedure TfraLateralPanel.SetPanelColor(AValue: TColor);
+begin
+//  if FPanelColor = AValue then Exit;
+  Label1.Color := AValue;
+  FPanelColor := AValue;
 end;
 function TfraLateralPanel.HasFocus: boolean;
 {Indica si el frame tiene el enfoque.}
 begin
-//  if fraArcExplor1.Visible then begin
+//  if fraFileExplor1.Visible then begin
 //    //Modo de explorador de archivo
-//    Result := fraArcExplor1.TreeView1.Focused;
+//    Result := fraFileExplor1.TreeView1.Focused;
 //  end else begin
 //    //Modo normal
 //    Result := TreeView1.Focused;
@@ -92,9 +94,9 @@ end;
 constructor TfraLateralPanel.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  fraArcExplor1:= TfraArcExplor.Create(self);
-  fraArcExplor1.Parent := TabSheet1;
-  fraArcExplor1.Align := alClient;
+  fraFileExplor1:= TfraFileExplor.Create(self);
+  fraFileExplor1.Parent := TabSheet1;
+  fraFileExplor1.Align := alClient;
 end;
 
 end.

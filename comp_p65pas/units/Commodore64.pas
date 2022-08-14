@@ -5,6 +5,7 @@ Based on information of: http://sta.c64.org/cbm64krnfunc.html
 }
 {$ORG $0801}
 {$BOOTLOADER C64}
+{$STRING NULL_TERMINATED}
 //Set RAM for Commodore 64
 //{$CLEAR_STATE_RAM} If we clears, we'll need to define all RAM map
 {$SET_DATA_ADDR ''}

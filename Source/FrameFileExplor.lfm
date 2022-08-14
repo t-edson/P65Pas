@@ -1,29 +1,30 @@
-object fraArcExplor: TfraArcExplor
+object fraFileExplor: TfraFileExplor
   Left = 0
-  Height = 469
+  Height = 586
   Top = 0
-  Width = 211
-  ClientHeight = 469
-  ClientWidth = 211
+  Width = 264
+  ClientHeight = 586
+  ClientWidth = 264
+  DesignTimePPI = 120
   ParentFont = False
   TabOrder = 0
   DesignLeft = 375
   DesignTop = 202
   object Filter: TComboBox
     Left = 0
-    Height = 33
+    Height = 28
     Top = 0
-    Width = 211
+    Width = 264
     Align = alTop
-    ItemHeight = 0
+    ItemHeight = 20
     OnChange = FilterChange
     TabOrder = 0
   end
   object TreeView1: TTreeView
     Left = 0
-    Height = 436
-    Top = 33
-    Width = 211
+    Height = 558
+    Top = 28
+    Width = 264
     Align = alClient
     ParentShowHint = False
     RightClickSelect = True
@@ -33,17 +34,17 @@ object fraArcExplor: TfraArcExplor
     Options = [tvoAutoItemHeight, tvoHideSelection, tvoKeepCollapsedNodes, tvoRightClickSelect, tvoShowButtons, tvoShowLines, tvoShowRoot, tvoToolTips, tvoThemedDraw]
   end
   object btnOpenFolder: TButton
-    Left = 19
-    Height = 25
-    Top = 38
-    Width = 133
+    Left = 24
+    Height = 31
+    Top = 48
+    Width = 166
     Caption = 'Open Folder...'
     OnClick = btnOpenFolderClick
     TabOrder = 2
   end
   object ImageList2: TImageList
-    Left = 120
-    Top = 88
+    Left = 150
+    Top = 110
     Bitmap = {
       4C7A0E0000001000000010000000441900000000000078DAED5A095454579AAE
       CCF4A4BBCF2C39999CEE74A7BB937456DB247612B72C766B8C1A8D1A35266E28
@@ -252,8 +253,8 @@ object fraArcExplor: TfraArcExplor
   end
   object PopupFolder: TPopupMenu
     OnPopup = PopupFolderPopup
-    Left = 40
-    Top = 152
+    Left = 50
+    Top = 190
     object mnFolExpandCol: TMenuItem
       Caption = 'E&xpand'
       OnClick = mnFolExpandColClick
@@ -288,8 +289,8 @@ object fraArcExplor: TfraArcExplor
   end
   object PopupFile: TPopupMenu
     OnPopup = PopupFolderPopup
-    Left = 120
-    Top = 152
+    Left = 150
+    Top = 190
     object mnFilOpen: TMenuItem
       Caption = '&Open'
       OnClick = mnFilOpenClick

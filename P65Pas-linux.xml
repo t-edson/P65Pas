@@ -3,32 +3,34 @@
   <language Val="en - English"/>
   <chkLoadLast Val="True"/>
   <grpToolbarSta Val="1"/>
-  <PanelsCol Val="536870912"/>
-  <SplitterCol Val="536870912"/>
+  <PanelsCol Val="2368548"/>
+  <SplitterCol Val="2368548"/>
   <TextPanel Val="8421504"/>
   <currPath Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk"/>
-  <filesClosed Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
+  <filesClosed Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/samples/HelloWorld.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/temp/NewFile1.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="250"/>
-  <EditAsmWidth Val="300"/>
+  <EditAsmWidth Val="346"/>
   <ViewPanAssem Val="True"/>
   <winXpos Val="171"/>
   <winYpos Val="249"/>
   <winWidth Val="1152"/>
   <winHeight Val="641"/>
   <winState Val="2"/>
-  <themLoaded Val=""/>
-  <CodExplBack Val="-2147483643"/>
-  <CodExplText Val="536870912"/>
+  <themLoaded Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/themes/dark.theme"/>
+  <CodExplBack Val="2434341"/>
+  <CodExplText Val="12632256"/>
   <grpFiltypes Val="0"/>
-  <MessPanBack Val="-2147483643"/>
-  <MessPanText Val="536870912"/>
-  <MessPanErr Val="255"/>
-  <MessPanSel Val="-2147483633"/>
+  <MessPanBack Val="2368548"/>
+  <MessPanText Val="16777215"/>
+  <MessPanErr Val="5855743"/>
+  <MessPanSel Val="-2147483629"/>
   <ShowErMsg Val="True"/>
   <TabEdiState Val="0"/>
   <TamLet Val="10"/>
@@ -36,9 +38,9 @@
   <VerBarDesV Val="True"/>
   <VerBarDesH Val="False"/>
   <Edit>
-    <cTxtNor Val="0"/>
-    <cFonEdi Val="16777215"/>
-    <cLinAct Val="65535"/>
+    <cTxtNor Val="16777215"/>
+    <cFonEdi Val="2368548"/>
+    <cLinAct Val="4210688"/>
     <Autoindent Val="True"/>
     <MarLinAct Val="False"/>
     <ResPalCur Val="True"/>
@@ -49,13 +51,13 @@
     <VerPanVer Val="True"/>
     <VerNumLin Val="False"/>
     <VerMarPle Val="True"/>
-    <cFonPan Val="16777215"/>
-    <cTxtPan Val="0"/>
-    <recient Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/Source/EditView.pas
-/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/Source/CibGrillas.pas
+    <cFonPan Val="2105376"/>
+    <cTxtPan Val="12632256"/>
+    <recient Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/samples/HelloWorld.pas
 /tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
-/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_Vars.pas
-/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/testcode65/Simul_1/Test1_HelloWorld.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/temp/NewFile1.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/units/Commodore64.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/temp/aPistas.pas
 "/>
   </Edit>
   <ExternTool>
@@ -75,7 +77,7 @@
   </Compiler6502>
   <AsmOutput6502>
     <IncDecVar Val="True"/>
-    <VarDecType Val="1"/>
+    <VarDecType Val="0"/>
     <IncAddress Val="True"/>
     <IncComment Val="False"/>
     <ExcUnused Val="True"/>

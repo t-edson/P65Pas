@@ -17,7 +17,7 @@ object fraLateralPanel: TfraLateralPanel
     Width = 284
     Align = alTop
     AutoSize = False
-    Caption = 'File Explorer'
+    Caption = ' File Explorer'
     Color = clActiveCaption
     ParentFont = False
     Transparent = False

@@ -131,7 +131,7 @@
       <Unit9>
         <Filename Value="FrameFileExplor.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="fraArcExplor"/>
+        <ComponentName Value="fraFileExplor"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
       </Unit9>
