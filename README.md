@@ -1041,7 +1041,7 @@ This mode should be used with caution because the entry point of the the compild
 The following code shows how to use this directive.
 
 ```
-{$BOOTLOADER 'NONE'}
+{$BOOTLOADER NONE}
 var
   x: byte;
 begin
@@ -1069,7 +1069,7 @@ This option creates a simple JMP instruction at the beginning of the code so we 
 The following code shows how to use this directive.
 
 ```
-{$BOOTLOADER 'JMP'}
+{$BOOTLOADER JMP}
 var
   x: byte;
 begin
@@ -1101,7 +1101,7 @@ The following code shows how to use this directive.
 
 ```
 {$ORG $0801}
-{$BOOTLOADER 'C64'}
+{$BOOTLOADER C64}
 var
   x: byte;
 begin
@@ -1111,7 +1111,7 @@ end.
 
 The binary code generated for this program can be loaded and run directly from Commodore 64 BASIC after loading the PRG file.
 
-* {$BOOTLOADER <content>} 
+* {$BOOTLOADER <<content>>} 
 
 This is the more general form to define a bootloader. 
 
