@@ -84,6 +84,7 @@ type
     function ActiveEditor: TSynEditor;
     function SearchEditorIdx(filname: string): integer;
     function SearchEditorIdxByTab(tabName: string): integer;
+    procedure ChangeFileName(editIdx: integer; filName0: string);
     function SelectEditor(filname: string): boolean;
     procedure SelectNextEditor;
     procedure SelectPrevEditor;
@@ -496,7 +497,7 @@ begin
   n := 0;
   repeat
     inc(n);
-    Result := 'NewFile' + IntToStr(n) + ext;
+    Result := 'newfile' + IntToStr(n) + ext;
   until SearchEditorIdxByTab(Result)=-1;
 end;
 function TfraEditView.AddEdit(ext: string): TSynEditor;
@@ -581,7 +582,7 @@ begin
   if editors.Count = 0 then begin
     //Era el único
     FTabIndex := -1;
-    FrameResize(self);  //para ubciar mensaje de fondo
+    FrameResize(self);  //para ubicar mensaje de fondo
   end else begin
     //Había al menos 2
     if TabIndex > editors.Count - 1 then begin
@@ -643,6 +644,22 @@ begin
     if Upcase(ed.Caption) = UpCase(tabName) then exit(i);
   end;
   exit(-1);
+end;
+procedure TfraEditView.ChangeFileName(editIdx: integer; filName0: string);
+{Cambia el nombre de archvo de un editor.}
+var
+  ed: TSynEditor;
+begin
+  if editIdx = -1 then exit;
+  ed := editors[editIdx];
+  if ed.FileName = filName0 then exit;  //Sin cambio.
+  ed.FileName := filName0;
+  ConfigureSyntax(ed);   //Por si cambia de tipo
+  AgregArcReciente(ed.FileName);
+  ed.Caption := ExtractFileName(ed.fileName);
+  {Dispara otra vez, para actualizar bien el nombre del archivo, en el Caption de la
+  ventana principal.}
+//  if OnSelectEditor<>nil then OnSelectEditor;
 end;
 function TfraEditView.SelectEditor(filname: string): boolean;
 {Activa el editor que corresponde al archivo indicado. Si no encuentra el archivo,

@@ -1,16 +1,10 @@
-uses Commodore64;
-//  procedure proc1(var n: BYTE);
-//  begin
-//  end; 
-var
-//  a: array of char = 'aba';
-  w: word;
+uses Commodore128;
 begin
-//  x := 1;
-//  CHROUT('H');
-  STROUT(@'HOLA');
-//  PutChar(10,8,'X');
-//  w := @a;
+  CHROUT('H');
+  CHROUT('E');
+  CHROUT('L');
+  CHROUT('L');
+  CHROUT('O');
   asm rts end;
 end.
 

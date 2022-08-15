@@ -7,9 +7,8 @@
   <SplitterCol Val="2368548"/>
   <TextPanel Val="8421504"/>
   <currPath Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk"/>
-  <filesClosed Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/samples/HelloWorld.pas
-/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
-/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/temp/NewFile1.pas
+  <filesClosed Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/temp/newfile1.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/samples/HelloWorld.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
@@ -53,11 +52,11 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/samples/HelloWorld.pas
-/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
+    <recient Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/temp/newfile1.pas
 /tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/temp/NewFile1.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/samples/HelloWorld.pas
 /tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/units/Commodore64.pas
-/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/temp/aPistas.pas
 "/>
   </Edit>
   <ExternTool>

@@ -433,15 +433,16 @@ object frmAdapter6502: TfrmAdapter6502
     Top = 168
     object acToolCompil: TAction
       Category = 'Compiler'
-      Caption = '&Compilar'
-      Hint = 'Compila el archivo Actual'
+      Caption = '&Compile'
+      Hint = 'Compile current file'
       ImageIndex = 0
       OnExecute = acToolCompilExecute
       ShortCut = 16504
     end
     object acToolComEjec: TAction
       Category = 'Compiler'
-      Caption = 'Compilar y Ejecutar'
+      Caption = 'Compile and execute...'
+      Hint = 'Compile and execute'
       ImageIndex = 1
       OnExecute = acToolComEjecExecute
       ShortCut = 120
@@ -449,12 +450,14 @@ object frmAdapter6502: TfrmAdapter6502
     object acToolChecksyn: TAction
       Category = 'Compiler'
       Caption = 'Check S&yntax'
+      Hint = 'Check syntax'
       ImageIndex = 7
       OnExecute = acToolChecksynExecute
     end
     object acToolRamExp: TAction
       Category = 'Compiler'
       Caption = '&RAM Explorer'
+      Hint = 'Ram Explorer'
       ImageIndex = 3
       OnExecute = acToolRamExpExecute
       ShortCut = 123
@@ -462,6 +465,7 @@ object frmAdapter6502: TfrmAdapter6502
     object acToolASMDebug: TAction
       Category = 'Compiler'
       Caption = 'ASM &Debugger'
+      Hint = 'ASM debugger'
       ImageIndex = 4
       OnExecute = acToolASMDebugExecute
       ShortCut = 16507
@@ -469,18 +473,21 @@ object frmAdapter6502: TfrmAdapter6502
     object acToolListRep: TAction
       Category = 'Compiler'
       Caption = '&List Report'
+      Hint = 'List Report'
       ImageIndex = 5
       OnExecute = acToolListRepExecute
     end
     object acToolFindDec: TAction
       Category = 'Codetool'
       Caption = 'Find Declaration'
+      Hint = 'Find Declaration'
       ImageIndex = 6
       OnExecute = acToolFindDecExecute
     end
     object acToolTestUnit: TAction
       Category = 'Compiler'
       Caption = 'Test Device Units'
+      Hint = 'Test Units'
       ImageIndex = 8
     end
   end

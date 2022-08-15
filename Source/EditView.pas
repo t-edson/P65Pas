@@ -662,7 +662,7 @@ begin
   sedit.ClearUndo;       //limpia acciones "deshacer"
   SetModified(false);
   ChangeFileInform;   //actualiza
-  if OnChangeEditorState<>nil then OnChangeEditorState;  //para iniciar controles
+  if OnChangeEditorState<>nil then OnChangeEditorState;  //Para iniciar controles
 end;
 procedure TSynEditor.LoadFile(arc8: string);
 //Carga el contenido de un archivo en el editor, analizando la codificación.

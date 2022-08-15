@@ -59,8 +59,10 @@ type
 //    function IsDrive: boolean;  //Indica si el nodo es una unidad
   end;
 
-  TEvArcExp_Abrir= procedure(arc0: string) of object;
-  TevClickOnFile = procedure(nod: TExplorNode) of object;
+  TEvClickOnFile  = procedure(nod: TExplorNode) of object;
+  TEvFileOperation= procedure(file0: string) of object;
+  TEvFileToClose  = procedure(file0: string; var Cancel: boolean) of object;
+  TEvFileRenamed  = procedure(oldFile, newFile: string) of object;
 
   { TfraFileExplor }
 
@@ -125,25 +127,25 @@ type
   private
     FBackColor: TColor;
     FTextColor: TColor;
-    NombNodEdi: String;    //nombre actual de nodo en edición
+    OldNodeName: String;    //nombre actual de nodo en edición
     procedure ActualPanelArc;
     procedure ExpandirNodArc(Node: TTreeNode; expan: Boolean);
     procedure LeeFilt(lfil: TStringList);
-    procedure LeerDirectorio(Item0: TTreeNode; filtro: TStringList;
+    procedure ReadDirectory(Item0: TTreeNode; filtro: TStringList;
       expandir: boolean=false);
     procedure SetBackColor(AValue: TColor);
     procedure SetTextColor(AValue: TColor);
     procedure TreeView1AdvancedCustomDrawItem(Sender: TCustomTreeView;
       Node: TTreeNode; State: TCustomDrawState; Stage: TCustomDrawStage;
       var PaintImages, DefaultDraw: Boolean);
-  public
-    //Eventos
-    OnMenuOpenFile    : TevClickOnFile;  //Se seleccionó "Abrir" desde el menú
-    OnDoubleClickFile : TevClickOnFile;  //Se hizo doble click en un archivo
-    OnRightClickFile  : TevClickOnFile;  //Click derecho en archivo
-    OnRightClickFolder: TevClickOnFile;  //Click derecho en carpeta
-    OnKeyEnterOnFile  : TevClickOnFile;  //Se presionó la tecla enter en un archivo
-    OnCloseFile       : TevClickOnFile;  //Se pide cerrar un archivo
+  public  //Eventos
+    OnMenuOpenFile    : TEvClickOnFile;   //Se seleccionó "Abrir" desde el menú
+    OnDoubleClickFile : TEvClickOnFile;   //Se hizo doble click en un archivo
+    OnRightClickFile  : TEvClickOnFile;   //Click derecho en archivo
+    OnRightClickFolder: TEvClickOnFile;   //Click derecho en carpeta
+    OnKeyEnterOnFile  : TEvClickOnFile;   //Se presionó la tecla enter en un archivo
+    OnCloseFile       : TEvFileToClose;   //Se pide cerrar un archivo
+    OnRenamedFile     : TEvFileRenamed;   //Se indica que ha habido un cambio de nombre
     OnOpenDirectory   : procedure of object;  //Se pide abrir un folder
   public
     NewFileName  : string;       //nombre por defecto de archivo nuevo
@@ -168,6 +170,9 @@ resourcestring
   TXT_NOTDELFOL   = 'Cannot delete folders';
   TXT_DELFILE     = 'Delete file "%s"?';
   TXT_DIR_NOTEXIST = 'Directory doesn''t exist.';
+  TXT_NOTAC_FILEXP = 'File is not accessible from the File Explorer.';
+  TXT_ALREAD_EXIST = 'A file with that name already exists.';
+  TXT_ERR_RENAMING = 'An error occurred renaming file.';
 
 procedure TrozaRuta(rut: string; lrut: TStringList); //devuelve una ruta trozada
 begin
@@ -182,7 +187,6 @@ begin
   lrut.StrictDelimiter:=true;
   lrut.DelimitedText:=rut;   //separa
 end;
-
 { TExplorNode }
 function TExplorNode.GetPath: string;
 {Devuelve una cadena con una ruta de directorio completa, construida a partir de la
@@ -216,7 +220,6 @@ function TExplorNode.IsFolder: boolean;
 begin
   Result := NodType = ntyFolder;
 end;
-
 { TfraFileExplor }
 //Funciones básicas
 function TfraFileExplor.AddNodeTo(ParentNode: TTreeNode; const txt: string;
@@ -341,38 +344,14 @@ begin
     //no tiene ruta, es relativo al aruta actual
     arch8 := ExtractFilePath(Application.ExeName) + arch8;
   end;
-//  cadNodos := TStringList.Create;
-//  TrozaRuta(arch8, cadNodos);
-//  //desenrrolla en la ruta
-//  nivel := 0;
-//  for cadNod in cadNodos do begin
-//    //busca nodo
-//    encontro := false;
-//    for nod in TreeView1.Items do begin
-//      if nod.Level = nivel then
-//        if UpCase(nod.Text) = UpCase(cadNod) then begin
-//          if TExplorNode(nod).NodType in [ntyFolder,ntyDrive] then  //es folder o unidad
-//            ExpandirNodArc(nod, true)   //expande para ubicar
-//          else  begin  //debe ser el archivo buscado
-//            nod.Selected:=true;
-//          end;
-//          encontro := true;
-//          break;  //sale del for, para buscar siguienet nivel
-//        end;
-//    end;
-//    if not encontro then begin
-//      cadNodos.Destroy;
-//      exit;  //no vale la pena seguir buscando
-//    end;
-//    inc(nivel);
-//  end;
-//  cadNodos.Destroy;
    //Find in one root node
    nod := TreeView1.Items[0];
    while nod <> nil do begin
-     if LocateInNode(TExplorNode(nod), arch8) then break;
+     if LocateInNode(TExplorNode(nod), arch8) then exit;
      nod := nod.GetNextSibling
    end;
+   //Not found.
+   MsgExc(TXT_NOTAC_FILEXP);
 end;
 function TfraFileExplor.NodRuta(rut: string): TExplorNode;
 //Devuelve el nodo a partir de la ruta completa
@@ -410,7 +389,7 @@ end;
 procedure TfraFileExplor.SetTextColor(AValue: TColor);
 begin
   TreeView1.ExpandSignColor := AValue;
-  TreeView1.DisabledFontColor := AValue;
+//  TreeView1.DisabledFontColor := AValue;
   TreeView1.SeparatorColor := AValue;
   TreeView1.TreeLineColor := AValue;
 
@@ -451,7 +430,7 @@ var
 begin
    filtros:=TStringList.Create;
    LeeFilt(filtros);  //lee los filtros
-   LeerDirectorio(Node, filtros, expan);
+   ReadDirectory(Node, filtros, expan);
    filtros.Free;
 end;
 procedure TfraFileExplor.TreeView1Expanding(Sender: TObject; Node: TTreeNode;
@@ -462,7 +441,7 @@ begin
     ExpandirNodArc(TExplorNode(Node), false);
 //  end;
 end;
-procedure TfraFileExplor.LeerDirectorio(Item0: TTreeNode; filtro: TStringList;
+procedure TfraFileExplor.ReadDirectory(Item0: TTreeNode; filtro: TStringList;
                                        expandir: boolean = false);
 {Lee el contenido de un directorio, y lo agrega al nodo indicado. Aplica los filtros
  indicados en "filtros" para el nombre de los archivos, no de carpetas}
@@ -570,7 +549,7 @@ begin
   for nod in TreeView1.Items do
     if nod.Visible and nod.Expanded then begin
       //mantiene expansión
-//      LeerDirectorio(nod, filtros, true);
+//      ReadDirectory(nod, filtros, true);
       nodExpan.Add(TExplorNode(nod).GetPath);  //agrega nodo
     end;
   //refresca solo los que estaban expandidos
@@ -578,7 +557,7 @@ begin
 //    if nod = nil then ShowMessage('nil') else ShowMessage(nod.Text);
     nodEx := nodRuta(nods);  //toma nodo a partir de su ruta
     if nodEx = nil then break;  //no debería pasar
-    LeerDirectorio(nodEx, filtros, true);
+    ReadDirectory(nodEx, filtros, true);
   end;
   nodExpan.Free;
   filtros.Free;
@@ -626,27 +605,41 @@ end;
 procedure TfraFileExplor.TreeView1EditingEnd(Sender: TObject; Node: TTreeNode; Cancel: Boolean);
 //Termina la edición del nombre de un nodo
 var
-  NuevoNom: String;
+  NewNodeName, tmpTxtPath, tmpText: String;
   nodEx: TExplorNode;
 begin
-  NuevoNom := TExplorNode(Node).GetPath;
-  if NombNodEdi <> NuevoNom then
-    try
-      RenameFile(NombNodEdi, NuevoNom);
-    finally
-    end;
-  //refresca
-  if Node.Parent<> nil then
+  tmpTxtPath := TExplorNode(Node).txtPath;   //Guarda por si se necesita.
+  tmpText    := Node.Text;                   //Guarda por si se necesita.
+  TExplorNode(Node).txtPath := Node.Text;  //Actualiza "txtPath" porque de aquí sale el nombre.
+  NewNodeName := TExplorNode(Node).GetPath;
+  if OldNodeName = NewNodeName then exit;  //Mismo nombre
+  if FileExists(NewNodeName) then begin
+    MsgExc(TXT_ALREAD_EXIST);
+    TExplorNode(Node).txtPath := tmpTxtPath;   //Retorna al nombre anterior
+    Node.Text := tmpText;
+    exit;
+  end;
+  //Hay que renombrar
+  try
+    RenameFile(OldNodeName, NewNodeName);
+    if OnRenamedFile<>nil then OnRenamedFile(OldNodeName, NewNodeName);
+  except
+    MsgErr(TXT_ERR_RENAMING);
+  end;
+  //Refresca
+  if Node.Parent<> nil then begin
     if node.Parent.Expanded then ExpandirNodArc(node.parent, true);   //refresca
-  //selecciona el nodo
-  nodEx := nodRuta(NuevoNom);  //toma a partir de su ruta, porque al refrescar se pierde la ref.
-  if nodEx <> nil then NodEx.Selected:=true;
+  end;
+  //Selecciona el nodo
+//  nodEx := nodRuta(NewNodeName);  //toma a partir de su ruta, porque al refrescar se pierde la ref.
+//  if nodEx <> nil then NodEx.Selected:=true;
 end;
 procedure TfraFileExplor.TreeView1KeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 var
   nodEx: TExplorNode;
   a: TPoint;
   relPos: TPoint;
+  Cancel: boolean;
 begin
   //Genera el evento en el frame, porque el frame nunca tendrá enfoque
   if OnKeyDown<>nil then OnKeyDown(Sender, Key, Shift);
@@ -666,7 +659,7 @@ begin
   end;
   if (Shift = [ssCtrl]) and (Key = VK_F4) then begin
     if nodEx = nil then exit;     //verifica
-    if OnCloseFile<>nil then OnCloseFile(nodEx);
+    if OnCloseFile<>nil then OnCloseFile(nodEx.GetPath, Cancel);
   end;
   if Key = VK_APPS then begin
     //Menú Contextual
@@ -834,8 +827,8 @@ procedure TfraFileExplor.mnFolChanNameClick(Sender: TObject);
 begin
   curNod := SelectedNode;
   if curNod = nil then exit;
-  curNod.EditText;           //inicia edición
-  NombNodEdi := curNod.GetPath; //Guarda nombre de nodo editado
+  curNod.EditText;           //Inicia edición
+  OldNodeName := curNod.GetPath; //Guarda nombre actual del nodo
 end;
 procedure TfraFileExplor.mnFolDeleteClick(Sender: TObject);
 begin
@@ -886,19 +879,27 @@ begin
 end;
 procedure TfraFileExplor.mnFilDeleteClick(Sender: TObject);
 var
-  archivo: String;
+  fileDel: String;
+  Cancel: boolean;
 begin
   curNod := SelectedNode;
   if curNod = nil then exit;
-  if not curNod.IsFile then exit;  //no es archivo
-  //eliminar archivo
+  if not curNod.IsFile then exit;  //No es archivo
+  //eliminar fileDel
   if MsgYesNo(TXT_DELFILE, [curNod.Text]) <> 1 then exit;
   try
-    archivo := UTF8ToSys(curNod.GetPath);
-    if FileExists(archivo) then
-//      DeleteToBin(PChar(archivo));  //envía a papelera
-      DeleteFile(archivo);
+    fileDel := UTF8ToSys(curNod.GetPath);
+    if FileExists(fileDel) then begin
+      //Close if file is opened
+      Cancel := false;
+      if OnCloseFile<>nil then OnCloseFile(curNod.GetPath, Cancel);
+      if Cancel then exit;
+      //Delete from disk
+      //DeleteToBin(PChar(fileDel));  //envía a papelera
+      DeleteFile(fileDel);
+    end;
   finally
+
   end;
   if curNod.Parent.Expanded then ExpandirNodArc(curNod.parent, true);   //refresca
 end;

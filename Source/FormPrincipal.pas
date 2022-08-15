@@ -1,5 +1,5 @@
-{                                   PicPas.
-Compilador en Pascal para micorocntroladores PIC de la serie 16.
+{                                   P65Pas IDE.
+IDE para el compilador Pascal P65Pas.
 
                                         Por Tito Hinostroza   22/08/2015 }
 unit FormPrincipal;
@@ -10,7 +10,7 @@ uses
   Menus, ComCtrls, ActnList, StdActns, ExtCtrls, LCLIntf, LCLType, LCLProc,
   StdCtrls, Graphics, MisUtils,
   FrameLateralPanel, FormConfig, EditView, FrameEditView, FrameMessagesWin,
-  FrameCfgExtTool, Globales, adapterBase
+  FrameCfgExtTool, Globales, adapterBase, FrameFileExplor
   , adapter6502
   ;
 type
@@ -204,7 +204,9 @@ type
     procedure ConfigExtTool_RequirePar(var comLine: string);
     procedure fraEdit_LocateInFileExpl(ed: TSynEditor);
     procedure fraEdit_RequireSetCompletion(ed: TSynEditor);
-    procedure fraLeftPanelfraArcExplor1OpenDirectory;
+    procedure FileExplor1_OpenDirectory;
+    procedure FileExplor1_CloseFile(file0: string; var Cancel: boolean);
+    procedure FileExplor1_RenamedFile(oldFile, newFile: string);
     procedure fraMessagesStatisDBlClick;
     procedure fraLeftPanel_selecFileExplorer;
     procedure fraEdit_RequireSynEditConfig(ed: TsynEdit);
@@ -320,9 +322,26 @@ begin
   //Pasa requerimiento al compilador actual
   currComp.SetCompletion(ed);
 end;
-procedure TfrmPrincipal.fraLeftPanelfraArcExplor1OpenDirectory;
+procedure TfrmPrincipal.FileExplor1_OpenDirectory;
+{Se pide abrir una carpeta.}
 begin
   acFilOpenDirExecute(self);
+end;
+procedure TfrmPrincipal.FileExplor1_CloseFile(file0: string; var Cancel: boolean);
+{Se pide cerrar un archivo en el editor.}
+begin
+  if fraEditView1.SelectEditor(file0) then begin
+     if not fraEditView1.CloseEditor then Cancel := true;
+  end;
+end;
+procedure TfrmPrincipal.FileExplor1_RenamedFile(oldFile, newFile: string);
+var
+  idEdit: Integer;
+begin
+  idEdit := fraEditView1.SearchEditorIdx(oldFile);
+  if idEdit <>-1 then begin
+     fraEditView1.ChangeFileName(idEdit, newFile);
+  end;
 end;
 procedure TfrmPrincipal.fraMessagesStatisDBlClick;
 //Doble clcik en la sección de estadísticas
@@ -403,7 +422,9 @@ begin
   //Configura Panel lateral
   fraLeftPanel.OnOpenFile := @fraLeftPanel_OpenFile;
   fraLeftPanel.OnSelecFileExplorer := @fraLeftPanel_selecFileExplorer;
-  fraLeftPanel.fraFileExplor1.OnOpenDirectory  := @fraLeftPanelfraArcExplor1OpenDirectory;
+  fraLeftPanel.fraFileExplor1.OnOpenDirectory:= @FileExplor1_OpenDirectory;
+  fraLeftPanel.fraFileExplor1.OnCloseFile    := @FileExplor1_CloseFile;
+  fraLeftPanel.fraFileExplor1.OnRenamedFile   := @FileExplor1_RenamedFile;
   fraLeftPanel.Init(Config.currPath);
   //Termina configuración
   fraEditView1.InitMenuRecents(mnRecents, Config.fraCfgSynEdit.ArcRecientes);  //inicia el menú "Recientes"

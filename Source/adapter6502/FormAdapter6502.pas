@@ -111,6 +111,7 @@ var
     Result.ActionList := actListDest;
     Result.OnExecute := actSrc.OnExecute;
     Result.ShortCut := actSrc.ShortCut;
+    Result.Hint := actSrc.Hint;
     Result.Category := categ;    //Este campo es diferente
     if actSrc.ImageIndex = -1 then begin
       Result.ImageIndex := -1;
