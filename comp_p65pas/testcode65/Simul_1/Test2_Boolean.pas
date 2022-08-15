@@ -21,7 +21,7 @@ var
   a, b: boolean;
   vbyte: byte;
 begin
-  STROUT(@'=== BOOLEAN TEST ==='#13#0);
+  STROUT(@'=== BOOLEAN TEST ==='#13);
 
 	//Pruebas con IF
 	if true then bien else mal end;

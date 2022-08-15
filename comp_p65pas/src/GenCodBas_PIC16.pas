@@ -31,8 +31,9 @@ type
     procedure Exchange(var parA, parB: TEleExpress);
     function BinOperationStr(fun: TEleExpress): string;
   private
-    linRep : string;   //línea para generar de reporte
+    linRep : string;       //línea para generar de reporte
     posFlash: Integer;
+    lastASMLabel: string;  //Name of a label when the last instruction was a LABEL.
     procedure GenCodeASMline(asmInst: TEleAsmInstr);
     function GenCodeCodition(cond: TxpElement): TEleExpress;
     procedure GenCodeExit(sen: TEleSentence);
@@ -1810,7 +1811,7 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
     offset: Integer;
   begin
     addressModes := PIC16InstName[cpu_inst].addressModes;
-debugln('iRam = ' + IntToStr(pic.iRam));
+    //debugln('iRam = ' + IntToStr(pic.iRam));
     if cpu_amod = aRelative then begin  //Instrucciones de salto relativo
       offset := param-pic.iRam-2;
       { TODO : Validar si el salto es mayor a 127 o menor a -128 }
@@ -1846,20 +1847,32 @@ begin
     cpu_inst := TP6502Inst(asmInst.opcode);
     cpu_amod := TP6502AddMode(asmInst.addMode);
     WriteInstruction(cpu_inst, cpu_amod, finalOperVal);
+    lastASMLabel := '';
   end else if asmInst.iType = itLabel then begin  //Instrucción etiqueta.
     asmInst.addr := pic.iRam;   //Actualiza dirección actual
+    lastASMLabel := asmInst.name;
   end else if asmInst.iType = itOrgDir then begin  //Instrucción ORG.
     //Calculate the final Opcode operand parameter.
     ReadOperandValue(operRef, finalOperVal);
     //Validates possible operations to the operand
     ApplyOperations(operRef, asmInst.elements, finalOperVal);
     pic.iRam := finalOperVal;   //Actualiza dirección actual
-  end else if asmInst.iType = itDefByte then begin  //Instrucción ORG.
+    lastASMLabel := '';
+  end else if asmInst.iType = itDefByte then begin  //Instrucción DB.
     //Calculate the final Opcode operand parameter.
     ReadOperandValue(operRef, finalOperVal);
     //Validates possible operations to the operand
     ApplyOperations(operRef, asmInst.elements, finalOperVal);
-    pic.codByte(finalOperVal and $ff, true);
+    pic.codByte(finalOperVal and $ff, ruData, lastASMLabel);
+    lastASMLabel := '';
+  end else if asmInst.iType = itDefWord then begin  //Instrucción DW.
+    //Calculate the final Opcode operand parameter.
+    ReadOperandValue(operRef, finalOperVal);
+    //Validates possible operations to the operand
+    ApplyOperations(operRef, asmInst.elements, finalOperVal);
+    pic.codByte(finalOperVal and $ff, ruData, lastASMLabel);
+    pic.codByte((finalOperVal >> 8) and $ff, ruData, '');
+    lastASMLabel := '';
   end else begin
     //It's not an instruction
     GenError('Inalid ASM instruction.', asmInst.srcDec);

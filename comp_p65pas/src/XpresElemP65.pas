@@ -629,8 +629,9 @@ type  //Instructions relative elements
   TiType = (
     itOpcode,     //Common instruction with an Opcode and Operand.
     itLabel,      //An ASM label.
-    itOrgDir,     //Instrcution ORG
-    itDefByte     //Instruction DB
+    itOrgDir,     //Instruction ORG
+    itDefByte,    //Instruction DB
+    itDefWord     //Instruction DW
   );
 
   { TEleAsmInstr }

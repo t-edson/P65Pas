@@ -645,12 +645,13 @@ The directive DB allows to define a byte in a specific position of the code:
   asm 
     JMP code
 tmp_var:
-   DB $00  ;variable temporal
+   DB $00  ;temporal variable
 code:
   LDA tmp_var
   end;
 ```
 
+The directive DW allows to define a word (2 bytes) in a specific position of the code.
 
 ## Directives
 
@@ -1184,7 +1185,11 @@ The next directive shows how to define a bootloader like it's generated with {$B
 
 ## Libraries
 
-P65Pas is a new project and it's still in development and there are not dedicated libraries for the compiler. 
+Currently there are the following units (librearies) in the directory ./comp_p65pas/units:
+
+* Commodore64.pas -> Unit for compiling for a Commodore 64 system.
+* Commodore128.pas -> Unit for compiling for a Commodore 128 system.
+
 
 ## P65Pas Limitations
 
