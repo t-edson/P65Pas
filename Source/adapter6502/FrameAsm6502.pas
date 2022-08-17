@@ -9,6 +9,7 @@ type
   { TfraPicAsm }
 
   TfraPicAsm = class(TFrame)
+  published
     ImageList16: TImageList;
     Label2: TLabel;
     MenuItem1: TMenuItem;
@@ -25,8 +26,6 @@ type
     StringGrid1: TStringGrid;
     procedure PopupMenu1Popup(Sender: TObject);
     procedure StringGrid1DblClick(Sender: TObject);
-    procedure StringGrid1MouseUp(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
   private
     pic: TCPUCore;
     defHeight : LongInt;  //Altura por defecto de fila
@@ -34,6 +33,7 @@ type
     margInstrc: Integer;
     curVarName: string;
     function AddressFromRow(ARow: integer): Integer;
+    function CurrentAddress: Integer;
     function FindNextLabel(row: integer): integer;
     function FindPrevLabel(row: integer): integer;
     procedure Fold(row1, row2: integer);
@@ -42,10 +42,18 @@ type
     procedure StringGrid1DrawCell(Sender: TObject; aCol, aRow: Integer;
       aRect: TRect; aState: TGridDrawState);
     procedure Unfold(row1, row2: integer);
-  public
-    procedure Refrescar(SetGridRow: boolean);
     procedure ResizeRow(i: integer);
+  public  //Eventos
+    OnCPUerror: procedure(txt: string) of object;
+  public  //Acciones de depuración
+    procedure SetPC;
+    procedure SetBrkPnt;
+    procedure StepIn;
+    procedure StepOver;
+    procedure ExecHere;
+  public  //Inicialización
     procedure SetCompiler(cxp0: TAnalyzer);
+    procedure Refrescar(SetGridRow: boolean);
     constructor Create(AOwner: TComponent) ; override;
   end;
 
@@ -55,17 +63,25 @@ implementation
 
 { TfraPicAsm }
 function TfraPicAsm.AddressFromRow(ARow: integer): Integer;  inline;
-var
-  add: TObject;
+//var
+//  add: TObject;
 begin
-  {La dirección de una fila está codificada en su campo Object[]}
-  add := StringGrid1.Objects[0, ARow];
-  Result := PtrUInt(add);  //Lee dirección física
+//  {La dirección de una fila está codificada en su campo Object[]}
+//  add := StringGrid1.Objects[0, ARow];
+//  Result := PtrUInt(add);  //Lee dirección física
+  //La dirección de una fila está en hexadecimal en la columna o
+  Result := StrToInt(StringGrid1.Cells[0,ARow]);
 end;
 function TfraPicAsm.RowFromAddress(add: Integer): Integer; inline;
 {Obtiene la fila de la grilla que corresponde a una dirección.}
 begin
   Result := pic.ram[add].rowGrid;
+end;
+function TfraPicAsm.CurrentAddress: Integer;  inline;
+{Devuelve la dirección actualmente seleccionada en la grilla}
+begin
+  //La dirección de una fila está en hexadecimal en la columna o
+  Result := AddressFromRow(StringGrid1.Row);
 end;
 procedure TfraPicAsm.StringGrid1DrawCell(Sender: TObject; aCol,
   aRow: Integer; aRect: TRect; aState: TGridDrawState);
@@ -282,37 +298,6 @@ begin
     end;
   end;
 end;
-procedure TfraPicAsm.StringGrid1MouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
-var
-  ACol, ARow: Longint;
-begin
-  if Button = mbRight then begin
-    StringGrid1.MouseToCell(X, Y, ACol, ARow);
-    if ACol>0 then begin
-      StringGrid1.Row := ARow;
-      PopupMenu1.PopUp;
-    end;
-  end;
-end;
-procedure TfraPicAsm.Refrescar(SetGridRow: boolean);
-var
-  pc: DWord;
-  i1, i2: Integer;
-begin
-  if SetGridRow then begin
-    pc := pic.ReadPC;
-    //Verifica si está plegada
-    if RowFolded(pc) then begin
-      i1 := FindPrevLabel(pc);
-      i2 := FindNextLabel(pc);
-      if (i1 = -1) or (i2 = -1) then exit;
-      Unfold(i1, i2);
-    end;
-    StringGrid1.Row := RowFromAddress(pc);
-  end;
-  StringGrid1.Invalidate;
-end;
 function TfraPicAsm.RowFolded(row: integer): boolean;
 var
   h: LongInt;
@@ -342,6 +327,70 @@ begin
     StringGrid1.RowHeights[i] := defHeight;
   end;
 end;
+//Acciones de depuración
+procedure TfraPicAsm.SetPC;
+//Fija el puntero del programa en la instrucción seleccionada.
+var
+  pc: Integer;
+begin
+  if StringGrid1.Row=-1 then exit;
+  pc := AddressFromRow(StringGrid1.Row);
+  pic.WritePC(pc);
+  StringGrid1.Invalidate;
+end;
+procedure TfraPicAsm.SetBrkPnt;
+{Pone o quita un Punto de Interrupción en la posición indicada}
+var
+  pc: word;
+begin
+  if StringGrid1.Row=-1 then exit;
+  pc := AddressFromRow(StringGrid1.Row);
+  pic.ToggleBreakpoint(pc);
+end;
+procedure TfraPicAsm.StepIn;
+{Ejecuta una instrucción, entrando al código de las subrutinas.}
+begin
+  pic.MsjError := '';
+  pic.Exec();
+  if pic.MsjError<>'' then begin
+    if OnCPUerror<>nil then OnCPUerror(pic.MsjError);
+  end;
+end;
+procedure TfraPicAsm.StepOver;
+{Ejecuta una instrucción sin entrar a subrutinas}
+var
+  pc: DWord;
+begin
+  if pic.ram[pic.ReadPC].value = 0 then begin
+    //Salta memoria no usada
+    pc := pic.ReadPC;
+    while (pc < high(pic.ram)) and (pic.ram[pc].value = 0) do begin
+      pc := pc + 1;  //Incrementa
+      pic.WritePC(pc);
+    end;
+    //MsgBox('$%x %d', [pc, pic.ram[pc].value]);
+  end else begin
+    pic.MsjError := '';
+    pic.ExecStep;
+    if pic.MsjError<>'' then begin
+      if OnCPUerror<>nil then OnCPUerror(pic.MsjError);
+    end;
+  end;
+end;
+procedure TfraPicAsm.ExecHere;
+{Ejecuta una instrucción hasta la dirección seleccionada.}
+var
+  pc: word;
+begin
+  if StringGrid1.Row=-1 then exit;
+  pc := AddressFromRow(StringGrid1.Row);
+  pic.MsjError := '';
+  pic.ExecTo(pc);  //Ejecuta hasta la sgte. instrucción, salta el i_CALL
+  if pic.MsjError<>'' then begin
+    if OnCPUerror<>nil then OnCPUerror(pic.MsjError);
+  end;
+end;
+//Inicialización
 procedure TfraPicAsm.SetCompiler(cxp0: TAnalyzer);
 var
   addr, f, minUsed: Integer;
@@ -377,14 +426,13 @@ begin
       StringGrid1.RowHeights[addr] := defHeight;
       StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
       StringGrid1.Cells[1, f] := '';
-//StringGrid1.Cells[1, f] := IntToStr(pic.ram[addr].value);
-      StringGrid1.Cells[2, f] := '';
+      //StringGrid1.Cells[2, f] := '';  //Reservado para el comentario lateral
       inc(addr);
     end else if pic.ram[addr].used = ruData then begin
       //Es espacio para variable
       StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
-      StringGrid1.Cells[1, f] := '<< Variable >>';
-      StringGrid1.Cells[2, f] := '';
+      StringGrid1.Cells[1, f] := '$' + IntToHex(pic.ram[addr].value, 2);
+      //StringGrid1.Cells[2, f] := '';  //Reservado para el comentario lateral
       inc(addr);
     end else begin
       //Debe ser código
@@ -393,13 +441,31 @@ begin
       StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
       opCode := pic.DisassemblerAt(addr, nBytes, true);  //Instrucción
       StringGrid1.Cells[1, f] := opCode;
-      StringGrid1.Cells[2, f] := '';
+      //StringGrid1.Cells[2, f] := '';  //Reservado para el comentario lateral
       inc(addr, nBytes);
     end;
     inc(f);
   end;
   StringGrid1.RowCount := f;  //Solo las filas usadas
   StringGrid1.EndUpdate();
+end;
+procedure TfraPicAsm.Refrescar(SetGridRow: boolean);
+var
+  pc: DWord;
+  i1, i2: Integer;
+begin
+  if SetGridRow then begin
+    pc := pic.ReadPC;
+    //Verifica si está plegada
+    if RowFolded(pc) then begin
+      i1 := FindPrevLabel(pc);
+      i2 := FindNextLabel(pc);
+      if (i1 = -1) or (i2 = -1) then exit;
+      Unfold(i1, i2);
+    end;
+    StringGrid1.Row := RowFromAddress(pc);
+  end;
+  StringGrid1.Invalidate;
 end;
 constructor TfraPicAsm.Create(AOwner: TComponent);
 begin

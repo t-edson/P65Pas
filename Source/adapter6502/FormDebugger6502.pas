@@ -24,12 +24,20 @@ type
     ImageList32: TImageList;
     ImageList16: TImageList;
     lstMessages: TListBox;
+    MenuItem1: TMenuItem;
+    MenuItem2: TMenuItem;
+    MenuItem3: TMenuItem;
+    MenuItem4: TMenuItem;
+    MenuItem5: TMenuItem;
+    MenuItem6: TMenuItem;
+    Separator1: TMenuItem;
     MenuItem7: TMenuItem;
     PanASM: TPanel;
     PanWatcher: TPanel;
     Panel3: TPanel;
     Panel4: TPanel;
     panRAM: TPanel;
+    PopupAsmGrid: TPopupMenu;
     PopupMenu2: TPopupMenu;
     Splitter1: TSplitter;
     Splitter2: TSplitter;
@@ -72,6 +80,7 @@ type
     curVarName : string;
     cxp: TAnalyzer;
     pic: TCPUCore;
+    procedure fraPicAsmCPUerror(txt: string);
     procedure picExecutionMsg(message: string);
     procedure RefreshScreen(SetGridRow: boolean = true);
   public
@@ -85,7 +94,7 @@ implementation
 {$R *.lfm}
 { TfrmDebugger6502 }
 procedure TfrmDebugger6502.Timer1Timer(Sender: TObject);
-{temporizador para eleditor de diagramas }
+{temporizador para el editor de diagramas }
 var
   stopped: boolean;
 begin
@@ -136,6 +145,11 @@ begin
     pic.CommStop := true;  //Manda comando para detener
   end;
 end;
+procedure TfrmDebugger6502.fraPicAsmCPUerror(txt: string);
+{El panel de Ensamblador ha generado un error de CPU.}
+begin
+  lstMessages.AddItem(txt, nil);
+end;
 procedure TfrmDebugger6502.Exec(cxp0: TAnalyzer);
 {Inicia el prcceso de depuración, mostrando la ventana.}
 begin
@@ -169,6 +183,15 @@ begin
   self.Show;
 end;
 procedure TfrmDebugger6502.FormCreate(Sender: TObject);
+  procedure CreaMenuConAccion(itemMenu: TMenuItem; accion: TBasicAction; TheOwner: TComponent);
+  {Agrega un nuevo ítem a un menú, a partir de una acción.}
+  var
+    mn: TMenuItem;
+  begin
+    mn :=  TMenuItem.Create(TheOwner);
+    mn.Action := accion;
+    itemMenu.Add(mn);
+  end;
 begin
   fraRamExp:= TfraRamExplorer6502.Create(self);
   fraRamExp.Parent := panRAM;
@@ -185,6 +208,9 @@ begin
   fraPicAsm:= TfraPicAsm.Create(self);
   fraPicAsm.Parent := PanASM;
   fraPicAsm.Align := alClient;
+  fraPicAsm.OnCPUerror  := @fraPicAsmCPUerror;
+  //Asigna menú contextual al Panel de ensamblador
+  fraPicAsm.StringGrid1.PopupMenu := PopupAsmGrid;
 
   //Altura de fila de la grilla por defecto
   defHeight := 20;
@@ -203,18 +229,47 @@ begin
     MsgBox('Hola');
   end;
 end;
-
 procedure TfrmDebugger6502.Panel3Click(Sender: TObject);
 begin
 
 end;
-
 procedure TfrmDebugger6502.FormClose(Sender: TObject; var CloseAction: TCloseAction
   );
 begin
   acGenPauseExecute(self);
 end;
 ////////////////////// Acciones ////////////////////
+procedure TfrmDebugger6502.acGenSetPCExecute(Sender: TObject);
+//Fija el puntero del programa en la instrucción seleccionada en el panel de ensamblador.
+begin
+  fraPicAsm.SetPC;
+end;
+procedure TfrmDebugger6502.acGenExecHerExecute(Sender: TObject);
+{Ejecuta una instrucción hasta la dirección seleccionada.}
+begin
+  fraPicAsm.ExecHere;
+  RefreshScreen;
+end;
+procedure TfrmDebugger6502.acGenSetBrkPntExecute(Sender: TObject);
+{Pone o quita un Punto de Interrupción en la posición indicada}
+var
+  pc: word;
+begin
+  fraPicAsm.SetBrkPnt;
+  RefreshScreen(false);  //¿Es necesario?
+end;
+procedure TfrmDebugger6502.acGenStepExecute(Sender: TObject);
+{Ejecuta una instrucción sin entrar a subrutinas}
+begin
+  fraPicAsm.StepOver;  //Ejecutamos usando el panel de ensamblador.
+  RefreshScreen;
+end;
+procedure TfrmDebugger6502.acGenStepInExecute(Sender: TObject);
+{Ejecuta una instrucción, entrando al código de las subrutinas.}
+begin
+  fraPicAsm.StepIn;   //Ejecutamos usando el panel de ensamblador.
+  RefreshScreen;
+end;
 procedure TfrmDebugger6502.acGenResetExecute(Sender: TObject);
 var
   pc: Integer;
@@ -226,7 +281,6 @@ begin
   Timer2.Enabled := false;
   acGenRun.Enabled := true;
   acGenPause.Enabled := false;
-//  RefreshScreen;
   lstMessages.Clear;
   lstMessages.AddItem('Restarting.', nil);
   //Start at the begin of code
@@ -270,29 +324,6 @@ begin
   RefreshScreen;
   lstMessages.AddItem('Execution Paused.', nil);
 end;
-procedure TfrmDebugger6502.acGenSetPCExecute(Sender: TObject);
-//Fija el puntero del programa en la instrucción seleccionada.
-var
-  row: Integer;
-begin
-  if fraPicAsm.StringGrid1.Row=-1 then exit;
-  row := fraPicAsm.StringGrid1.Row;
-  //La dirección real está en el campo Objects[]
-  if fraPicAsm.StringGrid1.Objects[0, row] = nil then exit;
-  row := PtrUInt(fraPicAsm.StringGrid1.Objects[0, row]);
-  pic.WritePC(row);
-  fraPicAsm.StringGrid1.Invalidate;
-end;
-procedure TfrmDebugger6502.acGenExecHerExecute(Sender: TObject);
-{Ejecuta una instrucción hasta la dirección seleccionada.}
-var
-  pc: word;
-begin
-  if fraPicAsm.StringGrid1.Row=-1 then exit;
-  pc := fraPicAsm.StringGrid1.Row;
-  pic.ExecTo(pc);  //Ejecuta hasta la sgte. instrucción, salta el i_CALL
-  RefreshScreen;
-end;
 procedure TfrmDebugger6502.acGenClearCCExecute(Sender: TObject);
 {Reinica el contador de ciclos.}
 begin
@@ -304,44 +335,6 @@ procedure TfrmDebugger6502.acGenAddWatchExecute(Sender: TObject);
 begin
   fraRegWat.AddWatch(curVarName);
 end;
-procedure TfrmDebugger6502.acGenSetBrkPntExecute(Sender: TObject);
-{Pone o quita un Punto de Interrupción en la posición indicada}
-var
-  pc: word;
-begin
-  if fraPicAsm.StringGrid1.Row=-1 then exit;
-  pc := fraPicAsm.StringGrid1.Row;
-  pic.ToggleBreakpoint(pc);
-  RefreshScreen(false);
-end;
-procedure TfrmDebugger6502.acGenStepExecute(Sender: TObject);
-{Ejecuta una instrucción sin entrar a subrutinas}
-var
-  pc: DWord;
-begin
-  if pic.ram[pic.ReadPC].value = 0 then begin
-    //Salta memoria no usada
-    pc := pic.ReadPC;
-    while (pc < high(pic.ram)) and (pic.ram[pc].value = 0) do begin
-      pc := pc + 1;  //Incrementa
-      pic.WritePC(pc);
-    end;
-    //MsgBox('$%x %d', [pc, pic.ram[pc].value]);
-  end else begin
-    pic.MsjError := '';
-    pic.ExecStep;
-    if pic.MsjError<>'' then begin
-      lstMessages.AddItem(pic.MsjError, nil);
-    end;
-  end;
-  RefreshScreen;
-end;
-procedure TfrmDebugger6502.acGenStepInExecute(Sender: TObject);
-{Ejecuta una isntrucción, entrando al código de las subrutinas.}
-begin
-  pic.Exec();
-  RefreshScreen;
-end;
 
 end.
-
+//352

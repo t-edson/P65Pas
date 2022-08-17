@@ -697,6 +697,7 @@ begin
     STATUS_Z := W = 0;
     STATUS_N := W > 127;
     STATUS_C := tmpRes>255;
+//    STATUS_V := W ;
   end;
   i_AND: begin  //and (with accumulator)
     W := W and ram[addr].value;
@@ -943,17 +944,17 @@ begin
     Inc(nClck, nCycles);
     exit;
   end;  //jump subroutine
-  i_LDA: begin //load accumulator
+  i_LDA: begin //Load accumulator
     W := ram[addr].value;
     STATUS_Z := W = 0;
     STATUS_N := W > 127;
   end;
-  i_LDX: begin //load X
+  i_LDX: begin //Load X
     X := ram[addr].value;
     STATUS_Z := X = 0;
     STATUS_N := X > 127;
   end;
-  i_LDY: begin //load y
+  i_LDY: begin //Load y
     Y := ram[addr].value;
     STATUS_Z := Y = 0;
     STATUS_N := Y > 127;
@@ -971,28 +972,28 @@ begin
     else ram[addr].value := tmp;
   end;  //logical shift right
   i_NOP: ;  //no operation
-  i_ORA: begin  //or with accumulator
+  i_ORA: begin  //Or with accumulator
     W := W or ram[addr].value;
     STATUS_Z := W = 0;
     STATUS_N := W > 127;
   end;
-  i_PHA: begin //push accumulator
+  i_PHA: begin  //Push accumulator
     ram[$100 + SP].value := W;
     if SP = $00 then SP := $FF else dec(SP);
   end;
-  i_PHP: begin  //push processor status (SR)
+  i_PHP: begin  //Push processor status (SR)
     ram[$100 + SP].value := STATUS;
     if SP = $00 then SP := $FF else dec(SP);
   end;
-  i_PLA: begin  //pull accumulator
+  i_PLA: begin  //Pull accumulator
     if SP = $FF then SP := $00 else inc(SP);
     W := ram[$100 + SP].value;
   end;
-  i_PLP: begin  //pull processor status (SR)
+  i_PLP: begin  //Pull processor status (SR)
     if SP = $FF then SP := $00 else inc(SP);
     SR := ram[$100 + SP].value;
   end;
-  i_ROL: begin  //rotate left
+  i_ROL: begin  //Rotate left
     STATUS_N := false;
     if modIns = aAcumulat then tmp := W
     else tmp := ram[addr].value;
@@ -1007,7 +1008,7 @@ begin
     if modIns = aAcumulat then W := tmp
     else ram[addr].value := tmp;
   end;
-  i_ROR: begin  //rotate right
+  i_ROR: begin  //Rotate right
     STATUS_N := false;
     if modIns = aAcumulat then  tmp := W
     else tmp := ram[addr].value;
@@ -1022,7 +1023,7 @@ begin
     if modIns = aAcumulat then  W := tmp
     else ram[addr].value := tmp;
   end;
-  i_RTI: begin  //return from interrupt
+  i_RTI: begin  //Return from interrupt
     if SP = $FF then SP := $00 else inc(SP);
     SR := ram[$100 + SP].value;
     if SP = $FF then SP := $00 else inc(SP);
@@ -1033,7 +1034,7 @@ begin
     Inc(nClck, nCycles);
     exit;
   end;
-  i_RTS: begin  //return from subroutine
+  i_RTS: begin  //Return from subroutine
     if SP = $FF then SP := $00 else inc(SP);
     PC.L := ram[$100 + SP].value;
     if SP = $FF then SP := $00 else inc(SP);
@@ -1042,16 +1043,16 @@ begin
     Inc(nClck, nCycles);
     exit;
   end;
-  i_SBC: begin  //subtract with carry
+  i_SBC: begin  //Subtract with carry
     if STATUS_C then begin
-      tmpRes := W - ram[addr].value - 1;
-    end else begin
       tmpRes := W - ram[addr].value;
+    end else begin
+      tmpRes := W - ram[addr].value - 1;
     end;
     W := tmpRes and $FF;
     STATUS_Z := W = 0;
     STATUS_N := W > 127;
-    STATUS_C := tmpRes<0;
+    STATUS_C := not (tmpRes<0);
   end;
   i_SEC: STATUS_C := true;  //set carry
   i_SED: STATUS_D := true;  //set decimal

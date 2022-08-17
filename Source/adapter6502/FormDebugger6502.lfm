@@ -1,10 +1,10 @@
 object frmDebugger6502: TfrmDebugger6502
-  Left = 343
-  Height = 839
-  Top = 13
+  Left = 337
+  Height = 798
+  Top = 111
   Width = 1004
   Caption = 'Debugger'
-  ClientHeight = 839
+  ClientHeight = 798
   ClientWidth = 1004
   DesignTimePPI = 120
   OnClose = FormClose
@@ -14,7 +14,7 @@ object frmDebugger6502: TfrmDebugger6502
   object StatusBar1: TStatusBar
     Left = 0
     Height = 29
-    Top = 810
+    Top = 769
     Width = 1004
     Panels = <    
       item
@@ -34,7 +34,7 @@ object frmDebugger6502: TfrmDebugger6502
   end
   object PanASM: TPanel
     Left = 180
-    Height = 758
+    Height = 717
     Top = 52
     Width = 346
     Align = alLeft
@@ -49,7 +49,7 @@ object frmDebugger6502: TfrmDebugger6502
   end
   object panRAM: TPanel
     Left = 0
-    Height = 758
+    Height = 717
     Top = 52
     Width = 174
     Align = alLeft
@@ -57,18 +57,18 @@ object frmDebugger6502: TfrmDebugger6502
   end
   object Panel3: TPanel
     Left = 532
-    Height = 758
+    Height = 717
     Top = 52
     Width = 472
     Align = alClient
-    ClientHeight = 758
+    ClientHeight = 717
     ClientWidth = 472
     TabOrder = 2
     OnClick = Panel3Click
     object Panel4: TPanel
       Left = 1
       Height = 81
-      Top = 676
+      Top = 635
       Width = 470
       Align = alBottom
       ClientHeight = 81
@@ -88,14 +88,14 @@ object frmDebugger6502: TfrmDebugger6502
       Cursor = crVSplit
       Left = 1
       Height = 6
-      Top = 670
+      Top = 629
       Width = 470
       Align = alBottom
       ResizeAnchor = akBottom
     end
     object PanWatcher: TPanel
       Left = 1
-      Height = 375
+      Height = 334
       Top = 1
       Width = 470
       Align = alTop
@@ -131,12 +131,12 @@ object frmDebugger6502: TfrmDebugger6502
       Action = acGenPause
     end
     object ToolButton5: TToolButton
-      Left = 155
+      Left = 153
       Top = 2
       Action = acGenStep
     end
     object ToolButton6: TToolButton
-      Left = 203
+      Left = 201
       Top = 2
       Action = acGenStepIn
     end
@@ -150,27 +150,20 @@ object frmDebugger6502: TfrmDebugger6502
   end
   object Splitter1: TSplitter
     Left = 174
-    Height = 758
+    Height = 717
     Top = 52
     Width = 6
   end
   object Splitter2: TSplitter
     Left = 526
-    Height = 758
+    Height = 717
     Top = 52
     Width = 6
   end
   object ActionList1: TActionList
     Images = ImageList16
-    Left = 520
+    Left = 328
     Top = 400
-    object acGenReset: TAction
-      Caption = 'Restart'
-      Hint = 'Reset'
-      ImageIndex = 8
-      OnExecute = acGenResetExecute
-      ShortCut = 117
-    end
     object acGenStep: TAction
       Caption = 'Step Over'
       Hint = 'Step'
@@ -203,6 +196,13 @@ object frmDebugger6502: TfrmDebugger6502
       ImageIndex = 9
       OnExecute = acGenSetBrkPntExecute
       ShortCut = 116
+    end
+    object acGenReset: TAction
+      Caption = 'Restart'
+      Hint = 'Reset'
+      ImageIndex = 8
+      OnExecute = acGenResetExecute
+      ShortCut = 117
     end
     object acGenRun: TAction
       Caption = '&Run'
@@ -902,8 +902,8 @@ object frmDebugger6502: TfrmDebugger6502
     Top = 150
   end
   object PopupMenu2: TPopupMenu
-    Left = 470
-    Top = 750
+    Left = 312
+    Top = 760
     object MenuItem7: TMenuItem
       Action = acGenClearCC
     end
@@ -913,5 +913,31 @@ object frmDebugger6502: TfrmDebugger6502
     OnTimer = Timer2Timer
     Left = 210
     Top = 150
+  end
+  object PopupAsmGrid: TPopupMenu
+    Images = ImageList16
+    Left = 64
+    Top = 104
+    object MenuItem1: TMenuItem
+      Action = acGenStep
+    end
+    object MenuItem2: TMenuItem
+      Action = acGenStepIn
+    end
+    object MenuItem3: TMenuItem
+      Action = acGenExecHer
+    end
+    object MenuItem4: TMenuItem
+      Action = acGenSetBrkPnt
+    end
+    object MenuItem5: TMenuItem
+      Action = acGenSetPC
+    end
+    object Separator1: TMenuItem
+      Caption = '-'
+    end
+    object MenuItem6: TMenuItem
+      Action = acGenReset
+    end
   end
 end

@@ -7,14 +7,15 @@
   <SplitterCol Val="2368548"/>
   <TextPanel Val="8421504"/>
   <currPath Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\hello_c64.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
   <SynTreeWidth Val="233"/>
-  <EditAsmWidth Val="417"/>
+  <EditAsmWidth Val="736"/>
   <ViewPanAssem Val="True"/>
   <winXpos Val="0"/>
   <winYpos Val="33"/>
@@ -51,11 +52,11 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\hello_c64.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test3_Procedure.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test3_Structs1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test4_Asm.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test2_Boolean.pas
 "/>
   </Edit>
   <ExternTool>
