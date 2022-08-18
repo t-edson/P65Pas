@@ -97,7 +97,7 @@ type
     procedure SetFunVariab(fun: TEleExpress; rVar: TEleVarDec);
     procedure SetFunVariab(fun: TEleExpress; addr: word);
     procedure SetFunVariab_RamVarOf(fun: TEleExpress; rVar: TEleVarDec;
-      offset: integer);
+      offset: integer; offsetVar: TEleVarDec);
     procedure SetFunExpres(fun: TEleExpress);
     //Set result as a constant.
     procedure SetFunConst_bool(fun: TEleExpress; valBool: Boolean);
@@ -522,10 +522,10 @@ begin
   AcumStatInZ := true;   //Default TRUE is explained in Documentation.
 end;
 procedure TGenCodBas.SetFunVariab_RamVarOf(fun: TEleExpress; rVar: TEleVarDec;
-  offset: integer);
+  offset: integer; offsetVar: TEleVarDec);
 {Set an operand TxpEleExpress to type otVariab and storage stRamVarOf.}
 begin
-  fun.SetVariab_RamVarOf(rVar, offset);
+  fun.SetVariab_RamVarOf(rVar, offset, offsetVar);
   lastASMcode := lacNone;
   AcumStatInZ := true;   //Default TRUE is explained in Documentation.
 end;

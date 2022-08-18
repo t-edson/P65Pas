@@ -482,7 +482,8 @@ type  //Expression elements
   public  //Set variable fields.
     procedure SetVariab(var0: TEleVarDec);
     procedure SetVariab(add0: word);
-    procedure SetVariab_RamVarOf(var0: TEleVarDec; offset: integer);
+    procedure SetVariab_RamVarOf(var0: TEleVarDec; offset: integer;
+      offsetVar: TEleVarDec);
   private //Fields used when opType is otVariab and Sto is stRamFix.
     dirVar: boolean;  //Flag that indicates the address should be read from "dirAdd".
     dirAdd: word;     //Physical address when this expression is not associated to a variable (rvar).
@@ -491,8 +492,10 @@ type  //Expression elements
     rvar   : TEleVarDec;  {Reference to variable, when variable is associated to a
                           variable declaration (stRamFix). Also is used to reference to
                           the variable with the final address (stRamVar or stRamVarOf).}
+    //Fields for Offset when storage is stRamvarOf.
+    offs   : integer;     //Offset to address when storage is stRamVarOf.
+    offVar : TEleVarDec;  //Reference to variable that defines the offset.  Like in arrays.
     //Fields used when variable is allocated.
-    offs   : integer;    {Offset to address when storage is stRamVarOf.}
     function add: word;  {Base address.}
     function addL: word;
     function addH: word;
@@ -932,14 +935,16 @@ begin
   dirVar    := true;
   dirAdd    := add0;
 end;
-procedure TEleExpress.SetVariab_RamVarOf(var0: TEleVarDec; offset: integer);
+procedure TEleExpress.SetVariab_RamVarOf(var0: TEleVarDec; offset: integer;
+  offsetVar: TEleVarDec);
 {Set as variable type with storage stRamVarOf.}
 begin
   opType    := otVariab;
   Sto       := stRamVarOf;  //Almacenamiento por defecto.
   rvar      := var0;  //Use this reference to the variable-address.
-  //add := "add" is not defined until reading variable;
-  offs := offset;
+  //Fields for offset
+  offs      := offset;
+  offVar    := offsetVar;
 end;
 
 function TEleExpress.add: word;

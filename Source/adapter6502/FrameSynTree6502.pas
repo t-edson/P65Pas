@@ -9,10 +9,14 @@ uses
 type
   { TfraSynxTree6502 }
   TfraSynxTree6502 = class(TFrame)
+  published
     acGenRefres: TAction;
     acGenGoTo: TAction;
     acGenProp: TAction;
     acGenExpAll: TAction;
+    acGenDoAnalys: TAction;
+    acGenDoOptim: TAction;
+    acGenDoSinth: TAction;
     ActionList1: TActionList;
     ImageList1: TImageList;
     MenuItem1: TMenuItem;
@@ -32,6 +36,9 @@ type
     PopupFrame: TPopupMenu;
     TreeFilterEdit1: TTreeFilterEdit;
     TreeView1: TTreeView;
+    procedure acGenDoAnalysExecute(Sender: TObject);
+    procedure acGenDoOptimExecute(Sender: TObject);
+    procedure acGenDoSinthExecute(Sender: TObject);
     procedure acGenExpAllExecute(Sender: TObject);
     procedure acGenGoToExecute(Sender: TObject);
     procedure acGenRefresExecute(Sender: TObject);
@@ -56,13 +63,16 @@ type
       var PaintImages, DefaultDraw: Boolean);
   public
     OnLocateElemen: procedure(fileSrc: string; row, col: integer) of object;
+    OnReqAnalysis  : procedure of object;
+    OnReqOptimizat : procedure of object;
+    OnReqSynthesis : procedure of object;
     procedure SetBackColor(AValue: TColor);
     procedure SetTextColor(AValue: TColor);
     function HasFocus: boolean;
     property BackColor: TColor read FBackColor write SetBackColor;
     property TextColor: TColor read FTextColor write SetTextColor;
+  public    //Initialization
     procedure Refresh;
-    procedure SetLanguage;
     procedure Init(Compiler: TCompilerBase);
     constructor Create(AOwner: TComponent) ; override;
   end;
@@ -79,10 +89,6 @@ var
   TIT_OTHER: String;
 
 { TfraSynxTree6502 }
-procedure TfraSynxTree6502.SetLanguage;
-begin
-  Refresh;
-end;
 function TfraSynxTree6502.AddNodeTo(nodParent: TTreeNode; elem: TxpElement): TTreeNode;
 {Agrega un elemento a un noco.}
 var
@@ -183,23 +189,6 @@ begin
       if elem.idClass = eleSenten then nodElem.Expanded := true;
       if elem.Parent.idClass = eleSenten then nodElem.Expanded := true; //Expande instrucciones
   end;
-end;
-procedure TfraSynxTree6502.Refresh;
-{Actualiza el árbol de sintaxis con el AST del compilador}
-var
-  nodMain: TTreeNode;
-begin
-  TreeView1.Visible := true;
-
-  TreeView1.Items.BeginUpdate;
-  TreeView1.Items.Clear;
-  nodMain := TreeView1.Items.AddChild(nil, TIT_MAIN);
-  nodMain.ImageIndex := 1;
-  nodMain.SelectedIndex := 1;
-  nodMain.Data := syntaxTree.main;  //Elemento raiz
-  RefreshByDeclar(nodMain, syntaxTree.main);
-  nodMain.Expanded := true;    //Expande nodo raiz
-  TreeView1.Items.EndUpdate;
 end;
 function TfraSynxTree6502.SelectedIsMain: boolean;
 //Indica si el nodo seleccionado es el nodo raiz
@@ -319,6 +308,39 @@ begin
   elem := TxpElement(TreeView1.Selected.Data);
   frmElemProp.Exec(cpx, elem);
   frmElemProp.Show;
+end;
+procedure TfraSynxTree6502.acGenDoAnalysExecute(Sender: TObject);
+{Require the compiler to do Only Analysis.}
+begin
+  if OnReqAnalysis<>nil then OnReqAnalysis();
+end;
+procedure TfraSynxTree6502.acGenDoOptimExecute(Sender: TObject);
+{Require the compiler to do Analysis and Optimization.}
+begin
+  if OnReqOptimizat<>nil then OnReqOptimizat();
+end;
+procedure TfraSynxTree6502.acGenDoSinthExecute(Sender: TObject);
+{Require the compiler to do Analysis, Optimization and Synthesis.}
+begin
+  if OnReqSynthesis<>nil then OnReqSynthesis();
+end;
+//Initialization
+procedure TfraSynxTree6502.Refresh;
+{Actualiza el árbol de sintaxis con el AST del compilador}
+var
+  nodMain: TTreeNode;
+begin
+  TreeView1.Visible := true;
+
+  TreeView1.Items.BeginUpdate;
+  TreeView1.Items.Clear;
+  nodMain := TreeView1.Items.AddChild(nil, TIT_MAIN);
+  nodMain.ImageIndex := 1;
+  nodMain.SelectedIndex := 1;
+  nodMain.Data := syntaxTree.main;  //Elemento raiz
+  RefreshByDeclar(nodMain, syntaxTree.main);
+  nodMain.Expanded := true;    //Expande nodo raiz
+  TreeView1.Items.EndUpdate;
 end;
 procedure TfraSynxTree6502.Init(Compiler    : TCompilerBase);
 begin

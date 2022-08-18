@@ -1700,7 +1700,9 @@ begin
 //      TreeElems.OpenElement(Op1.Parent);  //Returns to parent (sentence).
 //      SkipWhites;  //Prepares for take next operator.
     end else begin  //Must be '['.
+      //We have: array[something].
       Next;    //Takes "[".
+      //Lets find de getitem() method.
       if not Op1.Typ.FindElemName('_GETITEM', field) then begin
         //There are not fields for this type
         GenError('Undefined method %s for type %s', ['_getitem()', Op1.Typ.name]);

@@ -451,6 +451,7 @@ procedure TGenCod.BOR_byte_asig_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
   parBsto: TStorage;
+  offset: Integer;
 begin
   SetFunNull(fun);  //In Pascal an assigment doesn't return type.
   parA := TEleExpress(fun.elements[0]);  //Parameter A
@@ -558,15 +559,22 @@ begin
       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
     end;
   end else if parA.Sto = stRamVarOf then begin
-    //Assignment to a variable indexed
+    //Assignment to a indexed variable.
+    //"parA.rvar" is index variable.
+    //"parA.offs" and "parA.offVar" defines the offset.
+    if parA.offVar = nil then begin
+      offset := parA.offs;
+    end else begin
+      offset := parA.offs + parA.offVar.addr;
+    end;
     case parB.Sto of
     stConst : begin
       _LDAi(parB.val);
       _LDX(parA.rvar.addr);  //Load address
-      if parA.offs<256 then begin
-        pic.codAsm(i_STA, aZeroPagX, parA.offs);
+      if offset<256 then begin
+        pic.codAsm(i_STA, aZeroPagX, offset);
       end else begin
-        pic.codAsm(i_STA, aAbsolutX, parA.offs);
+        pic.codAsm(i_STA, aAbsolutX, offset);
       end;
     end;
     stRamFix: begin
@@ -4937,7 +4945,7 @@ begin
       {This is a special case where the result operand type, depends on if
       par is allocated.}
       if par.allocated then begin
-        SetFunVariab_RamVarOf(fun, par.rvar, 0);
+        SetFunVariab_RamVarOf(fun, par.rvar, 0, nil);
         fun.value.valInt := par.add;
       end else begin
         {No allocated. We keep this as an expression in order to force the
@@ -5097,7 +5105,7 @@ begin
       end;
     end;
     stRamFix: begin  //Indexado por variable
-      SetFunVariab_RamVarOf(fun, idx.rvar, arrVar.add); //Index by variable and an offset
+      SetFunVariab_RamVarOf(fun, idx.rvar, 0, arrVar.rvar); //Index by variable and an offset
       //if idx.Typ.IsByteSize then begin
       //  //Index is byte-size variable
       //  if itemType.IsByteSize then begin

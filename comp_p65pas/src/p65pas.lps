@@ -10,7 +10,7 @@
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
         <TopLine Value="100"/>
-        <CursorPos X="23" Y="115"/>
+        <CursorPos X="23" Y="116"/>
         <FoldState Value=" T4201 T3T2H01331p"/>
         <UsageCount Value="61"/>
         <Loaded Value="True"/>
@@ -20,7 +20,7 @@
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="1"/>
         <TopLine Value="716"/>
-        <CursorPos X="12" Y="722"/>
+        <CursorPos Y="722"/>
         <UsageCount Value="26"/>
         <Loaded Value="True"/>
       </Unit>

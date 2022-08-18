@@ -29,7 +29,11 @@ type
     pCompExt1: TConfigPage;
     pCompExt2: TConfigPage;
     pCompExt3: TConfigPage;
+    procedure CompileLevel(level: integer);
     procedure CompilerMessageBox(txt: string; mode: integer);
+    procedure SynTree_ReqAnalysis;
+    procedure SynTree_ReqOptimizat;
+    procedure SynTree_ReqSynthesis;
     procedure ReadCompilerSettings(var pars: string);
   private
     //Herramienta de completado y manejo de código
@@ -56,7 +60,7 @@ type
     procedure CompilerError(errTxt: string; const srcPos: TSrcPos);
     procedure CompilerInfo(infTxt: string; const srcPos: TSrcPos);
     procedure CompilerWarning(warTxt: string; const srcPos: TSrcPos);
-    procedure fraSynTreeLocateElemen(fileSrc: string; row, col: integer);
+    procedure SynTree_LocateElemen(fileSrc: string; row, col: integer);
     procedure UpdateTools;
   public      //Acciones adicionales de "adapterForm"
     procedure CompileAndExec(Sender: TObject);
@@ -140,12 +144,6 @@ var
 begin
   fName := compiler.ctxFile(srcPos);
   if OnWarning<>nil then OnWarning(warTxt, fname, srcPos.row, srcPos.col);
-end;
-procedure TAdapter6502.fraSynTreeLocateElemen(fileSrc: string; row, col: integer
-  );
-{Se pide localizar la posición en archivo de un elemento}
-begin
-  fraEditView1.SelectOrLoad(fileSrc, row, col, false);
 end;
 procedure TAdapter6502.CompilerInfo(infTxt: string; const srcPos: TSrcPos);
 var
@@ -312,6 +310,46 @@ begin
   AddLine(pars, '-Fu"' + fraCfgCompiler.unitPathExpanded + '"');    //Agrega esta ruta a las rutas de unidades del compilador.
   if fraCfgAsmOut.IncComment  then AddLine(pars, '-Ac');   //Comentario detallado
 end;
+procedure TAdapter6502.CompileLevel(level: integer);
+{Ejecuta una compilación en el archivo actual del editor, con un nivel
+de detalle definido por "level".}
+var
+  ed: TSynEditor;
+  pars: string = '';
+begin
+  //Validación de editor disponible
+  if fraEditView1.ActiveEditor=nil then exit;
+  ed := fraEditView1.ActiveEditor;
+  if ed.FileName='' then exit;
+  //Verifica rápidamente si hay texto en el editor
+  if (ed.sedit.Lines.Count<=1) and (trim(ed.Text)='') then exit;
+  case level of
+    0: begin  //No actions
+      //pars := '-Cn' + LineEnding + '-Dn';  //<No action>
+      exit;
+    end;
+    1: begin  //Do Only Analysis
+      AddLine(pars, '-Ca');
+      AddLine(pars, '-Dn');  //Disable directive messages
+      ReadCompilerSettings(pars);
+    end;
+    2: begin  //Do Analysis and Optimization.
+      AddLine(pars, '-Cao');
+      AddLine(pars, '-Dn');  //Disable directive messages
+      ReadCompilerSettings(pars);
+    end;
+    3: begin  //Do complete compilation.
+      AddLine(pars, '-C');
+      AddLine(pars, '-Dn');  //Disable directive messages
+      ReadCompilerSettings(pars);
+    end;
+  end;
+  //Inicio de compilación
+  nErrors := 0;
+  if OnBeforeCheckSyn<>nil then OnBeforeCheckSyn();
+  Compiler.Exec(ed.FileName, '', pars);
+  if OnAfterCheckSyn<>nil then OnAfterCheckSyn();
+end;
 procedure TAdapter6502.Compile;
 {Ejecuta el compilador para generar un archivo binario de salida.}
 var
@@ -341,43 +379,9 @@ begin
 end;
 procedure TAdapter6502.CheckSyntax;
 {Ejecuta el compilador para realizar una verificación de sintaxis.}
-var
-  ed: TSynEditor;
-  pars: string = '';
 begin
-  //Validación de editor disponible
-  if fraEditView1.ActiveEditor=nil then exit;
-  ed := fraEditView1.ActiveEditor;
-  if ed.FileName='' then exit;
-  //Verifica rápidamente si hay texto en el editor
-  if (ed.sedit.Lines.Count<=1) and (trim(ed.Text)='') then exit;
-  //Lee configuración de verif. de sintaxis.
-  case fraCfgAfterChg.actAfterChg of
-    0: begin  //No actions
-      //pars := '-Cn' + LineEnding + '-Dn';  //<No action>
-      exit;
-    end;
-    1: begin  //Do Only Analysis
-      AddLine(pars, '-Ca');
-      AddLine(pars, '-Dn');  //Disable directive messages
-      ReadCompilerSettings(pars);
-    end;
-    2: begin  //Do Analysis and Optimization.
-      AddLine(pars, '-Cao');
-      AddLine(pars, '-Dn');  //Disable directive messages
-      ReadCompilerSettings(pars);
-    end;
-    3: begin  //Do complete compilation.
-      AddLine(pars, '-C');
-      AddLine(pars, '-Dn');  //Disable directive messages
-      ReadCompilerSettings(pars);
-    end;
-  end;
-  //Inicio de compilación
-  nErrors := 0;
-  if OnBeforeCheckSyn<>nil then OnBeforeCheckSyn();
-  Compiler.Exec(ed.FileName, '', pars);
-  if OnAfterCheckSyn<>nil then OnAfterCheckSyn();
+  //Compila de acuerdo a la configuración de verif. de sintaxis.
+  CompileLevel(fraCfgAfterChg.actAfterChg);
   UpdateTools;
 end;
 procedure TAdapter6502.NotifyConfigChanged(MessPanBack, MessPanText,
@@ -404,6 +408,30 @@ begin
   if mode = 1 then MsgExc(txt);
   if mode = 2 then MsgErr(txt);
 end;
+procedure TAdapter6502.SynTree_LocateElemen(fileSrc: string; row, col: integer);
+{Se pide localizar la posición en archivo de un elemento}
+begin
+  fraEditView1.SelectOrLoad(fileSrc, row, col, false);
+end;
+procedure TAdapter6502.SynTree_ReqAnalysis;
+{Se pide realizar Análisis.}
+begin
+  CompileLevel(1);
+  fraSynTree.Refresh;
+end;
+procedure TAdapter6502.SynTree_ReqOptimizat;
+{Se pide realizar Análisis y Optimización.}
+begin
+  CompileLevel(2);
+  fraSynTree.Refresh;
+end;
+procedure TAdapter6502.SynTree_ReqSynthesis;
+{Se pide realizar Análisis, Optimización y Síntesis.}
+begin
+  CompileLevel(3);
+  fraSynTree.Refresh;
+end;
+
 //Inicialización
 procedure TAdapter6502.LoadAsmSyntaxEd;
 {Carga archivo de sinatxis para el editor de ASM}
@@ -450,12 +478,11 @@ begin
   fraSynTree.Parent := tab;
   fraSynTree.Visible := true;
   fraSynTree.Align := alClient;
-  fraSynTree.OnLocateElemen  := @fraSynTreeLocateElemen;
-//  //Asigna referencias a formularios de configuración
-//  fraCfgAfterChg := frmCfgAfterChg0;
-//  fraCfgCompiler := fraCfgCompiler0;
-//  fraCfgAsmOut   := fraCfgAsmOut0;
-  //COnfigura editor de ensamblador
+  fraSynTree.OnLocateElemen  := @SynTree_LocateElemen;
+  fraSynTree.OnReqAnalysis  := @SynTree_ReqAnalysis;
+  fraSynTree.OnReqOptimizat  := @SynTree_ReqOptimizat;
+  fraSynTree.OnReqSynthesis  := @SynTree_ReqSynthesis;
+  //Configura editor de ensamblador
   edAsm.Parent := panRightPanel;
   edAsm.Align := alClient;
   edAsm.Highlighter := hlAssem;

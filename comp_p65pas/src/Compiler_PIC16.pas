@@ -78,7 +78,9 @@ begin
           ConstantFoldExpr(parExpr);  //Try to evaluate constant.
           if HayError then exit;
         end;
-        { TODO : Tal vez sea posible que por optimización, solo llamar a funcBase.codSysInline() cuando los parámetros (o alguno) sean constante, para evitar muchas llamadas }
+        { TODO : Tal vez sea posible que por optimización, solo llamar a
+        funcBase.codSysInline() cuando los parámetros (o alguno) sean constante,
+        para evitar muchas llamadas }
         funcBase.codSysInline(eleExp);  //We don't expect this generates code.
         //Check if we can simplify
         if eleExp.opType = otConst then begin
@@ -759,9 +761,9 @@ Must be called after DoOptimize().}
       pic.codByte(0, ruData);           //To complete later
       pic.codByte(0, ruData);           //To complete later
       pic.codByte(0, ruData);           //To complete later
-      pic.codByte($00, true);  //Fin de instrucción
-      pic.codByte($00, true);  //Sgte línea BASIC
-      pic.codByte($00, true);  //Sgte línea BASIC
+      pic.codByte($00, ruData);  //Fin de instrucción
+      pic.codByte($00, ruData);  //Sgte línea BASIC
+      pic.codByte($00, ruData);  //Sgte línea BASIC
     end else if bootloader = bldCustom then begin
       for i:=0 to high(loaderBytes) do begin
         if loaderBytes[i]=-76 then begin
