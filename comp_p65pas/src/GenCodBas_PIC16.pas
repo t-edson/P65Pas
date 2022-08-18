@@ -265,7 +265,8 @@ procedure TGenCodBas.PutLabel(lbl: string);
 {Agrega uan etiqueta antes de la instrucción. Se recomienda incluir solo el nombre de
 la etiqueta, sin ":", ni comentarios, porque este campo se usará para desensamblar.}
 begin
-  pic.addTopLabel(lbl);  //agrega línea al código ensmblador
+//  pic.addTopLabel(lbl);  //agrega línea al código ensmblador
+  pic.ram[pic.iRam].name := lbl;  //Add as cell name
 end;
 procedure TGenCodBas.PutTopComm(cmt: string; replace: boolean = true);
 //Agrega comentario al inicio de la posición de memoria

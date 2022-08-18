@@ -42,7 +42,7 @@ type
     procedure StringGrid1DrawCell(Sender: TObject; aCol, aRow: Integer;
       aRect: TRect; aState: TGridDrawState);
     procedure Unfold(row1, row2: integer);
-    procedure ResizeRow(i: integer);
+    procedure ResizeRowHeight(irow: integer);
   public  //Eventos
     OnCPUerror: procedure(txt: string) of object;
   public  //Acciones de depuración
@@ -63,14 +63,15 @@ implementation
 
 { TfraPicAsm }
 function TfraPicAsm.AddressFromRow(ARow: integer): Integer;  inline;
-//var
-//  add: TObject;
+var
+  add: TObject;
 begin
-//  {La dirección de una fila está codificada en su campo Object[]}
-//  add := StringGrid1.Objects[0, ARow];
-//  Result := PtrUInt(add);  //Lee dirección física
-  //La dirección de una fila está en hexadecimal en la columna o
-  Result := StrToInt(StringGrid1.Cells[0,ARow]);
+  {La dirección de una fila está codificada en su campo Object[]}
+  add := StringGrid1.Objects[0, ARow];
+  Result := PtrUInt(add);  //Lee dirección física
+//  //La dirección de una fila está en hexadecimal en la columna 0.
+//  //Este acceso es más fácil pero más lento
+//  Result := StrToInt(StringGrid1.Cells[0,ARow]);
 end;
 function TfraPicAsm.RowFromAddress(add: Integer): Integer; inline;
 {Obtiene la fila de la grilla que corresponde a una dirección.}
@@ -135,7 +136,7 @@ begin
     rowHeight := StringGrid1.RowHeights[Arow];
     if rowHeight = defHeight*3 then begin
       //Celda con comentario superior y etiqueta
-      lab := trim(ramCell^.topLabel)+':';
+      lab := trim(ramCell^.name)+':';
       comm := trim(ramCell^.topComment);
       cv.Font.Color := clGray;
       cv.TextOut(aRect.Left + 2, aRect.Top + 2, lab);  //comentario
@@ -158,7 +159,7 @@ begin
         cv.TextOut(aRect.Left + 2 + margInstrc, aRect.Top + 2, comm);  //comentario
       end else begin
         //Hay etiqueta
-        lab := trim(ramCell^.topLabel)+':';
+        lab := trim(ramCell^.name)+':';
         cv.Font.Color := clGray;
         cv.TextOut(aRect.Left + 2, aRect.Top + 2, lab);  //comentario
       end;
@@ -173,7 +174,7 @@ begin
       end;
     end else if rowHeight = defHeightFold then begin
        //Fila plegada. Se supone que hay etiqueta
-       lab := trim(ramCell^.topLabel)+': ...';
+       lab := trim(ramCell^.name)+': ...';
        cv.Font.Color := clGray;
        cv.TextOut(aRect.Left + 2, aRect.Top + 2, lab);  //comentario
     end else begin
@@ -239,7 +240,7 @@ La búsqued ase hace a partir de l amisma fila "row".
 Si no encuentra. Deuvelve -1.}
 begin
   while row > 0 do begin
-    if pic.ram[row].topLabel<>'' then exit(row);
+    if pic.ram[row].name<>'' then exit(row);
     Dec(row);  //Mira siguiente fila
   end;
   exit(-1);
@@ -251,7 +252,7 @@ Si no encuentra. Deuvelve -1.}
 begin
   while row < StringGrid1.RowCount-1 do begin
     Inc(row);  //Mira siguiente fila
-    if pic.ram[row].topLabel<>'' then exit(row);
+    if pic.ram[row].name<>'' then exit(row);
   end;
   exit(-1);
 end;
@@ -270,11 +271,11 @@ end;
 procedure TfraPicAsm.Unfold(row1, row2: integer);
 //Despliega el rango de filas indicadas. No incluye a la última.
 var
-  i: Integer;
+  irow: Integer;
 begin
   StringGrid1.BeginUpdate;
-  for i := row1 to row2-1 do begin
-    ResizeRow(i);
+  for irow := row1 to row2-1 do begin
+    ResizeRowHeight(irow);
   end;
   StringGrid1.EndUpdate();
 end;
@@ -291,7 +292,7 @@ begin
     Unfold(i1, i2);
   end else begin
     //Fila sin plegar. Plega si es inicio de subrutina (tiene etiqueta).
-    if pic.ram[i1].topLabel <> '' then begin
+    if pic.ram[i1].name<> '' then begin
       i2 := FindNextLabel(i1);  //Busca fin de subrutina
       if i2 = -1 then exit;  //Es el último bloque
       Fold(i1, i2);
@@ -306,25 +307,29 @@ begin
   if (h = 0) or (h = defHeightFold) then exit(true);
   exit(false);
 end;
-procedure TfraPicAsm.ResizeRow(i: integer);
+procedure TfraPicAsm.ResizeRowHeight(irow: integer);
 {Redimensiona la fila "i" de la grilla para que pueda contener las etiquetas que
 incluye.}
+var
+  addr: word;
+  ramCell: TCPURamCellPtr;
 begin
-  if pic.ram[i].used = ruUnused then begin
-    StringGrid1.RowHeights[i] := defHeight;
+  addr := AddressFromRow(irow);
+  ramCell := @pic.ram[addr];
+  if ramCell^.used = ruUnused then begin
+    StringGrid1.RowHeights[irow] := defHeight;
     exit;
   end;
   //Es celda usada
-  StringGrid1.Objects[0,i] := TObject(PtrUInt(i));
-  if (pic.ram[i].topComment<>'') and (pic.ram[i].topLabel<>'') then begin
+  if (ramCell^.topComment<>'') and (ramCell^.name<>'') then begin
     //Tiene comentario arriba y etiqueta
-    StringGrid1.RowHeights[i] := 3*defHeight;
-  end else if (pic.ram[i].topComment<>'') or (pic.ram[i].topLabel<>'') then begin
+    StringGrid1.RowHeights[irow] := 3*defHeight;
+  end else if (ramCell^.topComment<>'') or (ramCell^.name<>'') then begin
     //Tiene comentario arriba
-    StringGrid1.RowHeights[i] := 2*defHeight;
+    StringGrid1.RowHeights[irow] := 2*defHeight;
   end else begin
     //Deja con la misma altura
-    StringGrid1.RowHeights[i] := defHeight;
+    StringGrid1.RowHeights[irow] := defHeight;
   end;
 end;
 //Acciones de depuración
@@ -407,30 +412,22 @@ begin
   f    := 0;
   minUsed := -1;
   while addr <= high(pic.ram) do begin
+    //Escribe dirección en el campo Objects[] para acceso rápido de la dirección. Aunque
+    //también se puede leer de la columan 0.
     StringGrid1.Objects[0,f] := TObject(PtrUInt(addr));
-    pic.ram[addr].rowGrid := f;  //Guarda referencia a la fila de la grilla en la RAM
+    //Guarda referencia a la fila de la grilla en la RAM
+    pic.ram[addr].rowGrid := f;
     //Dimensiona altura de celdas
-    if (pic.ram[addr].topComment<>'') and (pic.ram[addr].topLabel<>'') then begin
-      //Tiene comentario arriba y etiqueta
-      StringGrid1.RowHeights[f] := 3*defHeight;
-    end else if (pic.ram[addr].topComment<>'') or (pic.ram[addr].topLabel<>'') then begin
-      //Tiene comentario arriba
-      StringGrid1.RowHeights[f] := 2*defHeight;
-    end else begin
-      //Deja con la misma altura
-      StringGrid1.RowHeights[f] := defHeight;
-    end;
+    ResizeRowHeight(f);
     //Coloca texto y direcciones
+    StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
     if pic.ram[addr].used = ruUnused then begin
       //Celda no usada
-      StringGrid1.RowHeights[addr] := defHeight;
-      StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
       StringGrid1.Cells[1, f] := '';
       //StringGrid1.Cells[2, f] := '';  //Reservado para el comentario lateral
       inc(addr);
     end else if pic.ram[addr].used = ruData then begin
       //Es espacio para variable
-      StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
       StringGrid1.Cells[1, f] := '$' + IntToHex(pic.ram[addr].value, 2);
       //StringGrid1.Cells[2, f] := '';  //Reservado para el comentario lateral
       inc(addr);
@@ -438,7 +435,6 @@ begin
       //Debe ser código
       if minUsed<>-1 then minUsed := addr;
       //Decodifica instrucción
-      StringGrid1.Cells[0, f] := '$'+IntToHex(addr,4);
       opCode := pic.DisassemblerAt(addr, nBytes, true);  //Instrucción
       StringGrid1.Cells[1, f] := opCode;
       //StringGrid1.Cells[2, f] := '';  //Reservado para el comentario lateral

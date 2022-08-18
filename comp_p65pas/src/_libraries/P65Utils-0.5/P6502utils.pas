@@ -657,7 +657,7 @@ Falta implementar las operaciones, cuando acceden al registro INDF, el Watchdog 
 los contadores, las interrupciones}
 var
   opc: byte;
-  nCycles, nBytes, tmp, off: byte;
+  nCycles, nBytes, tmp, off, OP1, OP2: byte;
   target , addr: word;
   C_tmp: Boolean;
   tmpRes: integer;
@@ -688,16 +688,18 @@ begin
   //Execute
   case idIns of
   i_ADC: begin  //add with carry
+    OP1 := W;   //Keep operand.
+    OP2 := ram[addr].value;
     if STATUS_C then begin
-      tmpRes := W + ram[addr].value + 1;
+      tmpRes := W + OP2 + 1;
     end else begin
-      tmpRes := W + ram[addr].value;
+      tmpRes := W + OP2;
     end;
     W := tmpRes and $FF;
     STATUS_Z := W = 0;
     STATUS_N := W > 127;
     STATUS_C := tmpRes>255;
-//    STATUS_V := W ;
+    STATUS_V := ((OP1 XOR W) AND (OP2 XOR W) AND $80)<>0;   //Based on: http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
   end;
   i_AND: begin  //and (with accumulator)
     W := W and ram[addr].value;
@@ -1044,15 +1046,18 @@ begin
     exit;
   end;
   i_SBC: begin  //Subtract with carry
+    OP1 := W;   //Keep operand.
+    OP2 := ram[addr].value;
     if STATUS_C then begin
-      tmpRes := W - ram[addr].value;
+      tmpRes := W - OP2;
     end else begin
-      tmpRes := W - ram[addr].value - 1;
+      tmpRes := W - OP2 - 1;
     end;
     W := tmpRes and $FF;
     STATUS_Z := W = 0;
     STATUS_N := W > 127;
     STATUS_C := not (tmpRes<0);
+    STATUS_V := ((OP1 XOR W) AND (OP2 XOR W) AND $80)<>0;   //Based on: http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
   end;
   i_SEC: STATUS_C := true;  //set carry
   i_SED: STATUS_D := true;  //set decimal
@@ -1332,7 +1337,7 @@ begin
   i := minUsed;
   while i <= maxUsed do begin
     //Lee comentarios y etiqueta
-    lblLin := ram[i].topLabel;
+    lblLin := ram[i].name;
     comLat := ram[i].sideComment;
     comLin := ram[i].topComment;
     //Verifica si es variable
@@ -1340,12 +1345,10 @@ begin
       //Escribe en forma de variable
       if incAdrr then begin
         if comLin<>'' then lOut.add(comLin);
-        //lOut.Add( PadRight(ram[i].name, Length(SPACEPAD)) + '$'+IntToHex(i,4) + ' DB ??');
-        lOut.Add( PadRight(ram[i].name, Length(SPACEPAD)) + '$'+IntToHex(i,4) + ' DB ' +
+        lOut.Add( PadRight(lblLin, Length(SPACEPAD)) + '$'+IntToHex(i,4) + ' DB ' +
                   IntToHEx(ram[i].value,2) );
       end else begin
-        //lOut.Add( PadRight(ram[i].name, Length(SPACEPAD)) + 'DB ??');
-        lOut.Add( PadRight(ram[i].name, Length(SPACEPAD)) + 'DB ' + IntToHEx(ram[i].value,2) );
+        lOut.Add( PadRight(lblLin, Length(SPACEPAD)) + 'DB ' + IntToHEx(ram[i].value,2) );
       end;
       i := i + 1;
       continue;
@@ -1445,9 +1448,6 @@ begin
   inherited Destroy;
 end;
 procedure InitTables;
-var
-  i : TP6502Inst;
-  j : TP6502AddMode;
 begin
   ///////////////////////////////////////////////////////////////////
   ////////////////// Set instructions information ///////////////////

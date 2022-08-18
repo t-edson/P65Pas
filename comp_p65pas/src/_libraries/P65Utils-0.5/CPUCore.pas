@@ -65,7 +65,7 @@ type //Models for RAM memory
     {Estos campos de cadena ocupan bastante espacio, aún cuado están en NULL. Si se
     quisiera optimizar el uso de RAM, se podría pensar en codificar, varios campos en
     una sola cadena.}
-    topLabel   : string;  //Label on the top of the cell.
+//    topLabel   : string;  //Label on the top of the cell.
     topComment : string;  //Comment on the top of the cell.
     sideComment: string;  //Right comment to code
   end;
@@ -134,7 +134,7 @@ type
     procedure WritePC(AValue: dword); virtual; abstract;
   public  //Others
 
-    procedure addTopLabel(lbl: string);  //Add a comment to the ASM code
+//    procedure addTopLabel(lbl: string);  //Add a comment to the ASM code
     procedure addTopComm(comm: string; replace: boolean = true);  //Add a comment to the ASM code
     procedure addSideComm(comm: string; before: boolean); //Add lateral comment to the ASM code
     procedure addPosInformation(rowSrc, colSrc: word; idFile: byte);
@@ -212,7 +212,7 @@ begin
     ram[i].name       :='';
     ram[i].shared     := false;
     ram[i].breakPnt   := false;
-    ram[i].topLabel   := '';
+//    ram[i].topLabel   := '';
     ram[i].sideComment:= '';
     ram[i].topComment := '';
     ram[i].idFile     := -1;        //Not initialized.
@@ -425,11 +425,11 @@ begin
   if aPC>=CPUMAXRAM then exit;
   ram[aPC].breakPnt := not ram[aPC].breakPnt;
 end;
-procedure TCPUCore.addTopLabel(lbl: string);
-begin
-  if iRam>=CPUMAXRAM then exit;
-  ram[iRam].topLabel := lbl;
-end;
+//procedure TCPUCore.addTopLabel(lbl: string);
+//begin
+//  if iRam>=CPUMAXRAM then exit;
+//  ram[iRam].topLabel := lbl;
+//end;
 procedure TCPUCore.addTopComm(comm: string; replace: boolean);
 {Agrega un comentario de línea al código en la posición de memoria actual}
 begin
