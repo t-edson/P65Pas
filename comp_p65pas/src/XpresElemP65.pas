@@ -468,6 +468,9 @@ type  //Expression elements
     {When element is "otFunct", this flag indicates the function/method has been
     called using an operator instead of call the function by its name.}
     fcallOp: boolean;
+    function IsConstantPlusVariable: boolean;
+    function IsVariablePlusConstant: boolean;
+    procedure exchange2Children;
   public  //Fields used when "Sto" is stConst
     evaluated: boolean;  //Activated when constant is evaluated.
     //Fields used when constant is evaluated, or it's a literal constant.
@@ -896,6 +899,42 @@ function TEleExpress.ValueIsZero: boolean;
 begin
   Result := (Typ.group in [t_uinteger, t_integer, t_float]) and  //Is a numeric type
             (value.ValInt = 0);  //Has value zero.
+end;
+function TEleExpress.IsConstantPlusVariable: boolean;
+{Identifies if this operand is a function of type: constant + variable}
+var
+  op1, op2: TEleExpress;
+begin
+  if (opType = otFunct) and (elements.Count = 2) then begin
+    //Two parameter function
+    op1 := TEleExpress(elements[0]);
+    op2 := TEleExpress(elements[1]);
+    exit( (op1.Sto = stConst) and op1.evaluated and (op2.Sto = stRamFix) and (name='_add'));
+  end else begin
+    exit(false);
+  end;
+end;
+function TEleExpress.IsVariablePlusConstant: boolean;
+var
+  op1, op2: TEleExpress;
+begin
+  if (opType = otFunct) and (elements.Count = 2) then begin
+    //Two parameter function
+    op1 := TEleExpress(elements[0]);
+    op2 := TEleExpress(elements[1]);
+    exit( (op1.Sto = stRamFix) and (op2.Sto = stConst) and op2.evaluated and (name='_add'));
+  end else begin
+    exit(false);
+  end;
+end;
+procedure TEleExpress.exchange2Children;
+{Exchange two children elements}
+var
+  tmp: TxpElement;
+begin
+  if (elements.Count = 2) then begin
+    elements.Exchange(0,1);
+  end;
 end;
 //Access to constant value
 function TEleExpress.val: dword; inline;

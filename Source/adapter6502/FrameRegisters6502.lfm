@@ -1,30 +1,31 @@
 object fraPicRegisters: TfraPicRegisters
   Left = 0
-  Height = 329
+  Height = 411
   Top = 0
-  Width = 400
-  ClientHeight = 329
-  ClientWidth = 400
+  Width = 500
+  ClientHeight = 411
+  ClientWidth = 500
+  DesignTimePPI = 120
+  ParentFont = False
   TabOrder = 0
   DesignLeft = 503
   DesignTop = 143
   object Label1: TLabel
     Left = 0
-    Height = 17
+    Height = 21
     Top = 0
-    Width = 400
+    Width = 500
     Align = alTop
     AutoSize = False
-    Caption = 'PIC registers'
+    Caption = 'CPU registers'
     Color = clActiveCaption
-    ParentColor = False
     Transparent = False
   end
   object StringGrid1: TStringGrid
-    Left = 16
-    Height = 46
-    Top = 40
-    Width = 216
+    Left = 20
+    Height = 58
+    Top = 50
+    Width = 270
     ColCount = 10
     FixedCols = 2
     Options = [goFixedVertLine, goFixedHorzLine, goHorzLine, goRangeSelect, goSmoothScroll]
@@ -32,16 +33,16 @@ object fraPicRegisters: TfraPicRegisters
     ScrollBars = ssNone
     TabOrder = 0
     ColWidths = (
-      29
+      36
+      32
+      25
+      25
+      24
+      25
+      25
       26
-      20
-      20
-      19
-      20
-      20
-      21
-      20
-      18
+      25
+      22
     )
     Cells = (
       10
@@ -78,9 +79,9 @@ object fraPicRegisters: TfraPicRegisters
     )
   end
   object Label2: TLabel
-    Left = 16
+    Left = 20
     Height = 16
-    Top = 24
+    Top = 30
     Width = 50
     Caption = 'A register'
     Font.CharSet = ANSI_CHARSET
@@ -90,13 +91,12 @@ object fraPicRegisters: TfraPicRegisters
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     Font.Style = [fsBold]
-    ParentColor = False
     ParentFont = False
   end
   object Label3: TLabel
-    Left = 16
+    Left = 20
     Height = 16
-    Top = 232
+    Top = 290
     Width = 86
     Caption = 'STATUS register'
     Font.CharSet = ANSI_CHARSET
@@ -106,14 +106,13 @@ object fraPicRegisters: TfraPicRegisters
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     Font.Style = [fsBold]
-    ParentColor = False
     ParentFont = False
   end
   object StringGrid2: TStringGrid
-    Left = 16
-    Height = 46
-    Top = 248
-    Width = 227
+    Left = 20
+    Height = 58
+    Top = 310
+    Width = 284
     ColCount = 10
     FixedCols = 2
     Options = [goFixedVertLine, goFixedHorzLine, goHorzLine, goRangeSelect, goSmoothScroll]
@@ -121,16 +120,16 @@ object fraPicRegisters: TfraPicRegisters
     ScrollBars = ssNone
     TabOrder = 1
     ColWidths = (
+      36
+      32
+      30
+      26
+      26
       29
       26
-      24
-      21
-      21
-      23
-      21
-      21
-      20
-      18
+      26
+      25
+      22
     )
     Cells = (
       10
@@ -167,9 +166,9 @@ object fraPicRegisters: TfraPicRegisters
     )
   end
   object Label4: TLabel
-    Left = 16
+    Left = 20
     Height = 16
-    Top = 88
+    Top = 110
     Width = 50
     Caption = 'X register'
     Font.CharSet = ANSI_CHARSET
@@ -179,14 +178,13 @@ object fraPicRegisters: TfraPicRegisters
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     Font.Style = [fsBold]
-    ParentColor = False
     ParentFont = False
   end
   object StringGrid3: TStringGrid
-    Left = 16
-    Height = 46
-    Top = 104
-    Width = 216
+    Left = 20
+    Height = 58
+    Top = 130
+    Width = 270
     ColCount = 10
     FixedCols = 2
     Options = [goFixedVertLine, goFixedHorzLine, goHorzLine, goRangeSelect, goSmoothScroll]
@@ -194,16 +192,16 @@ object fraPicRegisters: TfraPicRegisters
     ScrollBars = ssNone
     TabOrder = 2
     ColWidths = (
-      29
+      36
+      32
+      25
+      25
+      24
+      25
+      25
       26
-      20
-      20
-      19
-      20
-      20
-      21
-      20
-      18
+      25
+      22
     )
     Cells = (
       10
@@ -240,9 +238,9 @@ object fraPicRegisters: TfraPicRegisters
     )
   end
   object Label5: TLabel
-    Left = 16
+    Left = 20
     Height = 16
-    Top = 152
+    Top = 190
     Width = 50
     Caption = 'Y register'
     Font.CharSet = ANSI_CHARSET
@@ -252,14 +250,13 @@ object fraPicRegisters: TfraPicRegisters
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     Font.Style = [fsBold]
-    ParentColor = False
     ParentFont = False
   end
   object StringGrid4: TStringGrid
-    Left = 16
-    Height = 46
-    Top = 168
-    Width = 216
+    Left = 20
+    Height = 58
+    Top = 210
+    Width = 270
     ColCount = 10
     FixedCols = 2
     Options = [goFixedVertLine, goFixedHorzLine, goHorzLine, goRangeSelect, goSmoothScroll]
@@ -267,16 +264,16 @@ object fraPicRegisters: TfraPicRegisters
     ScrollBars = ssNone
     TabOrder = 3
     ColWidths = (
-      29
+      36
+      32
+      25
+      25
+      24
+      25
+      25
       26
-      20
-      20
-      19
-      20
-      20
-      21
-      20
-      18
+      25
+      22
     )
     Cells = (
       10

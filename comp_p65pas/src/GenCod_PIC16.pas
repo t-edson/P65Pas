@@ -183,7 +183,7 @@ type
 implementation
 var
   MSG_NOT_IMPLEM, MSG_INVAL_PARTYP, MSG_UNSUPPORTED : string;
-  MSG_CANNOT_COMPL, ER_INV_MEMADDR, ER_INV_MAD_DEV: string;
+  MSG_CANNOT_COMPL, MSG_IDX_BYT_WORD, ER_INV_MEMADDR, ER_INV_MAD_DEV: string;
 
 procedure SetLanguage;
 begin
@@ -451,7 +451,8 @@ procedure TGenCod.BOR_byte_asig_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
   parBsto: TStorage;
-  offset: Integer;
+  offset: word;
+  idxvar: TEleVarDec;
 begin
   SetFunNull(fun);  //In Pascal an assigment doesn't return type.
   parA := TEleExpress(fun.elements[0]);  //Parameter A
@@ -469,7 +470,7 @@ begin
   end;
   //Validates parA.
   if parA.opType<>otVariab then begin //The only valid type.
-    GenError('Only variables can be assigned.');
+    GenError('Only variables can be assigned.', parA.srcDec);
     exit;
   end;
   //Implements assignment
@@ -562,51 +563,112 @@ begin
     //Assignment to a indexed variable.
     //"parA.rvar" is index variable.
     //"parA.offs" and "parA.offVar" defines the offset.
+    idxvar := parA.rvar;
     if parA.offVar = nil then begin
       offset := parA.offs;
     end else begin
       offset := parA.offs + parA.offVar.addr;
     end;
-    case parB.Sto of
-    stConst : begin
-      _LDAi(parB.val);
-      _LDX(parA.rvar.addr);  //Load address
-      if offset<256 then begin
-        pic.codAsm(i_STA, aZeroPagX, offset);
-      end else begin
-        pic.codAsm(i_STA, aAbsolutX, offset);
+    if idxvar.typ = typByte then begin   ///////// Index is byte
+      case parB.Sto of
+      stConst : begin
+        _LDAi(parB.val);
+        _LDX(idxvar.addr);  //Load address
+        if offset<256 then begin
+          pic.codAsm(i_STA, aZeroPagX, offset);
+        end else begin
+          pic.codAsm(i_STA, aAbsolutX, offset);
+        end;
       end;
-    end;
-    stRamFix: begin
-      _LDA(parB.add);
-      _LDX(parA.rvar.addr);  //Load address
-      if parA.offs<256 then begin
-        pic.codAsm(i_STA, aZeroPagX, parA.offs);
-      end else begin
-        pic.codAsm(i_STA, aAbsolutX, parA.offs);
+      stRamFix: begin
+        _LDA(parB.add);
+        _LDX(idxvar.addr);  //Load address
+        if offset<256 then begin
+          pic.codAsm(i_STA, aZeroPagX, offset);
+        end else begin
+          pic.codAsm(i_STA, aAbsolutX, offset);
+        end;
       end;
-    end;
-    stRegister, stRegistA: begin  //Already in A
-      _LDX(parA.rvar.addr);  //Load address
-      if parA.offs<256 then begin
-        pic.codAsm(i_STA, aZeroPagX, parA.offs);
-      end else begin
-        pic.codAsm(i_STA, aAbsolutX, parA.offs);
+      stRegister, stRegistA: begin  //Already in A
+        _LDX(idxvar.addr);  //Load address
+        if offset<256 then begin
+          pic.codAsm(i_STA, aZeroPagX, offset);
+        end else begin
+          pic.codAsm(i_STA, aAbsolutX, offset);
+        end;
       end;
-    end;
-//    stRegistX: begin
-//      _TXA;  //Modify A
-//      _TAY;
-//    end;
-//    stRegistY: begin //Already in Y
-//    end;
-    else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+  //    stRegistX: begin
+  //      _TXA;  //Modify A
+  //      _TAY;
+  //    end;
+  //    stRegistY: begin //Already in Y
+  //    end;
+      else
+        GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      end;
+    end else if idxvar.typ = typWord then begin  ///////// Index is word
+      //Test for word index to be in zero-page.
+      if idxvar.addr>254 then begin
+        GenError('Array index must be allocated in zero page.', fun.srcDec);
+        exit;
+      end;
+      case parB.Sto of
+      stConst : begin
+        if offset<256 then begin
+          _LDAi(parB.val);
+          _LDYi(offset);
+          _CLC;    //Need to index properly
+          pic.codAsm(i_STA, aIndirecY, idxvar.addr);
+        end else begin  //Offset is word
+          _LDX(idxvar.addrH); //Save. Not needed if we can alter the index. Like register _IX.
+          _LDAi(hi(offset));   //We'll add the offset to the index
+          _CLC;
+          _ADC(idxvar.addrH);  //Zero page
+          _STA(idxvar.addrH);  //Include offset-H in Index
+          _LDAi(parB.val);     //VAlue to write
+          _LDYi(lo(offset));   //Low byte of offset in Y
+          _CLC;    //Need to index properly
+          pic.codAsm(i_STA, aIndirecY, idxvar.addr);
+          _STX(idxvar.addrH);  //Restore. Not needed if we can alter the index. Like register _IX.
+          { #todo : También se podría probar si el código automodificable es del mismo tamaño o no }
+        end;
+      end;
+      stRamFix: begin
+        if offset<256 then begin
+          _LDA(parB.add);
+          _LDYi(offset);
+          _CLC;    //Need to index properly
+          pic.codAsm(i_STA, aIndirecY, idxvar.addr);
+        end else begin  //Offset is word
+          _LDX(idxvar.addrH); //Save. Not needed if we can alter the index. Like register _IX.
+          _LDAi(hi(offset));   //We'll add the offset to the index
+          _CLC;
+          _ADC(idxvar.addrH);  //Zero page
+          _STA(idxvar.addrH);  //Include offset-H in Index
+          _LDA(parB.add);      //Value to write
+          _LDYi(lo(offset));   //Low byte of offset in Y
+          _CLC;    //Need to index properly
+          pic.codAsm(i_STA, aIndirecY, idxvar.addr);
+          _STX(idxvar.addrH);  //Restore. Not needed if we can alter the index. Like register _IX.
+        end;
+      end;
+//      stRegister, stRegistA: begin  //Already in A
+//        _LDX(idxvar.addr);  //Load address
+//        if offset<256 then begin
+//          pic.codAsm(i_STA, aZeroPagX, offset);
+//        end else begin
+//          pic.codAsm(i_STA, aAbsolutX, offset);
+//        end;
+//      end;
+      else
+        GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      end;
+    end else begin
+      GenError(MSG_IDX_BYT_WORD);
     end;
   end else begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
-
 end;
 procedure TGenCod.BOR_byte_and_byte(fun: TEleExpress);
 var
@@ -2687,7 +2749,7 @@ begin
 //      GenError(MSG_UNSUPPORTED); exit;
 //    end;
   end else begin
-    GenError('Cannot assign to this Operand.', parB.srcDec); exit;
+    GenError('Cannot assign to this Operand.', parA.srcDec); exit;
   end;
 end;
 procedure TGenCod.BOR_word_asig_byte(fun: TEleExpress);
@@ -5083,9 +5145,10 @@ _LABEL_pre(j2);
   end;
 end;
 procedure TGenCod.GenCodArrayGetItem(fun: TEleExpress);
-{Función que devuelve el valor indexado del arreglo. }
+{Función que devuelve el valor indexado del arreglo.
+In all cases, this INLINE function must return a stRamVarOf.}
 var
-  arrVar, idx: TEleExpress;
+  arrVar, idx, op1, op2: TEleExpress;
   itemType: TEleTypeDec;
 begin
   arrVar := TEleExpress(fun.elements[0]);
@@ -5106,86 +5169,18 @@ begin
     end;
     stRamFix: begin  //Indexado por variable
       SetFunVariab_RamVarOf(fun, idx.rvar, 0, arrVar.rvar); //Index by variable and an offset
-      //if idx.Typ.IsByteSize then begin
-      //  //Index is byte-size variable
-      //  if itemType.IsByteSize then begin
-      //    //And item is byte size, so it's easy to index in 6502
-      //    _LDX(idx.rVar.addr);
-      //    if arrVar.add<256 then begin
-      //      pic.codAsm(i_LDA, aZeroPagX, arrVar.add);
-      //    end else begin
-      //      pic.codAsm(i_LDA, aAbsolutX, arrVar.add);
-      //    end;
-      //  end else if itemType.IsWordSize then begin
-      //    //Item is word size. We need to multiply index by 2 and load indexed.
-      //    //WARNING this is "Auto-modifiying" code.
-      //    _LDA(idx.rVar.addr);  //Load index
-      //    pic.codAsm(i_STA, aAbsolute, _PC + 15); //Store forward
-      //    _LDAi(0);  //Load virtual MSB index
-      //    pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
-      //    pic.codAsm(i_ASL, aAbsolute, _PC + 7);  //Shift operand of LDA
-      //    PIC.codAsm(i_ROL, aAbsolute, _PC + 5);  //Shift operand of LDA
-      //    pic.codAsm(i_LDA, aAbsolute, 0); //Store forward (DANGER)
-      //    //Could be optimized getting a Zero page index
-      //  end else begin
-      //    //Here we need to multiply the index by the item size.
-      //    GenError('Too complex item.');
-      //  end;
-//    //  end else if idx.Typ.IsWordSize then begin
-//    //    //Index is word-size variable
-//    //    if itemType.IsByteSize then begin
-//    //      //Item is byte size. We need to index with a word.
-//    //      if idx.rVar.addr<256 then begin
-//    //        //Index in zero page
-//    //        _LDYi(0);
-//    //        pic.codAsm(i_LDA, aIndirecY, idx.rVar.addr);
-//    //      end else begin
-//    //        //Index is out of zero page
-//    //        //WARNING this is "Auto-modifiying" code.
-//    //        _CLC;
-//    //        _LDA(idx.rVar.addr);  //Load index
-//    //        _ADCi(arrVar.add and $FF);
-//    //        pic.codAsm(i_STA, aAbsolute, _PC + 12); //Store forward
-//    //        _LDA(idx.rVar.addr+1);  //Load MSB index
-//    //        _ADCi( arrVar.add >> 8 );
-//    //        pic.codAsm(i_STA, aAbsolute, _PC + 5); //Store forward
-//    //        //Modifiying instruction
-//    //        pic.codAsm(i_LDA, aAbsolute, 0);
-//    //      end;
-//    //    end else if itemType.IsWordSize then begin
-//    //      //Item is word size. We need to multiply index by 2 and load indexed.
-//    //      //WARNING this is "Auto-modifiying" code.
-//    //      _LDA(idx.rVar.addr);  //Load index
-//    //      pic.codAsm(i_STA, aAbsolute, _PC + 16); //Store forward
-//    //      _LDA(idx.rVar.addr+1);  //Load virtual MSB index
-//    //      pic.codAsm(i_STA, aAbsolute, _PC + 11); //Store forward
-//    //      pic.codAsm(i_ASL, aAbsolute, _PC + 7);  //Shift operand of LDA
-//    //      PIC.codAsm(i_ROL, aAbsolute, _pc + 5);  //Shift operand of LDA
-//    //      pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
-//    //    end else begin
-//    //      //Here we need to multiply the index by the item size.
-//    //      GenError('Too complex item.');
-//    //    end;
-      //end else begin
-      //  GenError('Not supported this index.');
-      //end;
     end;
-//    stRegister: begin
-//      if idx.Typ.IsByteSize then begin
-//        //Change stRegister to stRamFix
-//        requireE;
-//        idx.SetAsVariab(E);
-//        if  LastIsTXA then begin  //Move result from X
-//          dec(pic.iRam);  //erase last TXA
-//          _STX(E.addr);
-//        end else begin  //Result is in A
-//          _STA(E.addr);
-//        end;
-//        RTstate := nil;   //Now it's not using WR
-//      end;
-//    end;
     else
-      GenError('Not supported this index.');
+      if idx.IsConstantPlusVariable then begin
+        //Is <constant> + <variable> that the SplitExpressions() routines
+        //has allowed pass because knows we can optimize here.
+        op1 := TEleExpress(idx.elements[0]);   //Constant evaluated.
+        op2 := TEleExpress(idx.elements[1]);   //Variable
+        SetFunVariab_RamVarOf(fun, op2.rvar, op1.val, arrVar.rvar); //Index by variable and an offset
+      end else begin
+        GenError('Not supported this index.', idx.srcDec);
+        exit;
+      end;
     end;
   end else begin
     GenError('Cannot index a constant array.');

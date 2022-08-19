@@ -238,8 +238,7 @@ var
   bod: TEleBody;
 begin
   location := @BITMAP;
-
-  compMod := cmConsEval;    //Generates code.
+  compMod := cmConsEval;    //Mode Constant evaluation.
   pic.disableCodegen := true;  //Disable the code generation
   pic.iRam := 0;  //Clear RAM position
   //Code subroutines
@@ -501,11 +500,34 @@ like used in several compilers.}
   "curContainer".
   If at least one new set sentence is added, returns TRUE.}
   var
-    Op2, parExp, new_set: TEleExpress;
+    Op2, parExp, new_set, Op1, idx: TEleExpress;
     par: TxpElement;
   begin
     Result := false;
-    Op2 := TEleExpress(setMethod.elements[1]);  //Takes assigment source.
+    //Split expressions in first operand of assigment (only for arrays).
+    Op1 := TEleExpress(setMethod.elements[0]);  //Takes assigment target.
+    if (Op1.opType = otFunct) and (Op1.name = '_getitem') then begin
+      //It's assignment to an array.
+      idx := TEleExpress(Op1.elements[1]);
+      if idx.opType = otFunct then begin
+        //It's something complex. Like array[x+y] := ...
+        if idx.IsConstantPlusVariable then begin
+          //Can be optimized later in ConstantFoldExpr().
+        end else if idx.IsVariablePlusConstant then begin
+          idx.elements.Exchange(0,1);
+          //Can be optimized later in ConstantFoldExpr().
+        end else begin
+          { #todo : Aquí se puede verificar, primero, si es una función INLINE como ord('A') que se pueda optimizar }
+          //We need to create a previous assignment
+          new_set := MoveNodeToAssign(curContainer, idx);
+          if HayError then exit;
+          SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
+          Result := true;
+        end;
+      end;
+    end;
+    //Split expressions in second operand of assignment.
+    Op2 := TEleExpress(setMethod.elements[1]);  //Takes assignment source.
     if (Op2.opType = otFunct) then begin
       if Op2.rfun.codSysInline = nil then begin  //Normal function
         {IT's the form:
@@ -523,7 +545,7 @@ like used in several compilers.}
         or:
              x := A++        }
         {We expect parameters A, B should be simple operands (Constant or variables)
-        otherwise we will move them to a separate assigment}
+        otherwise we will move them to a separate assignment}
         for par in Op2.elements do begin
           parExp := TEleExpress(par);
           if parExp.opType = otFunct then begin
@@ -547,7 +569,7 @@ like used in several compilers.}
     Result := false;
     if (expMethod.opType = otFunct) and expMethod.fcallOp then begin
       {We expect parameters should be simple operands (Constant or variables)
-      otherwise we will move them to a separate assigment}
+      otherwise we will move them to a separate assignment}
       for par in expMethod.elements do begin
         parExp := TEleExpress(par);
         if parExp.opType = otFunct then begin
@@ -560,7 +582,7 @@ like used in several compilers.}
     end;
   end;
   function SplitProcCall(curContainer: TxpElement; expMethod: TEleExpress): boolean;
-  {Split a procedure (not INLINE) call instruction, inserting an assigment instruction
+  {Split a procedure (not INLINE) call instruction, inserting an assignment instruction
   for each parameter.}
   var
     parExp, new_set: TEleExpress;
@@ -572,7 +594,7 @@ like used in several compilers.}
     if expMethod.opType <> otFunct then exit;   //Not a fucntion call
     funcBase := expMethod.rfun;    //Base function reference
     if funcBase.codSysInline=nil then begin   //Not INLINE
-      {Move all parameters (children nodes) to a separate assigment}
+      {Move all parameters (children nodes) to a separate assignment}
       ipar := 0;  //Parameter index
       while expMethod.elements.Count>0 do begin  //While remain parameters.
         parExp := TEleExpress(expMethod.elements[0]);  //Take parameter element
