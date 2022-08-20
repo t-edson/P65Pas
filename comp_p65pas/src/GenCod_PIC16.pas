@@ -5374,6 +5374,7 @@ procedure TGenCod.DefineArray(etyp: TEleTypeDec);
 var
   consDec: TEleConsDec;
   expr: TEleExpress;
+  f: TEleFun;
 begin
   //Create assigement method
   CreateBOMethod(etyp, ':=', '_set', etyp, typNull, @BOR_arr_asig_arr);
@@ -5384,9 +5385,10 @@ begin
 //  CreateUOMethod(etyp, '', 'low'   , typByte, @arrayLow);
   CreateUOMethod(etyp, '', 'high'  , typByte, @arrayHigh);
   CreateUOMethod(etyp, '', 'clear' , typNull, @GenCodArrayClear);
-  CreateBOMethod(etyp, '', '_getitem', typByte, etyp.itmType, @GenCodArrayGetItem);
+  f := CreateBOMethod(etyp, '', '_getitem', typByte, etyp.itmType, @GenCodArrayGetItem);
+  //  etyp.CreateField('item'  , @GenCodArrayGetItem, @GenCodArraySetItem);
+  etyp.getitem := f;   //To help to locate.
   CreateUOMethod(etyp, '@', 'addr', typWord, @UOR_address);
-//  etyp.CreateField('item'  , @GenCodArrayGetItem, @GenCodArraySetItem);
 //  etyp.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address); //defined in all types
 end;
 procedure TGenCod.ValidRAMaddr(addr: integer);

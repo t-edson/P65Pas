@@ -774,11 +774,11 @@ Must be called after DoOptimize().}
     end else if bootloader = bldC64 then begin
       //GenBootloaderC64;    //Commodore 64 bootloader.
       PutTopComm('      ;BASIC starter code: 10 SYS <entry point>');
-      pic.codByte($0C, true);  //Dirección de siguiente línea
-      pic.codByte($08, true);
-      pic.codByte($0A, true);  //Número de línea
-      pic.codByte($00, true);
-      pic.codByte($9e, true);  //Token de instrucción SYS
+      pic.codByte($0C, ruData);  //Dirección de siguiente línea
+      pic.codByte($08, ruData);
+      pic.codByte($0A, ruData);  //Número de línea
+      pic.codByte($00, ruData);
+      pic.codByte($9e, ruData);  //Token de instrucción SYS
       pic.codByte(0, ruData, 'COD_4A'); //To complete later
       pic.codByte(0, ruData);           //To complete later
       pic.codByte(0, ruData);           //To complete later

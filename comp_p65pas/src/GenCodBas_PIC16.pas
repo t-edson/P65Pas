@@ -2155,12 +2155,6 @@ begin
     end;
   end;
 end;
-//procedure TGenCodBas.GenCodeBody(body: TEleBody);
-//{Do code generation for the body element specified. }
-//begin
-//  TreeElems.OpenElement(body);
-//  GenCodeSentences(TreeElems.curNode.elements);
-//end;
 procedure TGenCodBas.GenCodeBlock(block: TEleBlock);
 {Do code generation for the body element specified. }
 begin

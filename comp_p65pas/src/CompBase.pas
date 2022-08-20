@@ -1702,18 +1702,12 @@ begin
     end else begin  //Must be '['.
       //We have: array[something].
       Next;    //Takes "[".
-      //Lets find de getitem() method.
-      if not Op1.Typ.FindElemName('_GETITEM', field) then begin
-        //There are not fields for this type
-        GenError('Undefined method %s for type %s', ['_getitem()', Op1.Typ.name]);
+      xfun := Op1.Typ.getitem;  //Find de getitem() method.
+      if xfun = nil then begin
+        GenError('Undefined method _getitem() for type %s', [Op1.Typ.name]);
         exit;
       end;
-      if not (field.idClass in [eleFuncDec, eleFunc]) then begin
-        GenError('_getitem() should be a method');
-        exit;
-      end;
-      xfun := TEleFunBase(field);  //The ancestor of eleFunc and eleFuncDec
-      eleMeth := CreateExpression(field.name, xfun.retType, otFunct, GetSrcPos);
+      eleMeth := CreateExpression(xfun.name, xfun.retType, otFunct, GetSrcPos);
       TreeElems.InsertParentTo(eleMeth, Op1);
       TreeElems.OpenElement(eleMeth);  //Set parent to add parameters.
       eleMeth.rfun := xfun;            //Set function

@@ -269,6 +269,8 @@ type  //TxpElement class
   end;
 
 type  //Declaration elements
+  TEleFun = class;
+
   {Base class to derivate "Program frame structures".}
   TxpEleCodeCont = class(TxpElement)
   end;
@@ -317,6 +319,11 @@ type  //Declaration elements
     function IsArrayOf(itTyp: TEleTypeDec; numIt: integer): boolean;
     function IsPointerTo(ptTyp: TEleTypeDec): boolean;
     function IsEquivalent(typ: TEleTypeDec): boolean;
+  public   //References
+    //These references help for a fast search of getters and setters.
+    //setter : TEleFun; //Reference to setter. Noy used. Simples types like word can have several "_set"
+    setitem: TEleFun;   //Reference to setter for arrays. There should be only one to be useful.
+    getitem: TEleFun;   //Reference to getter for arrays. There should be only one to be useful.
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -721,8 +728,6 @@ type  //Declaration elements (functions)
     function ParamTypesList: string;
   end;
 
-  TEleFun = class;
-
   { TxpEleFunDec }
   {Basic class to represent a function header or declaration (INTERFACE o FORWARD).
   Basically what we store here is a reference to the implementation.}
@@ -1104,9 +1109,9 @@ begin
 end;
 procedure TxpElement.Setname(AValue: string);
 begin
-  if Fname=AValue then Exit;
-  Fname:=AValue;
-  Funame:=Upcase(AValue);
+  if Fname = AValue then Exit;
+  Fname    := AValue;
+  Funame   := Upcase(AValue);
 end;
 function TxpElement.LastNode: TxpElement;
 {Devuelve una referencia al último nodo de "elements"}
