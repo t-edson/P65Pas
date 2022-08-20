@@ -444,9 +444,11 @@ begin
   //Set name to that position
   if typ.IsByteSize then begin
     pic.SetNameRAM(startAdd, xVar.name);
-  end else begin
+  end else if typ.IsWordSize then begin
     pic.SetNameRAM(startAdd, xVar.name + '@0');
     pic.SetNameRAM(startAdd+1, xVar.name + '@1');
+  end else begin
+    pic.SetNameRAM(startAdd, xVar.name);
   end;
   //Set initial value.
   if xVar.adicPar.hasInit then begin

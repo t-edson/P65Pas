@@ -696,13 +696,13 @@ Must be called after DoOptimize().}
   {Generates code for a Main Body element.}
   begin
     //It's the main program
-    PutLabel('__main_program__');
+    PutLabel('__main_prog__');
     //Process body
     TreeElems.OpenElement(body); //Locate in the Body. Formally this won't be necessary if we are not going to solve identifiers.
     GenCodeSentences(TreeElems.curNode.elements);
     TreeElems.CloseElement;              //Close the Body.
     //Ending label
-    PutLabel('__end_program__');
+    PutLabel('__end_prog__');
     //{ TODO : Considerar incluir este código de verificación. }
     //  if pic.MsjError<>'' then begin //Puede ser error al escribir la última instrucción
     //    GenError(pic.MsjError);
