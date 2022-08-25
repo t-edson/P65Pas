@@ -161,6 +161,8 @@ protected //Expressions
     OpType2: TEleTypeDec): TEleFunBase;
   function MethodFromUnaOperator(const OpType: TEleTypeDec; Op: string
     ): TEleFunBase;
+  function MethodGetItem(const OpType: TEleTypeDec; IdxType: TEleTypeDec
+    ): TEleFunBase;
   function AddConstDeclarByte(decName: string; consVal: integer): TEleConsDec;
   function GetConstantArray(arrDelimt: char): TEleExpress;
   function GetConstantArrayStr(allowChar: boolean = true): TEleExpress;
@@ -1403,15 +1405,14 @@ end;
 //Expressions
 function TCompilerBase.MethodFromBinOperator(const OpType: TEleTypeDec; Op: string;
   OpType2: TEleTypeDec): TEleFunBase;
+{Find a method in the class "OpType" associated to a binary operator "Op", whose unique
+parameter is of type "OpType2".
+If not a matching method found, returns NIL.
+}
 var
   xfun: TEleFunBase;
   att: TxpElement;
 begin
-{Find a method in the class "OpType" associated to a binary operator "Op", whose unique
-parameter is of type "OpType2".
-If not a matching method found, returns NIL.
-This function is designed to be used in cnjunction with FindFirstMethodFromOperator().
-}
   Op := UpCase(Op);
   if OpType.elements = nil then exit(nil);
   for att in OpType.elements do begin
@@ -1443,6 +1444,30 @@ If not a matching method found, returns NIL.
       xfun := TEleFunBase(att);
       if (xfun.oper = Op) and
          (length(xfun.pars) = 1) then begin  //Unary methods have 1 parameter.
+        exit(xfun);
+      end;
+    end;
+  end;
+  //Not found
+  exit(nil);
+end;
+function TCompilerBase.MethodGetItem(const OpType: TEleTypeDec;
+  IdxType: TEleTypeDec): TEleFunBase;
+{Find the method _getitem() in the class "OpType", whose unique parameter is of type
+"IdxType".
+If not a matching method found, returns NIL.
+}
+var
+  xfun: TEleFunBase;
+  att: TxpElement;
+begin
+  if OpType.elements = nil then exit(nil);
+  for att in OpType.elements do begin
+    if att.idClass in [eleFunc, eleFuncDec] then begin  //Only for methods
+      xfun := TEleFunBase(att);
+      if (xfun.getset = gsGetInItem) and
+         CompatibleTypes(xfun.pars[1].typ, IdxType) {(xfun.pars[1].typ = IdxType)}
+      then begin  //Second parameter muts match IdxType
         exit(xfun);
       end;
     end;
@@ -1494,7 +1519,7 @@ in this function.
 var
   xvar: TEleVarDec;
   xcon: TEleConsDec;
-  eleMeth, Op1: TEleExpress;
+  eleMeth, Op1, OpIdx: TEleExpress;
   level: Integer;
   ele, field: TxpElement;
   posCall: TSrcPos;
@@ -1702,18 +1727,27 @@ begin
     end else begin  //Must be '['.
       //We have: array[something].
       Next;    //Takes "[".
-      xfun := Op1.Typ.getitem;  //Find de getitem() method.
-      if xfun = nil then begin
-        GenError('Undefined method _getitem() for type %s', [Op1.Typ.name]);
-        exit;
-      end;
-      eleMeth := CreateExpression(xfun.name, xfun.retType, otFunct, GetSrcPos);
+      //Creates element in AST.
+      eleMeth := CreateExpression('', typNull, otFunct, GetSrcPos);
       TreeElems.InsertParentTo(eleMeth, Op1);
       TreeElems.OpenElement(eleMeth);  //Set parent to add parameters.
-      eleMeth.rfun := xfun;            //Set function
-      //Capture parameter.
-      GetExpression(0);
+      //Capture index parameter.
+      OpIdx := GetExpression(0);
       if HayError then exit;
+      //Lets find de getitem() method, now we have "OpIdx.Typ".
+      {This could be a _setitem(), if follows an operator ":=", but we don't know here,
+      so we always generates a _getitem(). If it's neccesary we will change it later.}
+      xfun := MethodGetItem(Op1.Typ, OpIdx.Typ);
+      if xfun=nil then begin
+        //There are not fields for this type
+        GenError('Undefined method _getitem(%s) for type %s', [OpIdx.Typ.name, Op1.Typ.name]);
+        exit;
+      end;
+      //Complete node "eleMeth" now we have the "xfun" created.
+      eleMeth.name := xfun.name;     //Update name.
+      eleMeth.Typ  := xfun.retType;  //Update return type.
+      eleMeth.rfun := xfun;          //Set function
+      //Finish exploration
       if token<>']' then begin
         GenError('"]" expected.');
         exit;

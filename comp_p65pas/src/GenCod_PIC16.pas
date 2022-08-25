@@ -74,12 +74,15 @@ type
       procedure Copy_C_to_A;
       procedure Invert_C_to_A;
       function Invert(fun: TEleExpress): boolean;
-      function CreateBOMethod(clsType: TEleTypeDec; opr: string; name: string;
-        parType: TEleTypeDec; retType: TEleTypeDec; pCompile: TCodSysInline
-  ): TEleFun;
       function CreateUOMethod(clsType: TEleTypeDec; opr: string; name: string;
         retType: TEleTypeDec; pCompile: TCodSysInline; operTyp: TOperatorType =
   opkUnaryPre): TEleFun;
+      function CreateInBOMethod(clsType: TEleTypeDec; opr: string; name: string;
+        parType: TEleTypeDec; retType: TEleTypeDec; pCompile: TCodSysInline
+        ): TEleFun;
+      function CreateInTerMethod(clsType: TEleTypeDec; name: string;
+        parType: TEleTypeDec; retType: TEleTypeDec; pCompile: TCodSysInline
+  ): TEleFun;
       function AddSysInlineFunction(name: string; retType: TEleTypeDec;
         const srcPos: TSrcPos; const pars: TxpParFuncArray;
   codSys: TCodSysInline): TEleFun;
@@ -90,11 +93,14 @@ type
       procedure fun_Ref(fun: TEleExpress);
       procedure fun_Byte(fun: TEleExpress);
 //      procedure DefineArray(etyp: TxpEleType);
-      procedure LoadIXmult(const idx: TEleVarDec; size: byte; offset: word);
+      procedure LoadByteIndexWord(const idxvar: TEleVarDec; offset: word);
       procedure BOR_arr_asig_arr(fun: TEleExpress);
+      procedure LoadIXmult(const idxvar: TEleVarDec; size: byte; offset: word);
+      procedure LoadWordIndexWord(const idxvar: TEleVarDec; offset: word);
       procedure ValidRAMaddr(addr: integer);
-      procedure GenCodArrayGetItem(fun: TEleExpress);
-      procedure GenCodArraySetItem(const OpPtr: pointer);
+      procedure GetItemIndexByte(fun: TEleExpress);
+      procedure GetItemIndexWord(fun: TEleExpress);
+      procedure SetItemIndexByte(fun: TEleExpress);
       procedure GenCodArrayClear(fun: TEleExpress);
       procedure BOR_pointer_add_word(fun: TEleExpress);
       procedure BOR_pointer_sub_word(fun: TEleExpress);
@@ -446,7 +452,7 @@ begin
     genError('Not implemented: "%s"', [fun.name]);
   end;
 end;
-////////////Byte operations
+{%REGION Byte operations}
 procedure TGenCod.BOR_byte_asig_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
@@ -2090,7 +2096,8 @@ _LABEL_post(L2);
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-////////////operaciones con Boolean
+{%ENDREGION}
+{%REGION Operaciones con Boolean}
 procedure TGenCod.BOR_bool_asig_bool(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
@@ -2578,7 +2585,8 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
-////////////operaciones con Word
+{%ENDREGION}
+{%REGION Operaciones con Word}
 procedure TGenCod.BOR_word_asig_word(fun: TEleExpress);
 var
   idxVar: TEleVarDec;
@@ -2792,7 +2800,7 @@ begin
       _STA(parA.addH);
     end;
     else
-      GenError(MSG_UNSUPPORTED); exit;
+      genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
 //  end else if parA.Sto in [stVarRef, stExpRef] then begin
 //    //Asignación a una variable referenciada por variable (o IX)
@@ -4317,7 +4325,8 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
-//////////// Operaciones con Char
+{%ENDREGION}
+{%REGION Operaciones con Char}
 procedure TGenCod.BOR_char_asig_char(fun: TEleExpress);
 begin
   BOR_byte_asig_byte(fun);
@@ -4353,34 +4362,40 @@ procedure TGenCod.BOR_char_difer_char(fun: TEleExpress);
 begin
   BOR_byte_difer_byte(fun); //es lo mismo
 end;
-procedure TGenCod.LoadIXmult(const idx: TEleVarDec; size: byte; offset: word);
-{Load in IX register, the value of the "idx" variable multiplied by "size" and added by
-"offset". Parameter "idx" must by byte-size or word-size.
-Used to calculate efective address for pointers and arrays.
-"idx" must be only byte or word size.}
+procedure TGenCod.LoadIXmult(const idxvar: TEleVarDec; size: byte; offset: word);
+{Load in IX register, the value of the "idxvar" variable multiplied by "size" and added
+by "offset". Parameter "idxvar" must by word-size.
+Used to calculate efective address for pointers and arrays.}
 begin
-  if idx.typ.size>2 then begin
+  if idxvar.typ.size>2 then begin
     GenError('Not supported this index or pointer type.');
     exit;
   end;
   AddCallerToFromCurr(IX);  //We declare using IX
-  if size = 2 then begin
-    //Multiply by 2
-    if idx.typ.IsByteSize then begin
-      _LDXi(0);  //Has not MSB
-      _STX(IX.addr+1);   //High(IX) <- High(idx)
-      _LDA(idx.addr);    //Load LSB index
-      _ASLa;
+  if itmSize = 1 then begin
+    //Good. We don't need to multiply index.
+    if offset=0 then begin
+      _LDA(idxvar.addr);    //LSB
       _STA(IX.addr);
-      _ROL(IX.addr+1);
+      _LDA(idxvar.addr+1);  //MSB
+      _STA(IX.addr+1);
     end else begin
-      _LDX(idx.addr+1);
-      _STX(IX.addr+1);   //High(IX) <- High(idx)
-      _LDA(idx.addr);    //Load LSB index
-      _ASLa;
+      _CLC;
+      _LDA(idxvar.addr);    //LSB
+      _ADCi(lo(offset));    //Add LSB offset
       _STA(IX.addr);
-      _ROL(IX.addr+1);
+      _LDA(idxvar.addr+1);  //MSB
+      _ADCi(hi(offset));    //Add MSB offset
+      _STA(IX.addr+1);
     end;
+  end else if size = 2 then begin
+    //Multiply by 2
+    _LDX(idxvar.addr+1);
+    _STX(IX.addr+1);   //High(IX) <- High(idxvar)
+    _LDA(idxvar.addr);    //Load LSB index
+    _ASLa;
+    _STA(IX.addr);
+    _ROL(IX.addr+1);
     //Add offset
     if offset>0 then begin
       _CLC;
@@ -4395,6 +4410,106 @@ begin
     GenError('Not supported this item size.');
   end;
 end;
+procedure TGenCod.LoadByteIndexWord(const idxvar: TEleVarDec; offset: word);
+{Load in A register, the value indexed by "idxVar" variable and
+added by "offset". Parameter "idxVar" must by word-size.}
+begin
+  //Good. We don't need to multiply index.
+  if idxvar.addr<256 then begin  //*** Good Luck. Index is in Zero-page
+    if offset<256 then begin
+      _CLC;
+      _LDYi(offset);    //Could be zero.
+      pic.codAsm(i_LDA, aIndirecY, idxvar.addr);
+    end else begin
+      _LDX(idxvar.addrH);  //Save. Not needed if we can alter the index. Like register _IX.
+      _LDAi(hi(offset));   //We'll add the offset to the index
+      _CLC;
+      _ADC(idxvar.addrH);  //Zero page
+      _STA(idxvar.addrH);  //Include offset-H in Index
+      _LDYi(offset and $FF);  //LSB of offset
+      _CLC;
+      pic.codAsm(i_LDA, aIndirecY, idxvar.addr);
+      _STX(idxvar.addrH);  //Restore. Not needed if we can alter the index. Like register _IX.
+    end;
+  end else begin                 //*** Bad. Index is in other page.
+    if offset=0 then begin    //Not offset.
+      //Self-modifying code is compact.
+      _LDA(idxvar.addrL);
+      _STA(pic.iRam+10);
+      _LDA(idxvar.addrH);
+      _STA(pic.iRam+5);
+      _LDA($FFFF);     //Load byte
+    end else if offset<256 then begin   //Byte offset
+      //Self-modifying.
+      _CLC;
+      _LDA(idxvar.addrL);
+      _ADC(lo(offset));
+      _STA(pic.iRam+10);
+      _LDA(idxvar.addrH);
+      _ADCi(0);
+      _STA(pic.iRam+5);
+      _LDA($FFFF);     //Load byte
+    end else begin  //Offset>255
+      //Self-modifying.
+      _CLC;
+      _LDA(idxvar.addrL);
+      _ADC(lo(offset));
+      _STA(pic.iRam+12);
+      _LDA(idxvar.addrH);
+      _ADCi(hi(offset));
+      _STA(pic.iRam+5);
+      _LDA($FFFF);     //Load byte
+    end;
+  end;
+end;
+procedure TGenCod.LoadWordIndexWord(const idxvar: TEleVarDec; offset: word);
+{Load in H,A register, the value indexed by "idxVar" variable multiplied by 2 and
+added by "offset". Parameter "idxVar" must by word-size.}
+begin
+  if idxvar.addr<256 then begin  //*** Good Luck. Index is in Zero-page
+    if offset<255 then begin  //Less than 255 because it will be incremeneted
+      _CLC;
+      _LDYi(offset);    //Could be zero.
+      //"idxvar" << 1
+      _ASL(idxvar.addr);
+      _ROL(idxvar.addr+1);
+      pic.codAsm(i_LDA, aIndirecY, idxvar.addr);  //LSB
+      _INY;             //Pass no next byte
+      pic.codAsm(i_LDX, aIndirecY, idxvar.addr);  //MSB
+      _STY(H.addr);     //Returns in H register.
+      //Restore "idxvar"
+      _ROR(idxvar.addr+1);
+      _ROR(idxvar.addr);
+    end else begin
+      //We need multiply by 2 to "idxvar".
+      _LDX(idxvar.addr+1);
+      _STX(IX.addr+1);     //High(IX) <- High(idxvar)
+      _LDA(idxvar.addr);   //Load LSB index
+      _ASLa;               //A << 1 -> C,A
+      _STA(IX.addr);
+      _ROL(IX.addr+1);
+      //Add offset
+      _CLC;
+      _ADCi(lo(offset)); //LSB already in A
+      _STA(IX.addr);
+      _LDA(IX.addr+1);
+      _ADCi(hi(offset));
+      _STA(IX.addr+1);
+      //Load LSB
+      _CLC;
+      _LDYi(0);
+      pic.codAsm(i_LDA, aIndirecY, IX.addr);
+      //Load MSB
+      _INY;  //To point next byte
+      pic.codAsm(i_LDX, aIndirecY, IX.addr);
+      _STX(H.addr);
+    end;
+  end else begin                 //*** Bad. Index is in other page.
+
+  end;
+
+end;
+{%ENDREGION}
 //////////// Pointer operations
 procedure TGenCod.BOR_pointer_add_byte(fun: TEleExpress);
 {Implementa la suma de un puntero (a cualquier tipo) y un byte.}
@@ -5144,7 +5259,149 @@ _LABEL_pre(j2);
     exit;
   end;
 end;
-procedure TGenCod.GenCodArrayGetItem(fun: TEleExpress);
+procedure TGenCod.GetItemIndexByte(fun: TEleExpress);
+{BOR for _getitem() method when index is Byte. }
+var
+  arrVar, idx, op1, op2: TEleExpress;
+  itemType: TEleTypeDec;
+  offset: Word;
+begin
+  arrVar := TEleExpress(fun.elements[0]);
+  idx := TEleExpress(fun.elements[1]);
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    {Although this BOR can return a stRamFix when index is constant, cannot generate
+    a constant.}
+    exit;
+  end;
+  if arrVar.sto = stRamFix then begin
+    //Applied to a variable array. The normal.
+    itemType := arrVar.Typ.itmType; //Reference to the item type
+    //Generate code according to the index storage.
+    case idx.Sto of
+    stConst: begin  //Constant index. Can return a stRavFix if allocated.
+      if arrVar.allocated then begin
+        SetFunVariab(fun, arrVar.add + idx.value.valInt * itemType.size);
+      end else begin
+        //Not yet allocated. We keep as expression to simplify later.
+        SetFunExpres(fun);
+      end;
+    end;
+    stRamFix: begin  //Index by variable
+      //Calculate offset
+      offset := arrVar.add;
+      if itemType.IsByteSize then begin  //Must return a byte
+        SetFunExpres(fun);
+        _LDX(idx.add);
+        if offset<256 then begin
+          pic.codAsm(i_LDA, aZeroPagX, offset);
+        end else begin
+          _CLC;
+          pic.codAsm(i_LDA, aAbsolutX, offset);
+        end;
+      end else if itemType.IsWordSize then begin
+        SetFunExpres(fun);
+        _LDA(idx.add);  // Load index.
+        _ASLa;          // A*2->A. Only work for A<128
+        _TAX;           //Move to X
+        _INX;           //To point to MSB
+        if offset<256 then begin
+          pic.codAsm(i_LDA, aZeroPagX, offset);
+          _STA(H.addr);
+          _DEX;         //To point to LSB
+          pic.codAsm(i_LDA, aZeroPagX, offset);
+        end else begin
+          pic.codAsm(i_LDA, aAbsolutX, offset);
+          _STA(H.addr);
+          _DEX;         //To point to LSB
+          pic.codAsm(i_LDA, aAbsolutX, offset);
+        end;
+      end else begin
+        GenError('Cannot get item from this array type: %s.', [arrVar.Typ.name]);
+      end;
+    end;
+    else
+//Additional forms could be evaluated here
+//      if idx.IsConstantPlusVariable then begin
+//        //Is <constant> + <variable> that the SplitExpressions() routines
+//        //has allowed pass because knows we can optimize here.
+//        op1 := TEleExpress(idx.elements[0]);   //Constant evaluated.
+//        op2 := TEleExpress(idx.elements[1]);   //Variable
+//        SetFunVariab_RamVarOf(fun, op2.rvar, op1.val, arrVar.rvar); //Index by variable and an offset
+//      end else begin
+        GenError('Not supported this index.', idx.srcDec);
+        exit;
+//      end;
+    end;
+  end else begin
+    GenError('Cannot index array with storage %s.', [arrVar.StoAsStr]);
+  end;
+end;
+procedure TGenCod.GetItemIndexWord(fun: TEleExpress);
+{BOR for _getitem() method when index is Word. }
+var
+  arrVar, idx, op1, op2: TEleExpress;
+  itemType: TEleTypeDec;
+  offset: Word;
+begin
+  arrVar := TEleExpress(fun.elements[0]);
+  idx := TEleExpress(fun.elements[1]);
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    {Although this BOR can return a stRamFix when index is constant, cannot generate
+    a constant.}
+    exit;
+  end;
+  if arrVar.sto = stRamFix then begin
+    //Applied to a variable array. The normal.
+    itemType := arrVar.Typ.itmType; //Reference to the item type
+    //Generate code according to the index storage.
+    case idx.Sto of
+    stConst: begin  //Constant index. Can return a stRavFix if allocated.
+      if arrVar.allocated then begin
+        SetFunVariab(fun, arrVar.add + idx.value.valInt * itemType.size);
+      end else begin
+        //Not yet allocated. We keep as expression to simplify later.
+        SetFunExpres(fun);
+      end;
+    end;
+    stRamFix: begin  //Index by variable
+      //Calculate offset
+      offset := arrVar.add;
+      if itemType.IsByteSize then begin  //Must return a byte
+        SetFunExpres(fun);
+        //Variable index is word-size byte.
+        LoadByteIndexWord(idx.rvar, itemType.size, offset);
+      end else if itemType.IsWordSize then begin
+        SetFunExpres(fun);
+        _LDA(idx.add);  // Load index.
+        _ASLa;          // A*2->A. Only work for A<128
+        _TAX;           //Move to X
+        _INX;           //To point to MSB
+        if offset<256 then begin
+          pic.codAsm(i_LDA, aZeroPagX, offset);
+          _STA(H.addr);
+          _DEX;         //To point to LSB
+          pic.codAsm(i_LDA, aZeroPagX, offset);
+        end else begin
+          pic.codAsm(i_LDA, aAbsolutX, offset);
+          _STA(H.addr);
+          _DEX;         //To point to LSB
+          pic.codAsm(i_LDA, aAbsolutX, offset);
+        end;
+      end else begin
+        GenError('Cannot get item from this array type: %s.', [arrVar.Typ.name]);
+      end;
+    end;
+    else
+      GenError('Not supported this index.', idx.srcDec);
+      exit;
+    end;
+  end else begin
+    GenError('Cannot index array with storage %s.', [arrVar.StoAsStr]);
+  end;
+end;
+procedure TGenCod.SetItemIndexByte(fun: TEleExpress);
 {Función que devuelve el valor indexado del arreglo.
 In all cases, this INLINE function must return a stRamVarOf.}
 var
@@ -5185,12 +5442,7 @@ begin
   end else begin
     GenError('Cannot index a constant array.');
   end;
-end;
-procedure TGenCod.GenCodArraySetItem(const OpPtr: pointer);
-{Función que devuelve el valor indexado del arreglo para escritura. Devuelve el resultado
-como un operando en "res".}
-begin
-//  if not GetIdxParArray(WithBrack, idx) then exit;
+  //  if not GetIdxParArray(WithBrack, idx) then exit;
 //  //Procesa
 //  Op := OpPtr;
 //  if Op^.Sto = stRamFix then begin
@@ -5212,7 +5464,7 @@ begin
 //      end else begin
 //        SetResultExpRef(itemType);  //We don't need to check WR here in setter.
 //        //Item is word size. We multiply index and add offset in IX.
-//        LoadIXmult(idx.rVar, itemType.size, arrVar.addr);
+//        LoadByteIndexWord(idx.rVar, itemType.size, arrVar.addr);
 //        if HayError then exit;
 //      end;
 //    end;
@@ -5331,6 +5583,7 @@ procedure TGenCod.DefineShortPointer(etyp: TEleTypeDec);
 begin
   //Asignación desde Byte y Puntero
 //  opr:=etyp.CreateBinaryOperator(':=',2,'_set');
+//  opr.isSetter :=
 //  opr.CreateOperation(typByte, @BOR_byte_asig_byte);
 //  opr.CreateOperation(etyp   , @BOR_byte_asig_byte);
 //  //Agrega a los bytes, la posibilidad de ser asignados por punteros
@@ -5347,24 +5600,26 @@ begin
 end;
 procedure TGenCod.DefinePointer(etyp: TEleTypeDec);
 {Set operations that defines pointers aritmethic.}
+var
+  f: TEleFun;
 begin
   //Asignación desde word y Puntero
-  CreateBOMethod(etyp, ':=', '_set', typWord, typNull, @BOR_word_asig_word);
-  CreateBOMethod(etyp, ':=', '_set', etyp, typNull, @BOR_word_asig_word);
-  //Agrega a los word, la posibilidad de ser asignados por punteros
-//  typWord.operAsign.CreateOperation(etyp, @BOR_word_asig_word);
+  f := CreateInBOMethod(etyp, ':=', '_set', typWord, typNull, @BOR_word_asig_word);
+  f.getset := gsSetInSimple;
+  f := CreateInBOMethod(etyp, ':=', '_set', etyp, typNull, @BOR_word_asig_word);
+  f.getset := gsSetInSimple;
 
-  CreateBOMethod(etyp, '=','_equ', typWord, typBool, @BOR_word_equal_word);
-  CreateBOMethod(etyp, '=','_equ', etyp, typBool, @BOR_word_equal_word);
+  CreateInBOMethod(etyp, '=','_equ', typWord, typBool, @BOR_word_equal_word);
+  CreateInBOMethod(etyp, '=','_equ', etyp, typBool, @BOR_word_equal_word);
 
-  CreateBOMethod(etyp, '+', '_add', typWord, etyp, @BOR_pointer_add_word);
-  CreateBOMethod(etyp, '+', '_add', typByte, etyp, @BOR_pointer_add_byte);
+  CreateInBOMethod(etyp, '+', '_add', typWord, etyp, @BOR_pointer_add_word);
+  CreateInBOMethod(etyp, '+', '_add', typByte, etyp, @BOR_pointer_add_byte);
 
-  CreateBOMethod(etyp, '-', '_sub', typWord, etyp, @BOR_pointer_sub_word);
-  CreateBOMethod(etyp, '-', '_sub', typByte, etyp, @BOR_pointer_sub_byte);
+  CreateInBOMethod(etyp, '-', '_sub', typWord, etyp, @BOR_pointer_sub_word);
+  CreateInBOMethod(etyp, '-', '_sub', typByte, etyp, @BOR_pointer_sub_byte);
 
-  CreateBOMethod(etyp, '+=', '_aadd', typWord, etyp, @BOR_word_aadd_word);
-  CreateBOMethod(etyp, '+=', '_aadd', typByte, etyp, @BOR_word_aadd_byte);
+  CreateInBOMethod(etyp, '+=', '_aadd', typWord, etyp, @BOR_word_aadd_word);
+  CreateInBOMethod(etyp, '+=', '_aadd', typByte, etyp, @BOR_word_aadd_byte);
 //
 //  etyp.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address); //defined in all types
 
@@ -5377,17 +5632,25 @@ var
   f: TEleFun;
 begin
   //Create assigement method
-  CreateBOMethod(etyp, ':=', '_set', etyp, typNull, @BOR_arr_asig_arr);
+  f := CreateInBOMethod(etyp, ':=', '_set', etyp, typNull, @BOR_arr_asig_arr);
+  f.getset := gsSetInSimple;
   //Create attribute "low" as constant.
   AddConstDeclarByte('low', 0);
   //Create methods
 //  CreateUOMethod(etyp, '', 'length', typByte, @arrayLength);
-//  CreateUOMethod(etyp, '', 'low'   , typByte, @arrayLow);
   CreateUOMethod(etyp, '', 'high'  , typByte, @arrayHigh);
   CreateUOMethod(etyp, '', 'clear' , typNull, @GenCodArrayClear);
-  f := CreateBOMethod(etyp, '', '_getitem', typByte, etyp.itmType, @GenCodArrayGetItem);
-  //  etyp.CreateField('item'  , @GenCodArrayGetItem, @GenCodArraySetItem);
-  etyp.getitem := f;   //To help to locate.
+  //Getters and setters.
+  {Note we define only two getters, one for byte-index and one for word-index. Formally
+  we should create getters and setters for each type of the item.}
+  f := CreateInBOMethod(etyp, '', '_getitem', typByte, etyp.itmType, @GetItemIndexByte);
+  f.getset := gsGetInItem;
+  f := CreateInBOMethod(etyp, '', '_getitem', typWord, etyp.itmType, @GetItemIndexWord);
+  f.getset := gsGetInItem;
+  AddCallerToFrom(IX, f.bodyNode);  //Dependency
+  f := CreateInTerMethod(etyp, '_setitem',  typByte, etyp.itmType, @SetItemIndexByte);
+  f.getset := gsSetInItem;
+  //Operation for pointers
   CreateUOMethod(etyp, '@', 'addr', typWord, @UOR_address);
 //  etyp.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address); //defined in all types
 end;
@@ -5489,7 +5752,34 @@ begin
   TreeElems.CloseElement;  //Close function implementation
   curLocation := tmpLoc;   //Restore current location
 end;
-function TGenCod.CreateBOMethod(
+function TGenCod.CreateUOMethod(
+                      clsType: TEleTypeDec;   //Base type where the method bellow.
+                      opr     : string;      //Opertaor associated to the method
+                      name    : string;      //Name of the method
+                      retType : TEleTypeDec;  //Type returned by the method.
+                      pCompile: TCodSysInline;
+                      operTyp: TOperatorType = opkUnaryPre): TEleFun;
+{Create a new system function (associated to a unary operator) in the current element of
+ the AST.
+ Returns the reference to the function created.}
+var
+  pars: TxpParFuncArray;     //Array of parameters
+begin
+  setlength(pars, 0);        //Reset parameters
+  AddParam(pars, 'b', srcPosNull, clsType, decNone);  //Base object
+  //Add declaration
+  Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false, true);
+  //Here variables can be added
+  {Create a body, to be uniform with normal function and for have a space where
+  compile code and access to posible variables or other elements.}
+  Result.callType := ctSysInline; //INLINE function
+  Result.codSysInline := pCompile; //Set routine to generate code
+  Result.oper := UpCase(opr); //Set operator as UpperCase to speed searching.
+  if opr = '' then Result.operTyp := opkNone
+  else Result.operTyp := operTyp; //Must be pre or post
+  TreeElems.CloseElement;    //Close function implementation
+end;
+function TGenCod.CreateInBOMethod(
                       clsType: TEleTypeDec;   //Base type where the method bellow.
                       opr     : string;      //Opertaor associated to the method
                       name    : string;      //Name of the method
@@ -5518,16 +5808,12 @@ begin
   if opr = '' then Result.operTyp := opkNone
   else Result.operTyp := opkBinary;
   TreeElems.CloseElement;  //Close body
-  TreeElems.CloseElement;    //Close function implementation
+  TreeElems.CloseElement;  //Close function implementation
 end;
-function TGenCod.CreateUOMethod(
-                      clsType: TEleTypeDec;   //Base type where the method bellow.
-                      opr     : string;      //Opertaor associated to the method
-                      name    : string;      //Name of the method
-                      retType : TEleTypeDec;  //Type returned by the method.
-                      pCompile: TCodSysInline;
-                      operTyp: TOperatorType = opkUnaryPre): TEleFun;
-{Create a new system function (associated to a unary operator) in the current element of
+function TGenCod.CreateInTerMethod(clsType: TEleTypeDec;
+  name: string; parType: TEleTypeDec; retType: TEleTypeDec;
+  pCompile: TCodSysInline): TEleFun;
+{Create a new system ternary INLINE function in the current element of
  the AST.
  Returns the reference to the function created.}
 var
@@ -5535,18 +5821,22 @@ var
 begin
   setlength(pars, 0);        //Reset parameters
   AddParam(pars, 'b', srcPosNull, clsType, decNone);  //Base object
+  AddParam(pars, 'i', srcPosNull, parType, decNone);  //Parameter
+  AddParam(pars, 'n', srcPosNull, parType, decNone);  //Parameter
   //Add declaration
-  Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false, true);
+  Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false,
+                      false);  //Don't include variables to don't ask for RAM.
+  TreeElems.AddBodyAndOpen(srcPosNull);  //Create body
   //Here variables can be added
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
   Result.callType := ctSysInline; //INLINE function
   Result.codSysInline := pCompile; //Set routine to generate code
-  Result.oper := UpCase(opr); //Set operator as UpperCase to speed searching.
-  if opr = '' then Result.operTyp := opkNone
-  else Result.operTyp := operTyp; //Must be pre or post
-  TreeElems.CloseElement;    //Close function implementation
+  Result.operTyp := opkNone;   //Could be a ternary operator
+  TreeElems.CloseElement;  //Close body
+  TreeElems.CloseElement;  //Close function implementation
 end;
+
 procedure TGenCod.CreateSystemElements;
 {Initialize the system elements. Must be executed just one time when compiling.}
 var
@@ -5624,101 +5914,106 @@ begin
   /////////////// Boolean type ////////////////////
   //Methods-Operators
   TreeElems.OpenElement(typBool);
-  f:=CreateBOMethod(typBool, ':=',  '_set', typBool, typNull, @BOR_bool_asig_bool);
+  f:=CreateInBOMethod(typBool, ':=',  '_set', typBool, typNull, @BOR_bool_asig_bool);
+  f.getset := gsSetInSimple;
   f:=CreateUOMethod(typBool, 'NOT', '_not', typBool, @UOR_not_bool, opkUnaryPre);
-  f:=CreateBOMethod(typBool, 'AND', '_and', typBool, typBool, @BOR_bool_and_bool);
+  f:=CreateInBOMethod(typBool, 'AND', '_and', typBool, typBool, @BOR_bool_and_bool);
   f.fConmutat := true;
-  f:=CreateBOMethod(typBool, 'OR' , '_or' , typBool, typBool, @BOR_bool_or_bool);
+  f:=CreateInBOMethod(typBool, 'OR' , '_or' , typBool, typBool, @BOR_bool_or_bool);
   f.fConmutat := true;
-  f:=CreateBOMethod(typBool, 'XOR' , '_xor' , typBool, typBool, @BOR_bool_xor_bool);
+  f:=CreateInBOMethod(typBool, 'XOR' , '_xor' , typBool, typBool, @BOR_bool_xor_bool);
   f.fConmutat := true;
-  f:=CreateBOMethod(typBool, '=' ,  '_equ', typBool, typBool, @BOR_bool_equal_bool);
+  f:=CreateInBOMethod(typBool, '=' ,  '_equ', typBool, typBool, @BOR_bool_equal_bool);
   f.fConmutat := true;
-  f:=CreateBOMethod(typBool, '<>',  '_dif', typBool, typBool, @BOR_bool_xor_bool);
+  f:=CreateInBOMethod(typBool, '<>',  '_dif', typBool, typBool, @BOR_bool_xor_bool);
   f.fConmutat := true;
   TreeElems.CloseElement;   //Close Type
   /////////////// Byte type ////////////////////
   //Methods-Operators
   TreeElems.OpenElement(typByte);
   f:=CreateUOMethod(typByte, '@', 'addr', typWord, @UOR_address);
-  f:=CreateBOMethod(typByte, ':=', '_set', typByte, typNull, @BOR_byte_asig_byte);
-  f:=CreateBOMethod(typByte, '+=', '_aadd',typByte, typNull, @BOR_byte_aadd_byte);
-  f:=CreateBOMethod(typByte, '-=', '_asub',typByte, typNull, @BOR_byte_asub_byte);
-  f:=CreateBOMethod(typByte, '+' , '_add', typByte, typByte, @BOR_byte_add_byte);
+  f:=CreateInBOMethod(typByte, ':=', '_set', typByte, typNull, @BOR_byte_asig_byte);
+  f.getset := gsSetInSimple;
+  f:=CreateInBOMethod(typByte, '+=', '_aadd',typByte, typNull, @BOR_byte_aadd_byte);
+  f:=CreateInBOMethod(typByte, '-=', '_asub',typByte, typNull, @BOR_byte_asub_byte);
+  f:=CreateInBOMethod(typByte, '+' , '_add', typByte, typByte, @BOR_byte_add_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, '+' , '_add', typWord, typWord, @BOR_byte_add_word);
+  f:=CreateInBOMethod(typByte, '+' , '_add', typWord, typWord, @BOR_byte_add_word);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, '-' , '_sub', typByte, typByte, @BOR_byte_sub_byte);
+  f:=CreateInBOMethod(typByte, '-' , '_sub', typByte, typByte, @BOR_byte_sub_byte);
   AddCallerToFrom(H, f.bodyNode);  //Dependency
-  f:=CreateBOMethod(typByte, '*' , '_mul', typByte, typWord, @BOR_byte_mul_byte);
+  f:=CreateInBOMethod(typByte, '*' , '_mul', typByte, typWord, @BOR_byte_mul_byte);
   f.fConmutat := true;
   AddCallerToFrom(H, f.bodyNode);  //Dependency
   f_byte_mul_byte := f;
 
-  f:=CreateBOMethod(typByte, 'AND','_and', typByte, typByte, @BOR_byte_and_byte);
+  f:=CreateInBOMethod(typByte, 'AND','_and', typByte, typByte, @BOR_byte_and_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, 'OR' ,'_or' , typByte, typByte, @BOR_byte_or_byte);
+  f:=CreateInBOMethod(typByte, 'OR' ,'_or' , typByte, typByte, @BOR_byte_or_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, 'XOR','_xor', typByte, typByte, @BOR_byte_xor_byte);
+  f:=CreateInBOMethod(typByte, 'XOR','_xor', typByte, typByte, @BOR_byte_xor_byte);
   f.fConmutat := true;
   f:=CreateUOMethod(typByte, 'NOT','_not', typByte, @UOR_not_byte, opkUnaryPre);
-  f:=CreateBOMethod(typByte, '=' , '_equ', typByte, typBool, @BOR_byte_equal_byte);
+  f:=CreateInBOMethod(typByte, '=' , '_equ', typByte, typBool, @BOR_byte_equal_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, '<>', '_dif', typByte, typBool, @BOR_byte_difer_byte);
+  f:=CreateInBOMethod(typByte, '<>', '_dif', typByte, typBool, @BOR_byte_difer_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typByte, '>' , '_gre', typByte, typBool, @BOR_byte_great_byte);
-  f:=CreateBOMethod(typByte, '<' , '_les', typByte, typBool, @BOR_byte_less_byte);
-  f:=CreateBOMethod(typByte, '>=', '_gequ',typByte, typBool, @BOR_byte_gequ_byte);
-  f:=CreateBOMethod(typByte, '<=', '_lequ',typByte, typBool, @BOR_byte_lequ_byte);
-  f:=CreateBOMethod(typByte, '>>', '_shr', typByte, typByte, @BOR_byte_shr_byte);  { TODO : Definir bien la precedencia }
-  f:=CreateBOMethod(typByte, '<<', '_shl', typByte, typByte, @BOR_byte_shl_byte);
+  f:=CreateInBOMethod(typByte, '>' , '_gre', typByte, typBool, @BOR_byte_great_byte);
+  f:=CreateInBOMethod(typByte, '<' , '_les', typByte, typBool, @BOR_byte_less_byte);
+  f:=CreateInBOMethod(typByte, '>=', '_gequ',typByte, typBool, @BOR_byte_gequ_byte);
+  f:=CreateInBOMethod(typByte, '<=', '_lequ',typByte, typBool, @BOR_byte_lequ_byte);
+  f:=CreateInBOMethod(typByte, '>>', '_shr', typByte, typByte, @BOR_byte_shr_byte);  { TODO : Definir bien la precedencia }
+  f:=CreateInBOMethod(typByte, '<<', '_shl', typByte, typByte, @BOR_byte_shl_byte);
   TreeElems.CloseElement;   //Close Type
   /////////////// Char type ////////////////////
   TreeElems.OpenElement(typChar);
   //opr:=typChar.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address);
-  f:=CreateBOMethod(typChar, ':=', '_set', typChar, typNull, @BOR_char_asig_char);
+  f:=CreateInBOMethod(typChar, ':=', '_set', typChar, typNull, @BOR_char_asig_char);
+  f.getset := gsSetInSimple;
   //opr.CreateOperation(typString, @BOR_char_asig_string);
-  f:=CreateBOMethod(typChar, '=' , '_equ', typChar, typBool, @BOR_char_equal_char);
+  f:=CreateInBOMethod(typChar, '=' , '_equ', typChar, typBool, @BOR_char_equal_char);
   f.fConmutat := true;
-  f:=CreateBOMethod(typChar, '<>', '_dif', typChar, typBool, @BOR_char_difer_char);
+  f:=CreateInBOMethod(typChar, '<>', '_dif', typChar, typBool, @BOR_char_difer_char);
   f.fConmutat := true;
   TreeElems.CloseElement;   //Close Type
 
   /////////////// Word type ////////////////////
   TreeElems.OpenElement(typWord);
   //opr:=typWord.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address);
-  f:=CreateBOMethod(typWord, ':=' ,'_set' , typWord, typNull, @BOR_word_asig_word);
+  f:=CreateInBOMethod(typWord, ':=' ,'_set' , typWord, typNull, @BOR_word_asig_word);
+  f.getset := gsSetInSimple;
   AddCallerToFrom(H, f.bodyNode);  //Dependency
-  f:=CreateBOMethod(typWord, ':=' ,'_set' , typByte, typNull, @BOR_word_asig_byte);
-  f:=CreateBOMethod(typWord, '+=' ,'_aadd', typByte, typNull, @BOR_word_aadd_byte);
-  f:=CreateBOMethod(typWord, '+=' ,'_aadd', typWord, typNull, @BOR_word_aadd_word);
-  f:=CreateBOMethod(typWord, '-=' ,'_asub', typByte, typNull, @BOR_word_asub_byte);
-  f:=CreateBOMethod(typWord, '+'  , '_add', typByte, typWord, @BOR_word_add_byte);
+  f:=CreateInBOMethod(typWord, ':=' ,'_set' , typByte, typNull, @BOR_word_asig_byte);
+  f.getset := gsSetInSimple;
+  f:=CreateInBOMethod(typWord, '+=' ,'_aadd', typByte, typNull, @BOR_word_aadd_byte);
+  f:=CreateInBOMethod(typWord, '+=' ,'_aadd', typWord, typNull, @BOR_word_aadd_word);
+  f:=CreateInBOMethod(typWord, '-=' ,'_asub', typByte, typNull, @BOR_word_asub_byte);
+  f:=CreateInBOMethod(typWord, '+'  , '_add', typByte, typWord, @BOR_word_add_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typWord, '+'  , '_add', typWord, typWord, @BOR_word_add_word);
+  f:=CreateInBOMethod(typWord, '+'  , '_add', typWord, typWord, @BOR_word_add_word);
   f.fConmutat := true;
   AddCallerToFrom(H, f.bodyNode);  //Dependency
-  f:=CreateBOMethod(typWord, '-'  , '_sub', typByte, typWord, @BOR_word_sub_byte);
-  f:=CreateBOMethod(typWord, '-'  , '_sub', typWord, typWord, @BOR_word_sub_word);
-  f:=CreateBOMethod(typWord, 'AND', '_and', typByte, typByte, @BOR_word_and_byte);
+  f:=CreateInBOMethod(typWord, '-'  , '_sub', typByte, typWord, @BOR_word_sub_byte);
+  f:=CreateInBOMethod(typWord, '-'  , '_sub', typWord, typWord, @BOR_word_sub_word);
+  f:=CreateInBOMethod(typWord, 'AND', '_and', typByte, typByte, @BOR_word_and_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typWord, 'AND', '_and', typWord, typWord, @BOR_word_and_word);
+  f:=CreateInBOMethod(typWord, 'AND', '_and', typWord, typWord, @BOR_word_and_word);
   f.fConmutat := true;
   f:=CreateUOMethod(typWord, 'NOT', '_not', typWord, @UOR_not_word, opkUnaryPre);
-  f:=CreateBOMethod(typWord, '>>' , '_shr', typByte, typWord, @BOR_word_shr_byte); { TODO : Definir bien la precedencia }
-  f:=CreateBOMethod(typWord, '<<' , '_shl', typByte, typWord, @BOR_word_shl_byte);
+  f:=CreateInBOMethod(typWord, '>>' , '_shr', typByte, typWord, @BOR_word_shr_byte); { TODO : Definir bien la precedencia }
+  f:=CreateInBOMethod(typWord, '<<' , '_shl', typByte, typWord, @BOR_word_shl_byte);
 
-  f:=CreateBOMethod(typWord, '=' , '_equ' , typWord, typBool, @BOR_word_equal_word);
+  f:=CreateInBOMethod(typWord, '=' , '_equ' , typWord, typBool, @BOR_word_equal_word);
   f.fConmutat := true;
-  f:=CreateBOMethod(typWord, '=' , '_equ' , typByte, typBool, @BOR_word_equal_byte);
+  f:=CreateInBOMethod(typWord, '=' , '_equ' , typByte, typBool, @BOR_word_equal_byte);
   f.fConmutat := true;
-  f:=CreateBOMethod(typWord, '<>', '_dif' , typWord, typBool, @BOR_word_difer_word);
+  f:=CreateInBOMethod(typWord, '<>', '_dif' , typWord, typBool, @BOR_word_difer_word);
   f.fConmutat := true;
-  f:=CreateBOMethod(typWord, '>=', '_gequ', typWord, typBool, @BOR_word_gequ_word);
+  f:=CreateInBOMethod(typWord, '>=', '_gequ', typWord, typBool, @BOR_word_gequ_word);
   AddCallerToFrom(E, f.bodyNode);  //Dependency
-  f:=CreateBOMethod(typWord, '<' , '_les' , typWord, typBool, @BOR_word_less_word);
-  f:=CreateBOMethod(typWord, '>' , '_gre' , typWord, typBool, @BOR_word_great_word);
-  f:=CreateBOMethod(typWord, '<=', '_lequ', typWord, typBool, @BOR_word_lequ_word);
+  f:=CreateInBOMethod(typWord, '<' , '_les' , typWord, typBool, @BOR_word_less_word);
+  f:=CreateInBOMethod(typWord, '>' , '_gre' , typWord, typBool, @BOR_word_great_word);
+  f:=CreateInBOMethod(typWord, '<=', '_lequ', typWord, typBool, @BOR_word_lequ_word);
   //Methods
   f:=CreateUOMethod(typWord, '', 'low' , typByte, @word_Low);
   f:=CreateUOMethod(typWord, '', 'high', typByte, @word_High);

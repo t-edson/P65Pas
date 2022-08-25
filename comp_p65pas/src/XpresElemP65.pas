@@ -319,11 +319,11 @@ type  //Declaration elements
     function IsArrayOf(itTyp: TEleTypeDec; numIt: integer): boolean;
     function IsPointerTo(ptTyp: TEleTypeDec): boolean;
     function IsEquivalent(typ: TEleTypeDec): boolean;
-  public   //References
-    //These references help for a fast search of getters and setters.
-    //setter : TEleFun; //Reference to setter. Noy used. Simples types like word can have several "_set"
-    setitem: TEleFun;   //Reference to setter for arrays. There should be only one to be useful.
-    getitem: TEleFun;   //Reference to getter for arrays. There should be only one to be useful.
+//  public   //References
+//    //These references help for a fast search of getters and setters.
+//    //setter : TEleFun; //Reference to setter. Noy used. Simples types like word can have several "_set"
+//    setitem: TEleFun;   //Reference to setter for arrays. There should be only one to be useful.
+//    getitem: TEleFun;   //Reference to getter for arrays. There should be only one to be useful.
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -697,6 +697,16 @@ type  //Declaration elements (functions)
     opkUnaryPost,  //Unary Post operator
     opkBinary      //Binary operator
   );
+  TFunGetset = (
+    gsNone,         //Is not neither getter nor setter.
+    gsGetInSimple,  //Getter INLINE simple:  _get()
+    gsGetInItem,    //Getter INLINE for array: _getitem(index)
+    gsGetOther,     //Other getter.
+    gsSetInSimple,  //Setter INLINE simple: _set(value)
+    gsSetInItem,    //Setter INLINE for array: _setitem(index, value)
+    gsSetOther      //Other setter.
+    );
+
   TCallType = (
     ctUsrNormal,   //Common user function
     ctUsrInline,   //Inline user function
@@ -706,22 +716,23 @@ type  //Declaration elements (functions)
   );
   { TxpEleFunBase }
   TEleFunBase = class(TEleProgFrame)
-    retType     : TEleTypeDec;   //Type returned
+    retType     : TEleTypeDec;  //Type returned
     IsInterrupt : boolean;      //Indicates the function is an ISR
-    IsForward   : boolean; //Identifies a forward declaration.
-  public //Operator
+    IsForward   : boolean;      //Identifies a forward declaration.
+  public  //Operator
     operTyp: TOperatorType;  //Operand type
     oper   : string;   //Operator associated to the function when it works as a method.
     {Note that the precedence of the operators, is fixed and depends only of operator.}
-  public //Flags for operators
-    fConmutat : boolean; //Represents a conmutative binary operator.
-  public //References
+  public  //Flags for operators
+    fConmutat : boolean;    //Represents a conmutative binary operator.
+    getset    : TFunGetset; //Indicates if function is getter or setter.
+  public  //References
     callType: TCallType;  //How to call the function.
     //Routine BOR o UOR, when callType is ctSysInline.
     codSysInline: TCodSysInline;
     //Routine that generates code for the function, when callType is ctSysNormal.
     codSysNormal: TCodSysNormal;
-  public //Parameters manage
+  public  //Parameters manage
     pars   : TxpParFuncArray;  //parámetros de entrada
     procedure ClearParams;
     function SameParamsType(const funpars: TxpParFuncArray): boolean;

@@ -8,13 +8,14 @@
   <TextPanel Val="8421504"/>
   <currPath Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas"/>
   <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-1.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="182"/>
-  <EditAsmWidth Val="1081"/>
+  <SynTreeWidth Val="163"/>
+  <EditAsmWidth Val="1160"/>
   <ViewPanAssem Val="True"/>
   <winXpos Val="0"/>
   <winYpos Val="33"/>
@@ -52,10 +53,10 @@
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
     <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\C64sprites.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test4_Asm.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\UnitTest.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test5_Arrays.pas
 "/>
   </Edit>
   <ExternTool>
@@ -64,7 +65,7 @@ Execute in C128	                        	D:\Programas\GTK3VICE-3.6.1-win64\bin\x
 "/>
   </ExternTool>
   <AftChg6502>
-    <actAfterChg Val="3"/>
+    <actAfterChg Val="1"/>
   </AftChg6502>
   <Compiler6502>
     <unitPath Val="{AppPath}/comp_p65pas/units/"/>

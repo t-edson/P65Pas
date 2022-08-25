@@ -224,7 +224,6 @@ var
     for eleSen in TreeElems.curNode.elements do begin
       if eleSen.idClass <> eleSenten then continue;
       sen := TEleSentence(eleSen);
-      //if sen.sntType = sntExpres then begin  //Call to function or method (including assignment)
       if sen.sntType = sntAssign then begin    //assignment)
         expFun := TEleExpress(sen.elements[0]);  //Takes root node.
         ConstantFoldExpr(expFun);
@@ -505,27 +504,27 @@ like used in several compilers.}
   begin
     Result := false;
     //Split expressions in first operand of assigment (only for arrays).
-    Op1 := TEleExpress(setMethod.elements[0]);  //Takes assigment target.
-    if (Op1.opType = otFunct) and (Op1.name = '_getitem') then begin
-      //It's assignment to an array.
-      idx := TEleExpress(Op1.elements[1]);
-      if idx.opType = otFunct then begin
-        //It's something complex. Like array[x+y] := ...
-        if idx.IsConstantPlusVariable then begin
-          //Can be optimized later in ConstantFoldExpr().
-        end else if idx.IsVariablePlusConstant then begin
-          idx.elements.Exchange(0,1);
-          //Can be optimized later in ConstantFoldExpr().
-        end else begin
-          { #todo : Aquí se puede verificar, primero, si es una función INLINE como ord('A') que se pueda optimizar }
-          //We need to create a previous assignment
-          new_set := MoveNodeToAssign(curContainer, idx);
-          if HayError then exit;
-          SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
-          Result := true;
-        end;
-      end;
-    end;
+//    Op1 := TEleExpress(setMethod.elements[0]);  //Takes assigment target.
+//    if (Op1.opType = otFunct) and (Op1.name = '_getitem') then begin
+//      //It's assignment to an array.
+//      idx := TEleExpress(Op1.elements[1]);
+//      if idx.opType = otFunct then begin
+//        //It's something complex. Like array[x+y] := ...
+//        if idx.IsConstantPlusVariable then begin
+//          //Can be optimized later in ConstantFoldExpr().
+//        end else if idx.IsVariablePlusConstant then begin
+//          idx.elements.Exchange(0,1);
+//          //Can be optimized later in ConstantFoldExpr().
+//        end else begin
+//          { #todo : Aquí se puede verificar, primero, si es una función INLINE como ord('A') que se pueda optimizar }
+//          //We need to create a previous assignment
+//          new_set := MoveNodeToAssign(curContainer, idx);
+//          if HayError then exit;
+//          SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
+//          Result := true;
+//        end;
+//      end;
+//    end;
     //Split expressions in second operand of assignment.
     Op2 := TEleExpress(setMethod.elements[1]);  //Takes assignment source.
     if (Op2.opType = otFunct) then begin
@@ -696,13 +695,13 @@ Must be called after DoOptimize().}
   {Generates code for a Main Body element.}
   begin
     //It's the main program
-    PutLabel('__main_prog__');
+    PutLabel('__main__');
     //Process body
     TreeElems.OpenElement(body); //Locate in the Body. Formally this won't be necessary if we are not going to solve identifiers.
     GenCodeSentences(TreeElems.curNode.elements);
     TreeElems.CloseElement;              //Close the Body.
     //Ending label
-    PutLabel('__end_prog__');
+    PutLabel('__end__');
     //{ TODO : Considerar incluir este código de verificación. }
     //  if pic.MsjError<>'' then begin //Puede ser error al escribir la última instrucción
     //    GenError(pic.MsjError);
