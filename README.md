@@ -128,19 +128,28 @@ Some features of the IDE are:
 
 ## Debugger/Simulator
 
-P65Pas includes a complete GUI debugger for ASM instructions:
-
-![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/11/P65Pas-simulator.png "P65Pas debugger-simulator")
+P65Pas IDE includes a complete GUI debugger for ASM instructions:
 
 ![Assembler Debugger of P65Pas](https://github.com/t-edson/P65Pas/blob/trunk/screenshots/ide_debugger.png "Assembler Debugger of P65Pas")
 
 To control the execution, the following keys can be used:
 
-F5 -> Set a breakpoint in the current position of  the assembler code.
-F6 -> Reste the device.
-F7 -> Step by step into subroutine.
-F8 -> Step by step over subroutine.
-F9 -> Run the program in real time.
+* F5 -> Set a breakpoint in the current position of  the assembler code.
+* F6 -> Reste the device.
+* F7 -> Step by step into subroutine.
+* F8 -> Step by step over subroutine.
+* F9 -> Run the program in real time.
+
+The debugger included in the IDE can execute the executable code step by step or in blocks.
+
+It is based on a virtual system that includes a 6502 CPU and 64K of RAM.
+
+The simulation environment is an empty system, composed only of CPU and RAM memory. There are no additional devices attached and no ROM routines preloaded into memory.
+
+All that is loaded into memory is the latest compiled code from the IDE.
+All 6502 CPU instructions are implemented but have not been all tested to execute as a real 6502 model. Arithmetic operations in BCD are not yet implemented for simulation.
+
+Be careful about executing infinite loops or invalid instructions, because they could hang the program.
 
 ## Compiler
 
