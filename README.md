@@ -124,7 +124,7 @@ Some features of the IDE are:
 
 ![P65Pas](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2019/06/Sin-título2.png "P65Pas for Ubuntu")
 
-![P65Pas for Mac](https://github.com/t-edson/P65Pas/blob/trunk/screenshots/PicPasMac.png "P65Pas for Mac")
+![P65Pas for Mac](https://github.com/t-edson/P65Pas/blob/trunk/screenshots/PicPasMac.jpg "P65Pas for Mac")
 
 ## Debugger/Simulator
 
