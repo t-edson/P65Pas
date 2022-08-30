@@ -122,17 +122,17 @@ Some features of the IDE are:
 
 •	Several setting options.
 
-![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/06/P65Pas-0.7_en.png "P65Pas with dark skin")
-
 ![P65Pas](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2019/06/Sin-título2.png "P65Pas for Ubuntu")
 
 ![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2018/05/P65PasMac.jpg "P65Pas for Mac")
 
 ## Debugger/Simulator
 
-P65Pas includes a graphical debugger for ASM instructions:
+P65Pas includes a complete GUI debugger for ASM instructions:
 
 ![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/11/P65Pas-simulator.png "P65Pas debugger-simulator")
+
+![Assembler Debugger of P65Pas](https://github.com/t-edson/P65Pas/blob/trunk/screenshots/ide_debugger.png "Assembler Debugger of P65Pas")
 
 To control the execution, the following keys can be used:
 

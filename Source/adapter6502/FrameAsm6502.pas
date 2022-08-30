@@ -366,21 +366,21 @@ procedure TfraPicAsm.StepOver;
 var
   pc: DWord;
 begin
-  if pic.ram[pic.ReadPC].value = 0 then begin
-    //Salta memoria no usada
-    pc := pic.ReadPC;
-    while (pc < high(pic.ram)) and (pic.ram[pc].value = 0) do begin
-      pc := pc + 1;  //Incrementa
-      pic.WritePC(pc);
-    end;
-    //MsgBox('$%x %d', [pc, pic.ram[pc].value]);
-  end else begin
+//  if pic.ram[pic.ReadPC].value = 0 then begin
+//    //Salta memoria no usada
+//    pc := pic.ReadPC;
+//    while (pc < high(pic.ram)) and (pic.ram[pc].value = 0) do begin
+//      pc := pc + 1;  //Incrementa
+//      pic.WritePC(pc);
+//    end;
+//    //MsgBox('$%x %d', [pc, pic.ram[pc].value]);
+//  end else begin
     pic.MsjError := '';
     pic.ExecStep;
     if pic.MsjError<>'' then begin
       if OnCPUerror<>nil then OnCPUerror(pic.MsjError);
     end;
-  end;
+//  end;
 end;
 procedure TfraPicAsm.ExecHere;
 {Ejecuta una instrucción hasta la dirección seleccionada.}

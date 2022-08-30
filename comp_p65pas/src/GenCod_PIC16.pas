@@ -95,7 +95,7 @@ type
 //      procedure DefineArray(etyp: TxpEleType);
       procedure LoadByteIndexWord(const idxvar: TEleVarDec; offset: word);
       procedure BOR_arr_asig_arr(fun: TEleExpress);
-      procedure LoadIXmult(const idxvar: TEleVarDec; size: byte; offset: word);
+      procedure LoadAindexWord(const idxvar: TEleVarDec; size: byte; offset: word);
       procedure LoadWordIndexWord(const idxvar: TEleVarDec; offset: word);
       procedure ValidRAMaddr(addr: integer);
       procedure GetItemIndexByte(fun: TEleExpress);
@@ -4362,48 +4362,86 @@ procedure TGenCod.BOR_char_difer_char(fun: TEleExpress);
 begin
   BOR_byte_difer_byte(fun); //es lo mismo
 end;
-procedure TGenCod.LoadIXmult(const idxvar: TEleVarDec; size: byte; offset: word);
-{Load in IX register, the value of the "idxvar" variable multiplied by "size" and added
+procedure TGenCod.LoadAindexWord(const idxvar: TEleVarDec; size: byte; offset: word);
+{Load in A register, the value of the "idxvar" variable multiplied by "size" and added
 by "offset". Parameter "idxvar" must by word-size.
-Used to calculate efective address for pointers and arrays.}
+Used to calculate efective address for pointers and arrays.
+NOTE: Doesn't use IX register.}
+var
+  adcomp, ad1, ad2: Integer;
 begin
   if idxvar.typ.size>2 then begin
     GenError('Not supported this index or pointer type.');
     exit;
   end;
   AddCallerToFromCurr(IX);  //We declare using IX
-  if itmSize = 1 then begin
+  if size = 1 then begin
     //Good. We don't need to multiply index.
     if offset=0 then begin
-      _LDA(idxvar.addr);    //LSB
-      _STA(IX.addr);
-      _LDA(idxvar.addr+1);  //MSB
-      _STA(IX.addr+1);
+      _LDA(idxvar.addrL);
+      _STA(pic.iRam+12);   //**** Check
+      _LDA(idxvar.addrH);   //LDA absolute
+      _STA(pic.iRam+5);    //**** Check
+      _LDA($FFFF);     //Load byte
     end else begin
+      //Self-modifying.
       _CLC;
-      _LDA(idxvar.addr);    //LSB
-      _ADCi(lo(offset));    //Add LSB offset
-      _STA(IX.addr);
-      _LDA(idxvar.addr+1);  //MSB
-      _ADCi(hi(offset));    //Add MSB offset
-      _STA(IX.addr+1);
+      _LDA(idxvar.addrL);
+      _ADC(lo(offset));
+      _STA(pic.iRam+12);   //**** Check
+      _LDA(idxvar.addrH);   //LDA absolute
+      _ADCi(hi(offset));
+      _STA(pic.iRam+5);    //**** Check
+      _LDA($FFFF);     //Load byte
     end;
   end else if size = 2 then begin
-    //Multiply by 2
-    _LDX(idxvar.addr+1);
-    _STX(IX.addr+1);   //High(IX) <- High(idxvar)
-    _LDA(idxvar.addr);    //Load LSB index
-    _ASLa;
-    _STA(IX.addr);
-    _ROL(IX.addr+1);
-    //Add offset
-    if offset>0 then begin
-      _CLC;
-      _ADCi(lo(offset));   //LSB already in A
-      _STA(IX.addr);
-      _LDA(IX.addr+1);
-      _ADCi(hi(offset));
-      _STA(IX.addr+1);
+    if offset=0 then begin
+      //Load in WR
+      _LDA(idxvar.addr);    //LSB
+      _LDX(idxvar.addr+1);  //MSB
+      _STX(H.addr);  //Could be optimized if writing directly in LDA $FFFF.
+      //Multiply by 2
+      _ASLa;
+      _ROL(H.addr);
+      //Load in A
+      _STA(pic.iRam+12);   //**** Check
+      _LDA(H.addr);
+      _STA(pic.iRam+5);   //**** Check
+      _LDA($FFFF);     //Load byte
+    end else begin
+      //Load in WR
+      _LDA(idxvar.addr);    //LSB
+      _LDX(idxvar.addr+1);  //MSB
+      _STX(H.addr);
+      //Multiply by 2 -> H,A
+      _ASLa;
+      _ROL(H.addr);
+      //Add offset and Load in A
+      if pic.iRam < 256-14 then begin  //Everything can be done on zero-page.
+        _CLC;
+        _ADCi(lo(offset));
+        _STA($FF); ad1:=pic.iRam-1;  //Save address.
+        _LDA(H.addr);
+        _ADCi(hi(offset));
+        _STA($FF); ad2:=pic.iRam-1;  //Save address.
+        _LDA($FFFF);   //Load byte
+        //Complete the addresses.
+        pic.ram[ad1].value := pic.iRam-2;
+        pic.ram[ad2].value := pic.iRam-1;
+      end else begin      //We need to point to other page
+        _CLC;
+        _ADCi(lo(offset));
+        _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+        _LDA(H.addr);
+        _ADCi(hi(offset));
+        _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
+        _LDA($FFFF);   //Load byte
+        //Complete the addresses.
+        pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+        pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+        pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+        pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+      end;
     end;
   end else begin
     //Multiply by "n"
@@ -4443,71 +4481,111 @@ begin
       //Self-modifying.
       _CLC;
       _LDA(idxvar.addrL);
-      _ADC(lo(offset));
-      _STA(pic.iRam+10);
-      _LDA(idxvar.addrH);
+      _ADCi(lo(offset));
+      if pic.iRam+11<256 then begin
+        _STA(pic.iRam+11);  //2 bytes
+      end else begin
+        _STA(pic.iRam+12);  //3 bytes
+      end;
+      _LDA(idxvar.addrH);   //LDA absolute
       _ADCi(0);
-      _STA(pic.iRam+5);
+      if pic.iRam+4<256 then begin
+        _STA(pic.iRam+4);  //2 bytes
+      end else begin
+        _STA(pic.iRam+5);  //3 bytes
+      end;
       _LDA($FFFF);     //Load byte
     end else begin  //Offset>255
       //Self-modifying.
       _CLC;
       _LDA(idxvar.addrL);
-      _ADC(lo(offset));
-      _STA(pic.iRam+12);
-      _LDA(idxvar.addrH);
+      _ADCi(lo(offset));
+      if pic.iRam+11<256 then begin
+        _STA(pic.iRam+11);  //2 bytes
+      end else begin
+        _STA(pic.iRam+12);  //3 bytes
+      end;
+      _LDA(idxvar.addrH);   //LDA absolute
       _ADCi(hi(offset));
-      _STA(pic.iRam+5);
+      if pic.iRam+4<256 then begin
+        _STA(pic.iRam+4);  //2 bytes
+      end else begin
+        _STA(pic.iRam+5);  //3 bytes
+      end;
       _LDA($FFFF);     //Load byte
     end;
   end;
 end;
 procedure TGenCod.LoadWordIndexWord(const idxvar: TEleVarDec; offset: word);
 {Load in H,A register, the value indexed by "idxVar" variable multiplied by 2 and
-added by "offset". Parameter "idxVar" must by word-size.}
+added by "offset". Parameter "idxVar" must by word-size.
+IMPORTANT: Require IX defined and stored at zero-page}
 begin
   if idxvar.addr<256 then begin  //*** Good Luck. Index is in Zero-page
     if offset<255 then begin  //Less than 255 because it will be incremeneted
-      _CLC;
-      _LDYi(offset);    //Could be zero.
-      //"idxvar" << 1
-      _ASL(idxvar.addr);
-      _ROL(idxvar.addr+1);
-      pic.codAsm(i_LDA, aIndirecY, idxvar.addr);  //LSB
-      _INY;             //Pass no next byte
-      pic.codAsm(i_LDX, aIndirecY, idxvar.addr);  //MSB
-      _STY(H.addr);     //Returns in H register.
-      //Restore "idxvar"
-      _ROR(idxvar.addr+1);
-      _ROR(idxvar.addr);
-    end else begin
-      //We need multiply by 2 to "idxvar".
-      _LDX(idxvar.addr+1);
-      _STX(IX.addr+1);     //High(IX) <- High(idxvar)
-      _LDA(idxvar.addr);   //Load LSB index
-      _ASLa;               //A << 1 -> C,A
+      //Copy in IX.addr+1
+      _LDA(idxvar.addr+1);
+      _STA(IX.addr+1);
+      //Multiply by 2 and Update IX.addr
+      _LDA(idxvar.addr);
+      _ASLa;
       _STA(IX.addr);
       _ROL(IX.addr+1);
-      //Add offset
+      //Load LSB
       _CLC;
-      _ADCi(lo(offset)); //LSB already in A
+      _LDYi(offset);    //Could be zero.
+      pic.codAsm(i_LDA, aIndirecY, IX.addr);
+    end else begin
+      //Load in WR
+      _LDA(idxvar.addr);    //LSB
+      _LDX(idxvar.addr+1);  //MSB
+      _STX(H.addr);  //Could be optimized for offset=0 if using IX.addr+1 instead of H.addr.
+      //Multiply by 2
+      _ASLa;
+      _ROL(H.addr);
+      //Add offset and store in IX
+      _CLC;
+      _ADCi(lo(offset));
       _STA(IX.addr);
-      _LDA(IX.addr+1);
+      _LDA(H.addr);
       _ADCi(hi(offset));
       _STA(IX.addr+1);
       //Load LSB
       _CLC;
       _LDYi(0);
       pic.codAsm(i_LDA, aIndirecY, IX.addr);
-      //Load MSB
-      _INY;  //To point next byte
-      pic.codAsm(i_LDX, aIndirecY, IX.addr);
-      _STX(H.addr);
     end;
   end else begin                 //*** Bad. Index is in other page.
-
+    //Similar to case "idxvar.addr<256".
+    //Load in WR
+    _LDA(idxvar.addr);    //LSB
+    _LDX(idxvar.addr+1);  //MSB
+    _STX(H.addr);  //Could be optimized for offset=0 if using IX.addr+1 instead of H.addr.
+    //Multiply by 2
+    _ASLa;
+    _ROL(H.addr);
+    //Add offset and store in IX
+    if offset=0 then begin
+      _STA(IX.addr);
+      _LDA(H.addr);
+      _STA(IX.addr+1);
+    end else begin
+      _CLC;
+      _ADCi(lo(offset));
+      _STA(IX.addr);
+      _LDA(H.addr);
+      _ADCi(hi(offset));
+      _STA(IX.addr+1);
+    end;
+    //Load LSB
+    _CLC;
+    _LDYi(0);
+    pic.codAsm(i_LDA, aIndirecY, IX.addr);
   end;
-
+  //Load MSB
+  _INY;  //To point next byte
+  pic.codAsm(i_LDX, aIndirecY, IX.addr);
+  _STY(H.addr);     //Returns in H register.
 end;
 {%ENDREGION}
 //////////// Pointer operations
@@ -5190,6 +5268,10 @@ begin
   SetFunNull(fun);  //In Pascal an assigment doesn't return type.
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    exit;  //We don't calculate constant here.
+  end;
   if parA.Typ.nItems <> parB.Typ.nItems then begin
     GenError('Array sizes doesn''t match.', fun.srcDec);
     exit;
@@ -5206,7 +5288,7 @@ begin
         //Just a little bytes
         WriteVaLueToRAM(@buffer, 0, parA.Typ, parB.value);
         //values := parB.Value.items;
-        for i:=0 to nItems-1 do begin
+        for i:=0 to nBytes-1 do begin
           _LDAi(buffer[i].value);
           _STA(parA.add+i);
         end;
@@ -5371,24 +5453,12 @@ begin
       if itemType.IsByteSize then begin  //Must return a byte
         SetFunExpres(fun);
         //Variable index is word-size byte.
-        LoadByteIndexWord(idx.rvar, itemType.size, offset);
+        LoadByteIndexWord(idx.rvar, offset);
       end else if itemType.IsWordSize then begin
         SetFunExpres(fun);
-        _LDA(idx.add);  // Load index.
-        _ASLa;          // A*2->A. Only work for A<128
-        _TAX;           //Move to X
-        _INX;           //To point to MSB
-        if offset<256 then begin
-          pic.codAsm(i_LDA, aZeroPagX, offset);
-          _STA(H.addr);
-          _DEX;         //To point to LSB
-          pic.codAsm(i_LDA, aZeroPagX, offset);
-        end else begin
-          pic.codAsm(i_LDA, aAbsolutX, offset);
-          _STA(H.addr);
-          _DEX;         //To point to LSB
-          pic.codAsm(i_LDA, aAbsolutX, offset);
-        end;
+        //Variable index is word-size byte.
+        //LoadWordIndexWord(idx.rvar, offset);   //Require IX
+        LoadAindexWord(idx.rvar, 2, offset)
       end else begin
         GenError('Cannot get item from this array type: %s.', [arrVar.Typ.name]);
       end;

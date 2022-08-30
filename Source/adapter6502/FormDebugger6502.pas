@@ -178,8 +178,8 @@ begin
   no siempre ejecuta los ciclos solicitados exactamente.}
   nCyclesPerClk := round(int64(pic.frequen) * milsecRefresh / 4000);
   /////////////////////////////////////////////////////////////////////////////////
-  fraRegWat.mnClearAllClick(self);
-  fraRegWat.mnAddVarsClick(self);  //agrega varaibles por defecto
+  fraRegWat.acClearAllExecute(self);
+  fraRegWat.acAddVarsExecute(self);  //agrega varaibles por defecto
   self.Show;
 end;
 procedure TfrmDebugger6502.FormCreate(Sender: TObject);

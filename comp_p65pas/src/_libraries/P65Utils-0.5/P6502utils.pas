@@ -934,7 +934,7 @@ begin
     exit;
   end;
   i_JSR: begin
-    inc(PC.W, 3);  //Next psoition
+    inc(PC.W, 3);  //Next position
     //Save return
     ram[$100 + SP].value := PC.H;
     if SP = $00 then SP := $FF else dec(SP);
@@ -1112,12 +1112,22 @@ procedure TP6502.ExecTo(endAdd: word);
 contador del programa, sea igual a la dirección "endAdd".}
 begin
   //Hace una primera ejecución, sin verificar Breakpoints
+  if ram[PC.W].used = ruUnused then begin
+    //Encontró un BreakPoint, sale sin ejecutar esa instrucción
+    if OnExecutionMsg<>nil then OnExecutionMsg('Stopped. Unused RAM location.');
+    exit;
+  end;
   Exec(PC.W);
   //Ejecuta cíclicamnente
   while PC.W <> endAdd do begin
     if ram[PC.W].breakPnt then begin
       //Encontró un BreakPoint, sale sin ejecutar esa instrucción
       if OnExecutionMsg<>nil then OnExecutionMsg('Stopped for breakpoint.');
+      exit;
+    end;
+    if ram[PC.W].used = ruUnused then begin
+      //Encontró un BreakPoint, sale sin ejecutar esa instrucción
+      if OnExecutionMsg<>nil then OnExecutionMsg('Stopped. Unused RAM location.');
       exit;
     end;
     //Ejecuta

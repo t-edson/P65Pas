@@ -3,25 +3,31 @@ unit FrameRegWatcher6502;
 interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Grids, ExtCtrls, StdCtrls,
-  Buttons, Graphics, LCLType, Menus, LCLProc, P6502utils, MisUtils, UtilsGrilla,
-  CibGrillas, CompBase, CPUCore, Globales,
-  XpresElemP65, Analyzer;
+  Buttons, Graphics, LCLType, Menus, LCLProc, ActnList, P6502utils, MisUtils,
+  UtilsGrilla, CibGrillas, CompBase, CPUCore, Globales, XpresElemP65, Analyzer;
 type
 
   { TfraRegWatcher }
 
   TfraRegWatcher = class(TFrame)
+    acClearAll: TAction;
+    acAddVars: TAction;
+    acAddRT: TAction;
+    acDeleteRow: TAction;
+    ActionList1: TActionList;
     grilla: TStringGrid;
     Label1: TLabel;
-    mnAddRT: TMenuItem;
-    mnClearAll: TMenuItem;
-    mnAddVars: TMenuItem;
+    MenuItem1: TMenuItem;
+    MenuItem2: TMenuItem;
+    MenuItem3: TMenuItem;
+    MenuItem4: TMenuItem;
     panTitle: TPanel;
     PopupMenu1: TPopupMenu;
     SpeedButton1: TSpeedButton;
-    procedure mnAddRTClick(Sender: TObject);
-    procedure mnAddVarsClick(Sender: TObject);
-    procedure mnClearAllClick(Sender: TObject);
+    procedure acAddRTExecute(Sender: TObject);
+    procedure acAddVarsExecute(Sender: TObject);
+    procedure acClearAllExecute(Sender: TObject);
+    procedure acDeleteRowExecute(Sender: TObject);
   private
     UtilGrilla: TGrillaEdicFor;
     procedure AddWatch(varAddr: word);
@@ -47,9 +53,10 @@ type
     COL_NAM: integer;  //Columna de nombre
     COL_VAL: integer;  //Columna de valor
   public
-    procedure SetCompiler(cxp0: TAnalyzer);
     procedure AddWatch(varName: string);
     procedure Refrescar;
+  public  //Inicialización
+    procedure SetCompiler(cxp0: TAnalyzer);
     constructor Create(AOwner: TComponent) ; override;
     destructor Destroy; override;
   end;
@@ -246,13 +253,6 @@ function TfraRegWatcher.UtilGrillaLeerColorFondo(col, fil: integer): TColor;
 begin
   Result := clWhite;
 end;
-
-procedure TfraRegWatcher.SetCompiler(cxp0: TAnalyzer);
-begin
-  cxp := cxp0;
-  pic := cxp0.picCore;
-end;
-
 procedure TfraRegWatcher.AddWatch(varName: string);
 {Agrega una variable para vigilar}
 var
@@ -281,7 +281,23 @@ begin
   grilla.Cells[COL_ADD, f] := '$'+IntToHex(varAddr, 3);
   CompleteFromAddress(f);
 end;
-procedure TfraRegWatcher.mnAddVarsClick(Sender: TObject);
+// Acciones
+procedure TfraRegWatcher.acClearAllExecute(Sender: TObject);
+{Limpia toda la grilla.}
+begin
+  grilla.RowCount := 1;  //Elimina todas
+  grilla.RowCount := 2;  //Deja fila vacía
+end;
+procedure TfraRegWatcher.acDeleteRowExecute(Sender: TObject);
+{Elimina una fila de la grilla}
+var
+  f: Integer;
+begin
+  f := grilla.Row;
+  if f=-1 then exit;
+  grilla.DeleteRow(f);
+end;
+procedure TfraRegWatcher.acAddVarsExecute(Sender: TObject);
 {Agrega todas las variables usdas, del programa al inspector.}
 var
   v: TEleVarDec;
@@ -297,10 +313,10 @@ begin
         AddWatch(v.addr);
         AddWatch(v.addr+1);
       end else if v.typ.IsDWordSize then begin
-        AddWatch(v.name+'@3');
-        AddWatch(v.name+'@2');
-        AddWatch(v.name+'@1');
-        AddWatch(v.name+'@0');
+        AddWatch(v.addr);
+        AddWatch(v.addr+1);
+        AddWatch(v.addr+2);
+        AddWatch(v.addr+3);
       end else if v.typ.catType = tctArray then begin
         //Arreglo
         //Agrega primer byte
@@ -320,7 +336,7 @@ begin
   end;
   Refrescar;
 end;
-procedure TfraRegWatcher.mnAddRTClick(Sender: TObject);
+procedure TfraRegWatcher.acAddRTExecute(Sender: TObject);
 {Agrega los registros de trabajo}
 begin
 /////// No se necesita ahora, estarutina por cuanto, los registros se manejan como
@@ -338,12 +354,12 @@ begin
 //  end;
 //  Refrescar;
 end;
-procedure TfraRegWatcher.mnClearAllClick(Sender: TObject);
+//Inicialización
+procedure TfraRegWatcher.SetCompiler(cxp0: TAnalyzer);
 begin
-  grilla.RowCount := 1;  //Elimina todas
-  grilla.RowCount := 2;  //Deja fila vacía
+  cxp := cxp0;
+  pic := cxp0.picCore;
 end;
-
 constructor TfraRegWatcher.Create(AOwner: TComponent);
 var
   tmp: TugGrillaCol;

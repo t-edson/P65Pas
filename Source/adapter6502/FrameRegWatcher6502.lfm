@@ -71,17 +71,37 @@ object fraRegWatcher: TfraRegWatcher
   object PopupMenu1: TPopupMenu
     Left = 70
     Top = 170
-    object mnClearAll: TMenuItem
-      Caption = '&Clear All'
-      OnClick = mnClearAllClick
+    object MenuItem1: TMenuItem
+      Action = acClearAll
     end
-    object mnAddVars: TMenuItem
+    object MenuItem2: TMenuItem
+      Action = acAddVars
+    end
+    object MenuItem3: TMenuItem
+      Action = acAddRT
+    end
+    object MenuItem4: TMenuItem
+      Action = acDeleteRow
+    end
+  end
+  object ActionList1: TActionList
+    Left = 184
+    Top = 288
+    object acClearAll: TAction
+      Caption = '&Clear all'
+      OnExecute = acClearAllExecute
+    end
+    object acAddVars: TAction
       Caption = 'Add Program &Variables'
-      OnClick = mnAddVarsClick
+      OnExecute = acAddVarsExecute
     end
-    object mnAddRT: TMenuItem
+    object acAddRT: TAction
       Caption = 'Add &Registers'
-      OnClick = mnAddRTClick
+      OnExecute = acAddRTExecute
+    end
+    object acDeleteRow: TAction
+      Caption = '&Delete row'
+      OnExecute = acDeleteRowExecute
     end
   end
 end

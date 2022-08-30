@@ -6,7 +6,7 @@ interface
 uses
   Classes, SysUtils, LazLogger,
   P6502utils, CPUCore, CompBase, ParserDirec, GenCodBas_PIC16,
-  GenCod_PIC16, CompGlobals, XpresElemP65, ParserASM_6502;
+  GenCod_PIC16, CompGlobals, XpresElemP65, ParserASM_6502, StrUtils;
 type
   { TCompiler_PIC16 }
   TCompiler_PIC16 = class(TGenCod)
@@ -24,7 +24,7 @@ type
   public      //Events
     OnAfterCompile: procedure of object;   //Al finalizar la compilación.
   public      //Override methods
-    procedure RAMusage(lins: TStrings; ExcUnused: boolean); override; //uso de memoria RAM
+    procedure VariablesLocation(lins: TStrings; ExcUnused: boolean);
     procedure DumpCode(lins: TSTrings; AsmMode, IncVarDec, ExcUnused: boolean;
       incAdrr, incCom, incVarNam: boolean); override; //uso de la memoria Flash
     function RAMusedStr: string; override;
@@ -666,7 +666,6 @@ begin
   ExprLevel := 0;
   ResetRAM;    //2ms aprox.
   ClearError;
-  pic.MsjError := '';
   //Detecting unused elements
   RefreshAllElementLists; //Actualiza lista de elementos
   RemoveUnusedFunc;       //Se debe empezar con las funciones. 1ms aprox.
@@ -772,7 +771,7 @@ Must be called after DoOptimize().}
       pic.codByte(0, ruData);             //To complete later
     end else if bootloader = bldC64 then begin
       //GenBootloaderC64;    //Commodore 64 bootloader.
-      PutTopComm('      ;BASIC starter code: 10 SYS <entry point>');
+      PutTopComm('__bootloader:  ;BASIC starter code: 10 SYS __main__');
       pic.codByte($0C, ruData);  //Dirección de siguiente línea
       pic.codByte($08, ruData);
       pic.codByte($0A, ruData);  //Número de línea
@@ -786,6 +785,7 @@ Must be called after DoOptimize().}
       pic.codByte($00, ruData);  //Sgte línea BASIC
       pic.codByte($00, ruData);  //Sgte línea BASIC
     end else if bootloader = bldCustom then begin
+      PutTopComm('__bootloader:  ;Custom Bootloader.');
       for i:=0 to high(loaderBytes) do begin
         if loaderBytes[i]=-76 then begin
           pic.codByte(76, ruCode);  //Opcode JMP
@@ -857,9 +857,11 @@ begin
   compMod := cmGenCode;    //Generates code.
   pic.disableCodegen := false;  //Enable the code generation
   //Create Bootloader
+  PutTopComm('__bootloader:');//Define block for Bootloader
   GenBootloader(add1, add2);
   //Asigna memoria a registros
   //Asigna memoria para las variables, buscando memoria libre a partir de "GeneralORG".
+  PutTopComm('__variables:');  //Define block for variables
   CreateVarsAndPars;  //Primero a las variables locales (y parámetros) de las funciones
   //Find the next free RAM location, to write functions.
   pic.freeStart := GeneralORG;  //Start of program block
@@ -978,9 +980,10 @@ begin
 //    StartCountElapsed;  //Start timer
     CreateSystemElements;  //Crea los elementos del sistema. 3ms aprox.
     ClearMacros;           //Limpia las macros
-    //Inicia PIC
-    ExprLevel := 0;  //inicia
-    pic.dataAddr1 := -1;  {Reset flag}
+    //Initiate CPU
+    ExprLevel := 0;
+    pic.dataAddr1 := -1;  //Reset flag
+    pic.MsjError := '';
     //Compila el archivo actual como programa o como unidad
     IsUnit := GetUnitDeclaration();
     DoAnalyze;
@@ -1021,36 +1024,36 @@ end;
 function AdrStr(absAdr: word): string;
 {formatea una dirección en cadena.}
 begin
-  Result := '0x' + IntToHex(AbsAdr, 3);
+  Result := '$' + IntToHex(AbsAdr, 4);
 end;
-procedure TCompiler_PIC16.RAMusage(lins: TStrings; ExcUnused: boolean);
-{Devuelve una cadena con información sobre el uso de la memoria.}
+procedure TCompiler_PIC16.VariablesLocation(lins: TStrings; ExcUnused: boolean);
+{Return a string with information about all variables location.}
 var
   v: TEleVarDec;
   subUsed: string;
+const
+  SPACEPAD = '        ';
+  LSPC = length(SPACEPAD);
 begin
   for v in TreeElems.AllVars do begin   //Se supone que "AllVars" ya se actualizó.
       //debugln('AllVars['+IntToStr(i)+']='+v.name+','+v.Parent.name);
       if ExcUnused and (v.nCalled = 0) then continue;
       if v.nCalled = 0 then subUsed := '; <Unused>' else subUsed := '';
       if v.typ.IsByteSize then begin
-        lins.Add(v.name + ' EQU ' +  AdrStr(v.addr)+ subUsed);
+        lins.Add(PadRight(v.name, LSPC) + ' EQU ' + AdrStr(v.addr)+ subUsed +
+                 '       ;' + v.typ.name);
       end else if v.typ.IsWordSize then begin
-        lins.Add(v.name+'@0' + ' EQU ' +  AdrStr(v.addrL)+ subUsed);
-        lins.Add(v.name+'@1' + ' EQU ' +  AdrStr(v.addrH)+ subUsed);
-      end else if v.typ.IsDWordSize then begin
-        lins.Add(v.name+'@0' + ' EQU ' +  AdrStr(v.addrL)+ subUsed);
-        lins.Add(v.name+'@1' + ' EQU ' +  AdrStr(v.addrH)+ subUsed);
-        lins.Add(v.name+'@2' + ' EQU ' +  AdrStr(v.addrE)+ subUsed);
-        lins.Add(v.name+'@3' + ' EQU ' +  AdrStr(v.addrU)+ subUsed);
+        lins.Add(PadRight(v.name, LSPC) + ' EQU ' +  AdrStr(v.addrL)+ subUsed +
+                 '       ;' + v.typ.name);
+        lins.Add(SPACEPAD + ' EQU ' +  AdrStr(v.addrH)+ subUsed);
+      end else if v.typ.catType = tctArray then begin   //It's an array
+        lins.Add(PadRight(v.name, LSPC) + ' EQU ' +  AdrStr(v.addrL) + '~' +
+                 AdrStr(v.addr + v.typ.size-1) + subUsed + ' ;' + v.typ.name);
       end else begin
-        lins.Add('"' + v.name + '"->' +  AdrStr(v.addr) + subUsed);
+        lins.Add(PadRight(v.name, LSPC) + ' EQU ' +  AdrStr(v.addr) + subUsed +
+                 '       ;' + v.typ.name);
       end;
   end;
-  //Reporte de registros de trabajo, auxiliares
-  {***** En el nuevo esquema de trabajo, no se maenjan registros auxiliares y
-  los registros se manejan como simples varaibles.}
-//  lins.Add(';-------------------------');
 end;
 procedure TCompiler_PIC16.DumpCode(lins: TSTrings; AsmMode, IncVarDec,
   ExcUnused: boolean; incAdrr, incCom, incVarNam: boolean);
@@ -1060,13 +1063,13 @@ var
 begin
   if AsmMode then begin
     //Incluye encabezado
-    lins.Add('    ;Code generated by P6502 compiler');
-    lins.Add('    processor ' + PICName);
+    lins.Add('      ;Code generated by P65Pas compiler');
+    lins.Add('      processor ' + PICName);
     if IncVarDec then begin
-       lins.Add(';===RAM usage===');
-       RAMusage(lins, ExcUnused);
+       lins.Add('__all_variables:');
+       VariablesLocation(lins, ExcUnused);
     end;
-    lins.Add(';===Blocks of Code===');
+//    lins.Add(';===Blocks of Code===');
     pic.DumpCodeAsm(lins, incAdrr, incAdrr, incCom, incVarNam);
     lins.Add(';--------------------');
     lins.Add('      END');

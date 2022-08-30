@@ -208,7 +208,7 @@ public    //Files
   function ExpandRelPathToMain(FileName: string): string;
 public    //Abstract methods
   function CompilerName: string; virtual; abstract;  //Name of the compiler
-  procedure RAMusage(lins: TStrings; ExcUnused: boolean); virtual; abstract;
+//  procedure RAMusage(lins: TStrings; ExcUnused: boolean); virtual; abstract;
   function RAMusedStr: string; virtual; abstract;
   procedure GetResourcesUsed(out ramUse, romUse, stkUse: single); virtual; abstract;
   procedure DumpCode(lins: TSTrings; asmMode, IncVarDec, ExcUnused: boolean;
