@@ -12,8 +12,8 @@ type
   TCompiler_PIC16 = class(TGenCod)
   private  //Funciones básicas
     procedure ConstantFoldExpr(eleExp: TEleExpress);
-    procedure SplitExpresBody(body: TxpEleCodeCont);
-    procedure SplitExpressions;
+    procedure PrepareBody(body: TxpEleCodeCont);
+    procedure PrepareSentences;
   private  //Compilers steps
     procedure EvaluateConstantDeclare;
     procedure ConstantFolding;
@@ -195,12 +195,6 @@ begin
 end;
 procedure TCompiler_PIC16.ConstantFolding;
 {Do a fold constant optimization and evaluate constant expresions. }
-var
-  SCREEN    : array[0..1000] of byte absolute $0400;
-  BITMAP    : array [0..1] of byte   absolute $2000;  //Size doesn't matter
-var
-  location: ^byte;
-
   procedure ConstantFoldBody(body: TEleBody);
   {Do constant folding simplification in all expression nodes. Note the similarity with
   TGenCodeBas.GenCodeSentences(), for scanning the AST.
@@ -236,7 +230,6 @@ var
   fun : TEleFun;
   bod: TEleBody;
 begin
-  location := @BITMAP;
   compMod := cmConsEval;    //Mode Constant evaluation.
   pic.disableCodegen := true;  //Disable the code generation
   pic.iRam := 0;  //Clear RAM position
@@ -397,7 +390,7 @@ begin
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   ConstantPropagBody(bod);
 end;
-procedure TCompiler_PIC16.SplitExpresBody(body: TxpEleCodeCont);
+procedure TCompiler_PIC16.PrepareBody(body: TxpEleCodeCont);
 {Do a separation for assigmente sentences in order to have the "three-address code" form
 like used in several compilers.}
   function MoveNodeToAssign(curContainer: TxpElement; Op: TEleExpress): TEleExpress;
@@ -503,6 +496,7 @@ like used in several compilers.}
     par: TxpElement;
   begin
     Result := false;
+    if TEleExpress(setMethod).rfun.getset <> gsSetInSimple then exit;
     //Split expressions in first operand of assigment (only for arrays).
 //    Op1 := TEleExpress(setMethod.elements[0]);  //Takes assigment target.
 //    if (Op1.opType = otFunct) and (Op1.name = '_getitem') then begin
@@ -609,16 +603,42 @@ like used in several compilers.}
 var
   sen: TEleSentence;
   eleSen, _set, ele, _proc: TxpElement;
-  _exp: TEleExpress;
+  _exp, Op1, Op2: TEleExpress;
   _blk: TxpEleCodeCont;
 begin
+  //Prepare assignments for arrays.
+  for eleSen in body.elements do begin
+    if eleSen.idClass <> eleSenten then continue;
+    //We have a sentence here.
+    sen := TEleSentence(eleSen);
+    if sen.sntType = sntAssign then begin  //Assignment
+      _set := sen.elements[0];  //Takes the _set method.
+      Op1 := TEleExpress(_set.elements[0]);  //Takes assigment target.
+      Op2 := TEleExpress(_set.elements[1]);  //Takes assigment target.
+      if (Op1.opType = otFunct) and (Op1.rfun.getset = gsGetInItem) then begin
+        //It's an _set() for a _getitem() INLINE assignment for array.
+        if Op1.rfun.funset = nil then begin
+          GenError('Cannot locate the setter for this type.');
+        end;
+        //Convert getter() to setter().
+        Op1.rfun := Op1.rfun.funset;     //Must be gsSetInItem
+        Op1.name := Op1.rfun.name;
+        Op1.Typ  := Op1.rfun.retType;
+        //Move third parameter to _setitem() and locate it at the Top
+        TreeElems.ChangeParentTo(Op1, Op2);
+        TreeElems.ChangeParentTo(Op1.Parent.Parent, Op1);
+        _set.Parent.elements.Remove(_set);
+      end;
+    end;
+  end;
+  //Prepare sentences
   for eleSen in body.elements do begin
     if eleSen.idClass <> eleSenten then continue;
     //We have a sentence here.
     sen := TEleSentence(eleSen);
     if sen.sntType = sntAssign then begin  //Assignment
       _set := sen.elements[0];  //Takes the one _set method.
-      SplitSet(sen, _set)  //Might generate additional assigments sentences
+      SplitSet(sen, _set)  //Might generate additional assignments sentences
     end else if sen.sntType = sntProcCal then begin  //Procedure call
       _proc := sen.elements[0];  //Takes the proc.
       SplitProcCall(sen, TEleExpress(_proc))
@@ -630,7 +650,7 @@ begin
           SplitExpress(ele, _exp)
         end else if ele.idClass = eleBlock then begin   //Body of IF
           _blk := TxpEleCodeCont(ele);  //The first item is a TEleExpress
-          SplitExpresBody(_blk);
+          PrepareBody(_blk);
         end;
       end;
     end else if sen.sntType = sntExit then begin
@@ -641,7 +661,7 @@ begin
     end;
   end;
 end;
-procedure TCompiler_PIC16.SplitExpressions;
+procedure TCompiler_PIC16.PrepareSentences;
 var
   fun : TEleFun;
   bod: TEleBody;
@@ -649,13 +669,13 @@ begin
   //Split subroutines
   for fun in usedFuncs do begin
     if fun.callType = ctUsrNormal then begin
-      SplitExpresBody(fun.BodyNode);
+      PrepareBody(fun.BodyNode);
       if HayError then exit;   //Puede haber error
     end;
   end;
   //Split body
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
-  SplitExpresBody(bod);
+  PrepareBody(bod);
 end;
 procedure TCompiler_PIC16.DoOptimize;
 {Usa la información del árbol de sintaxis, para optimizar su estructura con
@@ -680,7 +700,7 @@ begin
   EvaluateConstantDeclare;
   if HayError then exit;
   //Simplify expressions
-  SplitExpressions;
+  PrepareSentences;
   {Do a first folding in nodes. Some constants (like those that depend on addresses)
   might not be evaluated. So it should be needed to do other Code folding again.}
   ConstantFolding;

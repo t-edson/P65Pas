@@ -716,24 +716,26 @@ type  //Declaration elements (functions)
   );
   { TxpEleFunBase }
   TEleFunBase = class(TEleProgFrame)
-    retType     : TEleTypeDec;  //Type returned
-    IsInterrupt : boolean;      //Indicates the function is an ISR
-    IsForward   : boolean;      //Identifies a forward declaration.
+    retType    : TEleTypeDec;  //Type returned
+    IsInterrupt: boolean;      //Indicates the function is an ISR
+    IsForward  : boolean;      //Identifies a forward declaration.
   public  //Operator
-    operTyp: TOperatorType;  //Operand type
-    oper   : string;   //Operator associated to the function when it works as a method.
+    operTyp    : TOperatorType; //Operand type
+    oper       : string;   //Operator associated to the function when it works as a method.
     {Note that the precedence of the operators, is fixed and depends only of operator.}
   public  //Flags for operators
-    fConmutat : boolean;    //Represents a conmutative binary operator.
-    getset    : TFunGetset; //Indicates if function is getter or setter.
+    fConmutat  : boolean;      //Represents a conmutative binary operator.
+    getset     : TFunGetset;   //Indicates if function is getter or setter.
+    funset     : TEleFunBase;  //Reference to related setter when this function is getter.
+    funget     : TEleFunBase;  //Reference to related getter when this function is setter.
   public  //References
-    callType: TCallType;  //How to call the function.
+    callType   : TCallType;    //How to call the function.
     //Routine BOR o UOR, when callType is ctSysInline.
     codSysInline: TCodSysInline;
     //Routine that generates code for the function, when callType is ctSysNormal.
     codSysNormal: TCodSysNormal;
   public  //Parameters manage
-    pars   : TxpParFuncArray;  //parámetros de entrada
+    pars       : TxpParFuncArray; //parámetros de entrada
     procedure ClearParams;
     function SameParamsType(const funpars: TxpParFuncArray): boolean;
     function ParamTypesList: string;

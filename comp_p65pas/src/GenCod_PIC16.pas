@@ -80,8 +80,8 @@ type
       function CreateInBOMethod(clsType: TEleTypeDec; opr: string; name: string;
         parType: TEleTypeDec; retType: TEleTypeDec; pCompile: TCodSysInline
         ): TEleFun;
-      function CreateInTerMethod(clsType: TEleTypeDec; name: string;
-        parType: TEleTypeDec; retType: TEleTypeDec; pCompile: TCodSysInline
+      function CreateInTerMethod(clsType: TEleTypeDec; name: string; parType1,
+        parType2: TEleTypeDec; retType: TEleTypeDec; pCompile: TCodSysInline
   ): TEleFun;
       function AddSysInlineFunction(name: string; retType: TEleTypeDec;
         const srcPos: TSrcPos; const pars: TxpParFuncArray;
@@ -93,10 +93,10 @@ type
       procedure fun_Ref(fun: TEleExpress);
       procedure fun_Byte(fun: TEleExpress);
 //      procedure DefineArray(etyp: TxpEleType);
-      procedure LoadByteIndexWord(const idxvar: TEleVarDec; offset: word);
       procedure BOR_arr_asig_arr(fun: TEleExpress);
-      procedure LoadAindexWord(const idxvar: TEleVarDec; size: byte; offset: word);
+      procedure LoadByteIndexWord(const idxvar: TEleVarDec; offset: word);
       procedure LoadWordIndexWord(const idxvar: TEleVarDec; offset: word);
+      procedure LoadWordIndexWord2(const idxvar: TEleVarDec; offset: word);
       procedure ValidRAMaddr(addr: integer);
       procedure GetItemIndexByte(fun: TEleExpress);
       procedure GetItemIndexWord(fun: TEleExpress);
@@ -317,30 +317,6 @@ begin
   end;
   //Muestra informa
 end;
-procedure TGenCod.UOR_not_byte(fun: TEleExpress);
-var
-  par: TEleExpress;
-begin
-  par := TEleExpress(fun.elements[0]);  //Only one parameter
-  //Process special modes of the compiler.
-  if compMod = cmConsEval then begin
-    if par.Sto = stConst then SetFunConst_byte(fun, (not par.value.valInt) and $FF);
-    exit;
-  end;
-  //Code generation
-  case par.Sto of
-  stConst : begin
-    SetFunConst_byte(fun, (not par.value.valInt) and $FF);
-  end;
-  stRamFix: begin
-    SetFunExpres(fun);
-    _LDA(par.rvar.addr);
-    _EORi($FF);
-  end;
-  else
-    genError('Not implemented: "%s"', [fun.name]);
-  end;
-end;
 procedure TGenCod.UOR_address(fun: TEleExpress);
 {Return the address of any operand.}
 var
@@ -389,70 +365,31 @@ begin
     genError('Cannot obtain address of this operand.');
   end;
 end;
-procedure TGenCod.UOR_not_bool(fun: TEleExpress);
-var
-  par: TEleExpress;
-begin
-  par := TEleExpress(fun.elements[0]);  //Only one parameter
-  //Process special modes of the compiler.
-  if compMod = cmConsEval then begin
-    if par.Sto = stConst then SetFunConst_bool(fun, not par.value.valBool);
-    exit;
-  end;
-  //Code generation
-  case par.Sto of
-  stConst : begin
-    //NOT for a constant is defined easily
-    SetFunConst_bool(fun, not par.value.valBool);
-  end;
-  stRamFix: begin
-    SetFunExpres(fun);
-    //We have to return logical value inverted in A
-    _LDA(par.rVar.addr);
-    _EORi($FF);
-  end;
-  stRegister, stRegistA: begin
-    SetFunExpres(fun);
-    //We have to return logical value inverted in A
-    _EORi($FF);  //Operand already in regA
-  end;
-  else
-    genError('Not implemented: "%s"', [fun.name]);
-  end;
-end;
-procedure TGenCod.UOR_not_word(fun: TEleExpress);
-var
-  par: TEleExpress;
-begin
-  par := TEleExpress(fun.elements[0]);  //Only one parameter
-  requireA;
-  //Process special modes of the compiler.
-  if compMod = cmConsEval then begin
-    if par.Sto = stConst then SetFunConst_word(fun, (not par.value.valInt) and $FFFF);
-    exit;
-  end;
-  //Code generation
-  case par.Sto of
-  stConst : begin
-    SetFunConst_word(fun, (not par.value.valInt) and $FFFF);
-  end;
-  stRamFix: begin
-    SetFunExpres(fun);
-    _LDA(par.addH);
-    _EORi($FF);
-    _STA(H.addr);
-    _LDA(par.addL);
-    _EORi($FF);
-  end;
-//  stExpres: begin
-//    SetUORResultExpres_byte;
-//    //////
-//  end;
-  else
-    genError('Not implemented: "%s"', [fun.name]);
-  end;
-end;
 {%REGION Byte operations}
+procedure TGenCod.UOR_not_byte(fun: TEleExpress);
+var
+  par: TEleExpress;
+begin
+  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    if par.Sto = stConst then SetFunConst_byte(fun, (not par.value.valInt) and $FF);
+    exit;
+  end;
+  //Code generation
+  case par.Sto of
+  stConst : begin
+    SetFunConst_byte(fun, (not par.value.valInt) and $FF);
+  end;
+  stRamFix: begin
+    SetFunExpres(fun);
+    _LDA(par.rvar.addr);
+    _EORi($FF);
+  end;
+  else
+    genError('Not implemented: "%s"', [fun.name]);
+  end;
+end;
 procedure TGenCod.BOR_byte_asig_byte(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
@@ -2097,7 +2034,38 @@ _LABEL_post(L2);
   end;
 end;
 {%ENDREGION}
-{%REGION Operaciones con Boolean}
+{%REGION Boolean operations}
+procedure TGenCod.UOR_not_bool(fun: TEleExpress);
+var
+  par: TEleExpress;
+begin
+  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    if par.Sto = stConst then SetFunConst_bool(fun, not par.value.valBool);
+    exit;
+  end;
+  //Code generation
+  case par.Sto of
+  stConst : begin
+    //NOT for a constant is defined easily
+    SetFunConst_bool(fun, not par.value.valBool);
+  end;
+  stRamFix: begin
+    SetFunExpres(fun);
+    //We have to return logical value inverted in A
+    _LDA(par.rVar.addr);
+    _EORi($FF);
+  end;
+  stRegister, stRegistA: begin
+    SetFunExpres(fun);
+    //We have to return logical value inverted in A
+    _EORi($FF);  //Operand already in regA
+  end;
+  else
+    genError('Not implemented: "%s"', [fun.name]);
+  end;
+end;
 procedure TGenCod.BOR_bool_asig_bool(fun: TEleExpress);
 var
   parA, parB: TEleExpress;
@@ -2586,7 +2554,39 @@ begin
   end;
 end;
 {%ENDREGION}
-{%REGION Operaciones con Word}
+{%REGION Word operations}
+procedure TGenCod.UOR_not_word(fun: TEleExpress);
+var
+  par: TEleExpress;
+begin
+  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  requireA;
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    if par.Sto = stConst then SetFunConst_word(fun, (not par.value.valInt) and $FFFF);
+    exit;
+  end;
+  //Code generation
+  case par.Sto of
+  stConst : begin
+    SetFunConst_word(fun, (not par.value.valInt) and $FFFF);
+  end;
+  stRamFix: begin
+    SetFunExpres(fun);
+    _LDA(par.addH);
+    _EORi($FF);
+    _STA(H.addr);
+    _LDA(par.addL);
+    _EORi($FF);
+  end;
+//  stExpres: begin
+//    SetUORResultExpres_byte;
+//    //////
+//  end;
+  else
+    genError('Not implemented: "%s"', [fun.name]);
+  end;
+end;
 procedure TGenCod.BOR_word_asig_word(fun: TEleExpress);
 var
   idxVar: TEleVarDec;
@@ -4326,7 +4326,7 @@ begin
   end;
 end;
 {%ENDREGION}
-{%REGION Operaciones con Char}
+{%REGION Char operations}
 procedure TGenCod.BOR_char_asig_char(fun: TEleExpress);
 begin
   BOR_byte_asig_byte(fun);
@@ -4361,231 +4361,6 @@ end;
 procedure TGenCod.BOR_char_difer_char(fun: TEleExpress);
 begin
   BOR_byte_difer_byte(fun); //es lo mismo
-end;
-procedure TGenCod.LoadAindexWord(const idxvar: TEleVarDec; size: byte; offset: word);
-{Load in A register, the value of the "idxvar" variable multiplied by "size" and added
-by "offset". Parameter "idxvar" must by word-size.
-Used to calculate efective address for pointers and arrays.
-NOTE: Doesn't use IX register.}
-var
-  adcomp, ad1, ad2: Integer;
-begin
-  if idxvar.typ.size>2 then begin
-    GenError('Not supported this index or pointer type.');
-    exit;
-  end;
-  AddCallerToFromCurr(IX);  //We declare using IX
-  if size = 1 then begin
-    //Good. We don't need to multiply index.
-    if offset=0 then begin
-      _LDA(idxvar.addrL);
-      _STA(pic.iRam+12);   //**** Check
-      _LDA(idxvar.addrH);   //LDA absolute
-      _STA(pic.iRam+5);    //**** Check
-      _LDA($FFFF);     //Load byte
-    end else begin
-      //Self-modifying.
-      _CLC;
-      _LDA(idxvar.addrL);
-      _ADC(lo(offset));
-      _STA(pic.iRam+12);   //**** Check
-      _LDA(idxvar.addrH);   //LDA absolute
-      _ADCi(hi(offset));
-      _STA(pic.iRam+5);    //**** Check
-      _LDA($FFFF);     //Load byte
-    end;
-  end else if size = 2 then begin
-    if offset=0 then begin
-      //Load in WR
-      _LDA(idxvar.addr);    //LSB
-      _LDX(idxvar.addr+1);  //MSB
-      _STX(H.addr);  //Could be optimized if writing directly in LDA $FFFF.
-      //Multiply by 2
-      _ASLa;
-      _ROL(H.addr);
-      //Load in A
-      _STA(pic.iRam+12);   //**** Check
-      _LDA(H.addr);
-      _STA(pic.iRam+5);   //**** Check
-      _LDA($FFFF);     //Load byte
-    end else begin
-      //Load in WR
-      _LDA(idxvar.addr);    //LSB
-      _LDX(idxvar.addr+1);  //MSB
-      _STX(H.addr);
-      //Multiply by 2 -> H,A
-      _ASLa;
-      _ROL(H.addr);
-      //Add offset and Load in A
-      if pic.iRam < 256-14 then begin  //Everything can be done on zero-page.
-        _CLC;
-        _ADCi(lo(offset));
-        _STA($FF); ad1:=pic.iRam-1;  //Save address.
-        _LDA(H.addr);
-        _ADCi(hi(offset));
-        _STA($FF); ad2:=pic.iRam-1;  //Save address.
-        _LDA($FFFF);   //Load byte
-        //Complete the addresses.
-        pic.ram[ad1].value := pic.iRam-2;
-        pic.ram[ad2].value := pic.iRam-1;
-      end else begin      //We need to point to other page
-        _CLC;
-        _ADCi(lo(offset));
-        _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
-        _LDA(H.addr);
-        _ADCi(hi(offset));
-        _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
-        _LDA($FFFF);   //Load byte
-        //Complete the addresses.
-        pic.ram[ad1].value   := (pic.iRam-2) and $FF;
-        pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
-        pic.ram[ad2].value   := (pic.iRam-1) and $ff;
-        pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
-      end;
-    end;
-  end else begin
-    //Multiply by "n"
-    GenError('Not supported this item size.');
-  end;
-end;
-procedure TGenCod.LoadByteIndexWord(const idxvar: TEleVarDec; offset: word);
-{Load in A register, the value indexed by "idxVar" variable and
-added by "offset". Parameter "idxVar" must by word-size.}
-begin
-  //Good. We don't need to multiply index.
-  if idxvar.addr<256 then begin  //*** Good Luck. Index is in Zero-page
-    if offset<256 then begin
-      _CLC;
-      _LDYi(offset);    //Could be zero.
-      pic.codAsm(i_LDA, aIndirecY, idxvar.addr);
-    end else begin
-      _LDX(idxvar.addrH);  //Save. Not needed if we can alter the index. Like register _IX.
-      _LDAi(hi(offset));   //We'll add the offset to the index
-      _CLC;
-      _ADC(idxvar.addrH);  //Zero page
-      _STA(idxvar.addrH);  //Include offset-H in Index
-      _LDYi(offset and $FF);  //LSB of offset
-      _CLC;
-      pic.codAsm(i_LDA, aIndirecY, idxvar.addr);
-      _STX(idxvar.addrH);  //Restore. Not needed if we can alter the index. Like register _IX.
-    end;
-  end else begin                 //*** Bad. Index is in other page.
-    if offset=0 then begin    //Not offset.
-      //Self-modifying code is compact.
-      _LDA(idxvar.addrL);
-      _STA(pic.iRam+10);
-      _LDA(idxvar.addrH);
-      _STA(pic.iRam+5);
-      _LDA($FFFF);     //Load byte
-    end else if offset<256 then begin   //Byte offset
-      //Self-modifying.
-      _CLC;
-      _LDA(idxvar.addrL);
-      _ADCi(lo(offset));
-      if pic.iRam+11<256 then begin
-        _STA(pic.iRam+11);  //2 bytes
-      end else begin
-        _STA(pic.iRam+12);  //3 bytes
-      end;
-      _LDA(idxvar.addrH);   //LDA absolute
-      _ADCi(0);
-      if pic.iRam+4<256 then begin
-        _STA(pic.iRam+4);  //2 bytes
-      end else begin
-        _STA(pic.iRam+5);  //3 bytes
-      end;
-      _LDA($FFFF);     //Load byte
-    end else begin  //Offset>255
-      //Self-modifying.
-      _CLC;
-      _LDA(idxvar.addrL);
-      _ADCi(lo(offset));
-      if pic.iRam+11<256 then begin
-        _STA(pic.iRam+11);  //2 bytes
-      end else begin
-        _STA(pic.iRam+12);  //3 bytes
-      end;
-      _LDA(idxvar.addrH);   //LDA absolute
-      _ADCi(hi(offset));
-      if pic.iRam+4<256 then begin
-        _STA(pic.iRam+4);  //2 bytes
-      end else begin
-        _STA(pic.iRam+5);  //3 bytes
-      end;
-      _LDA($FFFF);     //Load byte
-    end;
-  end;
-end;
-procedure TGenCod.LoadWordIndexWord(const idxvar: TEleVarDec; offset: word);
-{Load in H,A register, the value indexed by "idxVar" variable multiplied by 2 and
-added by "offset". Parameter "idxVar" must by word-size.
-IMPORTANT: Require IX defined and stored at zero-page}
-begin
-  if idxvar.addr<256 then begin  //*** Good Luck. Index is in Zero-page
-    if offset<255 then begin  //Less than 255 because it will be incremeneted
-      //Copy in IX.addr+1
-      _LDA(idxvar.addr+1);
-      _STA(IX.addr+1);
-      //Multiply by 2 and Update IX.addr
-      _LDA(idxvar.addr);
-      _ASLa;
-      _STA(IX.addr);
-      _ROL(IX.addr+1);
-      //Load LSB
-      _CLC;
-      _LDYi(offset);    //Could be zero.
-      pic.codAsm(i_LDA, aIndirecY, IX.addr);
-    end else begin
-      //Load in WR
-      _LDA(idxvar.addr);    //LSB
-      _LDX(idxvar.addr+1);  //MSB
-      _STX(H.addr);  //Could be optimized for offset=0 if using IX.addr+1 instead of H.addr.
-      //Multiply by 2
-      _ASLa;
-      _ROL(H.addr);
-      //Add offset and store in IX
-      _CLC;
-      _ADCi(lo(offset));
-      _STA(IX.addr);
-      _LDA(H.addr);
-      _ADCi(hi(offset));
-      _STA(IX.addr+1);
-      //Load LSB
-      _CLC;
-      _LDYi(0);
-      pic.codAsm(i_LDA, aIndirecY, IX.addr);
-    end;
-  end else begin                 //*** Bad. Index is in other page.
-    //Similar to case "idxvar.addr<256".
-    //Load in WR
-    _LDA(idxvar.addr);    //LSB
-    _LDX(idxvar.addr+1);  //MSB
-    _STX(H.addr);  //Could be optimized for offset=0 if using IX.addr+1 instead of H.addr.
-    //Multiply by 2
-    _ASLa;
-    _ROL(H.addr);
-    //Add offset and store in IX
-    if offset=0 then begin
-      _STA(IX.addr);
-      _LDA(H.addr);
-      _STA(IX.addr+1);
-    end else begin
-      _CLC;
-      _ADCi(lo(offset));
-      _STA(IX.addr);
-      _LDA(H.addr);
-      _ADCi(hi(offset));
-      _STA(IX.addr+1);
-    end;
-    //Load LSB
-    _CLC;
-    _LDYi(0);
-    pic.codAsm(i_LDA, aIndirecY, IX.addr);
-  end;
-  //Load MSB
-  _INY;  //To point next byte
-  pic.codAsm(i_LDX, aIndirecY, IX.addr);
-  _STY(H.addr);     //Returns in H register.
 end;
 {%ENDREGION}
 //////////// Pointer operations
@@ -5223,7 +4998,7 @@ begin
     genError('Design error.');
   end;
 end;
-//Routines to implement arrays and pointers
+{%REGION Routines for arrays and pointers}
 procedure TGenCod.arrayLow(fun: TEleExpress);
 //Devuelve el índice mínimo de un arreglo
 var
@@ -5339,6 +5114,305 @@ _LABEL_pre(j2);
   end else begin
     GenError('Cannot assign to this Operand.', fun.srcDec);
     exit;
+  end;
+end;
+procedure TGenCod.LoadByteIndexWord(const idxvar: TEleVarDec; offset: word);
+{Load in A register, the value of the "idxvar" variable and added
+by "offset". Parameter "idxvar" must by word-size.
+NOTE: Doesn't use IX register. We prefer Self-modifying code.}
+var
+  ad1, ad2: Integer;
+begin
+  if idxvar.typ.size>2 then begin
+    GenError('Not supported this index or pointer type.');
+    exit;
+  end;
+  if (idxvar.addr<256) and (offset<256) then begin
+    //Special case
+    _CLC;
+    _LDYi(offset);    //Could be zero.
+    pic.codAsm(i_LDA, aIndirecY, idxvar.addr);
+  end else if offset=0 then begin
+    //Self-modifying.
+    if pic.iRam < 256-13 then begin  //Everything can be done on zero-page.
+      _LDA(idxvar.addrL);
+      _STA($FF); ad1:=pic.iRam-1;  //Save address.
+      _LDA(idxvar.addrH);   //LDA absolute
+      _STA($FF); ad2:=pic.iRam-1;  //Save address.
+      _LDA($FFFF);     //Load byte
+      //Complete the addresses.
+      pic.ram[ad1].value := pic.iRam-2; //Should be < 256, otherwise check condition: if pic.iram<
+      pic.ram[ad2].value := pic.iRam-1; //Should be < 256, otherwise check condition: if pic.iram<
+    end else begin
+      _LDA(idxvar.addrL);
+      _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+      _LDA(idxvar.addrH);   //LDA absolute
+      _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
+      _LDA($FFFF);     //Load byte
+      //Complete the addresses.
+      pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+      pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+      pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+      pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+    end;
+  end else if offset<256 then begin   //Byte offset
+    if pic.iRam < 256-15 then begin  //Everything can be done on zero-page.
+      _LDA(idxvar.addrL);
+      _STA($FF); ad1:=pic.iRam-1;  //Save address.
+      _LDA(idxvar.addrH);   //LDA absolute
+      _STA($FF); ad2:=pic.iRam-1;  //Save address.
+      _LDYi(offset);
+      pic.codAsm(i_LDA, aAbsolutY, $FFFF);  //Instruction will be overwritten
+      //Complete the addresses.
+      pic.ram[ad1].value := pic.iRam-2; //Should be < 256, otherwise check condition: if pic.iram<
+      pic.ram[ad2].value := pic.iRam-1; //Should be < 256, otherwise check condition: if pic.iram<
+    end else begin
+      _LDA(idxvar.addrL);
+      _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+      _LDA(idxvar.addrH);   //LDA absolute
+      _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
+      _LDYi(offset);
+      pic.codAsm(i_LDA, aAbsolutY, $FFFF);  //Instruction will be overwritten
+      //Complete the addresses.
+      pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+      pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+      pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+      pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+    end;
+  end else begin
+    //Self-modifying.
+    if pic.iRam < 256-18 then begin  //Everything can be done on zero-page.
+      _CLC;
+      _LDA(idxvar.addrL);
+      _ADCi(lo(offset));
+      _STA($FF); ad1:=pic.iRam-1;  //Save address.
+      _LDA(idxvar.addrH);   //LDA absolute
+      _ADCi(hi(offset));
+      _STA($FF); ad2:=pic.iRam-1;  //Save address.
+      _LDA($FFFF);     //Load byte
+      //Complete the addresses.
+      pic.ram[ad1].value := pic.iRam-2; //Should be < 256, otherwise check condition: if pic.iram<
+      pic.ram[ad2].value := pic.iRam-1; //Should be < 256, otherwise check condition: if pic.iram<
+    end else begin
+      _CLC;
+      _LDA(idxvar.addrL);
+      _ADCi(lo(offset));
+      _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+      _LDA(idxvar.addrH);   //LDA absolute
+      _ADCi(hi(offset));
+      _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
+      _LDA($FFFF);     //Load byte
+      //Complete the addresses.
+      pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+      pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+      pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+      pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+    end;
+  end;
+end;
+procedure TGenCod.LoadWordIndexWord(const idxvar: TEleVarDec; offset: word);
+{Load in H,A register, the value indexed by "idxVar" variable multiplied by 2 and
+added by "offset". Parameter "idxVar" must by word-size.
+IMPORTANT: Require IX defined and stored at zero-page
+**** Not tested ****. We prefer to use LoadWordIndexWord2() because it's tested and well
+optimized although it doesn't use IX register.}
+begin
+  if idxvar.addr<256 then begin  //*** Good Luck. Index is in Zero-page
+    if offset<255 then begin  //Less than 255 because it will be incremeneted
+      //Copy in IX.addr+1
+      _LDA(idxvar.addr+1);
+      _STA(IX.addr+1);
+      //Multiply by 2 and Update IX.addr
+      _LDA(idxvar.addr);
+      _ASLa;
+      _STA(IX.addr);
+      _ROL(IX.addr+1);
+      //Load LSB
+      _CLC;
+      _LDYi(offset);    //Could be zero.
+      pic.codAsm(i_LDA, aIndirecY, IX.addr);
+    end else begin
+      //Load in WR
+      _LDA(idxvar.addr);    //LSB
+      _LDX(idxvar.addr+1);  //MSB
+      _STX(H.addr);  //Could be optimized for offset=0 if using IX.addr+1 instead of H.addr.
+      //Multiply by 2
+      _ASLa;
+      _ROL(H.addr);
+      //Add offset and store in IX
+      _CLC;
+      _ADCi(lo(offset));
+      _STA(IX.addr);
+      _LDA(H.addr);
+      _ADCi(hi(offset));
+      _STA(IX.addr+1);
+      //Load LSB
+      _CLC;
+      _LDYi(0);
+      pic.codAsm(i_LDA, aIndirecY, IX.addr);
+    end;
+  end else begin                 //*** Bad. Index is in other page.
+    //Similar to case "idxvar.addr<256".
+    //Load in WR
+    _LDA(idxvar.addr);    //LSB
+    _LDX(idxvar.addr+1);  //MSB
+    _STX(H.addr);  //Could be optimized for offset=0 if using IX.addr+1 instead of H.addr.
+    //Multiply by 2
+    _ASLa;
+    _ROL(H.addr);
+    //Add offset and store in IX
+    if offset=0 then begin
+      _STA(IX.addr);
+      _LDA(H.addr);
+      _STA(IX.addr+1);
+    end else begin
+      _CLC;
+      _ADCi(lo(offset));
+      _STA(IX.addr);
+      _LDA(H.addr);
+      _ADCi(hi(offset));
+      _STA(IX.addr+1);
+    end;
+    //Load LSB
+    _CLC;
+    _LDYi(0);
+    pic.codAsm(i_LDA, aIndirecY, IX.addr);
+  end;
+  //Load MSB
+  _INY;  //To point next byte
+  pic.codAsm(i_LDX, aIndirecY, IX.addr);
+  _STY(H.addr);     //Returns in H register.
+end;
+procedure TGenCod.LoadWordIndexWord2(const idxvar: TEleVarDec; offset: word);
+{Load in H,A register, the value indexed by "idxvar" variable multiplied by 2 and
+added by "offset". Parameter "idxvar" must by word-size.
+NOTE: Doesn't use IX register.}
+var
+  ad1, ad2, lab1: Integer;
+begin
+  if idxvar.typ.size>2 then begin
+    GenError('Not supported this index or pointer type.');
+    exit;
+  end;
+  if (idxvar.addr<256) and (offset<255) then begin  //We need <255
+    //Special case
+    //Keep MSB
+    _LDX(idxvar.addr+1);
+    //Multiply by 2
+    _ASL(idxvar.addr);
+    _ROL(idxvar.addr+1);
+    //Load MSB
+    _CLC;
+    _LDYi(offset+1);
+    pic.codAsm(i_LDA, aIndirecY, idxvar.addr);
+    _STA(H.addr);     //Returns in H register.
+    //Load LSB
+    _DEY;  //To point to LSB
+    pic.codAsm(i_LDA, aIndirecY, idxvar.addr);
+    //Restore "idxvar"
+    _ROR(idxvar.addr+1);  //Restore except the byte 7. No problem we only need the bit 0 in C.
+    _ROR(idxvar.addr);    //Restore OK
+    _STX(idxvar.addr+1);  //Restore all bits.
+  end else if offset=0 then begin
+    //Load in WR
+    _LDA(idxvar.addr);    //LSB
+    _LDX(idxvar.addr+1);  //MSB
+    _STX(H.addr);  //Could be optimized if writing directly in LDA $FFFF.
+    //Multiply by 2
+    _ASLa;
+    _ROL(H.addr);
+    //Load in A
+    _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+    _LDA(H.addr);
+    _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
+    //Start a two-cicles loop to load in H,A
+    _LDYi(1);  //Initial offset
+_LABEL_pre(lab1);
+    _STA(H.addr);  //A->H. Used at the second iteration.
+    pic.codAsm(i_LDA, aAbsolutY, $FFFF);  //Instruction will be overwritten
+    //Complete the addresses.
+    pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+    pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+    pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+    pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+    //Complete the loop
+    _DEY;
+    _BPL_pre(lab1);  //Stop loop when negative
+  end else if offset<255 then begin   //Needs to be <255
+    //Similar to case offset=0, but we load offset in Y register.
+    //Load in WR
+    _LDA(idxvar.addr);    //LSB
+    _LDX(idxvar.addr+1);  //MSB
+    _STX(H.addr);  //Could be optimized if writing directly in LDA $FFFF.
+    //Multiply by 2
+    _ASLa;
+    _ROL(H.addr);
+    //Load in A
+    _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+    _LDA(H.addr);
+    _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
+    //Start a two-cicles loop to load in H,A
+    _LDYi(offset+1);  //Initial offset
+_LABEL_pre(lab1);
+    _STA(H.addr);  //A->H. Used at the second iteration.
+    pic.codAsm(i_LDA, aAbsolutY, $FFFF);  //Instruction will be overwritten
+    //Complete the addresses.
+    pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+    pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+    pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+    pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+    //Complete the loop
+    _DEY;
+    _CPYi(offset-1);
+    _BNE_pre(lab1);  //Stop loop when negative
+  end else begin
+    //Load in WR
+    _LDA(idxvar.addr);    //LSB
+    _LDX(idxvar.addr+1);  //MSB
+    _STX(H.addr);
+    //Multiply by 2 -> H,A
+    _ASLa;
+    _ROL(H.addr);
+    //Add offset and Load in A
+    if pic.iRam < 256-21 then begin  //Everything can be done on zero-page.
+      _CLC;     //***** Not tested yet.
+      _ADCi(lo(offset));
+      _STA($FF); ad1:=pic.iRam-1;  //Save address.
+      _LDA(H.addr);
+      _ADCi(hi(offset));
+      _STA($FF); ad2:=pic.iRam-1;  //Save address.
+      //Start a two-cicles loop to load in H,A
+      _LDYi(1);  //Initial offset
+_LABEL_pre(lab1);
+      _STA(H.addr);  //A->H. Used at the second iteration.
+      pic.codAsm(i_LDA, aAbsolutY, $FFFF);  //Instruction will be overwritten
+      //Complete the addresses.
+      pic.ram[ad1].value := pic.iRam-2; //Should be < 256, otherwise check condition: if pic.iram<
+      pic.ram[ad2].value := pic.iRam-1; //Should be < 256, otherwise check condition: if pic.iram<
+      //Complete the loop
+      _DEY;
+      _BPL_pre(lab1);  //Stop loop when negative
+    end else begin      //We need to point to other page
+      _CLC;
+      _ADCi(lo(offset));
+      _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+      _LDA(H.addr);
+      _ADCi(hi(offset));
+      _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
+      //Start a two-cicles loop to load in H,A
+      _LDYi(1);  //Initial offset
+_LABEL_pre(lab1);
+      _STA(H.addr);  //A->H. Used at the second iteration.
+      pic.codAsm(i_LDA, aAbsolutY, $FFFF);  //Instruction will be overwritten
+      //Complete the addresses.
+      pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+      pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+      pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+      pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+      //Complete the loop
+      _DEY;
+      _BPL_pre(lab1);  //Stop loop when negative
+    end;
   end;
 end;
 procedure TGenCod.GetItemIndexByte(fun: TEleExpress);
@@ -5458,7 +5532,7 @@ begin
         SetFunExpres(fun);
         //Variable index is word-size byte.
         //LoadWordIndexWord(idx.rvar, offset);   //Require IX
-        LoadAindexWord(idx.rvar, 2, offset)
+        LoadWordIndexWord2(idx.rvar, offset)
       end else begin
         GenError('Cannot get item from this array type: %s.', [arrVar.Typ.name]);
       end;
@@ -5472,14 +5546,17 @@ begin
   end;
 end;
 procedure TGenCod.SetItemIndexByte(fun: TEleExpress);
-{Función que devuelve el valor indexado del arreglo.
-In all cases, this INLINE function must return a stRamVarOf.}
+{Write a value to an array item indexed by a BYTE.}
 var
   arrVar, idx, op1, op2: TEleExpress;
   itemType: TEleTypeDec;
 begin
   arrVar := TEleExpress(fun.elements[0]);
   idx := TEleExpress(fun.elements[1]);
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    exit;  //We don't calculate constant here.
+  end;
   if arrVar.sto = stRamFix then begin
     //Applied to a variable array. The normal.
     itemType := arrVar.Typ.itmType; //Reference to the item type
@@ -5699,7 +5776,7 @@ procedure TGenCod.DefineArray(etyp: TEleTypeDec);
 var
   consDec: TEleConsDec;
   expr: TEleExpress;
-  f: TEleFun;
+  f, f1, f2: TEleFun;
 begin
   //Create assigement method
   f := CreateInBOMethod(etyp, ':=', '_set', etyp, typNull, @BOR_arr_asig_arr);
@@ -5713,17 +5790,22 @@ begin
   //Getters and setters.
   {Note we define only two getters, one for byte-index and one for word-index. Formally
   we should create getters and setters for each type of the item.}
-  f := CreateInBOMethod(etyp, '', '_getitem', typByte, etyp.itmType, @GetItemIndexByte);
-  f.getset := gsGetInItem;
-  f := CreateInBOMethod(etyp, '', '_getitem', typWord, etyp.itmType, @GetItemIndexWord);
-  f.getset := gsGetInItem;
-  AddCallerToFrom(IX, f.bodyNode);  //Dependency
-  f := CreateInTerMethod(etyp, '_setitem',  typByte, etyp.itmType, @SetItemIndexByte);
+  f1 := CreateInBOMethod(etyp, '', '_getitem', typByte, etyp.itmType, @GetItemIndexByte);
+  f1.getset := gsGetInItem;
+  f2 := CreateInBOMethod(etyp, '', '_getitem', typWord, etyp.itmType, @GetItemIndexWord);
+  f2.getset := gsGetInItem;
+  //AddCallerToFrom(IX, f.bodyNode);  //Dependency
+  f := CreateInTerMethod(etyp, '_setitem', typByte, etyp.itmType, typNull, @SetItemIndexByte);
   f.getset := gsSetInItem;
+  f1.funset := f;         //Connect to getter
+  f := CreateInTerMethod(etyp, '_setitem', typWord, etyp.itmType, typNull, @SetItemIndexByte);
+  f.getset := gsSetInItem;
+  f2.funset := f;         //Connect to getter
   //Operation for pointers
   CreateUOMethod(etyp, '@', 'addr', typWord, @UOR_address);
 //  etyp.CreateUnaryPreOperator('@', 6, 'addr', @UOR_address); //defined in all types
 end;
+{%ENDREGION}
 procedure TGenCod.ValidRAMaddr(addr: integer);
 {Validate a physical RAM address. If error generate error.}
 begin
@@ -5881,7 +5963,7 @@ begin
   TreeElems.CloseElement;  //Close function implementation
 end;
 function TGenCod.CreateInTerMethod(clsType: TEleTypeDec;
-  name: string; parType: TEleTypeDec; retType: TEleTypeDec;
+  name: string; parType1, parType2: TEleTypeDec; retType: TEleTypeDec;
   pCompile: TCodSysInline): TEleFun;
 {Create a new system ternary INLINE function in the current element of
  the AST.
@@ -5891,8 +5973,8 @@ var
 begin
   setlength(pars, 0);        //Reset parameters
   AddParam(pars, 'b', srcPosNull, clsType, decNone);  //Base object
-  AddParam(pars, 'i', srcPosNull, parType, decNone);  //Parameter
-  AddParam(pars, 'n', srcPosNull, parType, decNone);  //Parameter
+  AddParam(pars, 'i', srcPosNull, parType1, decNone);  //Parameter
+  AddParam(pars, 'n', srcPosNull, parType2, decNone);  //Parameter
   //Add declaration
   Result      := AddFunctionUNI(name, retType, srcPosNull, pars, false,
                       false);  //Don't include variables to don't ask for RAM.

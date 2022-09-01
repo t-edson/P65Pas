@@ -1218,17 +1218,19 @@ There is still, much work for development or documentation, so any help will be 
 
 ## Source Code
 
+The compiler has been developed in Object Pascal and created using the Lazarus IDE https://www.lazarus-ide.org
+
 All the source code is divided in two projects. Both projects can be compiled independently.
 
-The source code of the IDE is located in the folder /Source.
+* The source code of the IDE is located in the folder /Source.
 
-The source code of the compiler (Command line) is located in the folder /comp_p65pas/src.
+* The source code of the compiler (Command line) is located in the folder /comp_p65pas/src.
 
-When compiling the IDE, the source code of the compiler is compiled two so the IDE executable embeds the compiler binary too.
+When compiling the IDE, the source code of the compiler is included too so the IDE executable embeds the compiler binary too.
 
 P65Pas has been compiled, using the version 2.0.12 of Lazarus. Tested in Windows, Ubuntu and Mac.
 
-To have more information about the compiler, check the Technical Documentation (Only in spanish by now).
+To have more information about the compiler internals and design, check the Technical Documentation (Only in spanish by now): \comp_p65pas\docs\.
 
 To compile P65Pas, it's needed to have the following libraries:
 

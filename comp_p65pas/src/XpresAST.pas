@@ -195,7 +195,6 @@ begin
   parent := typNode.Parent;
   //parent.elements.Remove(typNode);
   parent.elements.Extract(typNode);  //Doesn't free "ele". No need to update lists (AllCons, AllVars, ...) because it will be reinserted.
-  //AllTypes.Remove(typNode);
   AllTypes.Extract(typNode);
   typNode.Destroy;
   { WARNING: This procedure is incomplete. It doesn't delete the possible "callers"

@@ -162,7 +162,7 @@ begin
   fraRegWat.SetCompiler(cxp);
   fraPicAsm.SetCompiler(cxp);
 
-  pic.AddBreakpoint(0);
+//  pic.AddBreakpoint(0);
   pic.OnExecutionMsg := @picExecutionMsg;
   acGenResetExecute(self);
   StatusBar1.Panels[0].Text := pic.Model + ' at ' + IntToStr(pic.frequen) + ' Hz';
@@ -285,8 +285,14 @@ begin
   lstMessages.AddItem('Restarting.', nil);
   //Start at the begin of code
   pc := cxp.GeneralORG;
-  while (pc < high(pic.ram)) and (pic.ram[pc].used <> ruCode) do begin
+//  while (pc < high(pic.ram)) and (pic.ram[pc].used <> ruCode) do begin
+//    pc := pc + 1;  //Incrementa
+//  end;
+  while (pc < high(pic.ram)) and (pic.ram[pc].name <> '__main__') do begin
     pc := pc + 1;  //Incrementa
+  end;
+  if pc = high(pic.ram) then begin
+    MsgExc('Executable code entry not found.');
   end;
   pic.WritePC(pc);
   RefreshScreen;
