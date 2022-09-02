@@ -2608,7 +2608,6 @@ begin
   if parA.Sto = stRamFix then begin
     case parB.Sto of
     stConst : begin
-      SetFunExpres(fun);  //Realmente, el resultado no es importante
       if parB.valL = parB.valH then begin  //Lucky case
         _LDAi(parB.valL);
         _STA(parA.addL);
@@ -2622,14 +2621,12 @@ begin
       end;
     end;
     stRamFix: begin
-      SetFunExpres(fun);  //Realmente, el resultado no es importante
       _LDA(parB.addL);
       _STA(parA.addL);
       _LDA(parB.addH);
       _STA(parA.addH);
     end;
     stRegister: begin   //se asume que se tiene en (H,A)
-      SetFunExpres(fun);  //Realmente, el resultado no es importante
       _STA(parA.addL);
       _LDA(H.addr);
       _STA(parA.addH);
@@ -5452,7 +5449,7 @@ begin
         if offset<256 then begin
           pic.codAsm(i_LDA, aZeroPagX, offset);
         end else begin
-          _CLC;
+          //_CLC;
           pic.codAsm(i_LDA, aAbsolutX, offset);
         end;
       end else if itemType.IsWordSize then begin
@@ -5548,120 +5545,218 @@ end;
 procedure TGenCod.SetItemIndexByte(fun: TEleExpress);
 {Write a value to an array item indexed by a BYTE.}
 var
-  arrVar, idx, op1, op2: TEleExpress;
+  arrVar, idx, parB: TEleExpress;
   itemType: TEleTypeDec;
+  parA_add: DWord;
+  offset: Word;
 begin
+  SetFunNull(fun);  //In Pascal an assigment doesn't return type.
   arrVar := TEleExpress(fun.elements[0]);
   idx := TEleExpress(fun.elements[1]);
+  parB := TEleExpress(fun.elements[2]);  //Value to assign.
   //Process special modes of the compiler.
   if compMod = cmConsEval then begin
     exit;  //We don't calculate constant here.
   end;
-  if arrVar.sto = stRamFix then begin
-    //Applied to a variable array. The normal.
-    itemType := arrVar.Typ.itmType; //Reference to the item type
-    //Generate code according to the index storage.
-    case idx.Sto of
-    stConst: begin  //ïndice constante
-      //if ModeRequire then exit;
-      if arrVar.allocated then begin
-        SetFunVariab(fun, arrVar.add + idx.value.valInt * itemType.size);
-      end else begin
-        //Not yet allocated. We keep as expression to simplify later.
-        SetFunExpres(fun);
+  if arrVar.sto <> stRamFix then begin
+    //Applied to a variable array.
+    GenError('Cannot write to this array.');
+    exit;
+  end;
+  if not arrVar.allocated then begin
+    GenError('Array not allocated.');
+    exit;
+  end;
+  itemType := arrVar.Typ.itmType;
+  //Must be the same as parB.typ.
+  if itemType.size<>parB.Typ.size then begin
+    {Type compatibility is done in Analysis but can be relaxed because of some BOR like
+    word := byte.}
+    //genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+    genError('Incompatible types', parB.srcDec);
+    exit;
+  end;
+  //Generate code according to the index storage.
+  if          idx.Sto = stConst then begin  //Constant index
+    //It's like assign to a simple variable
+    if itemType.IsByteSize then begin
+      parA_add := arrVar.add + idx.val;
+      case parB.Sto of
+      stConst: begin
+        _LDAi(parB.val);
+        _STA(parA_add);
       end;
+      stRamFix: begin
+        _LDA(parB.add);
+        _STA(parA_add);
+      end;
+      stRegister, stRegistA: begin  //Already in A
+        _STA(parA_add);
+      end;
+      stRegistX: begin
+        _STX(parA_add);
+      end;
+      stRegistY: begin
+        _STY(parA_add);
+      end;
+      else
+        GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      end;
+    end else if itemType.IsWordSize then begin
+      parA_add := arrVar.add + idx.val*2;
+      case parB.Sto of
+      stConst : begin
+        if parB.valL = parB.valH then begin  //Lucky case
+          _LDAi(parB.valL);
+          _STA(parA_add);
+          _STA(parA_add+1);
+        end else begin  //General case
+          //Caso general
+          _LDAi(parB.valL);
+          _STA(parA_add);
+          _LDAi(parB.valH);
+          _STA(parA_add+1);
+        end;
+      end;
+      stRamFix: begin
+        _LDA(parB.addL);
+        _STA(parA_add);
+        _LDA(parB.addH);
+        _STA(parA_add+1);
+      end;
+      stRegister: begin   //se asume que se tiene en (H,A)
+        _STA(parA_add);
+        _LDA(H.addr);
+        _STA(parA_add+1);
+      end;
+      else
+        GenError(MSG_UNSUPPORTED, parB.srcDec); exit;
+      end;
+    end else begin
+      GenError('Cannot set item to this array type: %s.', [arrVar.Typ.name]);
     end;
-    stRamFix: begin  //Indexado por variable
-      SetFunVariab_RamVarOf(fun, idx.rvar, 0, arrVar.rvar); //Index by variable and an offset
-    end;
-    else
-      if idx.IsConstantPlusVariable then begin
-        //Is <constant> + <variable> that the SplitExpressions() routines
-        //has allowed pass because knows we can optimize here.
-        op1 := TEleExpress(idx.elements[0]);   //Constant evaluated.
-        op2 := TEleExpress(idx.elements[1]);   //Variable
-        SetFunVariab_RamVarOf(fun, op2.rvar, op1.val, arrVar.rvar); //Index by variable and an offset
-      end else begin
-        GenError('Not supported this index.', idx.srcDec);
+  end else if idx.Sto = stRamFix then begin  //Indexed by variable.
+    if itemType.IsByteSize then begin
+      offset := arrVar.add;
+      case parB.Sto of
+      stConst: begin
+        _LDAi(parB.val);
+        _LDX(idx.add);
+        if offset<256 then begin
+          pic.codAsm(i_STA, aZeroPagX, offset);
+        end else begin
+          //_CLC;
+          pic.codAsm(i_STA, aAbsolutX, offset);
+        end;
+      end;
+      stRamFix: begin
+        _LDA(parB.add);
+        _LDX(idx.add);
+        if offset<256 then begin
+          pic.codAsm(i_STA, aZeroPagX, offset);
+        end else begin
+          //_CLC;
+          pic.codAsm(i_STA, aAbsolutX, offset);
+        end;
+      end;
+      stRegister, stRegistA: begin  //Already in A
+        _LDX(idx.add);
+        if offset<256 then begin
+          pic.codAsm(i_STA, aZeroPagX, offset);
+        end else begin
+          //_CLC;
+          pic.codAsm(i_STA, aAbsolutX, offset);
+        end;
+      end;
+      stRegistX: begin
+        _TXA;
+        _LDX(idx.add);
+        if offset<256 then begin
+          pic.codAsm(i_STA, aZeroPagX, offset);
+        end else begin
+          //_CLC;
+          pic.codAsm(i_STA, aAbsolutX, offset);
+        end;
+      end;
+      stRegistY: begin
+        _TYA;
+        _LDX(idx.add);
+        if offset<256 then begin
+          pic.codAsm(i_STA, aZeroPagX, offset);
+        end else begin
+          //_CLC;
+          pic.codAsm(i_STA, aAbsolutX, offset);
+        end;
+      end;
+      else
+        GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      end;
+    end else if itemType.IsWordSize then begin
+      offset := arrVar.add;
+      case parB.Sto of
+      stConst : begin
+        if parB.valL = parB.valH then begin  //Lucky case
+          _LDX(idx.add);
+          if offset<255 then begin
+            _LDAi(parB.valL);
+            pic.codAsm(i_STA, aZeroPagX, offset);
+            pic.codAsm(i_STA, aZeroPagX, offset+1);
+          end else begin
+            _LDAi(parB.valL);
+            pic.codAsm(i_STA, aAbsolutX, offset);
+            pic.codAsm(i_STA, aAbsolutX, offset+1);
+          end;
+        end else begin  //General case
+          _LDX(idx.add);
+          if offset<255 then begin
+            _LDAi(parB.valL);
+            pic.codAsm(i_STA, aZeroPagX, offset);
+            _LDAi(parB.valH);
+            pic.codAsm(i_STA, aZeroPagX, offset+1);
+          end else begin
+            _LDAi(parB.valL);
+            pic.codAsm(i_STA, aAbsolutX, offset);
+            _LDAi(parB.valH);
+            pic.codAsm(i_STA, aAbsolutX, offset+1);
+          end;
+        end;
+      end;
+      stRamFix: begin
+        _LDX(idx.add);
+        if offset<255 then begin
+          _LDA(parB.add);
+          pic.codAsm(i_STA, aZeroPagX, offset);
+          _LDAi(parB.add+1);
+          pic.codAsm(i_STA, aZeroPagX, offset+1);
+        end else begin
+          _LDA(parB.add);
+          pic.codAsm(i_STA, aAbsolutX, offset);
+          _LDAi(parB.add+1);
+          pic.codAsm(i_STA, aAbsolutX, offset+1);
+        end;
+      end;
+      stRegister: begin   //se asume que se tiene en A
+        _LDX(idx.add);
+        if offset<255 then begin
+          pic.codAsm(i_STA, aZeroPagX, offset);
+          _LDAi(H.addr);
+          pic.codAsm(i_STA, aZeroPagX, offset+1);
+        end else begin
+          pic.codAsm(i_STA, aAbsolutX, offset);
+          _LDAi(H.addr);
+          pic.codAsm(i_STA, aAbsolutX, offset+1);
+        end;
+      end;
+      else
+        genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
         exit;
       end;
+    end else begin
+      GenError('Cannot set item to this array type: %s.', [arrVar.Typ.name]);
     end;
   end else begin
-    GenError('Cannot index a constant array.');
+    GenError('Not supported this index.', idx.srcDec);
   end;
-  //  if not GetIdxParArray(WithBrack, idx) then exit;
-//  //Procesa
-//  Op := OpPtr;
-//  if Op^.Sto = stRamFix then begin
-//    //Applied to a variable array. The normal.
-//    arrVar := Op^.rVar;        //Reference to variable
-//    itemType := arrVar.typ.itmType; //Reference to the item type
-//    //Generate code according to the index storage.
-//    case idx.Sto of
-//    stConsta: begin  //Constant index
-//        tmpVar := CreateTmpVar('', itemType);  //VAriable del mismo tipo
-//        tmpVar.addr := arrVar.addr + idx.valInt * itemType.size;
-//        SetResultVariab(tmpVar);
-//      end;
-//    stRamFix: begin  //Indexed by variable
-//      //Index is byte-size variable
-//      if itemType.IsByteSize then begin
-//        //This is important because we know the variable can direct the current position
-//        SetResultVarConRef(idx.rVar, arrVar.addr, itemType);  //Devuelve el mismo tipo
-//      end else begin
-//        SetResultExpRef(itemType);  //We don't need to check WR here in setter.
-//        //Item is word size. We multiply index and add offset in IX.
-//        LoadByteIndexWord(idx.rVar, itemType.size, arrVar.addr);
-//        if HayError then exit;
-//      end;
-//    end;
-//    stRegister: begin  //Indexed by expression
-//      //stRegister must return the address in IX register
-//      if idx.Typ.IsByteSize then begin
-//        //Index is byte-size expresión (Loaded in A).
-//        if itemType.IsByteSize then begin
-//          SetResultExpRef(itemType);
-//          AddCallerToFromCurr(IX);  //We declare using IX
-//          //We add A to base address of array -> IX
-//          _CLC;
-//          _ADCi(arrVar.addr and $FF);
-//          _STA(IX.addr);  //Save
-//          _LDAi(arrVar.addr >> 8);
-//          _ADCi(0);
-//          _STA(IX.addr+1);
-//        end else begin
-//          GenError('Not supported this item size.');
-//        end;
-//      end else if idx.Typ.IsWordSize then begin
-//        //Index is word-size expresión (Loaded in H,A).
-//        if itemType.IsByteSize then begin
-//          SetResultExpRef(itemType);
-//          AddCallerToFromCurr(IX);  //We declare using IX
-//          //We add H,A to base address of array -> IX
-//          _CLC;
-//          _ADCi(arrVar.addr and $FF);
-//          _STA(IX.addr);  //Save
-//          _LDAi(arrVar.addr >> 8);
-//          _ADC(H.addr);
-//          _STA(IX.addr+1);
-//        end else begin
-//          GenError('Not supported item size.');
-//        end;
-//      end else begin
-//        GenError('Not supported this index.');
-//      end;
-//    end
-//    else
-//      GenError('Not supported this index.');
-//    end;
-//  end else begin
-//    GenError('Cannot index a constant array.');
-//  end;
-//  if WithBrack then begin
-//    if not CaptureTok(']') then exit;
-//  end else begin
-//    if not CaptureTok(')') then exit;
-//  end;
 end;
 procedure TGenCod.GenCodArrayClear(fun: TEleExpress);
 {Used to clear all items of an array operand.}
