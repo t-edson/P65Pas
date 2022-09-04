@@ -1187,7 +1187,7 @@ begin
   lins.Add(';PROCEDURE LIST');
   lins.Add(';===================');
 
-  lins.Add(';NAME                    USED   POSIITON IN SOURCE');
+  lins.Add(';NAME                    USED   POSITION IN SOURCE');
   lins.Add(';----------------------- ------ -------------------------------');
   for fun in TreeElems.AllFuncs do begin
     if fun.nCalled > 0 then begin
