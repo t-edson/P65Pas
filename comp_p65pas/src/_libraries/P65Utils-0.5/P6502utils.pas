@@ -727,8 +727,7 @@ begin
       end else begin
         PC.W := (PC.W + off) and $FFFF;
       end;
-      //Inc(PC.W, nBytes);  //No apply
-      Inc(nClck, nCycles);
+      Inc(nClck, nCycles + 1);  //Extra cycle in branch
       exit;
     end;
   end;
@@ -741,8 +740,7 @@ begin
       end else begin
         PC.W := (PC.W + off) and $FFFF;
       end;
-      //Inc(PC.W, nBytes);  //No apply
-      Inc(nClck, nCycles);
+      Inc(nClck, nCycles + 1);  //Extra cycle in branch
       exit;
     end;
   end;
@@ -755,8 +753,7 @@ begin
       end else begin
         PC.W := (PC.W + off) and $FFFF;
       end;
-      //Inc(PC.W, nBytes);  //No apply
-      Inc(nClck, nCycles);
+      Inc(nClck, nCycles + 1);  //Extra cycle in branch
       exit;
     end;
   end;
@@ -769,8 +766,7 @@ begin
       end else begin
         PC.W := (PC.W + off) and $FFFF;
       end;
-      //Inc(PC.W, nBytes);  //No apply
-      Inc(nClck, nCycles);
+      Inc(nClck, nCycles + 1);  //Extra cycle in branch
       exit;
     end;
   end;
@@ -788,8 +784,7 @@ begin
       end else begin
         PC.W := (PC.W + off) and $FFFF;
       end;
-      //Inc(PC.W, nBytes);  //No apply
-      Inc(nClck, nCycles);
+      Inc(nClck, nCycles + 1);  //Extra cycle in branch
       exit;
     end;
   end;
@@ -802,8 +797,7 @@ begin
       end else begin
         PC.W := (PC.W + off) and $FFFF;
       end;
-      //Inc(PC.W, nBytes);  //No apply
-      Inc(nClck, nCycles);
+      Inc(nClck, nCycles + 1);  //Extra cycle in branch
       exit;
     end;
   end;
@@ -827,8 +821,7 @@ begin
       end else begin
         PC.W := (PC.W + off) and $FFFF;
       end;
-      //Inc(PC.W, nBytes);  //No apply
-      Inc(nClck, nCycles);
+      Inc(nClck, nCycles + 1);  //Extra cycle in branch
       exit;
     end;
   end;
@@ -841,8 +834,7 @@ begin
       end else begin
         PC.W := (PC.W + off) and $FFFF;
       end;
-      //Inc(PC.W, nBytes);  //No apply
-      Inc(nClck, nCycles);
+      Inc(nClck, nCycles + 1);  //Extra cycle in branch
       exit;
     end;
   end;

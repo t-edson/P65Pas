@@ -189,6 +189,7 @@ object frmDebugger6502: TfrmDebugger6502
       Hint = 'Exec until here'
       ImageIndex = 4
       OnExecute = acGenExecHerExecute
+      ShortCut = 115
     end
     object acGenSetBrkPnt: TAction
       Caption = 'Set Break Point'

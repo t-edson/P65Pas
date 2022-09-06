@@ -58,6 +58,7 @@ type
 //      f_byteXbyte_byte: TxpEleFun;  //índice para función
       f_byt_mul_byt_16: TEleFun;
       f_word_shift_l: TEleFun;
+      f_delay_ms: TEleFun;
       procedure AddParam(var pars: TxpParFuncArray; parName: string;
         const srcPos: TSrcPos; typ0: TEleTypeDec; adicDec: TxpAdicDeclar);
       function AddSysNormalFunction(name: string; retType: TEleTypeDec;
@@ -171,7 +172,7 @@ type
       procedure UOR_derefPointer(fun: TEleExpress; SetRes: boolean);
     private   //Funciones internas.
       procedure codif_1mseg;
-      procedure codif_delay_ms(fun: TEleExpress);
+      procedure codif_delay_ms(fun: TEleFunBase);
       procedure expr_end(posExpres: TPosExpres);
       procedure expr_start;
       procedure fun_delay_ms(fun: TEleExpress);
@@ -4499,14 +4500,14 @@ begin
     GenError('Clock frequency %d not supported for delay_ms().', [_CLOCK]);
   end;
 end;
-procedure TGenCod.codif_delay_ms(fun: TEleExpress);
+procedure TGenCod.codif_delay_ms(fun: TEleFunBase);
 //Codifica rutina de retardo en milisegundos
 var
   delay: Word;
   LABEL1, ZERO: integer;
 begin
-//  PutLabel('__delay_ms');
-  PutTopComm('    ;delay routine.');
+  PutLabel('__delay_ms');
+//  PutTopComm('    ;delay routine.');
   //aux := GetAuxRegisterByte;  //Pide un registro libre
   if HayError then exit;
   {Esta rutina recibe los milisegundos en los registros en (H,A) o en (A)
@@ -4517,7 +4518,8 @@ begin
 //  _STX(H);
 //  fun.adrr2 := pic.iRam;  {Se hace justo antes de generar código por si se crea
 //                          la variable _H}
-  _TAY; PutComm(';enter when parameters in (H,A)');
+
+  _TAY; //PutComm(';enter when parameters in (H,A)');
   //Se tiene el número en H,Y
 delay:= _PC;
   _TYA;
@@ -6737,6 +6739,7 @@ begin
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'ms', srcPosNull, typWord, decRegis);  //Add parameter
   AddSysInlineFunction('delay_ms', typNull, srcPosNull, pars, @fun_delay_ms);
+//  AddCallerToFrom(f_byt_mul_byt_16, f_byte_mul_byte.bodyNode);
 
   //Create system function "inc"
   setlength(pars, 0);  //Reset parameters
@@ -6794,6 +6797,10 @@ begin
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typByte, decRegisX);   //Parameter counter shift
   f_word_shift_l := AddSysNormalFunction('word_shift_l', typWord, srcPosNull, pars, @word_shift_l);
+  //Delay system function
+  setlength(pars, 0);  //Reset parameters
+  AddParam(pars, 'n', srcPosNull, typWord, decRegis);
+  f_delay_ms := AddSysNormalFunction('delay_ms', typWord, srcPosNull, pars, @codif_delay_ms);
 
   //Add dependencies of TByte._mul.
   AddCallerToFrom(f_byt_mul_byt_16, f_byte_mul_byte.bodyNode);

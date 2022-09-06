@@ -1,3 +1,149 @@
+P65PAS 1.0.0
+=============
+En esta versión se producen cambios de gran magnitud con respecto a la arquitectura de la IDE 
+incluyendo la esperada separación del compilador como aplicativo independiente de la IDE.
+
+Actualmente el compilador P65Pas se puede compilar como proyecto independiente y genera un
+programa de línea de comandos que puede compilar un código fuente y generar un archivo de
+salida en formato *.PRG.
+
+En cuanto a la IDE, se ha terminado de definir una arquitectura que separa a la IDE del 
+compilador usando un elemento intermedio al que se ha llamado "Adaptador".
+
+Como muestra de la factibilidad de la arquitectura, se ha creado un adaptador para integrar al
+compilador P65Pas y se espera poder integrar pronto a otros compiladores, como al compilador
+PicPas. También se ha pensado en probar la integración de otros compiladores, por línea de 
+comando como el KickC, como una prueba del trabajo eficiente de un adaptador.
+
+Pero los cambios en la IDE no han sido solo en su arquitectura, sino que se han corregido o 
+mejorado diversos problemas. Algunos de ellos son:
+- Mejora en la configuración de temas. Se ha creado una pestaña adicional y se han modificado 
+varios frames para mejorar la configuración de colores.
+- Mejora en el formulario de configuración (además de hacerlo modificable para soportar 
+configuraciones de los adaptadores).
+- Se modifica el panel lateral izquierdo para que soporte la agregación de nuevos frames como
+el del árbol de sintaxis.
+- Se modifica el panel lateral derecho para que soporte la integración de diversos elementos
+y no solo un editor de ensamblador.
+- Se ha definido que el panel derecho, que se encuentra al lado del panel de mensajes, se pueda
+personalizar para que los compiladores puedan personalizarlos, mediante un adaptador.
+- Se ha pasado a usar el mecanismo de archivos *.PO para implementar la internacionalización
+en lugar de usar el método interno de archivos INCLUDE. El mencanismo de archivos INCLUDE,
+sin embargo, se mantiene en el código fuente del compilador.
+- Se han modificado todas las herramientas, como el Depurador o el Codetool, del compilador
+para que soporten la integración del compilador mediante un adaptador.
+
+En cuanto al compilador, se han modificado diversas rutinas para darle la forma final de
+proyecto que pueda compilarse en dos formas:
+- Como aplicacion de consola controlada por línea de comandos.
+- Como librería o código externo que se pueda integrar en el código fuente de la IDE para que
+se integre en el ejecutable de la IDE.
+
+Una mejora realizada en el compilador, y que tiene que ver con la separación, es la eliminación
+de la dependencia del componente SynEdit en las rutinas de procesamiento de directivas.
+
+Otra de las mejoras en el compilador, está en la corrección y mejora del procesamiento de los
+bloques ensamblador.
+
+Se han creado y eliminado algunas variables de configuración del compilador. Además se ha 
+reordenado el código que está relacionado.
+
+Se han creado una nueva directiva para poder manejar el código de inicialización (BOOTLOADER)
+del binario generado. Se ha eliminado la directiva $COMMODORE64 y se corregido la directiva 
+{$ORG $801} que generaba obligatoriamente un bootloader de Commodore 64.
+
+Se ha creado la directiva {$STRING } para configurar la forma de codificar los literales de
+tipo cadena.
+
+Se ha eliminado el árbol de sintaxis secundario para el manejo de directivas. Ahora todas 
+las directivas se resuelven en la fase de Análisis.
+
+Se ha mejorado considerablemente la implementación de las rutinas para el manejo de los arreglos,
+incluyendo la implementación de getters y setters para ítems de arreglos.
+
+Se ha refactorizado y se han modificado las clases para eliminar los métodos abstractos que
+estaban orientado a reutlizar el código fuente para implementar otros compiladores, pero como 
+ahora se maneja una arquitectura de adpatadores ya no es tan crucial.
+
+Se ha incluido una etapa adicional en el proceso de Optimización y se ha completado y mejorado 
+la documentación técnica para reflejar los últimos cambios realizados.
+
+También se ha modificado y corregido la librería P65utils para adaptarse mejor al proyecto. Una
+corrección realizada está en la ejecución de la instrucción SBC. Otro cambio notable es la 
+eliminación del campo TCPURamCell.topLabel de modo que se simplifica la generación de código 
+ensamblador y pr otro lado se reduce la cantidad de memoria utilizada por el modelo virtual 
+de la CPU en la RAM.
+
+TAREAS PLANIFICADAS
+
+- Implementar la generación de código para el 65C02.
+- Verificar en qué clase corresponde crear OptBnkAftIF, OptReuProVar, ... y si no se mejor 
+ponerlos como PROTECTED porque ya no se necesitan acceder desde fuera porque ahora usamos 
+comandos.
+- Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
+- Revisar si no es mejor quitar la validación de número de ítems de arreglos en el análisis
+de arreglos y crear solo tipos "ARREGLOS DE TIPO". ¿Se podría aún trabajar con length() como método?
+- Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
+- Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
+globales, locales) y los registros de trabajo.
+- Simplificar el uso de variables temporales, implementado el uso de variables registro o 
+con alguna otra técnica.
+- Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
+desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
+
+- Implementar la obligatoriedad de localizar el registro IX en la página cero.
+- Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
+- Crear una referencia en todos los elementos a su arbol de sintaxis correspondiente y 
+crear también una referencia del arbol de sintaxis a su compilador. La idea es que el 
+elemento pueda interpretar el campo idCtx de los registros TSrcPos, para poder obtener 
+información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde se lee 
+esta información.
+- Crear estructura para almacenar información de los diferentes archivos que componen el 
+proyecto para gestionar el uso de unidades.
+
+PENDIENTES
+- Agregar la protección a compilar sobre zonas de memoria no implementada o con función
+especial. Se suguiere que antes de compilar en un área se verifique que haya al menos 
+32 bytes o algo así. Además se pensó en que esa verificación se haga al terminar de compilar
+una BOR.
+- Definir si es necesario "TxpEleLocation" y verificar que se implementa bien.
+-Generar bloques IF (o de otro tipo), de más de 128 bytes.
+-Revisar y adaptar los programas de prueba para el compilador.
+- Revisar el caso de tipos creados de forma repetida y hasta con el mismo nombre, como en 
+el caso: CONST CCC: array[3] of char = ('1','2','3'); 
+CC: array[3] of char = ('1','2','3'); 
+
+Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
+implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
+hace realmente en Pascal.
+
+Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
+De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
+almacenar la lista de los posibles tipos creados.
+
+Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
+
+inline func1(var x: byte; const y: word; expr z: char);
+begin
+end;
+
+La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
+considerando el tipo de almacenamiento del operando.
+Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
+codificar operaciones sobre tipos objeto:
+
+octeto = object
+    value: byte;
+  public 
+    inline assign(var x: byte) operator ":="  precedence 5;
+    
+    end;
+    inline assign(x: byte) operator ":=";
+    
+    end;
+  end;
+
+
 P65PAS 0.9.3
 =============
 COMENTARIOS
@@ -26,77 +172,6 @@ páneles.
 - Se modifica formulario de configruación para separar las aciones "AFter Edit" en una página
 separada del editor.
 
-TAREAS PLANIFICADAS
-- Verificar aplicación de Temas en nueva disposición de la IDE.
-
-- Verificar en qué clase corresponde crear OptBnkAftIF, OptReuProVar, ... y si no se mejor 
-ponerlos como PROTECTED porque ya no se necesitan acceder desde fuera porque ahora usamos 
-comandos.
-- Eliminar la dependencia a SynFacilSyn del compilador (aún se usa para directivas).
-- Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
-- Revisar si no es mejor quitar la validación de número de ítems de arreglos en el análisis
-de arreglos y crear solo tipos "ARREGLOS DE TIPO". ¿Se podría aún trabajar con length() como método?
-- Corregir el caso en que se devuelve variable en las BOR. ¿Es consistente?
-- Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
-- Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
-globales, locales) y los registros de trabajo.
-- Simplificar el uso de variables temporales, implementado el uso de variables registro o 
-con alguna otra técnica.
-
-- Implementar la obligatoriedad de localizar el registro IX en la página cero.
-- Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
-- Crear una referencia en todos los elementos a su arbol de sintaxis correspondiente y 
-crear también una referencia del arbol de sintaxis a su compilador. La idea es que el 
-elemento pueda interpretar el campo idCtx de los registros TSrcPos, para poder obtener 
-información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde se lee 
-esta información.
-- Crear estructura para almacenar información de los diferentes archivos que componen el 
-proyecto para gestionar el uso de unidades.
-
-PENDIENTES
-- Agregar la protección a compilar sobre zonas de memoria no implementada o con función
-especial. Se suguiere que antes de compilar en un área se verifique que haya al menos 
-32 bytes o algo así. Además se pensó en que esa verificación se haga al terminar de compilar
-una BOR.
-- Definir si es necesario "TxpEleLocation" y verificar que se implementa bien.
--Generar bloques IF (o de otro tipo), de más de 128 bytes.
--Revisar y adaptar los programas de prueba para el compilador.
-- Revisar el caso de tipos creados de forma repetida y hasta con el mismo nombre, como en 
-el caso: CONST CCC: array[3] of char = ('1','2','3'); 
-CC: array[3] of char = ('1','2','3'); 
-
-Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
-implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
-hace realmente en Pascal.
-
-Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
-desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
-
-Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
-De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
-almacenar la lista de los posibles tipos creados.
-
-Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
-
-inline func1(var x: byte; const y: word; expr z: char);
-begin
-end;
-
-La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
-considerando el tipo de almacenamiento del operando.
-Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
-codificar operaciones sobre tipos objeto:
-
-octeto = object
-    value: byte;
-  public 
-    inline assign(var x: byte) operator ":="  precedence 5;
-    
-    end;
-    inline assign(x: byte) operator ":=";
-    
-    end;
-  end;
 
 
 

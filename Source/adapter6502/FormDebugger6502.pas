@@ -4,8 +4,8 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
   ComCtrls, ExtCtrls, StdCtrls, Grids, ActnList, Menus, LCLType, CompBase,
-  FrameRamExplorer6502, FrameRegisters6502, FrameRegWatcher6502,
-  P6502utils, CPUCore, MisUtils, FrameAsm6502, Analyzer;
+  P6502utils, CPUCore, FrameRamExplorer6502, FrameRegisters6502,
+  FrameRegWatcher6502, FrameAsm6502, MisUtils, Analyzer;
 type
   { TfrmDebugger6502 }
   TfrmDebugger6502 = class(TForm)
@@ -116,7 +116,7 @@ begin
   if fraPicAsm.Visible then fraPicAsm.Refrescar(true);
   StatusBar1.Panels[1].Text := 'Clock Cycles = ' + IntToStr(pic.nClck);
   StatusBar1.Panels[2].Text := 'Time  = ' +
-            FormatDateTime('hh:mm:ss.zzz', pic.nClck / pic.frequen / (86400 / 4));
+            FormatDateTime('hh:mm:ss.zzz', pic.nClck / pic.frequen / 86400 );
 end;
 procedure TfrmDebugger6502.RefreshScreen(SetGridRow: boolean = true);
 {Refresca los paneles de la pantalla, con información actual del PIC}
@@ -127,7 +127,7 @@ begin
   if fraPicAsm.Visible then fraPicAsm.Refrescar(SetGridRow);
   StatusBar1.Panels[1].Text := 'Clock Cycles = ' + IntToStr(pic.nClck);
   StatusBar1.Panels[2].Text := 'Time  = ' +
-            FormatDateTime('hh:mm:ss.zzz', pic.nClck / pic.frequen / (86400 / 4));
+            FormatDateTime('hh:mm:ss.zzz', pic.nClck / pic.frequen / 86400 );
 end;
 procedure TfrmDebugger6502.picExecutionMsg(message: string);
 var
@@ -172,11 +172,11 @@ begin
   todas las instrucciones en menor tiempo.}
   milsecRefresh := 50;   //Fija un periodo de refresco inicial
   Timer1.Interval := milsecRefresh;
-  Timer2.Interval := 250;  //Los controles adicionales se pueden refersacr despacio
+  Timer2.Interval := 250;  //Los controles adicionales se pueden refrescar despacio
   {Calcula cuántos ciclos debe ejecutar por refresco. Aún cuando el resultado de la
   fórmula sea exacto, la función ExecNCycles() usada para ejecutar un grupo de ciclos
   no siempre ejecuta los ciclos solicitados exactamente.}
-  nCyclesPerClk := round(int64(pic.frequen) * milsecRefresh / 4000);
+  nCyclesPerClk := round(int64(pic.frequen) * milsecRefresh / 1000);
   /////////////////////////////////////////////////////////////////////////////////
   fraRegWat.acClearAllExecute(self);
   fraRegWat.acAddVarsExecute(self);  //agrega varaibles por defecto

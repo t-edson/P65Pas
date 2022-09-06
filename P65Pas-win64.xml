@@ -7,8 +7,8 @@
   <SplitterCol Val="536870912"/>
   <TextPanel Val="8421504"/>
   <currPath Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test5_arrays_2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test5_arrays_2.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
@@ -17,11 +17,11 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
   <SynTreeWidth Val="240"/>
   <EditAsmWidth Val="650"/>
   <ViewPanAssem Val="True"/>
-  <winXpos Val="-4"/>
-  <winYpos Val="5"/>
+  <winXpos Val="2076"/>
+  <winYpos Val="36"/>
   <winWidth Val="1166"/>
-  <winHeight Val="771"/>
-  <winState Val="2"/>
+  <winHeight Val="790"/>
+  <winState Val="0"/>
   <themLoaded Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\themes\delphi.theme"/>
   <CodExplBack Val="-2147483643"/>
   <CodExplText Val="536870912"/>
