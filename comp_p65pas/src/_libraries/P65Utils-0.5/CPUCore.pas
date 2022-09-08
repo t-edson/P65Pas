@@ -84,26 +84,26 @@ type
   public //Limits
     {This variables are set just one time. So they work as constant.}
     CPUMAXRAM: dword;  //Max virtual RAM used by the CPU
-  public   //General fields
+  public    //General fields
     Model    : string;    //modelo de PIC
     frequen  : integer;   //frecuencia del reloj
     MaxFreq  : integer;   //Máxima frecuencia del reloj en Hz.
     //Propiedades que definen la arquitectura del CPU.
     MsjError: string;
-  public   //Execution control
+  public    //Execution control
     nClck   : Int64;    //Contador de ciclos de reloj
     CommStop: boolean;  //Bandera para detener la ejecución
     OnExecutionMsg: procedure(message: string) of object;  //Genera mensaje en ejecución
-  protected  //Generation of PRG files
+  public    //PRG files generation
     minUsed  : dword;         //Dirección menor de la ROM usada
     maxUsed  : dword;         //Dirección mayor de la ROM usdas
     hexLines : TStringList;  //Uusado para crear archivo *.hex
-  public  //Memories
+  public    //Memories
     ram    : TCPURam;   //RAM memory
     iRam   : integer;   //puntero a la memoria RAM, para escribir cuando se ensambla o compila código.
     function DisassemblerAt(addr: word; out nBytesProc: byte; useVarName: boolean
       ): string; virtual; abstract; //Desensambla la instrucción actual
-  public  //RAM memory functions
+  public    //RAM memory functions
     dataAddr1: integer;   //Start address for Data variables (-1 if not used). Used too as flag.
     dataAddr2: integer;   //End address for Data variables (-1 if not used)
     procedure ClearMemRAM;

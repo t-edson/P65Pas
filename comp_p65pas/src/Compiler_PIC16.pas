@@ -11,6 +11,9 @@ type
   { TCompiler_PIC16 }
   TCompiler_PIC16 = class(TGenCod)
   private  //Funciones básicas
+    addBootldr: integer;  //Address where start Bootloader.
+    addVariab : integer;  //Address where start Variables section.
+    addFuncts : integer;  //Address where start function section.
     procedure ConstantFoldExpr(eleExp: TEleExpress);
     procedure PrepareBody(body: TxpEleCodeCont);
     procedure PrepareSentences;
@@ -24,7 +27,6 @@ type
   public      //Events
     OnAfterCompile: procedure of object;   //Al finalizar la compilación.
   public      //Override methods
-    procedure VariablesLocation(lins: TStrings; ExcUnused: boolean);
     procedure DumpCode(lins: TSTrings; AsmMode, IncVarDec, ExcUnused: boolean;
       incAdrr, incCom, incVarNam: boolean); override; //uso de la memoria Flash
     function RAMusedStr: string; override;
@@ -755,27 +757,6 @@ Must be called after DoOptimize().}
       codRTS(isInt);  //RTS instruction
     end;
   end;
-//  procedure GenBootloaderC64; //Not used
-//  begin
-//    PutTopComm('      ;BASIC starter code: 10 SYS 2062');
-//    pic.codByte($0C, true);  //Dirección de siguiente línea
-//    pic.codByte($08, true);
-//    pic.codByte($0A, true);  //Número de línea
-//    pic.codByte($00, true);
-//    pic.codByte($9e, true);  //Token de instrucción SYS
-//    pic.codByte($20, true);  //Espacio
-//    pic.codByte($32, true);  //2
-//    pic.codByte($30, true);  //0
-//    pic.codByte($36, true);  //6
-//    pic.codByte($32, true);  //2
-//    pic.codByte($00, true);  //Fin de instrucción
-//    pic.codByte($00, true);  //Sgte línea BASIC
-//    pic.codByte($00, true);  //Sgte línea BASIC
-//
-//    pic.codByte(76, ruCode);  //Opcode JMP
-//    pic.codByte(0, ruData, 'COD_HL');   //To complete later
-//    pic.codByte(0, ruData);             //To complete later
-//  end;
   procedure GenBootloader(out add1, add2: word);
   {Generates the bootloader. Returns in "add1" and "add2" the start address and the end
   address of the bootloader;}
@@ -877,11 +858,11 @@ begin
   compMod := cmGenCode;    //Generates code.
   pic.disableCodegen := false;  //Enable the code generation
   //Create Bootloader
-  PutTopComm('__bootloader:');//Define block for Bootloader
+  addBootldr := pic.iRam;  //Save position.
   GenBootloader(add1, add2);
   //Asigna memoria a registros
   //Asigna memoria para las variables, buscando memoria libre a partir de "GeneralORG".
-  PutTopComm('__variables:');  //Define block for variables
+  addVariab  := pic.iRam;   //Save position.
   CreateVarsAndPars;  //Primero a las variables locales (y parámetros) de las funciones
   //Find the next free RAM location, to write functions.
   pic.freeStart := GeneralORG;  //Start of program block
@@ -889,6 +870,7 @@ begin
                           now we just want to find a free RAM location in the program block}
   pic.GetFreeByte(addr);
   pic.iRam := addr;
+  addFuncts  := pic.iRam;  //Save position.
   //Codifica la función INTERRUPT, si existe
   if interruptFunct<>nil then begin;
     { TODO : Revisar }
@@ -929,7 +911,7 @@ begin
           end;
       end;
     end;
-    ctSysNormal: begin  //Función normal del systema.
+    ctSysNormal: begin  //Función normal del sistema.
       //Compile used function in the current address.
       fun.adrr := pic.iRam;    //Actualiza la dirección final
       fun.codSysNormal(fun);   //Rutina para generar código
@@ -956,7 +938,6 @@ begin
   bod.adrr := pic.iRam;  //guarda la dirección de codificación
   GenCodeMainBody(bod);
   //if HayError then exit;     //Puede haber error
-  //_RTS();   //agrega instrucción final
 end;
 procedure TCompiler_PIC16.Compile(srcFile: string);
 //Compila el contenido de un archivo.
@@ -1046,54 +1027,98 @@ function AdrStr(absAdr: word): string;
 begin
   Result := '$' + IntToHex(AbsAdr, 4);
 end;
-procedure TCompiler_PIC16.VariablesLocation(lins: TStrings; ExcUnused: boolean);
-{Return a string with information about all variables location.}
-var
-  v: TEleVarDec;
-  subUsed: string;
-const
-  SPACEPAD = '        ';
-  LSPC = length(SPACEPAD);
-begin
-  for v in TreeElems.AllVars do begin   //Se supone que "AllVars" ya se actualizó.
-      //debugln('AllVars['+IntToStr(i)+']='+v.name+','+v.Parent.name);
-      if ExcUnused and (v.nCalled = 0) then continue;
-      if v.nCalled = 0 then subUsed := '; <Unused>' else subUsed := '';
-      if v.typ.IsByteSize then begin
-        lins.Add(PadRight(v.name, LSPC) + ' EQU ' + AdrStr(v.addr)+ subUsed +
-                 '       ;' + v.typ.name);
-      end else if v.typ.IsWordSize then begin
-        lins.Add(PadRight(v.name, LSPC) + ' EQU ' +  AdrStr(v.addrL)+ subUsed +
-                 '       ;' + v.typ.name);
-        lins.Add(SPACEPAD + ' EQU ' +  AdrStr(v.addrH)+ subUsed);
-      end else if v.typ.catType = tctArray then begin   //It's an array
-        lins.Add(PadRight(v.name, LSPC) + ' EQU ' +  AdrStr(v.addrL) + '~' +
-                 AdrStr(v.addr + v.typ.size-1) + subUsed + ' ;' + v.typ.name);
-      end else begin
-        lins.Add(PadRight(v.name, LSPC) + ' EQU ' +  AdrStr(v.addr) + subUsed +
-                 '       ;' + v.typ.name);
-      end;
-  end;
-end;
 procedure TCompiler_PIC16.DumpCode(lins: TSTrings; AsmMode, IncVarDec,
   ExcUnused: boolean; incAdrr, incCom, incVarNam: boolean);
+{Genera el código ensamblador en el StringList "lins".
+Se debe llamar despues de llamar a pic.GenHex(), para que se actualicen las variables
+minUsed y maxUsed.}
+const
+  SPACEPAD = '      ';
+  LSPC = length(SPACEPAD);
+
+  procedure VariablesLocation(lins: TStrings; ExcUnused: boolean);
+  {Return a string with information about all variables location.}
+  var
+    v: TEleVarDec;
+    subUsed: string;
+  begin
+    for v in TreeElems.AllVars do begin   //Se supone que "AllVars" ya se actualizó.
+        //debugln('AllVars['+IntToStr(i)+']='+v.name+','+v.Parent.name);
+        if ExcUnused and (v.nCalled = 0) then continue;
+        if v.storage in [stRegister, stRegistX, stRegistY] then continue;
+        if v.nCalled = 0 then subUsed := '; <Unused>' else subUsed := '';
+        if v.typ.IsByteSize then begin
+          lins.Add(PadRight(v.name, LSPC) + ' EQU ' + AdrStr(v.addr)+ subUsed +
+                   '       ;' + v.typ.name);
+        end else if v.typ.IsWordSize then begin
+          lins.Add(PadRight(v.name, LSPC) + ' EQU ' +  AdrStr(v.addrL)+ subUsed +
+                   '       ;' + v.typ.name);
+          lins.Add(SPACEPAD + ' EQU ' +  AdrStr(v.addrH)+ subUsed);
+        end else if v.typ.catType = tctArray then begin   //It's an array
+          lins.Add(PadRight(v.name, LSPC) + ' EQU ' +  AdrStr(v.addrL) + '~' +
+                   AdrStr(v.addr + v.typ.size-1) + subUsed + ' ;' + v.typ.name);
+        end else begin
+          lins.Add(PadRight(v.name, LSPC) + ' EQU ' +  AdrStr(v.addr) + subUsed +
+                   '       ;' + v.typ.name);
+        end;
+    end;
+  end;
+
 var
-  i: Integer;
+  i: word;
   minUsed: integer;
+  lblLin, comLin, lin: String;
+  nBytes: byte;
 begin
   if AsmMode then begin
-    //Incluye encabezado
+    //Include header
     lins.Add('      ;Code generated by P65Pas compiler');
     lins.Add('      processor ' + PICName);
+    //Variables location section
     if IncVarDec then begin
        lins.Add('__all_variables:');
        VariablesLocation(lins, ExcUnused);
     end;
-//    lins.Add(';===Blocks of Code===');
-    pic.DumpCodeAsm(lins, incAdrr, incAdrr, incCom, incVarNam);
+    //Se supone que minUsed y maxUsed, ya deben haber sido actualizados.
+    if incAdrr then begin  //ORG title
+      lins.Add(SPACEPAD + '      ORG $' + IntToHex(pic.minUsed, 4));
+    end else begin
+      lins.Add(SPACEPAD + 'ORG $' + IntToHex(pic.minUsed, 4));
+    end;
+    //Write the RAM content.
+    i := pic.minUsed;
+    while i <= pic.maxUsed do begin
+      if (i=addBootldr) and (addBootldr<>addVariab) then lins.Add('__bootloader:');
+      if (i=addVariab) and (addVariab<>addFuncts) then lins.Add('__var_section:');
+      //Read label and comments.
+      lblLin := pic.ram[i].name;
+      comLin := pic.ram[i].topComment;
+      //Check RAM position.
+      if pic.ram[i].used in [ruData, ruAbsData] then begin
+        //Must be a variable.
+        if incAdrr then begin
+          if comLin<>'' then lins.add(comLin);
+          lins.Add( PadRight(lblLin, LSPC) + '$'+IntToHex(i,4) + ' DB ' +
+                    IntToHEx(pic.ram[i].value,2) );
+        end else begin
+          lins.Add( PadRight(lblLin, LSPC) + 'DB ' + IntToHEx(pic.ram[i].value,2) );
+        end;
+        i := i + 1;
+      end else begin
+        //Debe ser código o memoria sin usar.
+        if lblLin<>'' then lins.Add(lblLin+':');  //Etiqueta al inicio de línea
+        //Escribe comentario al inicio de línea
+        if incCom and (comLin<>'') then  begin
+          lins.Add(comLin);
+        end;
+        lin := pic.GetASMlineAt(i, incAdrr, incAdrr, incCom, incVarNam, nBytes);
+        lins.Add(SPACEPAD + lin);
+        i := i + nBytes;   //Incrementa a siguiente instrucción
+      end;
+    end;
     lins.Add(';--------------------');
     lins.Add('      END');
-  end else begin
+  end else begin  //Generate POKE's BASIC code.
     minUsed := pic.CPUMAXRAM;
     for i := 0 to pic.CPUMAXRAM-1 do begin
       if pic.ram[i].used <> ruUnused then begin

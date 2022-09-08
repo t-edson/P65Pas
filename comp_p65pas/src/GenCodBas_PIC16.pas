@@ -27,7 +27,7 @@ type
   { TGenCodBas }
   TGenCodBas = class(TParserDirecBase)
   protected //Operations for parameters or Binary Operators
-    function stoOperation(parA, parB: TEleExpress): TStoOperandsBOR; inline;
+    function stoOperation(parA, parB: TEleExpress): TStoOperandsBSIF; inline;
     procedure Exchange(var parA, parB: TEleExpress);
     function BinOperationStr(fun: TEleExpress): string;
   private
@@ -231,10 +231,10 @@ begin
   Result := parA.StoAsStr+'(' + parA.Typ.name + ') ' + Oper + ' ' +
             parB.StoAsStr+'(' + parB.Typ.name + ')';
 end;
-function TGenCodBas.stoOperation(parA, parB: TEleExpress): TStoOperandsBOR;
+function TGenCodBas.stoOperation(parA, parB: TEleExpress): TStoOperandsBSIF;
 begin
   //Combinación de los almacenamientos de los operandos
-  Result := TStoOperandsBOR((Ord(parA.Sto) << 4) or ord(parB.Sto));
+  Result := TStoOperandsBSIF((Ord(parA.Sto) << 4) or ord(parB.Sto));
 end;
 procedure TGenCodBas.Exchange(var parA, parB: TEleExpress);
 {Intercambia el orden de los operandos.}

@@ -1716,9 +1716,9 @@ procedure TAnalyzer.AnalyzeFOR;
   begin
     //Open sentence
     TreeElems.AddElementSentAndOpen(GetSrcPos, sntProcCal);
-    //Use reference eleFunInc" to access directly to function Inc().
-    Op1 := CreateExpression(eleFunInc.name, eleFunInc.retType, otFunct, GetSrcPos);
-    Op1.rfun := eleFunInc;
+    //Use reference sifFunInc" to access directly to function Inc().
+    Op1 := CreateExpression(sifFunInc.name, sifFunInc.retType, otFunct, GetSrcPos);
+    Op1.rfun := sifFunInc;
     TreeElems.AddElementAndOpen(Op1);  //Open Inc()
     //Create a new variable for the expression "i<..."
     xvar := CreateExpression(idx.name, idx.Typ, otVariab, GetSrcPos);

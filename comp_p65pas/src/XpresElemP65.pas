@@ -362,7 +362,7 @@ type  //Declaration elements
   {Mixed storage used to implement INLINE binary operands code. This is created to
   represent two TStorage values in a simple byte constant (joining bits), in order to
   facilitate the use in a CASE ... OF structure.}
-  TStoOperandsBOR =(
+  TStoOperandsBSIF =(
     stConst_Const    = %00010001,
     stConst_RamFix   = %00010010,
     stConst_Regist   = %00011000,
@@ -730,7 +730,7 @@ type  //Declaration elements (functions)
     funget     : TEleFunBase;  //Reference to related getter when this function is setter.
   public  //References
     callType   : TCallType;    //How to call the function.
-    //Routine BOR o UOR, when callType is ctSysInline.
+    //SIF Routine when callType is ctSysInline.
     codSysInline: TCodSysInline;
     //Routine that generates code for the function, when callType is ctSysNormal.
     codSysNormal: TCodSysNormal;

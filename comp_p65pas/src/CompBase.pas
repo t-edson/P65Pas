@@ -149,10 +149,10 @@ protected //Calls to Code Generator (GenCod)
   callValidRAMaddr : procedure(addr: integer) of object;
   callStartProgram : procedure of object;
   callEndProgram   : procedure of object;
-  eleFunInc: TEleFun;   {Referencia a la función de incremento. Se guarda para evitar
+  sifFunInc: TEleFun;   {Referencia a la función de incremento. Se guarda para evitar
                         hacer búsqueda innecesaria. Notar que esta es una referencia
                         hacia el generador de código que se llenará posteriormente.}
-  eleFunRef: TEleFun;   {Referencia a la función de _ref(). Se guarda para evitar
+  sifFunRef: TEleFun;   {Referencia a la función de _ref(). Se guarda para evitar
                         hacer búsqueda innecesaria. Notar que esta es una referencia
                         hacia el generador de código que se llenará posteriormente.}
 protected //Expressions
@@ -1552,8 +1552,8 @@ begin
     Op1.evaluated := true;
     Next;    //Pasa al siguiente
   end else if toktype = tkIdentifier then begin
-    ele := TreeElems.FindFirst(token);  //Identify element
-    findState := TreeElems.curFind;  //Save because can be altered with CaptureParams()
+    ele := TreeElems.FindFirst(token); //Identify element
+    findState := TreeElems.curFind;    //Save because can be altered with CaptureParams()
     if ele = nil then begin
       //Unidentified element.
       GenError(ER_UNKNOWN_IDE_, [token]);
@@ -1714,7 +1714,7 @@ begin
       TreeElems.InsertParentTo(eleMeth, Op1);
       TreeElems.OpenElement(eleMeth);  //Set parent to method to allow add parameters as child node.
       //Get reference to system function _ref().
-      opr1 := eleFunRef;  //Take direct reference to avoid call to TreeElems.FindFirst('_ref')
+      opr1 := sifFunRef;  //Take direct reference to avoid call to TreeElems.FindFirst('_ref')
       eleMeth.name := opr1.name;
       eleMeth.rfun := opr1;  //Method for operator.
       //eleMeth.Typ  := opr1.retType;  //Complete returning type.

@@ -211,6 +211,8 @@ type
   public  //Aditional methods
     function IsRelJump(idInst: TP6502Inst): boolean;  //Idnetify realtive jumps Opcodes
     procedure GenHex(hexFile: string; startAddr: integer = - 1);  //genera un archivo hex
+    function GetASMlineAt(addr: word; incAdrr, incValues, incCom,
+      incVarNam: boolean; out nBytes: byte): string;
     procedure DumpCodeAsm(lOut: TStrings; incAdrr, incValues, incCom,
       incVarNam: boolean);
   public  //Initialization
@@ -1319,13 +1321,48 @@ begin
   if addr > CPUMAXRAM then exit(false);   //excede límite
   exit(true);
 end;
+function TP6502.GetASMlineAt(addr: word;
+     incAdrr, incValues, incCom, incVarNam: boolean; out nBytes: byte): string;
+{Returns a line of text with an ASM instruction.}
+var
+  opCode, comLat: string;
+begin
+  comLat := ram[addr].sideComment;
+  //Decodifica instrucción
+  opCode := DisassemblerAt(addr, nBytes, incVarNam);  //Instrucción
+  //Verificas si incluye dirección física
+  Result := '';
+  if incAdrr then  begin
+    //Agrega dirección al inicio
+    Result := '$'+IntToHex(addr,4) + ' ';
+  end;
+  if incValues then begin
+    //Agrega bytes después
+    if nBytes = 1 then begin
+        Result := Result + IntToHex(ram[addr].value, 2) + '       ' ;
+    end else if nBytes = 2  then begin
+        Result := Result + IntToHex(ram[addr].value, 2) + ' ' +
+                     IntToHex(ram[addr+1].value, 2) + '    ';
+    end else if nBytes = 3 then begin
+        Result := Result + IntToHex(ram[addr].value, 2) + ' ' +
+                     IntToHex(ram[addr+1].value, 2) + ' ' +
+                     IntToHex(ram[addr+2].value, 2) + ' ';
+    end;
+  end;
+  Result := Result + opCode;
+  //Check if there is lateral comment
+  if incCom then begin
+    Result := Result  + ' ' + comLat;
+  end;
+end;
 procedure TP6502.DumpCodeAsm(lOut: TStrings;
                              incAdrr, incValues, incCom, incVarNam: boolean);
 {Desensambla las instrucciones grabadas en el PIC.
- Se debe llamar despues de llamar a GenHex(), para que se actualicen las variables}
+ Se debe llamar despues de llamar a GenHex(), para que se actualicen las variables
+ minUsed y maxUsed.}
 var
   i: Word;
-  lblLin, comLat, comLin, lin, opCode: String;
+  lblLin, comLin, lin: String;
   nBytes: byte;
 const
   SPACEPAD = '      ';
@@ -1338,13 +1375,12 @@ begin
   end;
   i := minUsed;
   while i <= maxUsed do begin
-    //Lee comentarios y etiqueta
+    //Read label and comments.
     lblLin := ram[i].name;
-    comLat := ram[i].sideComment;
     comLin := ram[i].topComment;
-    //Verifica si es variable
+    //Check RAM position.
     if ram[i].used in [ruData, ruAbsData] then begin
-      //Escribe en forma de variable
+      //Must be a variable.
       if incAdrr then begin
         if comLin<>'' then lOut.add(comLin);
         lOut.Add( PadRight(lblLin, Length(SPACEPAD)) + '$'+IntToHex(i,4) + ' DB ' +
@@ -1353,42 +1389,17 @@ begin
         lOut.Add( PadRight(lblLin, Length(SPACEPAD)) + 'DB ' + IntToHEx(ram[i].value,2) );
       end;
       i := i + 1;
-      continue;
-    end;
-    //Escribe etiqueta al inicio de línea
-    if lblLin<>'' then lOut.Add(lblLin+':');
-    //Escribe comentario al inicio de línea
-    if incCom and (comLin<>'') then  begin
-      lOut.Add(comLin);
-    end;
-    //Decodifica instrucción
-    opCode := DisassemblerAt(i, nBytes, incVarNam);  //Instrucción
-    //Verificas si incluye dirección física
-    lin := '';
-    if incAdrr then  begin
-      //Agrega dirección al inicio
-      lin := '$'+IntToHex(i,4) + ' ';
-    end;
-    if incValues then begin
-      //Agrega bytes después
-      if nBytes = 1 then begin
-          lin := lin + IntToHex(ram[i].value, 2) + '       ' ;
-      end else if nBytes = 2  then begin
-          lin := lin + IntToHex(ram[i].value, 2) + ' ' +
-                       IntToHex(ram[i+1].value, 2) + '    ';
-      end else if nBytes = 3 then begin
-          lin := lin + IntToHex(ram[i].value, 2) + ' ' +
-                       IntToHex(ram[i+1].value, 2) + ' ' +
-                       IntToHex(ram[i+2].value, 2) + ' ';
+    end else begin
+      //Debe ser código o memoria sin usar.
+      if lblLin<>'' then lOut.Add(lblLin+':');  //Etiqueta al inicio de línea
+      //Escribe comentario al inicio de línea
+      if incCom and (comLin<>'') then  begin
+        lOut.Add(comLin);
       end;
+      lin := GetASMlineAt(i, incAdrr, incValues, incCom, incVarNam, nBytes);
+      lOut.Add(SPACEPAD + lin);
+      i := i + nBytes;   //Incrementa a siguiente instrucción
     end;
-    lin := lin + opCode;
-    //Verifica si incluye comentario lateral
-    if incCom then begin
-      lin := lin  + ' ' + comLat;
-    end;
-    lOut.Add(SPACEPAD + lin);
-    i := i + nBytes;   //Incrementa a siguiente instrucción
   end;
 end;
 procedure TP6502.GenHex(hexFile: string; startAddr: integer = -1);
