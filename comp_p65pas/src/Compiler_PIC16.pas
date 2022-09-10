@@ -772,7 +772,7 @@ Must be called after DoOptimize().}
       pic.codByte(0, ruData);             //To complete later
     end else if bootloader = bldC64 then begin
       //GenBootloaderC64;    //Commodore 64 bootloader.
-      PutTopComm('__bootloader:  ;BASIC starter code: 10 SYS __main__');
+      PutTopComm(';BASIC starter code: 10 SYS __main__');
       pic.codByte($0C, ruData);  //Dirección de siguiente línea
       pic.codByte($08, ruData);
       pic.codByte($0A, ruData);  //Número de línea
@@ -786,7 +786,7 @@ Must be called after DoOptimize().}
       pic.codByte($00, ruData);  //Sgte línea BASIC
       pic.codByte($00, ruData);  //Sgte línea BASIC
     end else if bootloader = bldCustom then begin
-      PutTopComm('__bootloader:  ;Custom Bootloader.');
+      PutTopComm(';Custom Bootloader.');
       for i:=0 to high(loaderBytes) do begin
         if loaderBytes[i]=-76 then begin
           pic.codByte(76, ruCode);  //Opcode JMP

@@ -61,7 +61,7 @@ las directivas se resuelven en la fase de Análisis.
 Se ha mejorado considerablemente la implementación de las rutinas para el manejo de los arreglos,
 incluyendo la implementación de getters y setters para ítems de arreglos.
 
-Se ha refactorizado y se han modificado las clases para eliminar los métodos abstractos que
+Se ha refactorizado y se han modificado las clases para eliminar algunos métodos abstractos que
 estaban orientado a reutlizar el código fuente para implementar otros compiladores, pero como 
 ahora se maneja una arquitectura de adpatadores ya no es tan crucial.
 
@@ -75,8 +75,11 @@ ensamblador y pr otro lado se reduce la cantidad de memoria utilizada por el mod
 de la CPU en la RAM.
 
 TAREAS PLANIFICADAS
-
+- Terminar de implementar la preparación de las sentencias de asignación para arreglos,
+las que generan _setitem() porque ahora solo se han aplicado reglas generales
+- Generar Bootloader para el VIC-20 y PET.
 - Implementar la generación de código para el 65C02.
+- Implementar parámetros VAR.
 - Verificar en qué clase corresponde crear OptBnkAftIF, OptReuProVar, ... y si no se mejor 
 ponerlos como PROTECTED porque ya no se necesitan acceder desde fuera porque ahora usamos 
 comandos.
