@@ -301,7 +301,7 @@ type  //Declaration elements
     property size: smallint read getSize write setSize;   //Tamaño en bytes del tipo
     function groupStr: string;
     function catTypeStr: string;
-  public   //Arrays and pointers
+  public   //Fields when type is Array or pointer
     consNitm: TEleConsDec;  //Reference to constant defining the number of items.
     itmType : TEleTypeDec;  {Reference to the item type when it's array.
                                 TArr = array[255] of byte;  //itemType = byte
@@ -311,6 +311,8 @@ type  //Declaration elements
                                 TPtr = ^integer;       //ptrType = integer
                            }
     function nItems: integer;  //Number of items, when is tctArray (-1 if it's dynamic.)
+  public   //Fields when type is Object
+    objSize : integer;
   public   //Information
     tmpNode: TxpElement;  //Temporal node informatios. Used by OpenTypeDec().
     function IsByteSize: boolean;
@@ -319,12 +321,7 @@ type  //Declaration elements
     function IsArrayOf(itTyp: TEleTypeDec; numIt: integer): boolean;
     function IsPointerTo(ptTyp: TEleTypeDec): boolean;
     function IsEquivalent(typ: TEleTypeDec): boolean;
-//  public   //References
-//    //These references help for a fast search of getters and setters.
-//    //setter : TEleFun; //Reference to setter. Noy used. Simples types like word can have several "_set"
-//    setitem: TEleFun;   //Reference to setter for arrays. There should be only one to be useful.
-//    getitem: TEleFun;   //Reference to getter for arrays. There should be only one to be useful.
-  public
+  public  //Initialization
     constructor Create; override;
     destructor Destroy; override;
   end;
@@ -489,6 +486,7 @@ type  //Expression elements
     function valH: word;
     function valU: word;
     function valE: word;
+    procedure SetBooleanVal(valBool: Boolean);
   public  //Set variable fields.
     procedure SetVariab(var0: TEleVarDec);
     procedure SetVariab(add0: word);
@@ -729,10 +727,10 @@ type  //Declaration elements (functions)
     funset     : TEleFunBase;  //Reference to related setter when this function is getter.
     funget     : TEleFunBase;  //Reference to related getter when this function is setter.
   public  //References
-    callType   : TCallType;    //How to call the function.
-    //SIF Routine when callType is ctSysInline.
+    callType    : TCallType;    //How to call the function.
+    //Callback to SIF Routine when callType is ctSysInline.
     codSysInline: TCodSysInline;
-    //Routine that generates code for the function, when callType is ctSysNormal.
+    //Callback to SNF Routine when callType is ctSysNormal.
     codSysNormal: TCodSysNormal;
   public  //Parameters manage
     pars       : TxpParFuncArray; //parámetros de entrada
@@ -974,6 +972,18 @@ end;
 function TEleExpress.valE: word; inline;
 begin
   Result := (value.valInt >> 16) and $FF;
+end;
+procedure TEleExpress.SetBooleanVal(valBool: Boolean);
+{Set the value of a Constant boolean expression.}
+begin
+  evaluated := true;
+  value.valBool := valBool;    //Tal vez no sea necesario si usamos solo "value.ValInt"
+  //Como en algunos casos se usa el valor numérico, lo fijamos también.
+  if valBool then begin
+    value.ValInt := 255;
+  end else begin
+    value.ValInt := 0;
+  end;
 end;
 procedure TEleExpress.SetVariab(var0: TEleVarDec);
 {Set as variable type (and storage stRamFix) from a variable.}
@@ -1609,9 +1619,7 @@ begin
   end else if catType = tctPointer then begin
     exit(2);  //Pointer are like words
   end else if catType = tctObject then begin
-//    if attribs.Count = 0 then exit(0);
-//    lastAttrib := attribs[attribs.Count-1];
-//    exit(lastAttrib.offs + lastAttrib.typ.size);  //
+    exit(objSize);
     exit(0);
   end else begin
     exit(fSize)

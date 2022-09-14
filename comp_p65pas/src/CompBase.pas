@@ -31,8 +31,6 @@ TTypeLocat = (
 //Information about the las ASM code generated. Used for optimization.
 TLastASMcode = (
              lacNone,    //No special code generated.
-             lacLastIsTXA, {Last instruction is TXA, and it's used only
-                           to move result from X to acumulator. ***** ¿Es necesario? ¿Se usa? ¿No bastaría leer la última instrucción en RAM?}
              //Flags applied to boolean expression results.
              lacCopyZtoA, {Last ASM code is for obtaining boolean expression in regA
                            from Z.}
@@ -144,6 +142,7 @@ protected //Calls to Code Generator (GenCod)
   { TODO : Estas llamadas deben desaparecer para hacer a esta unidad independiente del Generador de Código }
   {These are routines that must be implemented in Code-generator.}
   callDefineArray  : procedure(etyp: TEleTypeDec) of object;  //routines to implement Arrays.
+  callDefineObject : procedure(etyp: TEleTypeDec) of object;  //routines to implement Objects.
   callDefinePointer: procedure(etyp: TEleTypeDec) of object; //routines to implement Pointers.
   //Validate phisycal address
   callValidRAMaddr : procedure(addr: integer) of object;
@@ -1543,13 +1542,11 @@ begin
     Next;    //Pasa al siguiente
   end else if upTok = 'TRUE' then begin  //Constant boolean.
     Op1 := AddExpressAndOpen('T', typBool, otConst, GetSrcPos);
-    Op1.value.ValBool := True;
-    Op1.evaluated := true;
+    Op1.SetBooleanVal(true);
     Next;    //Pasa al siguiente
   end else if upTok = 'FALSE' then begin  //Constant boolean.
     Op1 := AddExpressAndOpen('F', typBool, otConst, GetSrcPos);
-    Op1.value.ValBool := False;
-    Op1.evaluated := true;
+    Op1.SetBooleanVal(false);
     Next;    //Pasa al siguiente
   end else if toktype = tkIdentifier then begin
     ele := TreeElems.FindFirst(token); //Identify element
@@ -1943,7 +1940,7 @@ identificador, genera error.
 También devuelve una lista de las posiciones de los identificadores, en el código fuente.
 Si hay error, devuelve FALSE.}
 const
-  BLOCK_SIZE = 10;  //Tamaño de bloque de memoria inicial
+  BLOCK_SIZE = 5;  //Tamaño de bloque de memoria inicial
 var
   item: String;
   n, curSize: Integer;

@@ -465,7 +465,8 @@ like used in several compilers.}
     _setaux := CreateExpression('_set', typNull, otFunct, Op.srcDec);
     funSet := MethodFromBinOperator(Op.Typ, ':=', Op.Typ);
     if funSet = nil then begin   //Operator not found
-      GenError('Undefined operation: %s %s %s', [Op.Typ.name, ':=', Op.Typ.name]);
+      GenError('Undefined operation: %s %s %s', [Op.Typ.name, ':=', Op.Typ.name], Op.srcDec);
+      _setaux.Destroy;    //We destroy because it hasn't been included in the AST.
       exit(nil);
     end;
     _setaux.rfun := funSet;
@@ -499,40 +500,19 @@ like used in several compilers.}
   begin
     Result := false;
     if TEleExpress(setMethod).rfun.getset <> gsSetInSimple then exit;
-    //Split expressions in first operand of assigment (only for arrays).
-//    Op1 := TEleExpress(setMethod.elements[0]);  //Takes assigment target.
-//    if (Op1.opType = otFunct) and (Op1.name = '_getitem') then begin
-//      //It's assignment to an array.
-//      idx := TEleExpress(Op1.elements[1]);
-//      if idx.opType = otFunct then begin
-//        //It's something complex. Like array[x+y] := ...
-//        if idx.IsConstantPlusVariable then begin
-//          //Can be optimized later in ConstantFoldExpr().
-//        end else if idx.IsVariablePlusConstant then begin
-//          idx.elements.Exchange(0,1);
-//          //Can be optimized later in ConstantFoldExpr().
-//        end else begin
-//          { #todo : Aquí se puede verificar, primero, si es una función INLINE como ord('A') que se pueda optimizar }
-//          //We need to create a previous assignment
-//          new_set := MoveNodeToAssign(curContainer, idx);
-//          if HayError then exit;
-//          SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
-//          Result := true;
-//        end;
-//      end;
-//    end;
     //Split expressions in second operand of assignment.
     Op2 := TEleExpress(setMethod.elements[1]);  //Takes assignment source.
     if (Op2.opType = otFunct) then begin
-      if Op2.rfun.codSysInline = nil then begin  //Normal function
+      //Op2 is a function.
+      if Op2.rfun.callType in [ctSysNormal, ctUsrNormal] then begin  //Normal function
         {IT's the form:
              x := func(x,y);
                   \_______/
                      Op2
         }
-        //¿Conviene mover nodo OP2 a asignación previa?
+        //Generates an asignment for each parameter.
         SplitProcCall(curContainer, Op2);
-      end else begin          //INLINE function
+      end else if Op2.rfun.callType = ctSysInline then begin       //INLINE function
         {IT's the form:
              x := A + B
                   \___/

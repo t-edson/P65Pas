@@ -151,6 +151,7 @@ type
     procedure _INY;
     procedure _LDAi(const k: word);
     procedure _LDA(const addr: integer);
+    procedure _LDAx(const addr: word);
     procedure _LDXi(const k: word);
     procedure _LDX(const addr: integer);
     procedure _LDYi(const k: word);
@@ -171,10 +172,12 @@ type
     procedure _SED;
     procedure _SBCi(const k: word);   //SBC Immediate
     procedure _SBC(const addr: integer);  //SBC Absolute/Zeropage
-    procedure _STA(addr: integer);          //STX Absolute/Zeropage
+    procedure _STA(addr: integer);        //STA Absolute/Zeropage
+    procedure _STAx(addr: integer);       //STA X indexed
     procedure _STX(const addr: integer);  //STX Absolute/Zeropage
     procedure _STY(const addr: integer);  //STY Absolute/Zeropage
     procedure _TAX;
+    procedure _TAX_opt;
     procedure _TAY;
     procedure _TYA;
     procedure _TXA;
@@ -548,8 +551,7 @@ end;
 procedure TGenCodBas.SetFunConst_bool(fun: TEleExpress; valBool: Boolean);
 begin
   SetFunConst(fun);
-  fun.evaluated := true;
-  fun.value.valBool := valBool;
+  fun.SetBooleanVal(valBool);
 end;
 procedure TGenCodBas.SetFunConst_byte(fun: TEleExpress; valByte: integer);
 begin
@@ -851,6 +853,15 @@ begin
     pic.codAsm(i_LDA, aAbsolute, addr);
   end;
 end;
+procedure TGenCodBas._LDAx(const addr: word);
+{Generate the LDA with addressing aZeroPagX or aAbsolutX}
+begin
+  if addr<256 then begin
+    pic.codAsm(i_LDA, aZeroPagX, addr);
+  end else begin
+    pic.codAsm(i_LDA, aAbsolutX, addr);
+  end;
+end;
 procedure TGenCodBas._LDXi(const k: word); inline;  //LDA Immediate
 begin
   pic.codAsm(i_LDX, aImmediat, k);
@@ -963,6 +974,14 @@ begin
     pic.codAsm(i_STA, aAbsolute, addr);
   end;
 end;
+procedure TGenCodBas._STAx(addr: integer);
+begin
+  if addr<256 then begin
+    pic.codAsm(i_STA, aZeroPagX, addr);
+  end else begin
+    pic.codAsm(i_STA, aAbsolutX, addr);
+  end;
+end;
 procedure TGenCodBas._STX(const addr: integer);  //STA Absolute/Zeropage
 begin
   if addr<256 then begin
@@ -982,6 +1001,16 @@ end;
 procedure TGenCodBas._TAX;
 begin
   pic.codAsm(i_TAX, aImplicit, 0);
+end;
+procedure TGenCodBas._TAX_opt;
+{TAX version that delete the possible sequence TXA-TAX}
+begin
+  if pic.ram[pic.iRam-1].value = $8A then begin
+    //We have a TXA before
+    pic.iRam := pic.iRam-1;
+  end else begin
+    _TAX;          //Save A in X
+  end;
 end;
 procedure TGenCodBas._TAY;
 begin
@@ -1508,7 +1537,7 @@ begin
       _LDX(fun.rVar.addr);
     end;
     stRegister: begin
-      _TAX;
+      _TAX_opt;
     end
     else
       GenError('Cannot load this operand to register X.');

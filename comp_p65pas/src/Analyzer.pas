@@ -13,6 +13,8 @@ type
     function PICName: string; virtual; abstract;
     function RAMmax: integer; virtual; abstract;
   private
+    procedure GetAdicVarDeclar2(varTyp: TEleTypeDec; out aditVar: TAdicVarDec;
+      out mainTypCreated: TEleTypeDec);
     function GetConstValue(typExpec: TEleTypeDec; out mainTypCreated: TEleTypeDec
       ): TEleExpress;
     procedure AnalyzeEXIT(exitSent: TEleSentence);
@@ -22,6 +24,8 @@ type
     procedure AnalyzeWHILE;
     procedure MoveInternalTypes(node: TxpElement; declarSec: TxpElement;
       declarPos: Integer);
+    procedure SetParameter(var funPar: TxpParFunc; const name: string;
+      const srcPos: TSrcPos; typ: TEleTypeDec; const adicVar: TAdicVarDec);
   protected
     function GetUnitDeclaration: boolean;
     function StartOfSection: boolean;
@@ -30,7 +34,7 @@ type
     procedure GetAdicVarDeclar(var varTyp: TEleTypeDec; out aditVar: TAdicVarDec;
       out mainTypCreated: TEleTypeDec);
     procedure ReadProcHeader(out procName: String; out retType: TEleTypeDec; out
-      srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt,
+      srcPos: TSrcPos; var pars: TxpParFuncArray; out IsInterrupt,
   IsForward: Boolean);
     procedure AnalyzeVarDeclar;
     procedure AnalyzeConstDeclar;
@@ -46,7 +50,7 @@ type
     function AnalyzeStructBody: boolean;
     procedure AnalyzeSentence;
     procedure AnalyzeCurBlock;
-    procedure AnalyzeProcDeclar;
+    procedure AnalyzeProcDeclar(objContainer: TEleTypeDec);
     procedure AnalyzeInlineDeclar(elemLocat: TxpEleLocation);
     procedure AnalyzeUsesDeclaration;
     procedure DoAnalyzeUnit(uni: TxpElement);
@@ -443,16 +447,45 @@ begin
     end;
   end;
 end;
+procedure TAnalyzer.GetAdicVarDeclar2(varTyp: TEleTypeDec; out aditVar: TAdicVarDec;
+          out mainTypCreated: TEleTypeDec);
+{Versión de GetAdicVarDeclar() que no permite declaraciones adicionales.}
+begin
+  GetAdicVarDeclar(varTyp, aditVar, mainTypCreated);  //Could create new types
+  if HayError then exit;
+  {Like Free Pascal, we don't allow REGISTER, ABSOLUTE or initialization, for more
+  than one variable.}
+  if aditVar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
+    GenError('Cannot define REGISTER for more than one variable');
+    exit;
+  end;
+  if aditVar.hasAdic = decAbsol then begin
+    GenError('Cannot define ABSOLUTE for more than one variable');
+    exit;
+  end;
+  if aditVar.hasInit then begin
+    GenError('Cannot initialize more than one variable');
+    exit;
+  end;
+end;
+procedure TAnalyzer.SetParameter(var funPar: TxpParFunc;
+    const name: string; const srcPos: TSrcPos; typ: TEleTypeDec; const adicVar: TAdicVarDec);
+begin
+  funPar.name  := name;
+  funPar.srcPos:= srcPos;
+  funPar.typ   := typ;
+  funPar.adicVar := adicVar;
+end;
 procedure TAnalyzer.ReadProcHeader(out procName: String; out retType: TEleTypeDec;
-  out srcPos: TSrcPos; out pars: TxpParFuncArray; out IsInterrupt, IsForward: Boolean);
+  out srcPos: TSrcPos; var pars: TxpParFuncArray; out IsInterrupt, IsForward: Boolean);
 {Hace el procesamiento del encabezado de la declaración de una función/procedimiento.
 Devuelve la referencia al objeto TxpEleFun creado, en "fun".
 Conviene separar el procesamiento del enzabezado, para poder usar esta rutina, también,
 en el procesamiento de unidades.}
-  procedure ReadFunctionParams(out funPars: TxpParFuncArray);
+  procedure ReadFunctionParams(var funPars: TxpParFuncArray);
   //Lee la declaración de parámetros de una función.
   const
-    BLOCK_SIZE = 10;  //Tamaño de bloque.
+    BLOCK_SIZE = 5;  //Tamaño de bloque.
   var
     typ, typeCreated: TEleTypeDec;
     itemList: TStringDynArray;
@@ -463,12 +496,11 @@ en el procesamiento de unidades.}
     SkipWhites;
     if EOBlock or EOExpres or (token = ':') then begin
       //No tiene parámetros
-      setlength(funPars, 0);
     end else begin
       //Debe haber parámetros. Prepara espacio para leer.
+      n := length(funPars);     //Primer elemento libre.
       curSize := BLOCK_SIZE;    //Tamaño inicial de bloque
       setlength(funPars, curSize);  //Tamaño inicial
-      n := 0;
       //Inicia lectura
       if not CaptureTok('(') then exit;
       SkipWhites;
@@ -505,12 +537,8 @@ en el procesamiento de unidades.}
         end;
         //Ya tiene los datos de los parámetros
         for i:= 0 to high(itemList) do begin
-          funPars[n].name  := itemList[i];
-          funPars[n].srcPos:= srcPosArray[i];
-          funPars[n].typ   := typ;
-          funPars[n].adicVar := adicVarDec;
-          //Prepara siguiente lectura
-          inc(n);
+          SetParameter(funPars[n], itemList[i], srcPosArray[i], typ, adicVarDec);
+          inc(n);   //Pasa al siguiente
           if n >= curSize then begin
             curSize += BLOCK_SIZE;   //Incrementa tamaño en bloque
             setlength(funPars, curSize);  //hace espacio en bloque
@@ -726,61 +754,75 @@ If some problems happens, Error is generated and the NIL value is returned.
       exit;
     end;
   end;
-  function ObjectDeclaration(const srcpos: Tsrcpos): TEleTypeDec;
+  procedure ObjectDeclaration(xtyp: TEleTypeDec; const srcpos: Tsrcpos);
   {Procesa la declaración de un tipo objeto y devuelve el tipo, ya creado para su
   validación. No agrega el tipo al árbol de sintaxis.
   Se asume que ya se ha identificado el inicio de la declaración de un objeto.}
   var
-    xtyp, atTyp: TEleTypeDec;
+    varTyp, mainTypCreated: TEleTypeDec;
     i, offs: Integer;
     srcPosArray: TSrcPosArray;
     varNames: TStringDynArray;
+    varDec: TEleVarDec;
+    varTypCreated: boolean;
+    adicVarDec: TAdicVarDec;
   begin
     //Declaración: OBJECT ... END
     Next; //Toma 'OBJECT'. Se asume que ya se identificó.
     ProcComments;
-    {When declaring objets, we don't complicate in find previous declarations (rare).
-    We alwalys create a new type}
-    xtyp := CreateEleTypeObject(GenerateUniqName('Obj'), srcPos);
-    TypeCreated  := true;     //Activate flag
-    Result := xtyp;  //By default
     //Start reading attributes
     try
       offs := 0;   //Addres offset
+      xtyp.objSize := 0;
       while not atEof and (lowercase(token) <> 'end') do begin
         if lowercase(token) = 'procedure' then begin
-          //Es un método. ¿No se debería crear mejor dentro del nodo tipo?
+          //Es un método. Se crear dentro del nodo tipo.
           Next;    //lo toma
-          AnalyzeProcDeclar;
+          AnalyzeProcDeclar(xtyp);   //Pasa el tipo objeto.
           if HayError then exit;
-        end else begin
-          //Debe ser un campo
-          //Esta parte es como la de la declaración de variables pero simplificada.
+        end else begin     //Debe ser un campo
+          //Esta parte es como UpdateVarDec() pero simplificada.
           //Procesa variables a,b,c : int;
           if not getListOfIdent(varNames, srcPosArray) then begin  //precisa el error
             GenError(ER_EXP_VAR_IDE);
             exit;
           end;
-          //usualmente debería seguir ":"
-          if token = ':' then begin
-            //Debe seguir, el tipo de la variable
-            Next;  //lo toma
-            ProcComments;
-            //Lee el tipo de la variable.
-            atTyp := GetTypeDeclarSimple;   //Solo tipos simples por ahora
-            if HayError then exit;
-            //Reserva espacio para las variables
-            for i := 0 to high(varNames) do begin
-//              attr := TTypAttrib.Create;
-//              attr.name:=varNames[i];
-//              attr.typ := atTyp;
-//              attr.offs := offs;
-//              xtyp.attribs.Add(attr);
-              offs += atTyp.size;
+          //Reserva espacio para las variables
+          for i := 0 to high(varNames) do begin
+            varDec := AddVarDecAndOpen(varNames[i], typNull, srcPosArray[i]);  //We don`t have the type here
+            if HayError then break;        //Sale para ver otros errores
+            //We need the type to complete the variable declaration.
+            if i=0 then begin  //Lee solo para la primera variable
+              //Must follow ":".
+              //if not GetTypeDeclarColon(varTyp, decStyle, varTypCreated) then exit;
+              //if varTyp = nil then begin
+              //  GenError(ER_SEM_COM_EXP);
+              //  exit;
+              //end;
+              //GetAdicVarDeclar2(varTyp, adicVarDec, mainTypCreated);  //Could create new types
+              if token <> ':' then begin
+                //Debe seguir, el tipo de la variable
+                GenError(ER_SEM_COM_EXP);
+                exit;
+              end;
+              Next;  //Toma ":".
+              varTyp := GetTypeDeclarSimple;   //Solo tipos simples por ahora
+              if HayError then exit;
             end;
-          end else begin
-            GenError(ER_SEM_COM_EXP);
-            exit;
+            ProcComments;
+//              attr.offs := offs;
+            AddCallerToFromCurr(varTyp);
+            //Complete "varDec"
+            varDec.typ := varTyp;
+            //varDec.adicPar := adicVarDec;  //We don't worry for aditional declaraions because GetAdicVarDeclar2() has limited them.
+            varDec.adicPar.hasAdic := decNone;
+            varDec.adicPar.hasInit := false;
+            varDec.location := curLocation;
+            varDec.storage := stRamFix;  //This is the only storage that GetAdicVarDeclar2() should allow.
+            //Close variable
+            TreeElems.CloseElement;
+            offs += varTyp.size;
+            xtyp.objSize += varTyp.size;
           end;
           if not CaptureDelExpres then exit;
           ProcComments;
@@ -790,9 +832,6 @@ If some problems happens, Error is generated and the NIL value is returned.
       //Unique exit point
       if HayError then begin
         //There was an error
-        xtyp.Destroy;
-        TypeCreated := false;
-        Result := nil;
       end;
     end;
     //Capture final "END"
@@ -865,8 +904,15 @@ begin
   end else if (tokL = 'object') then begin
     //Es declaración de objeto
     decStyle := ttdDeclar;  //Es declaración elaborada
-    typ := ObjectDeclaration(srcpos);
-    if HayError then exit(nil);     //Sale para ver otros errores
+    typ := OpenTypeDec(srcPos, '', -1, tctObject, t_object, location);
+      if HayError then exit;  //Can be duplicated
+      TypeCreated := true;
+      ObjectDeclaration(typ, srcpos);
+      if HayError then exit(nil);     //Sale para ver otros errores
+      //Completa declaración de objeto.
+      callDefineObject(typ);   //Define operations to object
+      typ.name := GenerateUniqName('Obj');
+    CloseTypeDec(typ);  //Close type
   end else if tokType = tkIdentifier then begin
     //Es un identificador de tipo
     typName := token;
@@ -1093,27 +1139,6 @@ procedure TAnalyzer.AnalyzeVarDeclar;
     decNone  : xvar.storage := stRamFix;  //Will have a fixed memory address.
     end;
   end;
-  procedure GetAdicVarDeclar2(varTyp: TEleTypeDec; out aditVar: TAdicVarDec;
-            out mainTypCreated: TEleTypeDec);
-  {Versión de GetAdicVarDeclar() que no permite declaracionea adicionales.}
-  begin
-    GetAdicVarDeclar(varTyp, aditVar, mainTypCreated);  //Could create new types
-    if HayError then exit;
-    {Like Free Pascal, we don't allow REGISTER, ABSOLUTE or initialization, for more
-    than one variable.}
-    if aditVar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
-      GenError('Cannot define REGISTER for more than one variable');
-      exit;
-    end;
-    if aditVar.hasAdic = decAbsol then begin
-      GenError('Cannot define ABSOLUTE for more than one variable');
-      exit;
-    end;
-    if aditVar.hasInit then begin
-      GenError('Cannot initialize more than one variable');
-      exit;
-    end;
-  end;
 
 var
   varNames: array of string;  //nombre de variables
@@ -1158,6 +1183,7 @@ begin
       varDec := AddVarDecAndOpen(varNames[i], typNull, srcPosArray[i]);  //We don`t have the type here
       if HayError then break;        //Sale para ver otros errores
       //Updates "varTyp" and "adicVarDec" and add callers.
+      //We need the type to complete the variable declaration.
       if i=0 then begin  //Lee solo para la primera variable
         //Must follow ":".
         if not GetTypeDeclarColon(varTyp, decStyle, varTypCreated) then exit;
@@ -1181,7 +1207,7 @@ begin
   ProcComments;
   //Puede salir con error.
 end;
-procedure TAnalyzer.AnalyzeProcDeclar;
+procedure TAnalyzer.AnalyzeProcDeclar(objContainer: TEleTypeDec);
 {Compila la declaración de procedimientos. Tanto procedimientos como funciones
  se manejan internamente como funciones.}
   function FindProcInInterface(procName: string; const pars: TxpParFuncArray;
@@ -1291,7 +1317,19 @@ var
   retType: TEleTypeDec;
   srcPos: TSrcPos;
   pars: TxpParFuncArray;
+  adicVar: TAdicVarDec;
 begin
+  //Verifica si estamos dentro de una declaración de objeto.
+  if objContainer<>nil then begin
+    //Hay que agregar un parámetro inicial
+    setlength(pars, 1);
+    adicVar.hasAdic := decNone;
+    adicVar.hasInit := false;
+    SetParameter(pars[0], 'self', GetSrcPos, objContainer, adicVar);
+  end else begin
+    //Es una declaración normal
+    setlength(pars, 0);
+  end;
   case curLocation of
   locInterface: begin
     //Las declaraciones en INTERFACE son sencillas. Solo son caebceras.
@@ -2161,7 +2199,7 @@ begin
       end;
     end else if tokL = 'procedure' then begin
       Next;    //lo toma
-      AnalyzeProcDeclar;
+      AnalyzeProcDeclar(nil);
       if HayError then exit;
     end else begin
       GenError(ER_NOT_IMPLEM_, [token]);
@@ -2194,7 +2232,7 @@ begin
       end;
     end else if tokL = 'procedure' then begin
       Next;    //lo toma
-      AnalyzeProcDeclar;  //Compila en IMPLEMENTATION
+      AnalyzeProcDeclar(nil);  //Compila en IMPLEMENTATION
       if HayError then exit;
     end else begin
       GenError(ER_NOT_IMPLEM_, [token]);
@@ -2291,7 +2329,7 @@ begin
       end;
     end else if tokL = 'procedure' then begin
       Next;    //lo toma
-      AnalyzeProcDeclar;
+      AnalyzeProcDeclar(nil);
       if HayError then exit;
     end else if tokL = 'inline' then begin
       Next;    //lo toma

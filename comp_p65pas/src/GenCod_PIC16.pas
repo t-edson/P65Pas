@@ -66,6 +66,7 @@ type
       procedure arrayHigh(fun: TEleExpress);
       procedure arrayLength(fun: TEleExpress);
       procedure arrayLow(fun: TEleExpress);
+      procedure DefineObject(etyp: TEleTypeDec);
       procedure SIF_bool_or_bool(fun: TEleExpress);
       procedure SNF_byt_mul_byt_16(fun: TEleFunBase);
       procedure Invert_A_to_A;
@@ -93,6 +94,7 @@ type
       procedure SIF_Ref(fun: TEleExpress);
       procedure SIF_Byte(fun: TEleExpress);
       procedure SIF_arr_asig_arr(fun: TEleExpress);
+      procedure SIF_obj_asig_obj(fun: TEleExpress);
       procedure LoadByteIndexWord(const idxvar: TEleVarDec; offset: word);
       procedure LoadWordIndexWord(const idxvar: TEleVarDec; offset: word);
       procedure LoadWordIndexWord2(const idxvar: TEleVarDec; offset: word);
@@ -270,7 +272,7 @@ If cannot invert the operand, returns FALSE.
 begin
   if fun.Sto = stConst then begin
     //In constants, we can change the value.
-    fun.value.ValBool := not fun.value.valBool;
+    fun.SetBooleanVal(not fun.value.valBool);
   end else if fun.Sto = stRegister then begin
     if lastASMcode = lacCopyZtoA then begin
       pic.iRam := lastASMaddr;   //Delete last instructions
@@ -473,7 +475,7 @@ begin
       _LDX(parB.add);
     end;
     stRegister, stRegistA: begin  //Already in A
-      _TAX;
+      _TAX_opt;
     end;
     stRegistX: begin  //Already in X
     end;
@@ -520,28 +522,16 @@ begin
       stConst : begin
         _LDAi(parB.val);
         _LDX(idxvar.addr);  //Load address
-        if offset<256 then begin
-          pic.codAsm(i_STA, aZeroPagX, offset);
-        end else begin
-          pic.codAsm(i_STA, aAbsolutX, offset);
-        end;
+        _STAx(offset);
       end;
       stRamFix: begin
         _LDA(parB.add);
         _LDX(idxvar.addr);  //Load address
-        if offset<256 then begin
-          pic.codAsm(i_STA, aZeroPagX, offset);
-        end else begin
-          pic.codAsm(i_STA, aAbsolutX, offset);
-        end;
+        _STAx(offset);
       end;
       stRegister, stRegistA: begin  //Already in A
         _LDX(idxvar.addr);  //Load address
-        if offset<256 then begin
-          pic.codAsm(i_STA, aZeroPagX, offset);
-        end else begin
-          pic.codAsm(i_STA, aAbsolutX, offset);
-        end;
+        _STAx(offset);
       end;
   //    stRegistX: begin
   //      _TXA;  //Modify A
@@ -596,10 +586,7 @@ begin
       end;
 //      stRegister, stRegistA: begin  //Already in A
 //        _LDX(idxvar.addr);  //Load address
-//        if offset<256 then begin
-//          pic.codAsm(i_STA, aZeroPagX, offset);
-//        end else begin
-//          pic.codAsm(i_STA, aAbsolutX, offset);
+//        _STAx(offset);
 //        end;
 //      end;
       else
@@ -691,16 +678,6 @@ begin
     SetFunExpres(fun);
     _AND(parB.add);
   end;
-  stRegist_Regist:begin
-    SetFunExpres(fun);
-    //p1 está en la pila y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-    _TAX;  //Save A
-    _PLA;
-    _STA(H.addr);  //Use H a temp variable.
-    _TXA;  //Restore A
-    _AND(H.addr);
-  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -784,13 +761,6 @@ begin
     SetFunExpres(fun);
     _ORA(parB.add);
   end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //p1 está en la pila y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-//    _ORA(rVar.adrByte0);
-//    FreeStkRegisterByte;   //libera pila porque ya se uso
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -846,13 +816,6 @@ begin
     SetFunExpres(fun);
     _EOR(parB.add);
   end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //p1 está en la pila y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-//    _EOR(rVar.adrByte0);
-//    FreeStkRegisterByte;   //libera pila porque ya se uso
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -1245,7 +1208,6 @@ begin
       _LDX(parB.add);
       _INX;
       _TXA;
-      lastASMcode := lacLastIsTXA;  //Set flag
       exit;
     end;
     SetFunExpres(fun);
@@ -1279,14 +1241,6 @@ begin
     _CLC;
     _ADC(parB.add);
   end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //La expresión p1 debe estar salvada y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-//    _CLC;
-//    _ADC(rVar.adrByte0);  //opera directamente al dato que había en la pila. Deja en A
-//    FreeStkRegisterByte;   //libera pila porque ya se uso
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -1361,14 +1315,6 @@ begin
     _SEC;
     _SBC(parB.add);
   end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //la expresión p1 debe estar salvada y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-//    _SEC;
-//    _SBC(rVar.adrByte0);
-//    FreeStkRegisterByte;   //libera pila porque ya se uso
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -1609,14 +1555,6 @@ begin
     SIF_byte_mul_byte(fun);  //, true);
     fun.elements.Exchange(0,1);
   end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //La expresión p1 debe estar salvada y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-//    _CLC;
-//    _ADC(rVar.adrByte0);  //opera directamente al dato que había en la pila. Deja en A
-//    FreeStkRegisterByte;   //libera pila porque ya se uso
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -1722,23 +1660,9 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   //A < B es lo mismo que B > A
-  case stoOperation(parA, parB) of
-  stRegist_Regist:begin
-//    {Este es el único caso que no se puede invertir, por la posición de los operandos en
-//     la pila.}
-//    //la expresión p1 debe estar salvada y p2 en el acumulador
-//    parA.SetAsVariab(GetVarByteFromStk);  //Convierte a variable
-//    //Luego el caso es similar a stRamFix_Regist
-//    SIF_byte_less_byte(Opt, SetRes);
-//    FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
-  end;
-  else
-    //Para los otros casos, funciona
-    fun.elements.Exchange(0,1);
-    SIF_byte_great_byte(fun);
-    fun.elements.Exchange(0,1);
-  end;
+  fun.elements.Exchange(0,1);
+  SIF_byte_great_byte(fun);
+  fun.elements.Exchange(0,1);
 end;
 procedure TGenCod.SIF_byte_gequ_byte(fun: TEleExpress);
 begin
@@ -1787,7 +1711,7 @@ _LABEL_post(L2);
   end;
   stConst_Regist: begin  //la expresión p2 se evaluó y esta en A
     SetFunExpres(fun);   //Se pide Z para el resultado
-    _TAX;
+    _TAX_opt;
     _BEQ_post(L2);
     _LDAi(parA.val);
 _LABEL_pre(L1);
@@ -1842,7 +1766,7 @@ _LABEL_post(L2);
   end;
   stRamFix_Regist:begin   //la expresión p2 se evaluó y esta en A
     SetFunExpres(fun);   //Se pide Z para el resultado
-    _TAX;
+    _TAX_opt;
     _BEQ_post(L2);
     _LDA(parA.add);
 _LABEL_pre(L1);
@@ -1887,8 +1811,6 @@ _LABEL_pre(L1);
     _BNE_pre(L1);  //loop1
 _LABEL_post(L2);
   end;
-//  stRegist_Regist:begin
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -1926,7 +1848,7 @@ _LABEL_post(L2);
   end;
   stConst_Regist: begin  //la expresión p2 se evaluó y esta en A
     SetFunExpres(fun);   //Se pide Z para el resultado
-    _TAX;
+    _TAX_opt;
     _BEQ_post(L2);
     _LDAi(parA.val);
 _LABEL_pre(L1);
@@ -1981,7 +1903,7 @@ _LABEL_post(L2);
   end;
   stRamFix_Regist:begin   //la expresión p2 se evaluó y esta en A
     SetFunExpres(fun);   //Se pide Z para el resultado
-    _TAX;
+    _TAX_opt;
     _BEQ_post(L2);
     _LDA(parA.add);
 _LABEL_pre(L1);
@@ -2026,8 +1948,6 @@ _LABEL_pre(L1);
     _BNE_pre(L1);  //loop1
 _LABEL_post(L2);
   end;
-//  stRegist_Regist:begin
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -2086,13 +2006,8 @@ begin
     //Assignment to a common variable (constant Address)
     case parB.Sto of
     stConst : begin
-      if parB.value.valBool then begin
-        _LDAi(255);
-        _STA(parA.add);
-      end else begin
-        _LDAi(0);
-        _STA(parA.add);
-      end;
+      _LDAi(parB.value.ValInt);  //We have 255 or 0
+      _STA(parA.add);
     end;
     stRamFix: begin
       _LDA(parB.add);
@@ -2114,11 +2029,7 @@ begin
     //Assignment to register A
     case parB.Sto of
     stConst : begin
-      if parB.value.valBool then begin
-        _LDAi(255);
-      end else begin
-        _LDAi(0);
-      end;
+      _LDAi(parB.value.ValInt);  //We have 255 or 0
     end;
     stRamFix: begin
       _LDA(parB.add);
@@ -2138,18 +2049,13 @@ begin
     //Assignment to register X
     case parB.Sto of
     stConst : begin
-      if parB.value.valBool then begin
-        //Por facilidad se usa el bit 1
-        _LDXi(255);
-      end else begin
-        _LDXi(0);
-      end;
+      _LDXi(parB.value.ValInt);
     end;
     stRamFix: begin
       _LDX(parB.add);
     end;
     stRegister, stRegistA: begin  //Already in A
-      _TAX;
+      _TAX_opt;
     end;
     stRegistX: begin  //Already in X
     end;
@@ -2164,11 +2070,7 @@ begin
     //Assignment to register Y
     case parB.Sto of
     stConst : begin
-      if parB.value.valBool then begin
-        _LDYi(255);
-      end else begin
-        _LDYi(0);
-      end;
+      _LDYi(parB.value.ValInt);
     end;
     stRamFix: begin
       _LDY(parB.add);
@@ -3083,7 +2985,6 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    lastASMcode := lacLastIsTXA;  //Set flag
     //Form 2: (Very similar)
 //    _LDA(parB.addH);  //parB.add->H
 //    _STA(H.addr);
@@ -3103,7 +3004,6 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRamFix_Const: begin
     SetFunExpres(fun);
@@ -3115,7 +3015,6 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRamFix_RamFix:begin
     SetFunExpres(fun);
@@ -3127,7 +3026,6 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRamFix_Regist:begin   //la expresión p2 se evaluó y esta en (_H,A)
     SetFunExpres(fun);
@@ -3138,7 +3036,6 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRegist_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
     SetFunExpres(fun);
@@ -3149,7 +3046,6 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRegist_RamFix:begin  //la expresión p1 se evaluó y esta en (H,A)
     SetFunExpres(fun);
@@ -3160,16 +3056,7 @@ begin
     _ADCi(0);
     _STA(H.addr);
     _TXA;
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //p1 está salvado en pila y p2 en (A)
-//    parA.SetAsVariab(GetVarWordFromStk);  //Convierte a variable
-//    //Luego el caso es similar a stRamFix_Regist
-//    _AND(parA.add);
-//    FreeStkRegisterWord;   //libera pila
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -3204,7 +3091,6 @@ begin
     _ADC(parB.addH);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stConst_Regist: begin  //la expresión p2 se evaluó y esta en (A)
     SetFunExpres(fun);
@@ -3215,7 +3101,6 @@ begin
     _ADC(H.addr);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRamFix_Const: begin
     if parB.val = 0 then begin  //Special case
@@ -3236,7 +3121,6 @@ begin
       _ADCi(parB.valH);
       _STA(H.addr);
       _TXA;  //Restore A
-      lastASMcode := lacLastIsTXA;  //Set flag
     end;
   end;
   stRamFix_RamFix:begin
@@ -3249,7 +3133,6 @@ begin
     _ADC(parB.addH);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRamFix_Regist:begin  //La expresión B se evaluó y esta en (H,A)
     SetFunExpres(fun);
@@ -3260,7 +3143,6 @@ begin
     _ADC(H.addr);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRegist_Const: begin  //La expresión A se evaluó y esta en (H,A)
     SetFunExpres(fun);
@@ -3271,7 +3153,6 @@ begin
     _ADCi(parB.valH);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRegist_RamFix:begin  //La expresión A se evaluó y esta en (H,A)
     SetFunExpres(fun);
@@ -3282,16 +3163,7 @@ begin
     _ADC(parB.addH);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //p1 está salvado en pila y p2 en (A)
-//    parA.SetAsVariab(GetVarWordFromStk);  //Convierte a variable
-//    //Luego el caso es similar a stRamFix_Regist
-//    _AND(parA.add);
-//    FreeStkRegisterWord;   //libera pila
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -3326,7 +3198,6 @@ begin
     _SBCi(0);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
 //  stConst_Regist: begin  //la expresión p2 se evaluó y esta en A
 //    SetResultExpres(fun);
@@ -3346,7 +3217,6 @@ begin
     _SBCi(0);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRamFix_RamFix:begin
     SetFunExpres(fun);
@@ -3358,7 +3228,6 @@ begin
     _SBCi(0);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
 //  stRamFix_Regist:begin   //la expresión p2 se evaluó y esta en A
 //    SetResultExpres(fun);
@@ -3378,14 +3247,6 @@ begin
 //    SetResultExpres(fun);
 //    _SEC;
 //    _SBC(parB.add);
-//  end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //la expresión p1 debe estar salvada y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-//    _SEC;
-//    _SBC(rVar.adrByte0);
-//    FreeStkRegisterByte;   //libera pila porque ya se uso
 //  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
@@ -3421,7 +3282,6 @@ begin
     _SBC(parB.addH);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
 //  stConst_Regist: begin  //la expresión p2 se evaluó y esta en A
 //    SetResultExpres(fun);
@@ -3441,7 +3301,6 @@ begin
     _SBCi(parB.valH);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
   stRamFix_RamFix:begin
     SetFunExpres(fun);
@@ -3453,7 +3312,6 @@ begin
     _SBC(parB.addH);
     _STA(H.addr);
     _TXA;  //Restore A
-    lastASMcode := lacLastIsTXA;  //Set flag
   end;
 //  stRamFix_Regist:begin   //la expresión p2 se evaluó y esta en A
 //    SetResultExpres(fun);
@@ -3473,14 +3331,6 @@ begin
 //    SetResultExpres(fun);
 //    _SEC;
 //    _SBC(parB.add);
-//  end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //la expresión p1 debe estar salvada y p2 en el acumulador
-//    rVar := GetVarByteFromStk;
-//    _SEC;
-//    _SBC(rVar.adrByte0);
-//    FreeStkRegisterByte;   //libera pila porque ya se uso
 //  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
@@ -3891,13 +3741,6 @@ _LABEL_post(L1B);
     //Here if C=1, var>=var2; if C=0, var1<var
     Copy_C_to_A; //Copy C to A
   end;
-//  stRegist_Regist:begin
-//    //la expresión p1 debe estar salvada y p2 en el acumulador
-//    parA.SetAsVariab(GetVarByteFromStk, 0);  //Convierte a variable
-//    //Luego el caso es similar a stRamFix_Regist
-//    SIF_byte_great_byte(fun, true);
-//    FreeStkRegisterByte;   //libera pila porque ya se usó el dato ahí contenido
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -3980,14 +3823,6 @@ begin
     SetFunExpres(fun);
     _AND(parB.addL);
   end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //p1 está salvado en pila y p2 en (A)
-//    parA.SetAsVariab(GetVarWordFromStk);  //Convierte a variable
-//    //Luego el caso es similar a stRamFix_Regist
-//    _AND(parA.add);
-//    FreeStkRegisterWord;   //libera pila
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -4076,14 +3911,6 @@ begin
     _STA(H.addr);
     _PLA;  //Restore LSB result in A
   end;
-//  stRegist_Regist:begin
-//    SetResultExpres(fun);
-//    //p1 está salvado en pila y p2 en (A)
-//    parA.SetAsVariab(GetVarWordFromStk);  //Convierte a variable
-//    //Luego el caso es similar a stRamFix_Regist
-//    _AND(parA.add);
-//    FreeStkRegisterWord;   //libera pila
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -4196,7 +4023,7 @@ _LABEL_post(L2);
   end;
   stRamFix_Regist:begin   //la expresión p2 se evaluó y esta A
     SetFunExpres(fun);
-    _TAX;  //Counter
+    _TAX_opt;  //Counter
     _BEQ_post(L2);  //Protección to zero
 
     _LDA(parA.addH);
@@ -4248,8 +4075,6 @@ _LABEL_pre(L1);
       functCall(snfWordShift_l, AddrUndef);  //Use
     end;
   end;
-//  stRegist_Regist:begin
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
@@ -4314,8 +4139,6 @@ begin
     end;
   end;
 //  stRegist_RamFix:begin  //la expresión p1 se evaluó y esta en (H,A)
-//  end;
-//  stRegist_Regist:begin
 //  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
@@ -4562,10 +4385,14 @@ begin
 end;
 procedure TGenCod.SIF_Inc(fun: TEleExpress);
 var
-  LABEL1: integer;
+  LABEL1, L2: integer;
   par: TEleExpress;
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    exit;  //We don't calculate constant here.
+  end;
   //Validations
   case par.opType of
   otConst: begin GenError('Cannot increase a constant.');exit; end;
@@ -4588,8 +4415,23 @@ begin
       _INC(par.rVar.addr+1);
 _LABEL_post(LABEL1);
     end else if par.Typ.catType = tctPointer then begin
-      //Es puntero corto
-      _INC(par.rVar.addr);
+      if par.Typ.ptrType.size = 1 then begin
+        _INC(par.rVar.addr);
+        _BNE_post(LABEL1);  //label
+        _INC(par.rVar.addr+1);
+_LABEL_post(LABEL1);
+      end else if par.Typ.ptrType.size <256 then begin
+        _CLC;
+        _LDA(par.addL);
+        _ADCi(par.Typ.ptrType.size);
+        _STA(par.addL);
+        _BCC_post(L2);
+        _INC(par.addH);
+_LABEL_post(L2);
+      end else begin
+        genError('Not implemented "%s()" for operands "%s".',
+                 [fun.name, par.StoAsStr], par.srcDec);
+      end;
     end else begin
       GenError(MSG_INVAL_PARTYP, [par.Typ.name]);
       exit;
@@ -4634,7 +4476,7 @@ begin
   else  //Not expected to happen
     GenError('Unimplemented.'); exit;
   end;
-  //otVariab
+  //Code generation
   case par.Sto of
   stConst: begin
     GenError('Cannot decrease a constant.'); exit;
@@ -4649,8 +4491,24 @@ begin
 _LABEL_post(lbl1);
       _DEC(par.rVar.addr);
     end else if par.Typ.catType = tctPointer then begin
-      //Es puntero corto
-      _DEC(par.rVar.addr);
+      if par.Typ.ptrType.size = 1 then begin
+        _LDA(par.rVar.addr);
+        _BNE_post(lbl1);
+        _DEC(par.rVar.addr+1);
+  _LABEL_post(lbl1);
+        _DEC(par.rVar.addr);
+      end else if par.Typ.ptrType.size <256 then begin
+        _SEC;
+        _LDA(par.addL);
+        _SBCi(par.Typ.ptrType.size);
+        _STA(par.addL);
+        _LDA(par.addH);
+        _SBCi(0);
+        _STA(par.addH);
+      end else begin
+        genError('Not implemented "%s()" for operands "%s".',
+                 [fun.name, par.StoAsStr], par.srcDec);
+      end;
     end else begin
       GenError(MSG_INVAL_PARTYP, [par.Typ.name]);
       exit;
@@ -5048,8 +4906,8 @@ begin
         //Now we have Op2 created in RAM. Lets move.
         _LDXi(nBytes);
 _LABEL_pre(j2);
-        pic.codAsm(i_LDA, aAbsolutX, (startAddr-1) and $FFFF);  //Fix address to fit the index loop
-        pic.codAsm(i_STA, aAbsolutX, (parA.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
+        _LDAx((startAddr-1) and $FFFF);  //Fix address to fit the index loop
+        _STAx((parA.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
         _DEX;
         _BNE_pre(j2);
       end else begin
@@ -5069,8 +4927,8 @@ _LABEL_pre(j2);
         //Now we have the variable created in RAM. Lets move
         _LDXi(nBytes);
 _LABEL_pre(j2);
-        pic.codAsm(i_LDA, aAbsolutX, (parB.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
-        pic.codAsm(i_STA, aAbsolutX, (parA.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
+        _LDAx((parB.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
+        _STAx((parA.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
         _DEX;
         _BNE_pre(j2);
       end else begin
@@ -5082,6 +4940,56 @@ _LABEL_pre(j2);
 //      _STA(parA.addL);
 //      _LDA(0);
 //      _STA(parA.addH);
+//    end;
+    else
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+    end;
+  end else begin
+    GenError('Cannot assign to this Operand.', fun.srcDec);
+    exit;
+  end;
+end;
+procedure TGenCod.SIF_obj_asig_obj(fun: TEleExpress);
+var
+  parA, parB: TEleExpress;
+  nBytes: SmallInt;
+  des, src: Word;
+  j2: integer;
+begin
+  SetFunNull(fun);  //In Pascal an assigment doesn't return type.
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    exit;  //We don't calculate constant here.
+  end;
+  if parA.Sto = stRamFix then begin
+    nBytes := parA.rVar.typ.size;
+    case parB.Sto of
+//    stConst: begin
+//    end;
+    stRamFix: begin
+      if nBytes < 5 then begin
+        des:=parA.rVar.addr;
+        for src:=parB.rVar.addr to parB.rVar.addr+nBytes-1 do begin
+          _LDA(src);
+          _STA(des);
+          inc(des);
+        end;
+      end else if nBytes< 256 then begin
+        //Several ítems, we will use a loop to copy.
+        //Now we have the variable created in RAM. Lets move
+        _LDXi(nBytes);
+_LABEL_pre(j2);
+        _LDAx((parB.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
+        _STAx((parA.rVar.addr-1) and $FFFF);  //Fix address to fit the index loop
+        _DEX;
+        _BNE_pre(j2);
+      end else begin
+        GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      end;
+    end;
+//    stRegister: begin   //se asume que está en A
 //    end;
     else
       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
@@ -5419,29 +5327,17 @@ begin
       if itemType.IsByteSize then begin  //Must return a byte
         SetFunExpres(fun);
         _LDX(idx.add);
-        if offset<256 then begin
-          pic.codAsm(i_LDA, aZeroPagX, offset);
-        end else begin
-          //_CLC;
-          pic.codAsm(i_LDA, aAbsolutX, offset);
-        end;
+        _LDAx(offset);
       end else if itemType.IsWordSize then begin
         SetFunExpres(fun);
         _LDA(idx.add);  // Load index.
         _ASLa;          // A*2->A. Only work for A<128
         _TAX;           //Move to X
         _INX;           //To point to MSB
-        if offset<256 then begin
-          pic.codAsm(i_LDA, aZeroPagX, offset);
-          _STA(H.addr);
-          _DEX;         //To point to LSB
-          pic.codAsm(i_LDA, aZeroPagX, offset);
-        end else begin
-          pic.codAsm(i_LDA, aAbsolutX, offset);
-          _STA(H.addr);
-          _DEX;         //To point to LSB
-          pic.codAsm(i_LDA, aAbsolutX, offset);
-        end;
+        _LDAx(offset);
+        _STA(H.addr);
+        _DEX;           //To point to LSB
+        _LDAx(offset);
       end else begin
         GenError('Cannot get item from this array type: %s.', [arrVar.Typ.name]);
       end;
@@ -5623,7 +5519,7 @@ begin
       case parB.Sto of
       stConst : _LDXi(parB.val);
       stRamFix: _LDX(parB.add);
-      stRegister: _TAX; //Operand is already in A
+      stRegister: _TAX_opt; //Operand is already in A
       else
         GenError(MSG_UNSUPPORTED, parB.srcDec); exit;
       end;
@@ -5643,7 +5539,7 @@ begin
       case parB.Sto of
       stConst : _LDXi(parB.val);
       stRamFix: _LDX(parB.add);
-      stRegister: _TAX; //Operand is already in A
+      stRegister: _TAX_opt; //Operand is already in A
       else
         GenError(MSG_UNSUPPORTED, parB.srcDec); exit;
       end;
@@ -5717,7 +5613,7 @@ begin
     _ROR(idxvar.addr+1);  //Restore. Flag C must be still valid before the _ROR.
     _ROR(idxvar.addr);    //Restore OK
   end else if offset=0 then begin
-    if parB.Sto = stRegister then _TAX;  //Save A
+    if parB.Sto = stRegister then _TAX_opt;  //Save A
     //Load in WR
     _LDA(idxvar.addr);    //LSB
     _LDX(idxvar.addr+1);  //MSB
@@ -5757,7 +5653,7 @@ _LABEL_pre(lab1);
     _BPL_pre(lab1);  //Stop loop when negative
   end else if offset<255 then begin   //Needs to be <255
     //Similar to case offset=0, but we load offset in Y register.
-    if parB.Sto = stRegister then _TAX;  //Save A
+    if parB.Sto = stRegister then _TAX_opt;  //Save A
     //Load in WR
     _LDA(idxvar.addr);    //LSB
     _LDX(idxvar.addr+1);  //MSB
@@ -5797,11 +5693,16 @@ _LABEL_pre(lab1);
     _CPYi(offset-1);
     _BNE_pre(lab1);  //Stop loop when negative
   end else begin
-    if parB.Sto = stRegister then _TAX;  //Save A
+    if parB.Sto = stRegister then begin
+      //We need to save the (H,A).
+      _TAX_opt;      //Save A in X
+      _LDA(H.addr);  //Save H in Stack
+      _PHA;
+    end;
     //Load in WR
     _LDA(idxvar.addr);    //LSB
-    _LDX(idxvar.addr+1);  //MSB
-    _STX(H.addr);
+    _LDY(idxvar.addr+1);  //MSB
+    _STY(H.addr);
     //Multiply by 2 -> H,A
     _ASLa;
     _ROL(H.addr);
@@ -5819,7 +5720,7 @@ _LABEL_pre(lab1);
       case parB.Sto of
       stConst   : _LDAi(parB.valH);
       stRamFix  : _LDA(parB.addH);
-      stRegister: _LDA(H.addr);
+      stRegister: _PLA;  //Restore H
       else
         GenError(MSG_UNSUPPORTED, parB.srcDec); exit;
       end;
@@ -5844,16 +5745,16 @@ _LABEL_pre(lab1);
       _LDA(H.addr);
       _ADCi(hi(offset));
       _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
-      //Start a two-cicles loop to load in H,A
-      _LDYi(1);  //Initial offset
       //Load MSB
       case parB.Sto of
       stConst   : _LDAi(parB.valH);
       stRamFix  : _LDA(parB.addH);
-      stRegister: _LDA(H.addr);
+      stRegister: _PLA;  //Restore H
       else
         GenError(MSG_UNSUPPORTED, parB.srcDec); exit;
       end;
+      //Start a two-cicles loop to load in H,A
+      _LDYi(1);  //Initial offset
 _LABEL_pre(lab1);
       pic.codAsm(i_STA, aAbsolutY, $FFFF);  //Instruction will be overwritten
       //Complete the addresses.
@@ -5972,51 +5873,26 @@ begin
       stConst: begin
         _LDAi(parB.val);
         _LDX(idx.add);
-        if offset<256 then begin
-          pic.codAsm(i_STA, aZeroPagX, offset);
-        end else begin
-          //_CLC;
-          pic.codAsm(i_STA, aAbsolutX, offset);
-        end;
+        _STAx(offset);
       end;
       stRamFix: begin
         _LDA(parB.add);
         _LDX(idx.add);
-        if offset<256 then begin
-          pic.codAsm(i_STA, aZeroPagX, offset);
-        end else begin
-          //_CLC;
-          pic.codAsm(i_STA, aAbsolutX, offset);
-        end;
+        _STAx(offset);
       end;
       stRegister, stRegistA: begin  //Already in A
         _LDX(idx.add);
-        if offset<256 then begin
-          pic.codAsm(i_STA, aZeroPagX, offset);
-        end else begin
-          //_CLC;
-          pic.codAsm(i_STA, aAbsolutX, offset);
-        end;
+        _STAx(offset);
       end;
       stRegistX: begin
         _TXA;
         _LDX(idx.add);
-        if offset<256 then begin
-          pic.codAsm(i_STA, aZeroPagX, offset);
-        end else begin
-          //_CLC;
-          pic.codAsm(i_STA, aAbsolutX, offset);
-        end;
+        _STAx(offset);
       end;
       stRegistY: begin
         _TYA;
         _LDX(idx.add);
-        if offset<256 then begin
-          pic.codAsm(i_STA, aZeroPagX, offset);
-        end else begin
-          //_CLC;
-          pic.codAsm(i_STA, aAbsolutX, offset);
-        end;
+        _STAx(offset);
       end;
       else
         GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
@@ -6029,44 +5905,24 @@ begin
         _ASLa;          // A*2->A. Only work for A<128
         _TAX;           //Move to X
         if parB.valL = parB.valH then begin  //Lucky case
-          if offset<255 then begin
-            _LDAi(parB.valL);
-            pic.codAsm(i_STA, aZeroPagX, offset);
-            pic.codAsm(i_STA, aZeroPagX, offset+1);
-          end else begin
-            _LDAi(parB.valL);
-            pic.codAsm(i_STA, aAbsolutX, offset);
-            pic.codAsm(i_STA, aAbsolutX, offset+1);
-          end;
+          _LDAi(parB.valL);
+          _STAx(offset);
+          _STAx(offset+1);
         end else begin  //General case
-          if offset<255 then begin
-            _LDAi(parB.valL);
-            pic.codAsm(i_STA, aZeroPagX, offset);
-            _LDAi(parB.valH);
-            pic.codAsm(i_STA, aZeroPagX, offset+1);
-          end else begin
-            _LDAi(parB.valL);
-            pic.codAsm(i_STA, aAbsolutX, offset);
-            _LDAi(parB.valH);
-            pic.codAsm(i_STA, aAbsolutX, offset+1);
-          end;
+          _LDAi(parB.valL);
+          _STAx(offset);
+          _LDAi(parB.valH);
+          _STAx(offset+1);
         end;
       end;
       stRamFix: begin
         _LDA(idx.add);  // Load index.
         _ASLa;          // A*2->A. Only work for A<128
         _TAX;           //Move to X
-        if offset<255 then begin
-          _LDA(parB.add);
-          pic.codAsm(i_STA, aZeroPagX, offset);
-          _LDA(parB.add+1);
-          pic.codAsm(i_STA, aZeroPagX, offset+1);
-        end else begin
-          _LDA(parB.add);
-          pic.codAsm(i_STA, aAbsolutX, offset);
-          _LDA(parB.add+1);
-          pic.codAsm(i_STA, aAbsolutX, offset+1);
-        end;
+        _LDA(parB.add);
+        _STAx(offset);
+        _LDA(parB.add+1);
+        _STAx(offset+1);
       end;
       stRegister: begin   //se asume que se tiene en A
         _TAY;     //Save A
@@ -6079,9 +5935,9 @@ begin
           pic.codAsm(i_STY, aZeroPagX, offset+1);
         end else begin
           _TYA;           //Restore A
-          pic.codAsm(i_STA, aAbsolutX, offset);
+          _STAx(offset);
           _LDA(H.addr);
-          pic.codAsm(i_STA, aAbsolutX, offset+1);
+          _STAx(offset+1);
         end;
       end;
       else
@@ -6341,7 +6197,16 @@ begin
   f2.funset := f;         //Connect to getter
   //Operation for pointers
   CreateUOMethod(etyp, '@', 'addr', typWord, @SIF_address);
-//  etyp.CreateUnaryPreOperator('@', 6, 'addr', @SIF_address); //defined in all types
+end;
+procedure TGenCod.DefineObject(etyp: TEleTypeDec);
+var
+  consDec: TEleConsDec;
+  expr: TEleExpress;
+  f, f1, f2: TEleFun;
+begin
+  //Create assigement method
+  f := CreateInBOMethod(etyp, ':=', '_set', etyp, typNull, @SIF_obj_asig_obj);
+  f.getset := gsSetInSimple;
 end;
 {%ENDREGION}
 procedure TGenCod.ValidRAMaddr(addr: integer);
@@ -6537,6 +6402,7 @@ begin
   //////// Funciones del sistema ////////////
   //Implement calls to Code Generator
   callDefineArray  := @DefineArray;
+  callDefineObject := @DefineObject;
   callDefinePointer:= @DefinePointer;
   callValidRAMaddr := @ValidRAMaddr;
   callStartProgram := @Cod_StartProgram;
