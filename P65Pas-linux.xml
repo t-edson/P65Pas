@@ -67,15 +67,13 @@
   <Compiler6502>
     <unitPath Val="{AppPath}/comp_p65pas/units/"/>
     <OptimLev Val="1"/>
-    <OptBnkAftIF Val="True"/>
-    <OptBnkBefPro Val="True"/>
-    <OptBnkAftPro Val="True"/>
     <ReuProcVar Val="False"/>
     <OptRetProc Val="True"/>
+    <RemUnOpcod Val="True"/>
   </Compiler6502>
   <AsmOutput6502>
     <IncDecVar Val="True"/>
-    <VarDecType Val="0"/>
+    <OutAsmType Val="0"/>
     <IncAddress Val="True"/>
     <IncComment Val="False"/>
     <ExcUnused Val="True"/>

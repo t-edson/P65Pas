@@ -1,3 +1,16 @@
+
+16/09/2022: Se separa el tipo ruCode en dos tipos ruCodeOp y ruCodeDa.
+16/09/2022: Se elimina la propiedad "TopLabel" para disminuir el tamaño de la celda de memoria.
+16/09/2022: Se agrega otra forma del porcedimiento codByte().
+16/09/2022: Se agrega la función GetASMlineAt() para ayudar en la generación de código ASM.
+16/09/2022: Se corrije el cálculo del tiempo de ejecución en el depurador
+16/09/2022: Se mejora la ejecución en tiempo real para que se detenga cuando ejecuta código 
+no válido.
+16/09/2022: Se corrige ejecución de instrucción SBC.
+16/09/2022: Se agrega protección a desborde en las instrucción i_ASL e i_AND.
+16/09/2022: Se implementa la actualización de la bandera V en las instrucciones que la afectan.
+16/09/2022: Se corrige la cantidad de ciclos que generan las instrucciones de saltos.
+
 0.5 
 ===
 04/09/2020: Se mueve el método FindOpcode() fuera del objeto TP6502Instruct.

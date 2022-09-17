@@ -15,7 +15,7 @@ type
     addVariab : integer;  //Address where start Variables section.
     addFuncts : integer;  //Address where start function section.
     procedure ConstantFoldExpr(eleExp: TEleExpress);
-    procedure PrepareBody(body: TxpEleCodeCont);
+    procedure PrepareBody(cntBody, sntBlock: TxpEleCodeCont);
     procedure PrepareSentences;
   private  //Compilers steps
     procedure EvaluateConstantDeclare;
@@ -23,12 +23,11 @@ type
     procedure ConstanPropagation;
     procedure DoOptimize;
     procedure DoGenerateCode;
-    procedure Compile(srcFile: string);
+    procedure DoCompile;
   public      //Events
     OnAfterCompile: procedure of object;   //Al finalizar la compilación.
   public      //Override methods
-    procedure DumpCode(lins: TSTrings; AsmMode, IncVarDec, ExcUnused: boolean;
-      incAdrr, incCom, incVarNam: boolean); override; //uso de la memoria Flash
+    procedure DumpCode(lins: TSTrings); override;
     function RAMusedStr: string; override;
     procedure GetResourcesUsed(out ramUse, romUse, stkUse: single); override;
     procedure GenerateListReport(lins: TStrings); override;
@@ -392,9 +391,15 @@ begin
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   ConstantPropagBody(bod);
 end;
-procedure TCompiler_PIC16.PrepareBody(body: TxpEleCodeCont);
+procedure TCompiler_PIC16.PrepareBody(cntBody, sntBlock: TxpEleCodeCont);
 {Do a separation for assigmente sentences in order to have the "three-address code" form
-like used in several compilers.}
+like used in several compilers.
+Parameters:
+  cntBody  -> The main Body of a procedure or the main program. This will be used
+               as reference to locate the new variable declarations.
+  sntBlock  -> Block of code where are the sentences to need be prepared. It's the
+               same of "container" except when "block" is nested like in a condiitonal.
+}
   function MoveNodeToAssign(curContainer: TxpElement; Op: TEleExpress): TEleExpress;
   {Mueve el nodo especificado "Op" a una nueva instruccion de asignación (que es creada
   al inicio del bloque "curContainer") y reemplaza el nodo faltante por una variable
@@ -409,10 +414,10 @@ like used in several compilers.}
     OpPos: Integer;
     OpParent: TxpElement;
   begin
-    //Create a new variable in the declaration section of this body.
-    _varaux := CreateEleVarDec('_x' + IntToStr(body.Index), Op.typ);  //Generate a unique name in this body
-    TreeElems.openElement(body.Parent);
-    TreeElems.AddElement(_varaux, body.Index);  //Add before the body.
+    //Create a new variable in the declaration section of this sntBlock.
+    _varaux := CreateEleVarDec('_x' + IntToStr(cntBody.Index), Op.typ);  //Generate a unique name in this cntBody
+    TreeElems.openElement(cntBody.Parent);
+    TreeElems.AddElement(_varaux, cntBody.Index);  //Add before the cntBody.
 
     //Create the new _set() expression.
     _setaux := CreateExpression('_set', typNull, otFunct, Op.srcDec);
@@ -589,7 +594,7 @@ var
   _blk: TxpEleCodeCont;
 begin
   //Prepare assignments for arrays.
-  for eleSen in body.elements do begin
+  for eleSen in sntBlock.elements do begin
     if eleSen.idClass <> eleSenten then continue;
     //We have a sentence here.
     sen := TEleSentence(eleSen);
@@ -614,7 +619,7 @@ begin
     end;
   end;
   //Prepare sentences
-  for eleSen in body.elements do begin
+  for eleSen in sntBlock.elements do begin
     if eleSen.idClass <> eleSenten then continue;
     //We have a sentence here.
     sen := TEleSentence(eleSen);
@@ -630,9 +635,9 @@ begin
         if ele.idClass = eleCondit then begin  //It's a condition
           _exp := TEleExpress(ele.elements[0]);  //The first item is a TEleExpress
           SplitExpress(ele, _exp)
-        end else if ele.idClass = eleBlock then begin   //Body of IF
+        end else if ele.idClass = eleBlock then begin   //body of IF
           _blk := TxpEleCodeCont(ele);  //The first item is a TEleExpress
-          PrepareBody(_blk);
+          PrepareBody(cntBody, _blk);
         end;
       end;
     end else if sen.sntType = sntExit then begin
@@ -651,13 +656,13 @@ begin
   //Split subroutines
   for fun in usedFuncs do begin
     if fun.callType = ctUsrNormal then begin
-      PrepareBody(fun.BodyNode);
+      PrepareBody(fun.BodyNode, fun.BodyNode);
       if HayError then exit;   //Puede haber error
     end;
   end;
   //Split body
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
-  PrepareBody(bod);
+  PrepareBody(bod, bod);
 end;
 procedure TCompiler_PIC16.DoOptimize;
 {Usa la información del árbol de sintaxis, para optimizar su estructura con
@@ -747,7 +752,7 @@ Must be called after DoOptimize().}
     if          bootloader = bldNone then begin
       //No bootloader
     end else if bootloader = bldJMP then begin
-      pic.codByte(76, ruCode);  //Opcode JMP
+      pic.codByte(76, ruCodeOp);  //Opcode JMP
       pic.codByte(0, ruData, 'COD_HL');   //To complete later
       pic.codByte(0, ruData);             //To complete later
     end else if bootloader = bldC64 then begin
@@ -769,7 +774,7 @@ Must be called after DoOptimize().}
       PutTopComm(';Custom Bootloader.');
       for i:=0 to high(loaderBytes) do begin
         if loaderBytes[i]=-76 then begin
-          pic.codByte(76, ruCode);  //Opcode JMP
+          pic.codByte(76, ruCodeOp);  //Opcode JMP
         end else if loaderBytes[i]=-1001 then begin  //2 bytes address for entry point.
           pic.codByte(0, ruData, 'COD_HL');  //To complete later
           pic.codByte(0, ruData);            //To complete later
@@ -919,8 +924,11 @@ begin
   GenCodeMainBody(bod);
   //if HayError then exit;     //Puede haber error
 end;
-procedure TCompiler_PIC16.Compile(srcFile: string);
-//Compila el contenido de un archivo.
+procedure TCompiler_PIC16.DoCompile;
+{Compila el contenido del archivo "mainFile" con las opciones que se hayan definido en
+esta instancia del compilador.
+No debería usarse directamente, sino a través del método Exec(), para asegurarse de que
+se inicializan correctamente las configuraiones.}
 var
   p: SizeInt;
 begin
@@ -928,10 +936,8 @@ begin
   debugln('');
   StartCountElapsed;  //Start timer
   DefCompiler;   //Debe hacerse solo una vez al inicio
-  mode := modPicPas;   //Por defecto en sintaxis nueva
-  mainFile := srcFile;
-  hexfile := ChangeFileExt(srcFile, '.prg');     //Obtiene nombre
-  hexfile := hexFilePath;   //Expande nombre si es necesario
+  hexfile  := ChangeFileExt(mainFile, '.prg');     //Obtiene nombre
+  hexfile  := hexFilePath;   //Expande nombre si es necesario
   //se pone en un "try" para capturar errores y para tener un punto salida de salida
   //único
   if ejecProg then begin
@@ -944,9 +950,9 @@ begin
     //Genera instrucciones de inicio
     ClearContexts;       //elimina todos los Contextos de entrada
     //Compila el texto indicado
-    if not OpenContextFrom(srcFile) then begin
+    if not OpenContextFrom(mainFile) then begin
       //No lo encuentra
-      GenError(ER_FIL_NOFOUND, [srcFile]);
+      GenError(ER_FIL_NOFOUND, [mainFile]);
       exit;
     end;
     {-------------------------------------------------}
@@ -1007,9 +1013,9 @@ function AdrStr(absAdr: word): string;
 begin
   Result := '$' + IntToHex(AbsAdr, 4);
 end;
-procedure TCompiler_PIC16.DumpCode(lins: TSTrings; AsmMode, IncVarDec,
-  ExcUnused: boolean; incAdrr, incCom, incVarNam: boolean);
-{Genera el código ensamblador en el StringList "lins".
+procedure TCompiler_PIC16.DumpCode(lins: TSTrings);
+{Genera el código ensamblador en el StringList "lins", con las configuraciones
+actuales del compilador.
 Se debe llamar despues de llamar a pic.GenHex(), para que se actualicen las variables
 minUsed y maxUsed.}
 const
@@ -1050,7 +1056,7 @@ var
   lblLin, comLin, lin: String;
   nBytes: byte;
 begin
-  if AsmMode then begin
+  if asmOutType=0 then begin  //Normal Assembler output
     //Include header
     lins.Add('      ;Code generated by P65Pas compiler');
     lins.Add('      processor ' + PICName);
@@ -1060,7 +1066,7 @@ begin
        VariablesLocation(lins, ExcUnused);
     end;
     //Se supone que minUsed y maxUsed, ya deben haber sido actualizados.
-    if incAdrr then begin  //ORG title
+    if IncAddress then begin  //ORG title
       lins.Add(SPACEPAD + '      ORG $' + IntToHex(pic.minUsed, 4));
     end else begin
       lins.Add(SPACEPAD + 'ORG $' + IntToHex(pic.minUsed, 4));
@@ -1076,7 +1082,7 @@ begin
       //Check RAM position.
       if pic.ram[i].used in [ruData, ruAbsData] then begin
         //Must be a variable.
-        if incAdrr then begin
+        if IncAddress then begin
           if comLin<>'' then lins.add(comLin);
           lins.Add( PadRight(lblLin, LSPC) + '$'+IntToHex(i,4) + ' DB ' +
                     IntToHEx(pic.ram[i].value,2) );
@@ -1088,10 +1094,10 @@ begin
         //Debe ser código o memoria sin usar.
         if lblLin<>'' then lins.Add(lblLin+':');  //Etiqueta al inicio de línea
         //Escribe comentario al inicio de línea
-        if incCom and (comLin<>'') then  begin
+        if asmIncComm and (comLin<>'') then  begin
           lins.Add(comLin);
         end;
-        lin := pic.GetASMlineAt(i, incAdrr, incAdrr, incCom, incVarNam, nBytes);
+        lin := pic.GetASMlineAt(i, IncAddress, IncAddress, asmIncComm, incVarName, nBytes);
         lins.Add(SPACEPAD + lin);
         i := i + nBytes;   //Incrementa a siguiente instrucción
       end;
@@ -1289,38 +1295,54 @@ var
   parsList: TStringList;
   txt, tmp: string;
 begin
+  //Default settings for Command line Options
+  mainFile := srcFile;
+  comp_level  := clComplete;
+  enabDirMsgs := true;
+  OptReuProVar:= false;   //Optimiza reutilizando variables locales de procedimientos.
+  OptRetProc  := false;   //Optimiza el último exit de los procedimientos.
+  RemUnOpcod  := false;
+
+  asmOutType  := 0;  //Normal Assembler
+  asmIncComm  := false;
+  IncVarDec   := false;
+  IncVarName  := false;
+  IncAddress  := false;
+  //Default settings for Directive settings.
+  syntaxMode  := modPicPas;   //Por defecto en sintaxis nueva
+  bootloader  := bldJMP;
+  str_nullterm:= false;
   //Load parameters in a list
   parsList := TStringList.Create;
   parsList.Text := trim(pars);
 //debugln('--Executing:('+ StringReplace(pars, LineEnding,' ',[rfReplaceAll])+')');
   //Extract and set parameters
-  //Default settings
-  comp_level  := clComplete;
-  enabDirMsgs := true;
-  AsmIncComm  := false;
-  bootloader := bldJMP;
-  str_nullterm := false;
   unitPaths.Clear;
-  //Read parameters
   for txt in parsList do begin
     if length(txt)<2 then continue;
-    //---Compiling options
-    if copy(txt,1,2) = '-C' then begin
+    if          copy(txt,1,2) = '-C' then begin  //---Compiling options
       case txt of
-        '-Cn' : comp_level := clNull;
-        '-Ca' : comp_level := clAnalys;
-        '-Cao': comp_level := clAnalOptim;
-        '-C'  : comp_level := clComplete;
+      '-Cn' : comp_level := clNull;
+      '-Ca' : comp_level := clAnalys;
+      '-Cao': comp_level := clAnalOptim;
+      '-C'  : comp_level := clComplete;
       end;
-    //---Optimization options
-    end else if copy(txt,1,2) = '-O' then begin
+    end else if copy(txt,1,2) = '-O' then begin  //---Optimization options
       case txt of
-        '-On' : comp_level := clNull;
-        '-Oa' : comp_level := clAnalys;
-        '-Oao': comp_level := clAnalOptim;
-        '-O'  : comp_level := clComplete;
+      '-Ov' : OptReuProVar := true;
+      '-Or' : OptRetProc   := true;
+      '-Ou' : RemUnOpcod   := true;
       end;
-    //---Other options
+    end else if copy(txt,1,2) = '-A' then begin  //---Assembler options
+      case txt of
+      '-A0': asmOutType := 0;    //Output in normal Assembler.
+      '-A1': asmOutType := 1;    //Output in BASIC POKE's loader.
+      '-Ac': asmIncComm := true; //Include commnents in ASM output.
+      '-Av': IncVarDec  := true; //Include variables information section.
+      '-Au': ExcUnused  := true; //Exclude unused variables in variable section.
+      '-An': incVarName := true; //Include nombres de variables en las instrucciones.
+      '-Aa': IncAddress := true; //Include memory address in instructions.
+      end;
     end else if copy(txt,1,2) = '-F' then begin  //File names and paths
       if copy(txt,1,3) = '-Fu' then begin  //Add unit path
         tmp := copy(txt,4,length(txt));
@@ -1329,8 +1351,6 @@ begin
         if tmp[length(tmp)]='"' then delete(tmp,length(tmp),1);
         unitPaths.Add(tmp);
       end;
-    end else if txt = '-Ac' then begin  //Include commnents in ASM output
-      AsmIncComm := true;
     end else if txt = '-Dn' then begin  //Disable directive messages
       enabDirMsgs := false;
     end else begin         //Other.
@@ -1338,7 +1358,7 @@ begin
     end;
   end;
   //Compile
-  Compile(srcFile);
+  DoCompile;
   //Destroy list
   parsList.Destroy;
 end;
@@ -1346,7 +1366,7 @@ constructor TCompiler_PIC16.Create;
 begin
   inherited Create;
   //OnNewLine:=@cInNewLine;
-  mode := modPicPas;   //Por defecto en sintaxis nueva
+  syntaxMode := modPicPas;   //Por defecto en sintaxis nueva
 end;
 destructor TCompiler_PIC16.Destroy;
 begin

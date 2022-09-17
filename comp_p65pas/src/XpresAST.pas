@@ -62,7 +62,7 @@ type  //Abstract Syntax Tree
       ctype: TEleTypeDec): TEleConsDec;
     function AddVarDecAndOpen(srcPos: TSrcPos; vname: string;
       vtype: TEleTypeDec): TEleVarDec;
-    function AddTypeDecAndOpen(srcPos: TSrcPos; tname: string; tsize: integer;
+    function AddTypeDecAndOpen(srcPos: TSrcPos; tname: string; tsize: word;
       catType: TxpCatType; group: TTypeGroup; position: integer = - 1
   ): TEleTypeDec;
     function AddElementBlockAndOpen(srcPos: TSrcPos): TEleBlock;
@@ -268,7 +268,7 @@ begin
   curCodCont := Result;  //Update current Code container
 end;
 function TXpTreeElements.AddTypeDecAndOpen(srcPos: TSrcPos; tname: string;
-  tsize: integer; catType: TxpCatType; group: TTypeGroup;
+  tsize: word; catType: TxpCatType; group: TTypeGroup;
   position: integer = -1): TEleTypeDec;
 begin
   Result := TEleTypeDec.Create;

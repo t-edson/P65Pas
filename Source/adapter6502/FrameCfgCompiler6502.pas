@@ -11,13 +11,10 @@ type
 
   { TfraCfgCompiler6502 }
   TfraCfgCompiler6502 = class(TFrame)
-    chkOptBnkAftIF: TCheckBox;
-    chkOptBnkAftPro: TCheckBox;
-    chkOptBnkBefPro: TCheckBox;
     chkOptRetProc: TCheckBox;
+    chkRemUnOpcod: TCheckBox;
     chkReuProcVar: TCheckBox;
     txtUnitpath: TEdit;
-    GroupBox1: TGroupBox;
     grpOptimLev: TRadioGroup;
     Label1: TLabel;
   private
@@ -25,11 +22,9 @@ type
   public
     unitPath    : string;
     OptimLev    : TOptimLev;
-    OptBnkAftIF : boolean;
-    OptBnkBefPro: boolean;
-    OptBnkAftPro: boolean;
     ReuProcVar  : boolean;
     OptRetProc  : boolean;
+    RemUnOpcod  : boolean;
     function unitPathExpanded: string;
     procedure Init(section: string; cfgFile: TMiConfigXML);
   end;
@@ -57,11 +52,10 @@ procedure TfraCfgCompiler6502.Init(section: string; cfgFile: TMiConfigXML);
 begin
   cfgFile.Asoc_Str (section+ '/unitPath'    , @unitPath    , txtUnitpath, '{AppPath}/comp_p65pas/units/');
   cfgFile.Asoc_Enum(section+ '/OptimLev'    , @OptimLev    , Sizeof(TOptimLev), grpOptimLev, 1);
-  cfgFile.Asoc_Bol (section+ '/OptBnkAftIF' , @OptBnkAftIF , chkOptBnkAftIF   , true);
-  cfgFile.Asoc_Bol (section+ '/OptBnkBefPro', @OptBnkBefPro, chkOptBnkBefPro  , true);
-  cfgFile.Asoc_Bol (section+ '/OptBnkAftPro', @OptBnkAftPro, chkOptBnkAftPro  , true);
   cfgFile.Asoc_Bol (section+ '/ReuProcVar'  , @ReuProcVar  , chkReuProcVar    , false);
   cfgFile.Asoc_Bol (section+ '/OptRetProc'  , @OptRetProc  , chkOptRetProc    , true);
+  cfgFile.Asoc_Bol (section+ '/RemUnOpcod'  , @RemUnOpcod  , chkRemUnOpcod    , true);
+
 end;
 
 

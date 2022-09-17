@@ -173,7 +173,7 @@ type
     procedure _SBCi(const k: word);   //SBC Immediate
     procedure _SBC(const addr: integer);  //SBC Absolute/Zeropage
     procedure _STA(addr: integer);        //STA Absolute/Zeropage
-    procedure _STAx(addr: integer);       //STA X indexed
+    procedure _STAx(addr: integer; forceAbsolute: boolean = false);       //STA X indexed
     procedure _STX(const addr: integer);  //STX Absolute/Zeropage
     procedure _STY(const addr: integer);  //STY Absolute/Zeropage
     procedure _TAX;
@@ -431,6 +431,10 @@ begin
   if outOfProgram then begin
     //Out of the program block, mark as "ruAbsData", in order to not be considered
     //to generate the PRG file.
+    if startAdd+nbytes-1>high(pic.ram) then begin
+      GenError('Cannot allocate variable: %s', [varName], xVar.srcDec);
+      exit;
+    end;
     for i:=startAdd to startAdd+nbytes-1 do begin
       pic.ram[i].used := ruAbsData;
       if shared then begin
@@ -974,12 +978,16 @@ begin
     pic.codAsm(i_STA, aAbsolute, addr);
   end;
 end;
-procedure TGenCodBas._STAx(addr: integer);
+procedure TGenCodBas._STAx(addr: integer; forceAbsolute: boolean = false);
 begin
-  if addr<256 then begin
-    pic.codAsm(i_STA, aZeroPagX, addr);
-  end else begin
+  if forceAbsolute then begin
     pic.codAsm(i_STA, aAbsolutX, addr);
+  end else begin
+    if addr<256 then begin
+      pic.codAsm(i_STA, aZeroPagX, addr);
+    end else begin
+      pic.codAsm(i_STA, aAbsolutX, addr);
+    end;
   end;
 end;
 procedure TGenCodBas._STX(const addr: integer);  //STA Absolute/Zeropage
@@ -1004,9 +1012,12 @@ begin
 end;
 procedure TGenCodBas._TAX_opt;
 {TAX version that delete the possible sequence TXA-TAX}
+var
+  ramcell : ^TCPURamCell;
 begin
-  if pic.ram[pic.iRam-1].value = $8A then begin
-    //We have a TXA before
+  ramcell := @pic.ram[pic.iRam-1];
+  if RemUnOpcod and (ramcell^.used = ruCodeOp) and (ramcell^.value = $8A) then begin
+    //We have a TXA before.
     pic.iRam := pic.iRam-1;
   end else begin
     _TAX;          //Save A in X
@@ -2045,7 +2056,7 @@ begin
       GenCodeBlock(TEleBlock(sen.elements[2]));
       _JMP(lbl1);
     end;
-  end else begin  //otVariab. otFunct
+  end else begin  //otVariab, otFunct
     IF_TRUE(expBool, lbl2);
     GenCodeBlock(TEleBlock(sen.elements[2]));
     _JMP(lbl1);   //salta a evaluar la condición
@@ -2127,7 +2138,7 @@ begin
     if eleSen.idClass = eleSenten then begin
       //Generates code to the sentence.
       sen := TEleSentence(eleSen);
-      if AsmIncComm then begin
+      if asmIncComm then begin
         {Genera los comentarios por instrucción, accediendo al contenido del
         código fuente a través del contexto al que apunta cada instrucción. }
         idCtx  := sen.srcDec.idCtx;
@@ -2201,6 +2212,10 @@ end;
 procedure TGenCodBas.GenCodeBlock(block: TEleBlock);
 {Do code generation for the body element specified. }
 begin
+  if block.idClass <> eleBlock then begin
+    GenError('Internal error. Block expected.', block.srcDec);
+    exit;
+  end;
   TreeElems.OpenElement(block);
   GenCodeSentences(TreeElems.curNode.elements);
 end;

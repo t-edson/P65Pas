@@ -104,7 +104,7 @@ protected  //Elements creation
     ): TEleConsDec;
   function AddTypeDecAndOpen(typName: string; typeSize: integer; catType: TxpCatType;
     group: TTypeGroup; srcPos: TSrcPos): TEleTypeDec;
-  function OpenTypeDec(const srcPos: TSrcPos; tname: string; tsize: integer;
+  function OpenTypeDec(const srcPos: TSrcPos; tname: string; tsize: word;
     catType: TxpCatType; group: TTypeGroup; location: TTypeLocat): TEleTypeDec;
   procedure CloseTypeDec(typeDec: TEleTypeDec);
   procedure CreateFunctionParams(var funPars: TxpParFuncArray);
@@ -177,29 +177,34 @@ public    //Types to implement
   typChar : TEleTypeDec;
   typWord : TEleTypeDec;
 //  typString: TxpEleType;
-public    //Public attributes of compiler
+public     //Public attributes of compiler
   ID        : integer;     //Identificador para el compilador.
   IsUnit    : boolean;     //Flag to identify a Unit
   //Variables públicas del compilador
   ejecProg  : boolean;     //Indicates the compiler is working
   stopEjec  : boolean;     //To stop compilation
-public    //Compiling Options. Deberían ser PROTECTED.
-  GeneralORG  : integer;   //Dirección general de origen de código
-  protected
-  bootloader  : TBootloader; //Bootloader code for the compiled binary.
-  str_nullterm: boolean;     //Flag to activate the Null-terminated string for literals.
-  loaderBytes : array of integer;  //Custom Bootloader bytes.
-  mode        : (modPascal, modPicPas);
-  comp_level  : TCompileLevel;  //Compilation level
-  enabDirMsgs : boolean;   //Bandera para permitir generar mensajes desde las directivas.
-  incDetComm  : boolean;   //Incluir Comentarios detallados.
-  OptBnkAftIF : boolean;   //Optimizar instrucciones de cambio de banco al final de IF
-  OptReuProVar: boolean;   //Optimiza reutilizando variables locales de procedimientos
-  OptRetProc  : boolean;   //Optimiza el último exit de los procedimientos.
-  AsmIncComm  : boolean;   //Incluye comentarios en salida de ASM
-protected //Files
+  GeneralORG: integer;   //Dirección general de origen de código
+protected  //Command line options.
   mainFile    : string;    //Archivo inicial que se compila
   hexFile     : string;    //Nombre de archivo de salida
+  comp_level  : TCompileLevel; //Compilation level
+  enabDirMsgs : boolean;   //Bandera para permitir generar mensajes desde las directivas.
+  OptReuProVar: boolean;   //Optimiza reutilizando variables locales de procedimientos.
+  OptRetProc  : boolean;   //Optimiza el último exit de los procedimientos.
+  RemUnOpcod  : boolean;   //Removes unnecessary ASM instructions generated.
+  //Assembler options
+  asmOutType  : byte;      //Assembler ouput style: 0->Normal Assembler. 1->BASIC Poke's
+  asmIncComm  : boolean;   //Includes Comments in ASM text
+  IncVarDec   : boolean;   //Includes variables information section.
+  ExcUnused   : boolean;   //Excludes unused variables in variable section.
+  IncVarName  : boolean;   //Includes variables name in ASM operands.
+  IncAddress  : boolean;   //Includes address before ASM instructions.
+  //  incDetComm  : boolean;   //Incluir Comentarios detallados.
+protected //Compiling Options. Set by directives.
+  syntaxMode  : (modPascal, modPicPas);
+  bootloader  : TBootloader;  //Bootloader code for the compiled binary.
+  loaderBytes : array of integer; //Custom Bootloader bytes.
+  str_nullterm: boolean;   //Flag to activate the Null-terminated string for literals.
 public    //Files
   function hexFilePath: string;
   function mainFilePath: string;
@@ -210,8 +215,7 @@ public    //Abstract methods
 //  procedure RAMusage(lins: TStrings; ExcUnused: boolean); virtual; abstract;
   function RAMusedStr: string; virtual; abstract;
   procedure GetResourcesUsed(out ramUse, romUse, stkUse: single); virtual; abstract;
-  procedure DumpCode(lins: TSTrings; asmMode, IncVarDec, ExcUnused: boolean;
-                     incAdrr, incCom, incVarNam: boolean); virtual; abstract;
+  procedure DumpCode(lins: TSTrings); virtual; abstract;
   procedure GenerateListReport(lins: TStrings); virtual; abstract;
 public    //Callers methods
   function AddCallerToFrom(toElem: TxpElement; callerElem: TxpElement): TxpEleCaller;
@@ -691,7 +695,7 @@ begin
   Result := TreeElems.AddTypeDecAndOpen(srcPos, typName, typeSize, catType, group);
 end;
 function TCompilerBase.OpenTypeDec(const srcPos: TSrcPos; tname: string;
-  tsize: integer; catType: TxpCatType; group: TTypeGroup;
+  tsize: word; catType: TxpCatType; group: TTypeGroup;
   location: TTypeLocat): TEleTypeDec;
 var
   tmp, progFrame: TxpElement;
@@ -738,7 +742,7 @@ var
   //tmp, progFrame: TxpElement;
   //ipos: Integer;
 begin
-  xtyp := OpenTypeDec(srcPos, typName, -1, tctArray, t_object, tlParentNode);
+  xtyp := OpenTypeDec(srcPos, typName, 0, tctArray, t_object, tlParentNode);
     //Crea campo "length".
     consDec := AddConstDeclarByte('length', nElem);
     //Termina definición

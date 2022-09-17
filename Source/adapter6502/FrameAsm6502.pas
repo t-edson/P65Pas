@@ -112,7 +112,7 @@ begin
       cv.Font.Style := [fsBold];   // negrita
     end else begin
       //Fila sin selección
-      if ramCell^.used = ruCode then begin
+      if ramCell^.used in [ruCodeOp, ruCodeDa] then begin
         cv.Brush.Color := clWhite;  //fondo blanco
       end else if ramCell^.used = ruData then begin
         cv.Brush.Color := clWhite;  //fondo blanco

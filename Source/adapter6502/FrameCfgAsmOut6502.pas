@@ -4,11 +4,6 @@ interface
 uses
   Classes, SysUtils, Forms, Controls, StdCtrls, ExtCtrls, MiConfigXML;
 type
-  //Tipo de declaración de variables
-  TAsmType  = (dvtASM,    //Estilo ensamblador
-               dvtBASIC  //Programa Basic
-              );
-
   { TfraCfgAsmOut6502 }
   TfraCfgAsmOut6502 = class(TFrame)
     chkExcUnused: TCheckBox;
@@ -21,8 +16,8 @@ type
   private
 
   public
-    AsmType    : TAsmType; //Tipo de Salida
-    IncVarDec  : boolean;  //Incluye declaración de varaibles
+    asmOutType : integer;  //Tipo de Salida
+    IncVarDec  : boolean;  //Incluye declaración de variables
     IncAddress : boolean;  //Incluye dirección física en el código desensamblado
     IncComment : boolean;  //Incluye comentarios en el código desensamblado
     ExcUnused  : boolean;  //Excluye declaración de variables no usadas
@@ -45,7 +40,7 @@ end;
 procedure TfraCfgAsmOut6502.Init(section: string; cfgFile: TMiConfigXML);
 begin
   cfgFile.Asoc_Bol (section+'/IncDecVar' , @IncVarDec  , chkIncDecVar  , true);
-  cfgFile.Asoc_Enum(section+'/VarDecType', @AsmType    , Sizeof(TAsmType), RadioGroup2, 1);
+  cfgFile.Asoc_Int (section+'/OutAsmType', @asmOutType , RadioGroup2, 0);
   cfgFile.Asoc_Bol (section+'/IncAddress', @IncAddress , chkIncAddress , true);
   cfgFile.Asoc_Bol (section+'/IncComment', @IncComment , chkIncComment , false);
 //  cfgFile.Asoc_Bol (section+'/IncComment2',@IncComment2, chkIncComment2, false);

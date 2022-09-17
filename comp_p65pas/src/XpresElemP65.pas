@@ -282,12 +282,15 @@ type  //Declaration elements
   {Clase para modelar a los tipos definidos por el usuario y a los tipos del sistema.
   Es una clase relativamente extensa, debido a la flxibilidad que ofrecen lso tipos en
   Pascal.}
+
+  { TEleTypeDec }
+
   TEleTypeDec = class(TxpEleCodeCont)
   private
-    fSize: SmallInt;
+    fSize: word;
     internalTypes: TEleTypeDecs;  //Container for types recursively defined.
-    function getSize: smallint;
-    procedure setSize(AValue: smallint);
+    function getSize: word;
+    procedure setSize(AValue: word);
   public   //Events
     {Estos eventos NO se generan automáticamente en TCompilerBase, sino que es la
     implementación del tipo, la que deberá llamarlos. Son como una ayuda para facilitar
@@ -298,7 +301,7 @@ type  //Declaration elements
     copyOf  : TEleTypeDec;  //Indicates this type is copy of other
     group   : TTypeGroup;   //Type group (numéric, string, etc)
     catType : TxpCatType;   //Categoría del tipo
-    property size: smallint read getSize write setSize;   //Tamaño en bytes del tipo
+    property size: word read getSize write setSize;   //Tamaño en bytes del tipo
     function groupStr: string;
     function catTypeStr: string;
   public   //Fields when type is Array or pointer
@@ -1609,7 +1612,7 @@ destructor TEleVarDec.Destroy;
 begin
   inherited Destroy;
 end;
-function TEleTypeDec.getSize: smallint;
+function TEleTypeDec.getSize: word;
 var
   nItms: integer;
 begin
@@ -1625,7 +1628,7 @@ begin
     exit(fSize)
   end;
 end;
-procedure TEleTypeDec.setSize(AValue: smallint);
+procedure TEleTypeDec.setSize(AValue: word);
 begin
   fSize := AValue;
 end;

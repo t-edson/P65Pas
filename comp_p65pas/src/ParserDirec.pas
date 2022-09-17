@@ -727,7 +727,7 @@ end;
 //Instructions implementation
 function TParserDirecBase.modeStr: string;
 begin
-  case mode of
+  case syntaxMode of
   modPascal: Result := 'modPascal';
   modPicPas: Result := 'modPicPas';
   else
@@ -1282,9 +1282,9 @@ begin
   skipWhites;
   txtMode := UpCase(lexDir.ReadToken);
   if txtMode = 'P65PAS' then begin
-    self.mode := modPicPas;
+    self.syntaxMode := modPicPas;
   end else if txtMode = 'PASCAL' then begin
-    self.mode := modPascal;
+    self.syntaxMode := modPascal;
   end else begin
     GenErrorDir(ER_MODE_UNKNOWN, [txtMode]);
     exit;
@@ -1325,7 +1325,7 @@ begin
 end;
 function TParserDirecBase.read_SYN_MODE: String;
 begin
-  case mode of
+  case syntaxMode of
   modPicPas: Result := 'PicPas';
   modPascal: Result := 'Pascal';
   else

@@ -8,6 +8,7 @@
   <TextPanel Val="8421504"/>
   <currPath Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas"/>
   <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore64.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
@@ -51,11 +52,11 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="2105376"/>
     <cTxtPan Val="12632256"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test5_arrays_2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test5_arrays_3.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore64.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_2\Test3_Byte1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_2\Test3_Byte2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test5_arrays_2.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test3_Procedure.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test2_Boolean.pas
 "/>
   </Edit>
   <ExternTool>
@@ -70,15 +71,13 @@ Execute in VIC-20	                        	D:\Programas\GTK3VICE-3.6.1-win64\bin
   <Compiler6502>
     <unitPath Val="{AppPath}/comp_p65pas/units/"/>
     <OptimLev Val="1"/>
-    <OptBnkAftIF Val="True"/>
-    <OptBnkBefPro Val="True"/>
-    <OptBnkAftPro Val="True"/>
-    <ReuProcVar Val="False"/>
+    <ReuProcVar Val="True"/>
     <OptRetProc Val="True"/>
+    <RemUnOpcod Val="True"/>
   </Compiler6502>
   <AsmOutput6502>
     <IncDecVar Val="True"/>
-    <VarDecType Val="0"/>
+    <OutAsmType Val="0"/>
     <IncAddress Val="True"/>
     <IncComment Val="True"/>
     <ExcUnused Val="True"/>

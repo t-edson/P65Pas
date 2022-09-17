@@ -878,7 +878,7 @@ begin
   if (tokL = 'array') or (token = '[') then begin
     //Es declaración de arreglo
     decStyle := ttdDeclar;  //Es declaración elaborada
-    typ := OpenTypeDec(srcPos, '', -1, tctArray, t_object, location);
+    typ := OpenTypeDec(srcPos, '', 0, tctArray, t_object, location);
       if HayError then exit;  //Can be duplicated
       TypeCreated := true;
       ArrayDeclaration(srcpos, itemTyp);
@@ -891,7 +891,7 @@ begin
   end else if {(tokL = 'pointer') or }(token = '^') then begin
     //Es declaración de puntero
     decStyle := ttdDeclar;  //Es declaración elaborada
-    typ := OpenTypeDec(srcPos, '', -1, tctPointer, t_object, location);
+    typ := OpenTypeDec(srcPos, '', 0, tctPointer, t_object, location);
       if HayError then exit;  //Can be duplicated
       TypeCreated := true;
 
@@ -904,7 +904,7 @@ begin
   end else if (tokL = 'object') then begin
     //Es declaración de objeto
     decStyle := ttdDeclar;  //Es declaración elaborada
-    typ := OpenTypeDec(srcPos, '', -1, tctObject, t_object, location);
+    typ := OpenTypeDec(srcPos, '', 0, tctObject, t_object, location);
       if HayError then exit;  //Can be duplicated
       TypeCreated := true;
       ObjectDeclaration(typ, srcpos);
@@ -1564,7 +1564,7 @@ function TAnalyzer.VerifyEND: boolean;
  delimitador END. Si encuentra error, devuelve FALSE.}
 begin
   Result := true;   //por defecto
-  if mode = modPicPas then begin
+  if syntaxMode = modPicPas then begin
     //En modo PicPas, debe haber un delimitador de bloque
     if not CaptureStr('END') then exit(false);
   end;
@@ -1633,7 +1633,7 @@ function TAnalyzer.AnalyzeStructBody: boolean;
 Si se genera error, devuelve FALSE. }
 begin
   //Este es el modo normal. Genera código.
-  if mode = modPascal then begin
+  if syntaxMode = modPascal then begin
     //En modo Pascal se espera una instrucción
     AnalyzeSentence;
   end else begin

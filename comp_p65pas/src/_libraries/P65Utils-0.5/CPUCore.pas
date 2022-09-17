@@ -26,10 +26,11 @@ type
      cs_unimplem    //Not implemented.
   );
   TCPURamUsed = (
-     ruUnused,  //(NOT included in PRG output file)
-     ruCode,    //Used for code  (included in PRG output file)
-     ruData,    //Used for variables (included in PRG output file)
-     ruAbsData  //Used for variables in absolute positions (NOT included in PRG output file)
+     ruUnused,  //(NOT included in PRG output file).
+     ruCodeOp,  //Used for code Opcode (included in PRG output file).
+     ruCodeDa,  //Used for code Operand (included in PRG output file).
+     ruData,    //Used for variables (included in PRG output file).
+     ruAbsData  //Used for variables in absolute positions (NOT included in PRG output file).
   );
 
 type //Models for RAM memory
@@ -45,19 +46,19 @@ type //Models for RAM memory
     Fvalue  : byte;     //value of the memory
     function Getvalue: byte;
     procedure Setvalue(AValue: byte);
-  public
-    name   : string;      //Name of the register (for variables)
-    used   : TCPURamUsed; //Indicates if have been written
-    shared : boolean;     //Used to share this register
-    state  : TCPUCellState; //Status of the cell
-    property value: byte read Getvalue write Setvalue;
+  public    //General fields
+    name   : string;           //Register name (for variables).
+    used   : TCPURamUsed;      //Indicates if have been written.
+    shared : boolean;          //Used to share this register.
+    state  : TCPUCellState;    //Status of the cell.
+    property value : byte read Getvalue write Setvalue;
     property dvalue: byte read Fvalue write Fvalue;   //Direct access to "Fvalue".
-    function Avail: boolean;  //RAM implemented to use in programs
-    function Free: boolean;   //RAM implemented and unused
-  public  //Campos para deputación
+    function Avail : boolean;  //RAM implemented to use in programs
+    function Free  : boolean;  //RAM implemented and unused
+  public    //Debugging fields
     breakPnt  : boolean;  //Indicates if this cell have a Breakpoint
     {Be careful on the size of this record, because it's going to be multiplied by 64K}
-  public     //Information of position in source code. Used for debug
+  public    //Information of position in source code. Used for debug
     rowSrc    : word;     //Row number
     colSrc    : word;     //Column number
     idFile    : SmallInt; //Index to a file. No load the name to save space.
@@ -65,7 +66,6 @@ type //Models for RAM memory
     {Estos campos de cadena ocupan bastante espacio, aún cuado están en NULL. Si se
     quisiera optimizar el uso de RAM, se podría pensar en codificar, varios campos en
     una sola cadena.}
-//    topLabel   : string;  //Label on the top of the cell.
     topComment : string;  //Comment on the top of the cell.
     sideComment: string;  //Right comment to code
   end;

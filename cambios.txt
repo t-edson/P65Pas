@@ -77,15 +77,12 @@ de la CPU en la RAM.
 TAREAS PLANIFICADAS
 - Terminar de implementar la preparación de las sentencias de asignación para arreglos,
 las que generan _setitem() porque ahora solo se han aplicado reglas generales
-- En el generador de Código: Crear instrucciones como _LDAx() o _LDAy(), con verifiación de 
+- En el generador de Código: Crear instrucciones como _LDAx() o _LDAy(), con verificación de 
 página cero, para simplificar la generación de código. Agregar una verifiación a los casos 
 que puedan generar _ADC#0 si hay un CLC anterior.
 - Generar Bootloader para el VIC-20 y PET.
 - Implementar la generación de código para el 65C02.
 - Implementar parámetros VAR.
-- Verificar en qué clase corresponde crear OptBnkAftIF, OptReuProVar, ... y si no se mejor 
-ponerlos como PROTECTED porque ya no se necesitan acceder desde fuera porque ahora usamos 
-comandos.
 - Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
 - Revisar si no es mejor quitar la validación de número de ítems de arreglos en el análisis
 de arreglos y crear solo tipos "ARREGLOS DE TIPO". ¿Se podría aún trabajar con length() como método?

@@ -201,7 +201,8 @@ type
     function ValidRAMaddr(addr: word): boolean;  //indica si una posición de memoria es válida
   public  //Methods to code instructions according to syntax
     disableCodegen: boolean;   //Flag to disable the Code generation.
-    procedure useRAMCode;
+    procedure useRAMCodeOp;
+    procedure useRAMCodeDa;
     procedure codByte(const value: byte; isData: boolean);
     procedure codByte(const value: byte; used: TCPURamUsed; name: string = '');
     procedure codAsm(const inst: TP6502Inst; addMode: TP6502AddMode; param: word);
@@ -286,10 +287,15 @@ begin
   exit(false);
 end;
 { TP6502 }
-procedure TP6502.useRAMCode;
+procedure TP6502.useRAMCodeOp;
 {Set current position as used and increase the index iRam. If error;update "MsjError"}
 begin
-  ram[iRam].used := ruCode;  //Mark as used.
+  ram[iRam].used := ruCodeOp;  //Mark as used.
+  inc(iRam);
+end;
+procedure TP6502.useRAMCodeDa;
+begin
+  ram[iRam].used := ruCodeDa;  //Mark as used.
   inc(iRam);
 end;
 procedure TP6502.codByte(const value: byte; isData: boolean);
@@ -334,7 +340,7 @@ begin
     exit;
   end;
   ram[iRam].value := rInst.instrInform[addMode].Opcode;
-  useRAMCode;  //Set as used and increase index.
+  useRAMCodeOp;  //Set as used and increase index.
   //Encode parameters
   case addMode of
   aImplicit: begin
@@ -360,55 +366,55 @@ begin
       MsjError:= 'Invalid Address Mode (Immediate)';
     end;
     ram[iRam].value := lo(param);  //escribe parámetro
-    useRAMCode;
+    useRAMCodeDa;
   end;
   aAbsolute:begin
     ram[iRam].value := lo(param);
-    useRAMCode;
+    useRAMCodeDa;
     ram[iRam].value := hi(param);
-    useRAMCode;
+    useRAMCodeDa;
   end;
   aZeroPage:begin
     ram[iRam].value := lo(param);
-    useRAMCode;
+    useRAMCodeDa;
   end;
   aRelative:begin
     ram[iRam].value := lo(param);
-    useRAMCode;
+    useRAMCodeDa;
   end;
   aIndirect:begin
     ram[iRam].value := lo(param);
-    useRAMCode;
+    useRAMCodeDa;
     ram[iRam].value := hi(param);
-    useRAMCode;
+    useRAMCodeDa;
   end;
   aAbsolutX:begin
     ram[iRam].value := lo(param);
-    useRAMCode;
+    useRAMCodeDa;
     ram[iRam].value := hi(param);
-    useRAMCode;
+    useRAMCodeDa;
   end;
   aAbsolutY:begin
     ram[iRam].value := lo(param);
-    useRAMCode;
+    useRAMCodeDa;
     ram[iRam].value := hi(param);
-    useRAMCode;
+    useRAMCodeDa;
   end;
   aZeroPagX:begin
     ram[iRam].value := lo(param);
-    useRAMCode;
+    useRAMCodeDa;
   end;
   aZeroPagY:begin
     ram[iRam].value := lo(param);
-    useRAMCode;
+    useRAMCodeDa;
   end;
   aIndirecX:begin
     ram[iRam].value := lo(param);
-    useRAMCode;
+    useRAMCodeDa;
   end;
   aIndirecY:begin
     ram[iRam].value := lo(param);
-    useRAMCode;
+    useRAMCodeDa;
   end;
   else
     raise Exception.Create('Implementation Error.');
@@ -713,7 +719,7 @@ begin
     else tmp := ram[addr].value;
 
     STATUS_C := (tmp and $80) <> 0;  //Read bit 7
-    tmp := tmp << 1;
+    tmp := (tmp << 1) and $FF;
     STATUS_Z := tmp = 0;
     STATUS_N := tmp > 127;
 
@@ -1416,7 +1422,7 @@ begin
     maxUsed := 0;
     for i := 0 to CPUMAXRAM-1 do begin
       //if ram[i].used in [ruCode, ruData] then begin //Changed in versión 0.7.1
-      if ram[i].used in [ruCode] then begin
+      if ram[i].used in [ruCodeOp, ruCodeDa] then begin
         if i<minUsed then minUsed := i;
         if i>maxUsed then maxUsed := i;
       end;
@@ -1427,7 +1433,7 @@ begin
     maxUsed := 0;
     for i := minUsed to CPUMAXRAM-1 do begin
       //if ram[i].used in [ruCode, ruData] then begin //Changed in versión 0.7.1
-      if ram[i].used in [ruCode] then begin
+      if ram[i].used in [ruCodeOp, ruCodeDa] then begin
         if i>maxUsed then maxUsed := i;
       end;
     end;

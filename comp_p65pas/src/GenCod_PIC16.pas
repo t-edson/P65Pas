@@ -2559,101 +2559,6 @@ begin
     else
       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
     end;
-//  end else if parA.Sto in [stVarRef, stExpRef] then begin
-//    //Asignación a una variable referenciada por variable (o IX)
-//    if parA.Sto =stVarRef then
-//      idxVar := parA.rVar
-//    else
-//      idxVar := IX;
-//    if idxVar.typ.IsByteSize then begin
-//      //Index is byte-size. It's easy.
-//      case parB.Sto of //Operand2 to assign
-//      stConsta:  begin
-//        _LDAi(parB.valL);
-//        _LDX(idxVar.addr);
-//        pic.codAsm(i_STA, aZeroPagX, 0);
-//        _LDAi(parB.valH);
-//        _INX;  //Fails is cross page
-//        pic.codAsm(i_STA, aZeroPagX, 0);
-//      end;
-//      stRamFix: begin
-//        _LDA(parB.addL);
-//        _LDX(idxVar.addr);
-//        pic.codAsm(i_STA, aZeroPagX, 0);
-//        _LDA(parB.addH);
-//        _INX;  //Fails is cross page
-//        pic.codAsm(i_STA, aZeroPagX, 0);
-//      end;
-//      stRegister: begin  //Already in A
-//        _LDX(idxVar.addr);
-//        pic.codAsm(i_STA, aZeroPagX, 0);
-//        _LDA(H.addr);
-//        _INX;  //Fails is cross page
-//        pic.codAsm(i_STA, aZeroPagX, 0);
-//      end;
-//      else
-//        GenError(MSG_UNSUPPORTED); exit;
-//      end;
-//    end else if idxvar.typ.IsWordSize then begin
-//      //Index is word-size
-//      //If it's in zero-page will be wonderful
-//      if (idxvar.addr<256) then begin
-//        _LDYi(0);
-//        case parB.Sto of //Operand2 to assign
-//        stConsta:  begin
-//          _LDAi(parB.valL);
-//          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
-//          _LDAi(parB.valH);
-//          _INY;
-//          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
-//        end;
-//        stRamFix: begin
-//          _LDA(parB.addL);
-//          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
-//          _LDA(parB.addH);
-//          _INY;
-//          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
-//        end;
-//        stRegister: begin  //Already in A
-//          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
-//          _LDA(H.addr);
-//          _INY;
-//          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
-//        end;
-//        else
-//          GenError(MSG_UNSUPPORTED); exit;
-//        end;
-//      end else begin
-//        GenError(MSG_UNSUPPORTED); exit;
-////        //No problem. We create self-modifying code
-////        //Add to the index, the offset
-////        if parB.Sto = stRegister then _PLA;  //Save A
-////        _CLC;
-////        _LDA(idxVar.addr);  //Load index
-////addrNextOp1 := pic.iRam + 1;  //Address next instruction
-////        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-////        _LDA(idxVar.addr+1);  //Load MSB
-////addrNextOp2 := pic.iRam + 1;  //Address next instruction
-////        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-////        case parB.Sto of //Operand2 to assign
-////        stConsta:  _LDAi(parB.val);
-////        stRamFix: _LDA(parB.add);
-////        stRegister: _PLA;  //Restore A
-////        else
-////          GenError(MSG_UNSUPPORTED); exit;
-////        end;
-////        //Modifiying instruction
-////        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-////        //Complete address
-////        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
-////        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8 and $FF;
-////        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
-////        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8 and $FF;
-//      end;
-//    end else begin
-//      //Index could be dword or other type
-//      GenError(MSG_UNSUPPORTED); exit;
-//    end;
   end else begin
     GenError('Cannot assign to this Operand.', parA.srcDec); exit;
   end;
@@ -2700,53 +2605,6 @@ begin
     else
       genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
-//  end else if parA.Sto in [stVarRef, stExpRef] then begin
-//    //Asignación a una variable referenciada por variable (o IX)
-//    case parB.Sto of
-//    stConsta, stRamFix, stRegister: begin
-//      if parA.Sto =stVarRef then
-//        idxVar := parA.rVar
-//      else
-//        idxVar := IX;
-//      if idxVar.typ.IsByteSize then begin
-//        //Index is byte-size. It's easy.
-//        case parB.Sto of //Operand2 to assign
-//        stConsta:  _LDAi(parB.val);
-//        stRamFix: _LDA(parB.add);
-//        stRegister: ;  //Already in A
-//        end;
-//        _LDX(idxVar.addr);
-//        pic.codAsm(i_STA, aZeroPagX, 0);
-//        pic.codAsm(i_STA, aZeroPagX, 1);
-//      end else if idxvar.typ.IsWordSize then begin
-//        //Index is word-size
-//        //If it's in zero-page will be wonderful
-//        if (idxvar.addr<256) then begin
-//          _LDYi(0);
-//          case parB.Sto of //Operand2 to assign
-//          stConsta : _LDAi(parB.val);
-//          stRamFix: _LDA(parB.add);
-//          stRegister: ;  //Already in A
-//          end;
-//          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
-//          _LDAi(0);
-//          _INY;
-//          pic.codAsm(i_STA, aIndirecY, idxvar.addr); //Store forward
-////        end else begin
-////          {We can create self-modifying code o some weird code to implement this, but
-////          it's complex code. It's better using IX or the Var-index in Zero page}
-//        end else begin
-//          //Index could be dword or other type
-//          GenError(MSG_UNSUPPORTED); exit;
-//        end;
-//      end else begin
-//        //Index could be dword or other type
-//        GenError(MSG_UNSUPPORTED); exit;
-//      end;
-//    end;
-//    else
-//      GenError(MSG_UNSUPPORTED); exit;
-//    end;
   end else begin
     GenError('Cannot assign to this Operand.'); exit;
   end;
@@ -6062,7 +5920,7 @@ procedure TGenCod.GenCodArrayClear(fun: TEleExpress);
 var
   par: TEleExpress;
   n: Integer;
-  LABEL1: Word;
+  lab1, n2, add_end, i: integer;
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
   SetFunNull(fun);
@@ -6073,7 +5931,8 @@ begin
   //Clear the array
   case par.Sto of
   stRamFix: begin
-    n := par.Typ.nItems;
+    n := par.Typ.size;
+    add_end := par.add + n -1;
     if n = 0 then exit;  //Nothing to clear
     if n > 0 then begin
       if n = 1 then begin   //Just one byte
@@ -6094,17 +5953,57 @@ begin
         _STA(par.add+1);
         _STA(par.add+2);
         _STA(par.add+3);
-      end else if n <=256 then begin  //Tamaño pequeño
+      end else if n<256 then begin  //Tamaño pequeño
         _LDAi(0);
-        _LDXi(n and $FF);
-LABEL1 := _PC;
-        if par.add <256 then pic.codAsm(i_STA, aZeroPagX, par.add)  //STA has not aZeroPagY
-        else pic.codAsm(i_STA, aAbsolutX, par.add-1);
+        _LDXi(n);
+_LABEL_pre(lab1);
         _DEX;
-        _BNE(LABEL1 - _PC - 2);
+        _STAx(par.add, add_end>255);
+        _BNE_pre(lab1);
+      end else if n=256 then begin  //Tamaño pequeño
+        _LDAi(0);
+        _TAX; //If not clear with zeros use _LDXi(n);
+_LABEL_pre(lab1);
+        _STAx(par.add);
+        _INX;
+        _BNE_pre(lab1);
+      end else if n<512 then begin  //Tamaño pequeño
+        n2 := n div 2;
+        _LDAi(0);
+        _LDXi(n2);
+_LABEL_pre(lab1);
+        _DEX;
+        _STAx(par.add, true);
+        _STAx(par.add + n2, true);
+        _BNE_pre(lab1);
+        if n mod 2 <> 0 then begin
+          _STA(par.add + n -1);
+        end;
+      end else if n=512 then begin  //Tamaño pequeño
+        _LDAi(0);
+        _TAX; //If not clear with zeros use _LDXi(n);
+_LABEL_pre(lab1);
+        _STAx(par.add, true);
+        _STAx(par.add+256, true);
+        _INX;
+        _BNE_pre(lab1);
+      end else if n<1024 then begin  //Tamaño pequeño
+        n2 := n div 4;
+        _LDAi(0);
+        _LDXi(n2);
+_LABEL_pre(lab1);
+        _DEX;
+        _STAx(par.add, true);
+        _STAx(par.add + n2, true);
+        _STAx(par.add + 2*n2, true);
+        _STAx(par.add + 3*n2, true);
+        _BNE_pre(lab1);
+        for i:=0 to n mod 4 -1 do begin
+          _STA(n2*4 + i);
+        end;
       end else begin  //Tamaño mayor
         //Implementa lazo, usando A como índice
-        GenError('Cannot clear a big array');
+        GenError('Cannot clear a big array', fun.srcDec);
       end;
     end else begin
 

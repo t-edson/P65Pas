@@ -155,27 +155,26 @@ implementation
        ASL
        ROL __H
        ;--- Save in IX (IX <- Y * 8) 
-       STA __IX.low
+       STA __IX
        LDY  __H
-       STY __IX.high
+       STY __IX+1
        ;--- Shift (H,A) 2 times: (H,A) <- y*32 
        ASL
        ROL __H
        ASL
        ROL __H
-       ;--- Add (H,A) to IX: IX <- IX + y*32 + 400
+       ;--- Add (H,A) to IX: IX <- IX + y*32 + $400
        CLC
-       ADC __IX.low  ;LSB
-       STA __IX.low
+       ADC __IX  ;LSB
+       STA __IX
        LDA __H      ;MSB
-       ADC __IX.high
+       ADC __IX+1
        CLC
        ADC #$04
-       STA __IX.high
+       STA __IX+1
        ;--- Here we have IX <- Y*40 + $400. 
        LDY x
        LDA c
-       CLC  ;Prepara Index Y address mode
        STA (__IX), Y  ; Write in IX + X
     end
   end; 

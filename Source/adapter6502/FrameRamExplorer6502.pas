@@ -262,7 +262,7 @@ begin
   SplitInUsedRAM(0, pic.CPUMAXRAM-1);
   cv.Brush.Style := bsSolid;
   for i:=0 to high(blockUse) do begin
-    if blockUse[i].used = ruCode then begin
+    if blockUse[i].used in [ruCodeOp, ruCodeDa] then begin
       cv.Pen.Color := COL_USED_CODE;
       cv.Brush.Color := COL_USED_CODE;
       DrawBlock(marcoRam, ancMargenDir,

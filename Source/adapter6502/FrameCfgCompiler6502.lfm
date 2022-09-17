@@ -12,9 +12,9 @@ object fraCfgCompiler6502: TfraCfgCompiler6502
   DesignTop = 414
   object grpOptimLev: TRadioGroup
     Left = 34
-    Height = 150
+    Height = 88
     Top = 96
-    Width = 166
+    Width = 150
     AutoFill = True
     Caption = 'Optimizacion Level: '
     ChildSizing.LeftRightSpacing = 6
@@ -24,8 +24,8 @@ object fraCfgCompiler6502: TfraCfgCompiler6502
     ChildSizing.ShrinkVertical = crsScaleChilds
     ChildSizing.Layout = cclLeftToRightThenTopToBottom
     ChildSizing.ControlsPerLine = 1
-    ClientHeight = 125
-    ClientWidth = 162
+    ClientHeight = 63
+    ClientWidth = 146
     Enabled = False
     Items.Strings = (
       'Fool'
@@ -33,55 +33,21 @@ object fraCfgCompiler6502: TfraCfgCompiler6502
     )
     TabOrder = 0
   end
-  object GroupBox1: TGroupBox
-    Left = 242
-    Height = 150
-    Top = 96
-    Width = 231
-    Caption = 'Optimize Bank Selection'
-    ClientHeight = 125
-    ClientWidth = 227
-    TabOrder = 1
-    object chkOptBnkAftIF: TCheckBox
-      Left = 10
-      Height = 24
-      Top = 10
-      Width = 133
-      Caption = 'After IF structure'
-      TabOrder = 0
-    end
-    object chkOptBnkBefPro: TCheckBox
-      Left = 10
-      Height = 24
-      Top = 50
-      Width = 145
-      Caption = 'Before Procedures'
-      TabOrder = 1
-    end
-    object chkOptBnkAftPro: TCheckBox
-      Left = 10
-      Height = 24
-      Top = 90
-      Width = 134
-      Caption = 'After Procedures'
-      TabOrder = 2
-    end
-  end
   object chkReuProcVar: TCheckBox
     Left = 34
     Height = 24
-    Top = 270
+    Top = 216
     Width = 205
     Caption = 'Reuse Procedures Variables'
-    TabOrder = 2
+    TabOrder = 1
   end
   object chkOptRetProc: TCheckBox
     Left = 34
     Height = 24
-    Top = 310
+    Top = 248
     Width = 238
     Caption = 'Optimize RETURN in procedures'
-    TabOrder = 3
+    TabOrder = 2
   end
   object Label1: TLabel
     Left = 38
@@ -96,6 +62,14 @@ object fraCfgCompiler6502: TfraCfgCompiler6502
     Top = 36
     Width = 370
     Enabled = False
+    TabOrder = 3
+  end
+  object chkRemUnOpcod: TCheckBox
+    Left = 34
+    Height = 24
+    Top = 280
+    Width = 224
+    Caption = 'Remove unnecessary Opcodes'
     TabOrder = 4
   end
 end

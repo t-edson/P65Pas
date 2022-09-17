@@ -294,9 +294,10 @@ begin
   //Actualiza ventana de ensamblador.
   edAsm.BeginUpdate(false);
   edAsm.Lines.Clear;
-  Compiler.DumpCode(edAsm.Lines, (fraCfgAsmOut.AsmType = dvtASM),
-                    fraCfgAsmOut.IncVarDec , fraCfgAsmOut.ExcUnused,
-                    fraCfgAsmOut.IncAddress, true, fraCfgAsmOut.IncVarName );
+  if not Compiler.HayError then begin
+    //Es peligroso intentar volcar código con errores.
+    Compiler.DumpCode(edAsm.Lines);
+  end;
   edAsm.EndUpdate;
   //Actualiza explorador de RAM
   zoom := frmRAMExplorer.zoom; //Zoom actual
@@ -305,10 +306,19 @@ end;
 procedure TAdapter6502.ReadCompilerSettings(var pars: string);
 {Read the compiler setting from the Setting frame and add them to "pars".}
 begin
+  //Compiler options
   if fraCfgCompiler.ReuProcVar then AddLine(pars, '-Ov');  //Reusar variables de proced.
   if fraCfgCompiler.OptRetProc then AddLine(pars, '-Or');  //Optimizar Retorno de proced.
-  AddLine(pars, '-Fu"' + fraCfgCompiler.unitPathExpanded + '"');    //Agrega esta ruta a las rutas de unidades del compilador.
-  if fraCfgAsmOut.IncComment  then AddLine(pars, '-Ac');   //Comentario detallado
+  if fraCfgCompiler.RemUnOpcod then AddLine(pars, '-Ou');  //Eliminar Instrucciones ASM innecesarias.
+  AddLine(pars, '-Fu"' + fraCfgCompiler.unitPathExpanded + '"');  //Agrega esta ruta a las rutas de unidades del compilador.
+  //Assembler output settings
+  if fraCfgAsmOut.asmOutType=0 then AddLine(pars, '-A0');  //Salida en ASM normal
+  if fraCfgAsmOut.asmOutType=1 then AddLine(pars, '-A1');  //Salida en POKE's del BASIC
+  if fraCfgAsmOut.IncComment   then AddLine(pars, '-Ac');  //Comentario detallado
+  if fraCfgAsmOut.IncVarDec    then AddLine(pars, '-Av');  //Incluye información de variables
+  if fraCfgAsmOut.IncVarName   then AddLine(pars, '-An');  //Incluye nombres de variables
+  if fraCfgAsmOut.IncAddress   then AddLine(pars, '-Aa');  //Incluye dirección de memoria
+  if fraCfgAsmOut.ExcUnused    then AddLine(pars, '-Au');  //Excluye variables no usadas
 end;
 procedure TAdapter6502.CompileLevel(level: integer);
 {Ejecuta una compilación en el archivo actual del editor, con un nivel
