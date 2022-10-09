@@ -67,6 +67,7 @@ type
       procedure arrayLength(fun: TEleExpress);
       procedure arrayLow(fun: TEleExpress);
       procedure DefineObject(etyp: TEleTypeDec);
+      function FillArray(parray: TEleExpress): boolean;
       procedure SIF_bool_or_bool(fun: TEleExpress);
       procedure SNF_byt_mul_byt_16(fun: TEleFunBase);
       procedure Invert_A_to_A;
@@ -107,7 +108,7 @@ type
       procedure SIF_GetItemIdxByte(fun: TEleExpress);
       procedure SIF_GetItemIdxWord(fun: TEleExpress);
       procedure SIF_SetItemIndexByte(fun: TEleExpress);
-      procedure GenCodArrayClear(fun: TEleExpress);
+      procedure SIF_ArrayClear(fun: TEleExpress);
       procedure SIF_pointer_add_word(fun: TEleExpress);
       procedure SIF_pointer_sub_word(fun: TEleExpress);
       procedure SIF_address(fun: TEleExpress);
@@ -5915,98 +5916,129 @@ begin
     GenError('Cannot use this index storage: %s.', [idx.StoAsStr], idx.srcDec);
   end;
 end;
-procedure TGenCod.GenCodArrayClear(fun: TEleExpress);
+function TGenCod.FillArray(parray: TEleExpress): boolean;
+{Generates code to fill an array with the value of the A register.
+If error, returns FALSE}
+var
+  n, add_end, n2: Word;
+  i, lab1: Integer;
+begin
+  n := parray.Typ.size;
+  add_end := parray.add + n -1;
+  if n = 0 then begin
+     //Nothing to clear
+  end else if n = 1 then begin   //Just one byte
+    _STA(parray.add);
+  end else if n = 2 then begin  //Es de 2 bytes
+    _STA(parray.add);
+    _STA(parray.add+1);
+  end else if n = 3 then begin  //Es de 3 bytes
+    _STA(parray.add);
+    _STA(parray.add+1);
+    _STA(parray.add+2);
+  end else if n = 4 then begin  //Es de 4 bytes
+    _STA(parray.add);
+    _STA(parray.add+1);
+    _STA(parray.add+2);
+    _STA(parray.add+3);
+  end else if n<256 then begin  //Tamaño pequeño
+    _LDXi(n);
+_LABEL_pre(lab1);
+    _DEX;
+    _STAx(parray.add, add_end>255);
+    _BNE_pre(lab1);
+  end else if n=256 then begin  //Tamaño pequeño
+    _LDXi(0);
+_LABEL_pre(lab1);
+    _STAx(parray.add);
+    _INX;
+    _BNE_pre(lab1);
+  end else if n<512 then begin  //Tamaño pequeño
+    n2 := n div 2;
+    _LDXi(n2);
+_LABEL_pre(lab1);
+    _DEX;
+    _STAx(parray.add, true);
+    _STAx(parray.add + n2, true);
+    _BNE_pre(lab1);
+    if n mod 2 <> 0 then begin
+      _STA(parray.add + n -1);
+    end;
+  end else if n=512 then begin  //Tamaño pequeño
+    _LDXi(0);
+_LABEL_pre(lab1);
+    _STAx(parray.add, true);
+    _STAx(parray.add+256, true);
+    _INX;
+    _BNE_pre(lab1);
+  end else if n<1024 then begin  //Tamaño pequeño
+    n2 := n div 4;
+    _LDXi(n2);
+_LABEL_pre(lab1);
+    _DEX;
+    _STAx(parray.add, true);
+    _STAx(parray.add + n2, true);
+    _STAx(parray.add + 2*n2, true);
+    _STAx(parray.add + 3*n2, true);
+    _BNE_pre(lab1);
+    for i:=0 to n mod 4 -1 do begin
+      _STA(n2*4 + i);
+    end;
+  end else if n=1024 then begin
+    _LDXi(0);
+_LABEL_pre(lab1);
+    _STAx(parray.add, true);
+    _STAx(parray.add+256, true);
+    _STAx(parray.add+512, true);
+    _STAx(parray.add+768, true);
+    _INX;
+    _BNE_pre(lab1);
+  end else begin  //Tamaño mayor
+    exit(false);
+  end;
+  //Code geenrated
+  exit(true);
+end;
+procedure TGenCod.SIF_ArrayClear(fun: TEleExpress);
 {Used to clear all items of an array operand.}
 var
-  par: TEleExpress;
-  n: Integer;
-  lab1, n2, add_end, i: integer;
+  parray, pvalue: TEleExpress;
 begin
-  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  parray := TEleExpress(fun.elements[0]);
   SetFunNull(fun);
 //  //Return the same operand
-//  SetResultVariab(fun, par.add);
-//  fun.Typ := par.Typ;
-//  fun.Sto := par.Sto;
+//  SetResultVariab(fun, parray.add);
+//  fun.Typ := parray.Typ;
+//  fun.Sto := parray.Sto;
   //Clear the array
-  case par.Sto of
+  case parray.Sto of
   stRamFix: begin
-    n := par.Typ.size;
-    add_end := par.add + n -1;
-    if n = 0 then exit;  //Nothing to clear
-    if n > 0 then begin
-      if n = 1 then begin   //Just one byte
-        _LDAi(0);
-        _STA(par.add);
-      end else if n = 2 then begin  //Es de 2 bytes
-        _LDAi(0);
-        _STA(par.add);
-        _STA(par.add+1);
-      end else if n = 3 then begin  //Es de 3 bytes
-        _LDAi(0);
-        _STA(par.add);
-        _STA(par.add+1);
-        _STA(par.add+2);
-      end else if n = 4 then begin  //Es de 4 bytes
-        _LDAi(0);
-        _STA(par.add);
-        _STA(par.add+1);
-        _STA(par.add+2);
-        _STA(par.add+3);
-      end else if n<256 then begin  //Tamaño pequeño
-        _LDAi(0);
-        _LDXi(n);
-_LABEL_pre(lab1);
-        _DEX;
-        _STAx(par.add, add_end>255);
-        _BNE_pre(lab1);
-      end else if n=256 then begin  //Tamaño pequeño
-        _LDAi(0);
-        _TAX; //If not clear with zeros use _LDXi(n);
-_LABEL_pre(lab1);
-        _STAx(par.add);
-        _INX;
-        _BNE_pre(lab1);
-      end else if n<512 then begin  //Tamaño pequeño
-        n2 := n div 2;
-        _LDAi(0);
-        _LDXi(n2);
-_LABEL_pre(lab1);
-        _DEX;
-        _STAx(par.add, true);
-        _STAx(par.add + n2, true);
-        _BNE_pre(lab1);
-        if n mod 2 <> 0 then begin
-          _STA(par.add + n -1);
+    if fun.elements.Count = 2 then begin
+      //There is value to fill.
+      pvalue := TEleExpress(fun.elements[1]);  //Value to fill
+      if          pvalue.Sto = stConst then begin
+        _LDAi(pvalue.valL);
+        if not FillArray(parray) then begin
+          GenError('Cannot clear a big array', fun.srcDec);
         end;
-      end else if n=512 then begin  //Tamaño pequeño
-        _LDAi(0);
-        _TAX; //If not clear with zeros use _LDXi(n);
-_LABEL_pre(lab1);
-        _STAx(par.add, true);
-        _STAx(par.add+256, true);
-        _INX;
-        _BNE_pre(lab1);
-      end else if n<1024 then begin  //Tamaño pequeño
-        n2 := n div 4;
-        _LDAi(0);
-        _LDXi(n2);
-_LABEL_pre(lab1);
-        _DEX;
-        _STAx(par.add, true);
-        _STAx(par.add + n2, true);
-        _STAx(par.add + 2*n2, true);
-        _STAx(par.add + 3*n2, true);
-        _BNE_pre(lab1);
-        for i:=0 to n mod 4 -1 do begin
-          _STA(n2*4 + i);
+      end else if pvalue.Sto = stRamFix then begin
+        _LDA(pvalue.addL);
+        if not FillArray(parray) then begin
+          GenError('Cannot clear a big array', fun.srcDec);
         end;
-      end else begin  //Tamaño mayor
-        //Implementa lazo, usando A como índice
-        GenError('Cannot clear a big array', fun.srcDec);
+      end else if pvalue.Sto in [stRegister, stRegistA] then begin
+        if not FillArray(parray) then begin
+          GenError('Cannot clear a big array', fun.srcDec);
+        end;
+      end else begin
+        GenError('Clear error.');
       end;
     end else begin
-
+      //Normal clear
+      _LDAi(0);
+      if not FillArray(parray) then begin
+        GenError('Cannot clear a big array', fun.srcDec);
+      end;
     end;
   end;
   stConst: begin
@@ -6079,7 +6111,8 @@ begin
   //Create methods
 //  CreateUOMethod(etyp, '', 'length', typByte, @arrayLength);
   CreateUOMethod(etyp, '', 'high'  , typByte, @arrayHigh);
-  CreateUOMethod(etyp, '', 'clear' , typNull, @GenCodArrayClear);
+  CreateUOMethod(etyp, '', 'clear' , typNull, @SIF_ArrayClear);
+//  CreateInBOMethod(etyp, '', 'fill' , typByte, typNull, @SIF_ArrayFill);
   //Getters and setters.
   {Note we define only two getters, one for byte-index and one for word-index. Formally
   we should create getters and setters for each type of the item.}

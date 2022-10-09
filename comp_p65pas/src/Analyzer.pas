@@ -21,7 +21,6 @@ type
     function GetConstValue(typExpec: TEleTypeDec; out mainTypCreated: TEleTypeDec
       ): TEleExpress;
     procedure AnalyzeEXIT(exitSent: TEleSentence);
-    procedure AnalyzeFOR;
     procedure AnalyzeIF;
     procedure AnalyzeREPEAT;
     procedure AnalyzeWHILE;
@@ -1764,6 +1763,7 @@ begin
   if not CaptureStr('UNTIL') then exit; //toma "until"
   if not GetCondition(ex) then exit;
 end;
+{
 procedure TAnalyzer.AnalyzeFOR;
 {Analize a FOR loop and generate a FOR loop sentence}
   procedure CreateCondition(idx: TEleExpress);
@@ -1864,6 +1864,7 @@ begin
   TreeElems.CloseElement;
   if not VerifyEND then exit;
 end;
+}
 procedure TAnalyzer.AnalyzeFORFirstAsign(out idx, valIni: TEleExpress);
 var
   Op1: TEleExpress;

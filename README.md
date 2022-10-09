@@ -80,11 +80,13 @@ The code "asm RTS end" line, generate a RTS assembler instruction in the program
 
 ## Devices supported
 
+P65Pas is a cross compiler for the 6502 CPU. It's not an specific system compiler.
+
 Currently, only 6502 CPU is supported, but the compiler is designed to include some variants. Of course, compatible devices, like 6510, can be targeted too.
 
-Support for differents systems (like Apple II, Atari 800XL, Commodore 64, ...) can be implemented using appropriate units.
+Although P65Pas can compile directly for different systems (like Apple II, Atari 800XL, Commodore 64, ...), it is easier to use a unit designed specifically for that system.
 
-Currently there is only a unit to support Commodore 64 system. So, to compile to Commodore 64 system, it's recommended use the unit: "Commodore64":
+Currently there is only units defined for Commodore 64, Commodore 128 and Commodore VIC-20 system. So, to compile to Commodore 64 system, it's recommended use the unit: "Commodore64":
 
 ```
 program anything;
@@ -365,7 +367,18 @@ array.low -> low index of the array. Always returns 0.
 
 array.high -> high index of the array. Always returns n-1.
 
-array.clear -> Clear the elements of array to its default value (Chars->#0, Byte, Word -> 0, Boolean -> false).
+array.clear -> Clear the elements of array to its default value (Chars->#0, Byte, Word -> 0, Boolean -> false). 
+
+To fill the array content with the same byte value, we can use the clear() method using a byte parameter, like the next example:
+
+```
+var
+  buffer: array[256] of byte;
+begin
+  //Fill all the array with the $FF value
+  buffer.clear($FF);
+end.
+```
 
 Arrays can be constant too:
 
@@ -774,6 +787,23 @@ Includes the contents of a external file, into de source code:
 {$INCLUDE aaa.pas}
 {$INCLUDE d:\temp\aaa.txt}
 x := {$INCLUDE expression.txt};
+```
+
+#### $INCLUDE
+
+Includes the contents of a external binary file, into de source code, like a CSV text:
+
+For example, if a binary file contains the bytes $20, $21 and $22, the directive will generates the string "30, 31, 32".
+
+This directive can be used to initialize arrays.
+
+```
+var 
+  //Initialize with a binary content
+  AAA: array[3] of byte = ({$BIN2CSV data.bin});
+begin
+
+end.
 ```
 
 #### $OUTPUTHEX

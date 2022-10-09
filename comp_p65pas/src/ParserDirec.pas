@@ -5,7 +5,7 @@ unit ParserDirec;
 interface
 uses
   Classes, SysUtils, fgl, math, CompBase,
-  LexPas, CompGlobals, Analyzer, LazLogger;
+  LexPas, CompGlobals, Analyzer, LazLogger, FileUtil;
 type  //Tipos para manejo de expresiones
   TDirDatType = (ddtNumber, ddtString);
 
@@ -111,6 +111,7 @@ type
     procedure ProcIFDEF(lin: string; negated: boolean);
     procedure ProcOUTPUTHEX(lin: string);
     procedure ProcINCLUDE(lin: string; var ctxChanged: boolean);
+    procedure ProcBIN2CSV(lin: string; var ctxChanged: boolean);
     procedure ProcORG;
     procedure ProcFREQUENCY;
   private  //Access to system variables
@@ -938,7 +939,6 @@ procedure TParserDirecBase.ProcINCLUDE(lin: string; var ctxChanged: boolean);
 {Implementa la inclusión de un archivo externo en el código}
 var
   filPath: string;
-  notFound: boolean;
 begin
   lexDir.Next;  //pasa al siguiente
   skipWhites;
@@ -966,6 +966,62 @@ begin
 //ShowContexts;
   curCtx.autoReturn := true;   //Para que retorne, al finalizar
   ctxChanged := true;   //Marca bandera para indicar que se ha cambiado de contexto
+end;
+procedure TParserDirecBase.ProcBIN2CSV(lin: string; var ctxChanged: boolean);
+{Incluye un archivo binario, en el código fuente, pero como valores separados por comas.}
+  function binaryToCsv(binFile: string; out csv: string): boolean;
+  {Lee un archivo binario y devuelve en "csv" un teto de valores separador por comas.}
+  var
+    datFile: File of byte;
+    value  : byte;
+  begin
+    csv := '';
+    AssignFile(datFile, binFile);
+    Reset(datFile);
+    while not eof(datFile) do begin
+      read(datFile, value);
+      if csv='' then begin
+        csv := IntToStr(value);
+      end else begin
+        csv := csv + ',' + IntToStr(value);
+      end;
+    end;
+    CloseFile(datFile);
+    exit(true);
+  end;
+var
+  filPath, csv: string;
+begin
+  lexDir.Next;  //pasa al siguiente
+  skipWhites;
+  //Toma el restante de la cadena
+  filPath := copy(lin, lexDir.col0);
+  //Completa ruta, si es relativa
+//  if (pos('/', filPath)=0) and (pos('\', filPath)=0) then begin
+//    //No incluye información de ruta. Asume que está en la misma ruta.
+//    filPath := ExtractFileDir(mainFile) + DirectorySeparator + filPath;
+//  end;
+  filPath := ExpandRelPathToMain(filPath);
+  if not FileExists(filPath) then begin
+    GenErrorDir(ER_FILE_NO_FND_, [filPath]);
+    exit;
+  end;
+  //Ya se tiene el archivo
+  //Pasa la directiva, para que al retornar a este contexto se siga con la Sgte. instrucción.
+  Next;
+  //Abrimos el nuevo archivo y nos quedamos en ese contexto.
+  if FileSize(filPath)> 1024 then begin
+    GenError('Too big file' + filPath);
+    exit;
+  end;
+  if not binaryToCsv(filPath, csv) then exit;  //Convert
+  NewContextFromText(
+    csv {'1,2,3'}, //Pasa a explorar valor de la variable como texto
+    '' {Fija el archivo de definición.}
+  );
+  curCtx.autoReturn := true;   //Para que retorne, al finalizar
+  ctxChanged := true;   //Marca bandera para indicar que se ha cambiado de contexto
+  //ShowContexts;
 end;
 procedure TParserDirecBase.ProcFREQUENCY;
 var
@@ -1513,6 +1569,7 @@ begin
   'FREQUENCY'   : ProcFREQUENCY;
   'ORG'         : ProcORG;
   'INCLUDE'     : ProcINCLUDE(lin, ctxChanged);
+  'BIN2CSV'     : ProcBIN2CSV(lin, ctxChanged);
   'OUTPUTHEX'   : ProcOUTPUTHEX(lin);
   'DEFINE'      : ProcDEFINE(lin);
   'IFDEF'       : ProcIFDEF(lin, false);
