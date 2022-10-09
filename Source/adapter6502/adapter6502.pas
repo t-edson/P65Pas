@@ -307,6 +307,7 @@ procedure TAdapter6502.ReadCompilerSettings(var pars: string);
 {Read the compiler setting from the Setting frame and add them to "pars".}
 begin
   //Compiler options
+  if not fraCfgCompiler.ForToRepeat then AddLine(pars,'-Cf');  //Convertir bucles FOR a REPEAT
   if fraCfgCompiler.ReuProcVar then AddLine(pars, '-Ov');  //Reusar variables de proced.
   if fraCfgCompiler.OptRetProc then AddLine(pars, '-Or');  //Optimizar Retorno de proced.
   if fraCfgCompiler.RemUnOpcod then AddLine(pars, '-Ou');  //Eliminar Instrucciones ASM innecesarias.

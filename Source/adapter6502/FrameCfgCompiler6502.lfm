@@ -13,7 +13,7 @@ object fraCfgCompiler6502: TfraCfgCompiler6502
   object grpOptimLev: TRadioGroup
     Left = 34
     Height = 88
-    Top = 96
+    Top = 144
     Width = 150
     AutoFill = True
     Caption = 'Optimizacion Level: '
@@ -34,17 +34,17 @@ object fraCfgCompiler6502: TfraCfgCompiler6502
     TabOrder = 0
   end
   object chkReuProcVar: TCheckBox
-    Left = 34
+    Left = 32
     Height = 24
-    Top = 216
+    Top = 272
     Width = 205
     Caption = 'Reuse Procedures Variables'
     TabOrder = 1
   end
   object chkOptRetProc: TCheckBox
-    Left = 34
+    Left = 32
     Height = 24
-    Top = 248
+    Top = 304
     Width = 238
     Caption = 'Optimize RETURN in procedures'
     TabOrder = 2
@@ -65,11 +65,19 @@ object fraCfgCompiler6502: TfraCfgCompiler6502
     TabOrder = 3
   end
   object chkRemUnOpcod: TCheckBox
-    Left = 34
+    Left = 32
     Height = 24
-    Top = 280
+    Top = 336
     Width = 224
     Caption = 'Remove unnecessary Opcodes'
     TabOrder = 4
+  end
+  object chkForToRepeat: TCheckBox
+    Left = 38
+    Height = 24
+    Top = 88
+    Width = 249
+    Caption = 'Convert FOR loop to REPEAT loop'
+    TabOrder = 5
   end
 end

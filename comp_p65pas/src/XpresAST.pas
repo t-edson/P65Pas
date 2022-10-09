@@ -65,7 +65,8 @@ type  //Abstract Syntax Tree
     function AddTypeDecAndOpen(srcPos: TSrcPos; tname: string; tsize: word;
       catType: TxpCatType; group: TTypeGroup; position: integer = - 1
   ): TEleTypeDec;
-    function AddElementBlockAndOpen(srcPos: TSrcPos): TEleBlock;
+    function AddElementBlockAndOpen(srcPos: TSrcPos; position: integer = - 1
+      ): TEleBlock;
     function AddElementSentAndOpen(srcPos: TSrcPos; sntType: TxpSentence): TEleSentence;
   public  //Element resolution (FindFirst() - FindNext())
     curFind: TxpFindState; //State variables for searching
@@ -281,12 +282,12 @@ begin
   AddElementAndOpen(Result, position);  //Open type
   curCodCont := Result;  //Update current Code container
 end;
-function TXpTreeElements.AddElementBlockAndOpen(srcPos: TSrcPos): TEleBlock;
+function TXpTreeElements.AddElementBlockAndOpen(srcPos: TSrcPos; position: integer = -1): TEleBlock;
 begin
   Result := TEleBlock.Create;
   Result.name := 'block';
   Result.srcDec := srcPos;
-  AddElementAndOpen(Result);
+  AddElementAndOpen(Result, position);
 end;
 function TXpTreeElements.AddElementSentAndOpen(srcPos: TSrcPos; sntType: TxpSentence): TEleSentence;
 begin

@@ -2069,7 +2069,7 @@ var
   lbl1: Word;
   expBool: TEleExpress;
 begin
-  lbl1 := _PC;        //guarda dirección de inicio
+  lbl1 := pic.iRam;        //guarda dirección de inicio
   //Compile Body
   GenCodeBlock(TEleBlock(sen.elements[0]));
   //Compile condiiton

@@ -23,7 +23,7 @@ type
     function GetCtxState: TContextState;
     procedure SetCtxState(pc: TContextState);
     //Control for position
-    function GetSrcPos: TSrcPos;
+    function GetSrcPos: TSrcPos; inline;
     procedure SetSrcPos(const srcPos: TSrcPos);
   public //Information for any context
     function ctxId(fileSrc: string): integer;

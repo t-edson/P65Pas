@@ -13,6 +13,9 @@ type
     function PICName: string; virtual; abstract;
     function RAMmax: integer; virtual; abstract;
   private
+    procedure AnalyzeFORrepeat;
+    procedure AnalyzeFORwhile;
+    procedure AnalyzeFORFirstAsign(out idx, valIni: TEleExpress);
     procedure GetAdicVarDeclar2(varTyp: TEleTypeDec; out aditVar: TAdicVarDec;
       out mainTypCreated: TEleTypeDec);
     function GetConstValue(typExpec: TEleTypeDec; out mainTypCreated: TEleTypeDec
@@ -48,6 +51,8 @@ type
     function GetCondition(out ex: TEleExpress; ConstBool: boolean = false): boolean;
     function OpenContextFrom(filePath: string): boolean;
     function AnalyzeStructBody: boolean;
+    function MoveNodeToAssign(cntBody: TxpEleCodeCont; curContainer: TxpElement;
+                              Op: TEleExpress): TEleExpress;
     procedure AnalyzeSentence;
     procedure AnalyzeCurBlock;
     procedure AnalyzeProcDeclar(objContainer: TEleTypeDec);
@@ -1644,6 +1649,60 @@ begin
   //Salió sin errores
   exit(true);
 end;
+function TAnalyzer.MoveNodeToAssign(cntBody: TxpEleCodeCont; curContainer: TxpElement; Op: TEleExpress): TEleExpress;
+{Mueve el nodo especificado "Op" a una nueva instruccion de asignación (que es creada
+al inicio del bloque "curContainer") y reemplaza el nodo faltante por una variable
+temporal. Esta variable temporal se crea en el contenedor "cntBody" y es la que se usa
+en la instrucción de asignación.
+Retorna la instrucción de asignación creada.
+Realiza un cambio en el nodo actual.
+}
+var
+  _varaux: TEleVarDec;
+  _setaux: TEleExpress;
+  Op1aux, Op2aux: TEleExpress;
+  funSet: TEleFunBase;
+  OpPos: Integer;
+  OpParent: TxpElement;
+begin
+  //Create a new variable in the declaration section of this sntBlock.
+  _varaux := CreateEleVarDec('_x' + IntToStr(cntBody.Index), Op.typ);  //Generate a unique name in this cntBody
+  _varaux.elements := TxpElements.Create(true);   //A real variable needs this.
+  TreeElems.openElement(cntBody.Parent);
+  TreeElems.AddElement(_varaux, cntBody.Index);  //Add before the cntBody.
+
+  //Create the new _set() expression.
+  _setaux := CreateExpression('_set', typNull, otFunct, Op.srcDec);
+  funSet := MethodFromBinOperator(Op.Typ, ':=', Op.Typ);
+  if funSet = nil then begin   //Operator not found
+    GenError('Undefined operation: %s %s %s', [Op.Typ.name, ':=', Op.Typ.name]);
+    exit(nil);
+  end;
+  _setaux.rfun := funSet;
+
+  //Add the new assigment before the main
+  TreeElems.openElement(curContainer);
+  TreeElems.AddElement(_setaux, 0);    //Add a new assigmente before
+  _setaux.elements := TxpElements.Create(true);  //Create list
+  TreeElems.openElement(_setaux);
+
+  //Add first operand (variable) of the assignment.
+  Op1aux := CreateExpression(_varaux.name, _varaux.typ, otVariab, Op.srcDec);
+  Op1aux.SetVariab(_varaux);
+  TreeElems.addElement(Op1aux);
+  AddCallerToFromCurr(_varaux); //Add reference to auxiliar variable.
+
+  //Move the second operand to the previous _set created
+  OpParent := Op.Parent;    //Keep current parent reference.
+  OpPos := Op.Index;        //Keep current operand position.
+  TreeElems.ChangeParentTo(_setaux, Op);
+  //Replace the missed function
+  TreeElems.openElement(OpParent);
+  Op2aux := CreateExpression(_varaux.name, _varaux.typ, otVariab, Op.srcDec);
+  Op2aux.SetVariab(_varaux);
+  TreeElems.addElement(Op2aux, OpPos);
+  exit(_setaux);
+end;
 procedure TAnalyzer.AnalyzeIF;
 {Compile an IF structure.}
 var
@@ -1706,7 +1765,7 @@ begin
   if not GetCondition(ex) then exit;
 end;
 procedure TAnalyzer.AnalyzeFOR;
-{Compila uan extructura FOR}
+{Analize a FOR loop and generate a FOR loop sentence}
   procedure CreateCondition(idx: TEleExpress);
   {Create a condition getting de expression of the <TO ... DO> section.}
   var
@@ -1767,7 +1826,7 @@ procedure TAnalyzer.AnalyzeFOR;
     TreeElems.CloseElement;
   end;
 var
-  Op1, idx: TEleExpress;
+  Op1, idx, valIni: TEleExpress;
 begin
   {Get the first asignment: i:=0; }
   TreeElems.AddElementBlockAndOpen(GetSrcPos);  //Open block for first assigment.
@@ -1790,6 +1849,7 @@ begin
     exit;
   end;
   SkipWhites;
+  valIni := TEleExpress(Op1.elements[1]);
   //Ya se tiene la asignación inicial
   if not CaptureStr('TO') then exit;
   //Toma expresión Final
@@ -1803,6 +1863,387 @@ begin
   //Close block
   TreeElems.CloseElement;
   if not VerifyEND then exit;
+end;
+procedure TAnalyzer.AnalyzeFORFirstAsign(out idx, valIni: TEleExpress);
+var
+  Op1: TEleExpress;
+begin
+  Next;         //Takes "FOR"
+  //Generates index asignment
+  TreeElems.AddElementSentAndOpen(GetSrcPos, sntAssign);  //Open sentence
+  {Get the first asignment: i:=0; }
+  Op1 := GetExpression(0);
+  if HayError then exit;
+  if Op1.name<>'_set' then begin
+    GenError('Expected ":=".', Op1.srcDec);
+    exit;
+  end;
+  //We have an asigment here
+  idx := TEleExpress(Op1.elements[0]);  //Get index variable (like "i").
+  if idx.opType <> otVariab then begin
+    GenError(ER_VARIAB_EXPEC);
+    exit;
+  end;
+  if (idx.Typ<>typByte) and (idx.Typ<>typWord) then begin
+    GenError(ER_ONL_BYT_WORD);
+    exit;
+  end;
+  SkipWhites;
+  valIni := TEleExpress(Op1.elements[1]);
+  TreeElems.CloseElement;  //Close sentence
+end;
+procedure TAnalyzer.AnalyzeFORwhile;
+{Analize a FOR loop and generate a WHILE loop sentence}
+  procedure CreateCondition(idx: TEleExpress; out valFin: TEleExpress);
+  {Create a condition getting de expression of the <TO ... DO> section.}
+  var
+    elem: TEleCondit;
+    _lequ, xvar: TEleExpress;
+    funSet: TEleFunBase;
+  begin
+    //Create and open condition
+    elem := TEleCondit.Create;
+    elem.name := 'cond';
+    elem.srcDec := GetSrcPos;
+    TreeElems.AddElementAndOpen(elem);
+
+    //Create the _lequ() expression: i<n.
+    _lequ := CreateExpression('_lequ', typNull, otFunct, GetSrcPos);
+    funSet := MethodFromBinOperator(idx.Typ, '<=', idx.Typ);
+    if funSet = nil then begin   //Operator not found
+      GenError('Undefined operation: %s %s %s', [idx.Typ.name, '<', idx.Typ.name]);
+      exit;
+    end;
+    _lequ.rfun := funSet;
+    //Add the new expression
+    TreeElems.AddElementAndOpen(_lequ);
+    //Create a new variable for the expression "i<..."
+    xvar := CreateExpression(idx.name, idx.Typ, otVariab, GetSrcPos);
+    xvar.SetVariab(idx.rvar);
+    TreeElems.AddElement(xvar);
+
+    valFin := GetExpression(0);
+
+    TreeElems.CloseElement;      //Close _lequ()
+
+    TreeElems.CloseElement;      //Close condition
+    if HayError then exit;
+    if valFin.Typ <> idx.Typ then begin
+      GenError('Expected expression of type %s', [idx.Typ.name], valFin.srcDec);
+      exit;
+    end;
+    SkipWhites;
+  end;
+  procedure CReateInc(idx: TEleExpress);
+  {Add a sentence Inc() applied to the index variable "idx".}
+  var
+    Op1, xvar: TEleExpress;
+  begin
+    //Open sentence
+    TreeElems.AddElementSentAndOpen(GetSrcPos, sntProcCal);
+    //Use reference sifFunInc" to access directly to function Inc().
+    Op1 := CreateExpression(sifFunInc.name, sifFunInc.retType, otFunct, GetSrcPos);
+    Op1.rfun := sifFunInc;
+    TreeElems.AddElementAndOpen(Op1);  //Open Inc()
+    //Create a new variable for the expression "i<..."
+    xvar := CreateExpression(idx.name, idx.Typ, otVariab, GetSrcPos);
+    xvar.SetVariab(idx.rvar);
+    TreeElems.AddElement(xvar);
+    TreeElems.CloseElement;  //Close Inc()
+    //Close Sentence
+    TreeElems.CloseElement;
+  end;
+var
+  idx, valIni, valFin: TEleExpress;
+begin
+  AnalyzeFORFirstAsign(idx, valIni);
+  if HayError then exit;
+  //Generates WHILE loop
+  TreeElems.AddElementSentAndOpen(GetSrcPos, sntWHILE);  //Open sentence
+  //Ya se tiene la asignación inicial
+  if not CaptureStr('TO') then exit;
+  //Toma expresión Final
+  CreateCondition(idx, valFin);
+  if not CaptureStr('DO') then exit;  //toma "do"
+  //Aquí debe estar el cuerpo del "for"
+  TreeElems.AddElementBlockAndOpen(GetSrcPos);  //Open block
+  if not AnalyzeStructBody then exit;
+  //Agrega instrucción de incremento.
+  CreateInc(idx);
+  //Close block
+  TreeElems.CloseElement;
+  if not VerifyEND then exit;
+  TreeElems.CloseElement;  //Close sentence
+end;
+procedure TAnalyzer.AnalyzeFORrepeat;
+{Analyze a FOR loop and generates an IF-REPEAT loop structure.}
+  function CreateComparison(varComp: TEleExpress; out valFin: TEleExpress;
+                            readExpression: boolean = true): TEleExpress;
+  {Create an expression of comparison that, usually, must be inside a condition.
+  Returns the TEleExpress of the comparison created.
+  The operator of the comparison is not set here. Must be set later.}
+  var
+    _comp, xvar: TEleExpress;
+  begin
+    //Create the _comp() expression:
+    _comp := CreateExpression('', typNull, otFunct, GetSrcPos);
+    //Add the new expression
+    TreeElems.AddElementAndOpen(_comp);
+    //Create a new variable expression "i<=..." or "i<..." or "i=...".
+    xvar := CreateExpression(varComp.name, varComp.Typ, otVariab, GetSrcPos);
+    xvar.SetVariab(varComp.rvar);
+    TreeElems.AddElement(xvar);
+    //Add the operand for expression "i<=..." or "i<..." or "i=...".
+    if readExpression then begin
+      valFin := GetExpression(0);
+    end;
+    TreeElems.CloseElement;      //Close _comp()
+    Result := _comp;
+  end;
+  function CreateComparisonConst(consComp: TEleExpress; out valFin: TEleExpress): TEleExpress;
+  {Similar to CreateComparison() but we use a constant in comparison.}
+  var
+    _comp: TEleExpress;
+  begin
+    //Create the _comp() expression:
+    _comp := CreateExpression('', typNull, otFunct, GetSrcPos);
+    //Add the new expression
+    TreeElems.AddElementAndOpen(_comp);
+    //Create first part of comparison.
+    AddExpressionConstByte('', consComp.val, GetSrcPos);
+    //Add the operand for expression "i<=..." or "i<..." or "i=...".
+    valFin := GetExpression(0);
+    TreeElems.CloseElement;      //Close _comp()
+    Result := _comp;
+  end;
+  function SetOperation(_comp: TEleExpress; opType: TEleTypeDec; opStr: string): boolean;
+  {Set the operation for a comparison expression. If generates error, returns FALSE.}
+  var
+    funSet: TEleFunBase;
+  begin
+    //Create and set function for comparison.
+    funSet := MethodFromBinOperator(opType, opStr, opType);
+    if funSet = nil then begin   //Operator not found
+      GenError('Undefined operation: %s %s %s', [opType.name, opStr, opType.name]);
+      exit(false);
+    end;
+    _comp.rfun := funSet;
+    _comp.name := opStr;
+    exit(true);
+  end;
+  procedure convertToPlusOne(opType: TEleTypeDec; _node: TxpElement);
+  {Convert a node TEleExpress to an expression: "node+1" in the AST.
+  Only work for the byte type.}
+  var
+    _add: TEleExpress;
+  begin
+    _add := CreateExpression('_add', opType, otFunct, GetSrcPos);
+    if not SetOperation(_add, opType, '+') then exit;
+    TreeElems.InsertParentTo(_add, _node);
+    TreeElems.curNode := _add;
+    AddExpressionConstByte('1', 1, GetSrcPos);
+  end;
+  procedure convertToMinusOne(opType: TEleTypeDec; _node: TxpElement);
+  {Convert a node TEleExpress to an expression: "node+1" in the AST.
+  Only work for the byte type.}
+  var
+    _add: TEleExpress;
+  begin
+    _add := CreateExpression('_sub', opType, otFunct, GetSrcPos);
+    if not SetOperation(_add, opType, '-') then exit;
+    TreeElems.InsertParentTo(_add, _node);
+    TreeElems.curNode := _add;
+    AddExpressionConstByte('1', 1, GetSrcPos);
+  end;
+  procedure CreateAndOpenIF(idx: TEleExpress; valIni: TEleExpress;
+                            out valFin: TEleExpress; out tmpVar: TELeExpress);
+  {Create a condition for the REPEAT structure getting de expression of the <TO ... DO>
+  section.
+  "tmpVar" is the reference to a temporal variable when it's created.
+  Returns the condition element.}
+  var
+    eleCond: TEleCondit;
+    _lequ, _set, Op2: TEleExpress;
+    senAsg: TEleSentence;
+  begin
+    //First we create a new assignment sentence, in case we need later.
+    senAsg := TreeElems.AddElementSentAndOpen(GetSrcPos, sntAssign);  //Open sentence
+    TreeElems.CloseElement;
+    //Creates IF sentence.
+    TreeElems.AddElementSentAndOpen(GetSrcPos, sntIF);
+    //Create and open condition
+    eleCond := TEleCondit.Create;
+    eleCond.name := 'cond';
+    eleCond.srcDec := GetSrcPos;
+    TreeElems.AddElementAndOpen(eleCond);
+    if valIni.opType = otConst then begin
+      _lequ := CreateComparisonConst(valIni, valFin);
+    end else begin
+      _lequ := CreateComparison(idx, valFin);
+    end;
+    if HayError then exit;
+    if valFin.opType = otConst then begin
+      //Set the comparison operator.
+      if not SetOperation(_lequ, idx.Typ, '<=') then exit;
+      //We don't need the previous assignment
+      senAsg.parent.elements.Remove(senAsg);  //No problem. It's empty.
+    end else if valFin.opType = otVariab then begin
+      //Set the comparison operator.
+      if not SetOperation(_lequ, idx.Typ, '<=') then exit;
+      //And create an additional variable for comparison.
+      _set := MoveNodeToAssign(TreeElems.curCodCont, senAsg, valFin);
+      if HayError then exit;
+      tmpVar := TEleExpress(_set.elements[0]);
+      //"temp := <expression>" to "temp := <expression>+1"
+      convertToPlusOne(idx.Typ, _set.elements[1]);
+      TreeElems.curNode := eleCond;  //Restore node.
+      //Replace right part of comparisom
+      Op2 := TEleExpress(_lequ.elements[1]);
+      Op2.name := valFin.name;
+      Op2.rvar := valFin.rvar;
+    end else begin  //otFunct
+      //In other cases we need to use "<"
+      if not SetOperation(_lequ, idx.Typ, '<=') then exit;
+      convertToMinusOne(idx.Typ, _lequ.elements[1]);
+
+      //And create an additional variable for comparison.
+      _set := MoveNodeToAssign(TreeElems.curCodCont, senAsg, valFin);
+      if HayError then exit;
+      tmpVar := TEleExpress(_set.elements[0]);
+      //"temp := <expression>" to "temp := <expression>+1"
+      convertToPlusOne(idx.Typ, _set.elements[1]);
+      TreeElems.curNode := eleCond;  //Restore node.
+    end;
+
+    TreeElems.CloseElement;      //Close condition
+    if HayError then exit;
+    if valFin.Typ <> idx.Typ then begin
+      GenError('Expected expression of type %s', [idx.Typ.name], valFin.srcDec);
+      exit;
+    end;
+    SkipWhites;
+    //Open the block body of the IF
+    TreeElems.AddElementBlockAndOpen(GetSrcPos);
+  end;
+  procedure CreateInc(idx: TEleExpress);
+  {Add a sentence Inc() applied to the index variable "idx".}
+  var
+    Op1, xvar: TEleExpress;
+  begin
+    //Open sentence
+    TreeElems.AddElementSentAndOpen(GetSrcPos, sntProcCal);
+    //Use reference sifFunInc" to access directly to function Inc().
+    Op1 := CreateExpression(sifFunInc.name, sifFunInc.retType, otFunct, GetSrcPos);
+    Op1.rfun := sifFunInc;
+    TreeElems.AddElementAndOpen(Op1);  //Open Inc()
+    //Create a new variable for the expression "i<..."
+    xvar := CreateExpression(idx.name, idx.Typ, otVariab, GetSrcPos);
+    xvar.SetVariab(idx.rvar);
+    TreeElems.AddElement(xvar);
+    TreeElems.CloseElement;  //Close Inc()
+    //Close Sentence
+    TreeElems.CloseElement;
+  end;
+  procedure CloseIF;
+  begin
+    TreeElems.CloseElement;  //Close block
+    TreeElems.CloseElement;  //Close IF sentence
+  end;
+  procedure AddConditionRepeat(idx: TEleExpress; valFin: TEleExpress; tmpVar: TELeExpress);
+  {Add the REPEAT condition.}
+  var
+    eleCond: TEleCondit;
+    _lequ, valFin1, _add, xvar: TEleExpress;
+  begin
+    //Add condition.
+    eleCond := TEleCondit.Create;
+    eleCond.name := 'cond';
+    eleCond.srcDec := GetSrcPos;
+    TreeElems.AddElementAndOpen(eleCond);
+    _lequ := CreateComparison(idx, valFin, false);
+    if HayError then exit;
+    if not SetOperation(_lequ, idx.Typ, '=') then exit;
+    //Check "valFin" to adecuate the REPEAT to the proper form (See documentation).
+    if valFin.opType = otConst then begin
+      //We need to make the condition: i = valFin+1
+      if valFin.evaluated then begin  //We can read the value an set directly.
+        TreeElems.curNode := _lequ;
+        AddExpressionConstByte('ifin', (valFin.value.ValInt + 1) and $ff, GetSrcPos);
+        TreeElems.curNode := eleCond;  //Restore node.
+      end else begin  //Not evaluated. We create an expression
+        TreeElems.curNode := _lequ;
+        valFin1 := AddExpressionConstByte(valFin.name, 0, GetSrcPos);
+        valFin1.evaluated := false;
+        _add := CreateExpression('_add', idx.Typ, otFunct, GetSrcPos);
+        if not SetOperation(_add, idx.Typ, '+') then exit;
+        TreeElems.InsertParentTo(_add, valFin1);
+        TreeElems.curNode := _add;
+        AddExpressionConstByte('1', 1, GetSrcPos);
+        TreeElems.curNode := eleCond;  //Restore node.
+      end;
+    end else begin
+        //We need to make the condition: i = $tmp
+      TreeElems.curNode := _lequ;
+      //Add the temporal variable
+      xvar := CreateExpression(tmpVar.name, tmpVar.Typ, otVariab, GetSrcPos);
+      xvar.SetVariab(tmpVar.rvar);
+      TreeElems.AddElement(xvar);
+
+      TreeElems.curNode := eleCond;  //Restore node.
+    end;
+    TreeElems.CloseElement;  //Close condition
+  end;
+var
+  idx, valIni, valFin, tmpVar, _lequ: TEleExpress;
+  elem: TEleCondit;
+begin
+  AnalyzeFORFirstAsign(idx, valIni);
+  if HayError then exit;
+  //Aplica estructura IF REPEAT.
+  if not CaptureStr('TO') then exit;
+  if idx.Typ = typWord then begin
+    //Solo aplica estructura WHILE
+    TreeElems.AddElementSentAndOpen(GetSrcPos, sntWHILE);  //Open sentence
+
+    //Create and open condition
+    elem := TEleCondit.Create;
+    elem.name := 'cond';
+    elem.srcDec := GetSrcPos;
+    TreeElems.AddElementAndOpen(elem);
+    _lequ := CreateComparison(idx, valFin);
+    if not SetOperation(_lequ, idx.Typ, '<=') then exit;
+    TreeElems.CloseElement;      //Close condition
+
+    if not CaptureStr('DO') then exit;  //toma "do"
+    //Aquí debe estar el cuerpo del "for"
+    TreeElems.AddElementBlockAndOpen(GetSrcPos);  //Open block
+    if not AnalyzeStructBody then exit;
+    //Agrega instrucción de incremento.
+    CreateInc(idx);
+    //Close block
+    TreeElems.CloseElement;
+    if not VerifyEND then exit;
+    TreeElems.CloseElement;  //Close sentence
+  end else begin  //Byte index
+    //Take expression for IF
+    CreateAndOpenIF(idx, valIni, valFin, tmpVar);  //Open IF sentence.
+    if HayError then exit;
+    //Generates REPEAT loop
+    TreeElems.AddElementSentAndOpen(GetSrcPos, sntREPEAT);  //Open sentence
+    if not CaptureStr('DO') then exit;  //toma "do"
+    //Aquí debe estar el cuerpo del "for"
+    TreeElems.AddElementBlockAndOpen(GetSrcPos, 0);  //Open block before like REPEAT
+    if not AnalyzeStructBody then exit;
+    //Agrega instrucción de incremento.
+    CreateInc(idx);
+    //Close block
+    TreeElems.CloseElement;
+    if not VerifyEND then exit;
+    AddConditionRepeat(idx, valFin, tmpVar);
+    //Close REPEAT sentence
+    TreeElems.CloseElement;
+    CloseIF;      //Close IF block
+  end;
 end;
 procedure TAnalyzer.AnalyzeEXIT(exitSent: TEleSentence);
   function GetExitExpression(out oper: TEleExpress): boolean;
@@ -1941,7 +2382,7 @@ begin
       TreeElems.CloseElement;  //Close sentence
     end else if tokUp = 'REPEAT' then begin
       TreeElems.AddElementSentAndOpen(GetSrcPos, sntREPEAT);  //Open sentence
-      Next;         //Takes "until"
+      Next;         //Takes "repeat"
       AnalyzeREPEAT;
       if HayError then begin
         exit;
@@ -1952,17 +2393,19 @@ begin
       end;
       TreeElems.CloseElement;  //Close sentence
     end else if tokUp = 'FOR' then begin
-      TreeElems.AddElementSentAndOpen(GetSrcPos, sntFOR);  //Open sentence
-      Next;         //Takes "until"
-      AnalyzeFOR;
-      if HayError then begin
-        exit;
-      end else if TreeElems.curNode.idClass <> eleSenten then begin
-        //Something went wrong
-        GenError('Syntax error.');
-        exit;
-      end;
-      TreeElems.CloseElement;  //Close sentence
+//      TreeElems.AddElementSentAndOpen(GetSrcPos, sntFOR);  //Open sentence
+//      Next;         //Takes "for"
+//      AnalyzeFOR;
+//      if HayError then begin
+//        exit;
+//      end else if TreeElems.curNode.idClass <> eleSenten then begin
+//        //Something went wrong
+//        GenError('Syntax error.');
+//        exit;
+//      end;
+//      TreeElems.CloseElement;  //Close sentence
+      if ForToRepeat then AnalyzeFORrepeat else AnalyzeFORwhile;
+      if HayError then exit;
     end else if tokUp = 'ASM' then begin  //ASM block
       TreeElems.AddElementSentAndOpen(GetSrcPos, sntAsmBlock);  //Open sentence
       vParserASM_6502.ProcessASMBlock(self);

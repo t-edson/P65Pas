@@ -185,10 +185,11 @@ public     //Public attributes of compiler
   stopEjec  : boolean;     //To stop compilation
   GeneralORG: integer;   //Dirección general de origen de código
 protected  //Command line options.
-  mainFile    : string;    //Archivo inicial que se compila
-  hexFile     : string;    //Nombre de archivo de salida
-  comp_level  : TCompileLevel; //Compilation level
-  enabDirMsgs : boolean;   //Bandera para permitir generar mensajes desde las directivas.
+  mainFile    : string;    //Archivo inicial que se compila.
+  hexFile     : string;    //Nombre de archivo de salida.
+  comp_level  : TCompileLevel; //Compilation level.
+  ForToRepeat : boolean;   //COnvert FOR loop to REPEAT loop.
+  //Optimization options
   OptReuProVar: boolean;   //Optimiza reutilizando variables locales de procedimientos.
   OptRetProc  : boolean;   //Optimiza el último exit de los procedimientos.
   RemUnOpcod  : boolean;   //Removes unnecessary ASM instructions generated.
@@ -200,6 +201,7 @@ protected  //Command line options.
   IncVarName  : boolean;   //Includes variables name in ASM operands.
   IncAddress  : boolean;   //Includes address before ASM instructions.
   //  incDetComm  : boolean;   //Incluir Comentarios detallados.
+  enabDirMsgs : boolean;   //Bandera para permitir generar mensajes desde las directivas.
 protected //Compiling Options. Set by directives.
   syntaxMode  : (modPascal, modPicPas);
   bootloader  : TBootloader;  //Bootloader code for the compiled binary.

@@ -400,57 +400,6 @@ Parameters:
   sntBlock  -> Block of code where are the sentences to need be prepared. It's the
                same of "container" except when "block" is nested like in a condiitonal.
 }
-  function MoveNodeToAssign(curContainer: TxpElement; Op: TEleExpress): TEleExpress;
-  {Mueve el nodo especificado "Op" a una nueva instruccion de asignación (que es creada
-  al inicio del bloque "curContainer") y reemplaza el nodo faltante por una variable
-  temporal que es la que se crea en la instrucción de asignación.
-  Retorna la instrucción de asignación creada.
-  }
-  var
-    _varaux: TEleVarDec;
-    _setaux: TEleExpress;
-    Op1aux, Op2aux: TEleExpress;
-    funSet: TEleFunBase;
-    OpPos: Integer;
-    OpParent: TxpElement;
-  begin
-    //Create a new variable in the declaration section of this sntBlock.
-    _varaux := CreateEleVarDec('_x' + IntToStr(cntBody.Index), Op.typ);  //Generate a unique name in this cntBody
-    TreeElems.openElement(cntBody.Parent);
-    TreeElems.AddElement(_varaux, cntBody.Index);  //Add before the cntBody.
-
-    //Create the new _set() expression.
-    _setaux := CreateExpression('_set', typNull, otFunct, Op.srcDec);
-    funSet := MethodFromBinOperator(Op.Typ, ':=', Op.Typ);
-    if funSet = nil then begin   //Operator not found
-      GenError('Undefined operation: %s %s %s', [Op.Typ.name, ':=', Op.Typ.name]);
-      exit(nil);
-    end;
-    _setaux.rfun := funSet;
-
-    //Add the new assigment before the main
-    TreeElems.openElement(curContainer);
-    TreeElems.AddElement(_setaux, 0);    //Add a new assigmente before
-    _setaux.elements := TxpElements.Create(true);  //Create list
-    TreeElems.openElement(_setaux);
-
-    //Add first operand (variable) of the assignment.
-    Op1aux := CreateExpression(_varaux.name, _varaux.typ, otVariab, Op.srcDec);
-    Op1aux.SetVariab(_varaux);
-    TreeElems.addElement(Op1aux);
-    AddCallerToFromCurr(_varaux); //Add reference to auxiliar variable.
-
-    //Move the second operand to the previous _set created
-    OpParent := Op.Parent;    //Keep current parent reference.
-    OpPos := Op.Index;        //Keep current operand position.
-    TreeElems.ChangeParentTo(_setaux, Op);
-    //Replace the missed function
-    TreeElems.openElement(OpParent);
-    Op2aux := CreateExpression(_varaux.name, _varaux.typ, otVariab, Op.srcDec);
-    Op2aux.SetVariab(_varaux);
-    TreeElems.addElement(Op2aux, OpPos);
-    exit(_setaux);
-  end;
   function MoveParamToAssign(curContainer: TxpElement; Op: TEleExpress;
                              parvar: TEleVarDec): TEleExpress;
   {Mueve el nodo especificado "Op", que representa a un parámetro de la función, a una
@@ -529,7 +478,7 @@ Parameters:
         for par in Op2.elements do begin
           parExp := TEleExpress(par);
           if parExp.opType = otFunct then begin
-            new_set := MoveNodeToAssign(curContainer, parExp);
+            new_set := MoveNodeToAssign(cntBody, curContainer, parExp);
             if HayError then exit;
             SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
             Result := true;
@@ -547,16 +496,22 @@ Parameters:
     par: TxpElement;
   begin
     Result := false;
-    if (expMethod.opType = otFunct) and expMethod.fcallOp then begin
+    if (expMethod.opType = otFunct) then begin  //Neither variables nor constants.
       {We expect parameters should be simple operands (Constant or variables)
       otherwise we will move them to a separate assignment}
-      for par in expMethod.elements do begin
-        parExp := TEleExpress(par);
-        if parExp.opType = otFunct then begin
-          new_set := MoveNodeToAssign(curContainer, parExp);
-          if HayError then exit;
-          SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
-          Result := true;
+      if expMethod.rfun.callType in [ctSysNormal, ctUsrNormal] then begin  //Normal function
+
+        //Generates an asignment for each parameter.
+        SplitProcCall(curContainer, expMethod);
+      end else if expMethod.rfun.callType = ctSysInline then begin  //Like =, >, and, ...
+        for par in expMethod.elements do begin
+          parExp := TEleExpress(par);
+          if parExp.opType = otFunct then begin
+            new_set := MoveNodeToAssign(cntBody, curContainer, parExp);
+            if HayError then exit;
+            SplitSet(curContainer, new_set);  //Check if it's needed split the new _set() created.
+            Result := true;
+          end;
         end;
       end;
     end;
@@ -590,8 +545,8 @@ Parameters:
 var
   sen: TEleSentence;
   eleSen, _set, ele, _proc: TxpElement;
-  _exp, Op1, Op2: TEleExpress;
-  _blk: TxpEleCodeCont;
+  _exp, Op1, Op2, val1, val2: TEleExpress;
+  _blk, _blk0: TxpEleCodeCont;
 begin
   //Prepare assignments for arrays.
   for eleSen in sntBlock.elements do begin
@@ -629,7 +584,7 @@ begin
     end else if sen.sntType = sntProcCal then begin  //Procedure call
       _proc := sen.elements[0];  //Takes the proc.
       SplitProcCall(sen, TEleExpress(_proc))
-    end else if sen.sntType in [sntIF, sntREPEAT, sntFOR, sntWHILE] then begin
+    end else if sen.sntType in [sntIF, sntREPEAT, sntWHILE] then begin
       //There are expressions and blocks inside conditions and loops.
       for ele in sen.elements do begin
         if ele.idClass = eleCondit then begin  //It's a condition
@@ -638,6 +593,29 @@ begin
         end else if ele.idClass = eleBlock then begin   //body of IF
           _blk := TxpEleCodeCont(ele);  //The first item is a TEleExpress
           PrepareBody(cntBody, _blk);
+        end;
+      end;
+    end else if sen.sntType = sntFOR then begin
+      //FOR sentences could need some aditional changes.
+      _blk0 := nil;
+      for ele in sen.elements do begin
+        if ele.idClass = eleCondit then begin  //It's a condition
+          _exp := TEleExpress(ele.elements[0]);  //The first item is a TEleExpress
+          SplitExpress(ele, _exp)
+        end else if ele.idClass = eleBlock then begin   //Initialization or body
+          _blk := TxpEleCodeCont(ele);  //The first item is a TEleExpress
+          PrepareBody(cntBody, _blk);
+          if _blk0 = nil then _blk0 := _blk;  //Get intialization block
+        end;
+      end;
+      //Get first and last value of index.
+      val1 := TEleExpress(_blk0.elements[0].elements[1]);
+      val2 := TEleExpress(_exp.elements[1]);
+      //Special cases
+      if (val1.opType = otConst) and (val2.opType = otConst) then begin
+        if val1.val > val2.val then begin
+          //Unreachable code
+//          TreeElems.DeleteTypeNode();
         end;
       end;
     end else if sen.sntType = sntExit then begin
@@ -922,7 +900,11 @@ begin
   end;
   bod.adrr := pic.iRam;  //guarda la dirección de codificación
   GenCodeMainBody(bod);
-  //if HayError then exit;     //Puede haber error
+  if HayError then exit;     //Puede haber error
+  //Clean extra RAM firstly used and later not used by optimization.
+  for add := pic.iRam to pic.iRam +3 do begin
+    pic.ram[add].used := ruUnused;
+  end;
 end;
 procedure TCompiler_PIC16.DoCompile;
 {Compila el contenido del archivo "mainFile" con las opciones que se hayan definido en
@@ -1106,11 +1088,13 @@ begin
     lins.Add('      END');
   end else begin  //Generate POKE's BASIC code.
     minUsed := pic.CPUMAXRAM;
-    for i := 0 to pic.CPUMAXRAM-1 do begin
+    i := pic.minUsed;
+    while i <= pic.maxUsed do begin
       if pic.ram[i].used <> ruUnused then begin
         if i<minUsed then minUsed := i;  //Calcula mínimo
         lins.Add('poke ' +  IntToStr(i) + ',' + IntToStr(pic.ram[i].value));
       end;
+      inc(i);
     end;
     lins.Add('sys ' +  IntToStr(minUsed) );
   end;
@@ -1298,6 +1282,7 @@ begin
   //Default settings for Command line Options
   mainFile := srcFile;
   comp_level  := clComplete;
+  ForToRepeat := true;
   enabDirMsgs := true;
   OptReuProVar:= false;   //Optimiza reutilizando variables locales de procedimientos.
   OptRetProc  := false;   //Optimiza el último exit de los procedimientos.
@@ -1322,10 +1307,13 @@ begin
     if length(txt)<2 then continue;
     if          copy(txt,1,2) = '-C' then begin  //---Compiling options
       case txt of
+      //Compiler level
       '-Cn' : comp_level := clNull;
       '-Ca' : comp_level := clAnalys;
       '-Cao': comp_level := clAnalOptim;
       '-C'  : comp_level := clComplete;
+      //Compiler settings
+      '-Cf' : ForToRepeat := false;
       end;
     end else if copy(txt,1,2) = '-O' then begin  //---Optimization options
       case txt of

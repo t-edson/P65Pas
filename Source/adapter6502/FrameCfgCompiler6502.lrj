@@ -3,5 +3,6 @@
 {"hash":94512499,"name":"tfracfgcompiler6502.chkreuprocvar.caption","sourcebytes":[82,101,117,115,101,32,80,114,111,99,101,100,117,114,101,115,32,86,97,114,105,97,98,108,101,115],"value":"Reuse Procedures Variables"},
 {"hash":188796819,"name":"tfracfgcompiler6502.chkoptretproc.caption","sourcebytes":[79,112,116,105,109,105,122,101,32,82,69,84,85,82,78,32,105,110,32,112,114,111,99,101,100,117,114,101,115],"value":"Optimize RETURN in procedures"},
 {"hash":84597258,"name":"tfracfgcompiler6502.label1.caption","sourcebytes":[85,110,105,116,115,32,80,97,116,104,58],"value":"Units Path:"},
-{"hash":82098755,"name":"tfracfgcompiler6502.chkremunopcod.caption","sourcebytes":[82,101,109,111,118,101,32,117,110,110,101,99,101,115,115,97,114,121,32,79,112,99,111,100,101,115],"value":"Remove unnecessary Opcodes"}
+{"hash":82098755,"name":"tfracfgcompiler6502.chkremunopcod.caption","sourcebytes":[82,101,109,111,118,101,32,117,110,110,101,99,101,115,115,97,114,121,32,79,112,99,111,100,101,115],"value":"Remove unnecessary Opcodes"},
+{"hash":138887040,"name":"tfracfgcompiler6502.chkfortorepeat.caption","sourcebytes":[67,111,110,118,101,114,116,32,70,79,82,32,108,111,111,112,32,116,111,32,82,69,80,69,65,84,32,108,111,111,112],"value":"Convert FOR loop to REPEAT loop"}
 ]}

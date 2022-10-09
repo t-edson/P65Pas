@@ -103,8 +103,8 @@ implementation
   so it's some slow.}
   begin
     asm
-    LDA n.high
-    LDX n.low
+    LDA n+1
+    LDX n
     JSR $BDCD 	 
     end 
   end; 

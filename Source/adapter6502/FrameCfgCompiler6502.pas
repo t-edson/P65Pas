@@ -14,6 +14,7 @@ type
     chkOptRetProc: TCheckBox;
     chkRemUnOpcod: TCheckBox;
     chkReuProcVar: TCheckBox;
+    chkForToRepeat: TCheckBox;
     txtUnitpath: TEdit;
     grpOptimLev: TRadioGroup;
     Label1: TLabel;
@@ -21,6 +22,7 @@ type
 
   public
     unitPath    : string;
+    ForToRepeat : boolean;
     OptimLev    : TOptimLev;
     ReuProcVar  : boolean;
     OptRetProc  : boolean;
@@ -51,10 +53,11 @@ end;
 procedure TfraCfgCompiler6502.Init(section: string; cfgFile: TMiConfigXML);
 begin
   cfgFile.Asoc_Str (section+ '/unitPath'    , @unitPath    , txtUnitpath, '{AppPath}/comp_p65pas/units/');
-  cfgFile.Asoc_Enum(section+ '/OptimLev'    , @OptimLev    , Sizeof(TOptimLev), grpOptimLev, 1);
-  cfgFile.Asoc_Bol (section+ '/ReuProcVar'  , @ReuProcVar  , chkReuProcVar    , false);
-  cfgFile.Asoc_Bol (section+ '/OptRetProc'  , @OptRetProc  , chkOptRetProc    , true);
-  cfgFile.Asoc_Bol (section+ '/RemUnOpcod'  , @RemUnOpcod  , chkRemUnOpcod    , true);
+  cfgFile.Asoc_Bol (section+ '/ForToRepeat' , @ForToRepeat , chkForToRepeat  , true);
+  cfgFile.Asoc_Enum(section+ '/OptimLev'    , @OptimLev    , Sizeof(TOptimLev),grpOptimLev, 1);
+  cfgFile.Asoc_Bol (section+ '/ReuProcVar'  , @ReuProcVar  , chkReuProcVar   , false);
+  cfgFile.Asoc_Bol (section+ '/OptRetProc'  , @OptRetProc  , chkOptRetProc   , true);
+  cfgFile.Asoc_Bol (section+ '/RemUnOpcod'  , @RemUnOpcod  , chkRemUnOpcod   , true);
 
 end;
 
