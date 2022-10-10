@@ -789,7 +789,7 @@ Includes the contents of a external file, into de source code:
 x := {$INCLUDE expression.txt};
 ```
 
-#### $INCLUDE
+#### $BIN2CSV
 
 Includes the contents of a external binary file, into de source code, like a CSV text:
 
