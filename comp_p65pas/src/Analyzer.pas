@@ -1674,7 +1674,7 @@ begin
   _setaux := CreateExpression('_set', typNull, otFunct, Op.srcDec);
   funSet := MethodFromBinOperator(Op.Typ, ':=', Op.Typ);
   if funSet = nil then begin   //Operator not found
-    GenError('Undefined operation: %s %s %s', [Op.Typ.name, ':=', Op.Typ.name]);
+    GenError('Undefined operation: %s %s %s', [Op.Typ.name, ':=', Op.Typ.name], Op.srcDec);
     exit(nil);
   end;
   _setaux.rfun := funSet;
