@@ -1,3 +1,9 @@
+1/11/2022: 
+- Se corrige el procesamiento de las unidades después de IMPLEMENTATION en 
+TAnalyzer.DoAnalyzeUnit().
+- Se agrega soporte para los comentarios de tipo (* ... *) en el compilador.
+- Se cambia los atajos para "Grabar" y "Buscar" a Ctrl+G y Ctrl+S.
+
 P65PAS 1.0.0
 =============
 En esta versión se producen cambios de gran magnitud con respecto a la arquitectura de la IDE 

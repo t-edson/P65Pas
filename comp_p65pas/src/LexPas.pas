@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, fgl;
 type
-
+ TString2 = string[2];
   //Context types
   tTypCon = (
     TC_ARC,     //File type context.
@@ -94,6 +94,7 @@ type
     procedure _setRow(row0: integer); inline;
     procedure _setCol(col0: integer); inline;
     function _ReadChar: char; inline;
+    function _Read2Char: TString2; inline;
     procedure _NextChar; inline;
     procedure _setEOL;      //Set cursor at the end of current line
   public
@@ -307,6 +308,13 @@ function TScanner._ReadChar: char;
 begin
   if _Eol then exit(#13);  //End of line
   exit(curLine[fcol]);    //Common character
+end;
+function TScanner._Read2Char: TString2;
+{Return two character starting from the current position. If there isn't
+two character in the current position (like in the EOF) returns the string '  '.}
+begin
+  if fcol >= curSize-1 then exit('  ');
+  exit(curLine[fcol] + curLine[fcol+1]);
 end;
 //Scanner state
 procedure TScanner.SaveScannerState;
@@ -763,7 +771,25 @@ begin
       tokType := tkOthers;
     end;
   end;
-  '(',')',',','[',']': begin
+  '(': begin
+    _NextChar;
+    if _ReadChar = '*' then begin
+      _NextChar;
+      //Multiline comment (* ... *)
+      repeat _NextChar;
+      until _Eof or (_Read2Char = '*)');
+      if _Eof then begin
+        onGenError('Unclosed comment.');  //Don't stop scanning
+      end else begin
+        _NextChar;  //Go to next character
+        _NextChar;
+      end;
+      tokType := tkComment;
+    end else begin
+      tokType := tkOthers;
+    end;
+  end;
+  ')',',','[',']': begin
     _NextChar;
     tokType := tkOthers;
   end;

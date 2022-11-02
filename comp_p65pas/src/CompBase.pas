@@ -1538,7 +1538,7 @@ begin
   upTok := UpCase(token);
   if tokType = tkLitNumber then begin
     TipDefecNumber(typ, valInt, token); //encuentra tipo de número, tamaño y valor
-    if HayError then exit;  //verifica
+    if HayError then exit(nil);  //verifica
     Op1 := AddExpressAndOpen(token, typ, otConst, GetSrcPos);
     Op1.SetLiteraltIntConst(valInt);
     Next;    //Pasa al siguiente
@@ -1556,7 +1556,7 @@ begin
     if ele = nil then begin
       //Unidentified element.
       GenError(ER_UNKNOWN_IDE_, [token]);
-      exit;
+      exit(nil);
     end;
     if ele.idClass = eleConsDec then begin  //Is constant
       xcon := TEleConsDec(ele);
@@ -1583,27 +1583,27 @@ begin
       //Op1.Sto := ; { TODO : ¿No es necesario completar el almacenamiento de esta función? }
       //Capture parameters
       CaptureParams(pars);    //Read parameters in "pars".
-      if HayError then exit;
+      if HayError then exit(nil);
       //Resolve final function called, acording to parameters.
       xfun := ResolveFunction(pars, xfun, findState);
-      if HayError then exit;
+      if HayError then exit(nil);
       AddCallerToFromCurr(xfun).curPos := posCall;  {Fix call position, otherwise will be pointing to the
                                    end of parameters}
       Op1.rfun := xfun;  //We can now set the final function.
     end else begin
       //Operand expected
       GenError(ER_OPERAN_EXPEC);
-      exit;
+      exit(nil);
     end;
   end else if tokType = tkChar then begin  //Constant character
     {$IFDEF LogExpres} Op.txt:= cIn.tok; {$ENDIF}   //toma el texto
     if not TryStrToInt(copy(token, 2), cod) then begin
       GenError(ER_IN_CHARACTER);   //tal vez, sea muy grande
-      exit;
+      exit(nil);
     end;
     if (cod<0) or (cod>255) then begin
       GenError(ER_INV_COD_CHAR);
-      exit;
+      exit(nil);
     end;
     Op1 := AddExpressAndOpen(token, typChar, otConst, GetSrcPos);
     Op1.value.ValInt := cod;
@@ -1611,14 +1611,14 @@ begin
     Next;
   end else if tokType = tkString then begin  //Constant String
     Op1 := GetConstantArrayStr();
-    if HayError then exit;
+    if HayError then exit(nil);
   end else if token = '(' then begin  // (...)
     Next;
     Op1 := GetExpression(0);
-    if HayError then exit;
+    if HayError then exit(nil);
     if token <> ')' then begin
        GenError(ER_IN_EXPRESSI);
-       exit;
+       exit(nil);
     end;
     Next;
   end else if token = '[' then begin  //Constant array
@@ -1628,7 +1628,7 @@ begin
     //Operand expected
     Op1 := nil;
     GenError(ER_OPERAN_EXPEC);
-    exit;
+    exit(nil);
   end;
   level := 1;   //Count the deeps of methods
   //Verify if has reference to fields with "."
@@ -1639,13 +1639,13 @@ begin
       if (tokType<>tkIdentifier) and (tokType<>tkLitNumber) then begin { TODO : No es necesario explorar ambos casos. SOlo hay que saber bien cual se usa en los tipos }
         GenError('Identifier expected.');
         Next;    //Pasa siempre
-        exit;
+        exit(nil);
       end;
       //There is an identifier. It should be a method or attribute. Let's find.
       if not Op1.Typ.FindElemName(token, field) then begin
         //There are not fields for this type
         GenError(ER_UNKNOWN_IDE_, [token]);
-        exit;
+        exit(nil);
       end;
       //Found the field. Create an expression node.
       if field.idClass = eleConsDec then begin
@@ -1686,18 +1686,18 @@ begin
         eleMeth.rfun := xfun;            //Set function
         //Capture parameters
         CaptureParams(pars);    //Read parameters in "pars".
-        if HayError then exit;
+        if HayError then exit(nil);
       end else begin
         { TODO : Formally must be something like "Cannot use this here" }
         GenError(ER_UNKNOWN_IDE_, [token]);
-        exit;
+        exit(nil);
       end;
     end else if token='^' then begin
       Next;    //Takes "^".
       //Validates if operand is pointer
       if Op1.Typ.catType <> tctPointer then begin
         GenError('Expression is not a pointer type.');
-        exit;
+        exit(nil);
       end;
       //Put element as parent of Op1
       eleMeth := CreateExpression('_ref', typWord, otFunct, GetSrcPos);
@@ -1724,7 +1724,7 @@ begin
       TreeElems.OpenElement(eleMeth);  //Set parent to add parameters.
       //Capture index parameter.
       OpIdx := GetExpression(0);
-      if HayError then exit;
+      if HayError then exit(nil);
       //Lets find de getitem() method, now we have "OpIdx.Typ".
       {This could be a _setitem(), if follows an operator ":=", but we don't know here,
       so we always generates a _getitem(). If it's neccesary we will change it later.}
@@ -1732,7 +1732,7 @@ begin
       if xfun=nil then begin
         //There are not fields for this type
         GenError('Undefined method _getitem(%s) for type %s', [OpIdx.Typ.name, Op1.Typ.name]);
-        exit;
+        exit(nil);
       end;
       //Complete node "eleMeth" now we have the "xfun" created.
       eleMeth.name := xfun.name;     //Update name.
@@ -1741,7 +1741,7 @@ begin
       //Finish exploration
       if token<>']' then begin
         GenError('"]" expected.');
-        exit;
+        exit(nil);
       end;
       Next;   //Takes ']'.
     end;
@@ -1776,14 +1776,14 @@ begin
     oprPre := curCtx.tokPrecU; //Read unary operator precedence.
     Next;                 //Pass to the operand
     Op1 := GetExpression(oprPre);  //Takes the operand.
-    if HayError then exit;
+    if HayError then exit(nil);
     //Now we got the type. Now lets check if operator is a method of this type
     opr1 := MethodFromUnaOperator(Op1.Typ, oprTxt);
     if opr1 = nil then begin
       {Este tipo no permite este operador Unario (a lo mejor ni es unario)}
       SetCtxState(p);
       GenError(ER_UND_OPER_TY_, [token, Op1.Typ.name]);
-      exit;
+      exit(nil);
     end;
     //Put method as parent
     eleMeth := CreateExpression(opr1.name, opr1.retType, otFunct, oprPos);  //Type will updated later.
@@ -1795,7 +1795,7 @@ begin
   end else begin
     //First token should be a common operand
     Op1 := GetOperand();  //Add operand to the current node.
-    if HayError then exit;
+    if HayError then exit(nil);
   end;
   TreeElems.OpenElement(Op1.Parent);  //Returns to parent (sentence), in the case the expression have only one operand.
   SkipWhites;
@@ -1820,12 +1820,12 @@ begin
     TreeElems.OpenElement(eleMeth);  //Set parent to method to allow add parameters as child node.
     //-------------------- Get second operand --------------------
     Op2 := GetExpression(oprPre);   //toma operando con precedencia
-    if HayError then exit;
+    if HayError then exit(nil);
     //Find the final method (operator).
     opr1 := MethodFromBinOperator(Op1.Typ, oprTxt, Op2.Typ);
     if opr1 = nil then begin   //Operator not found
       GenError('Undefined operation: %s %s %s', [Op1.Typ.name, oprTxt, Op2.Typ.name]);
-      exit;
+      exit(nil);
     end;
     eleMeth.name := opr1.name;
     eleMeth.rfun := opr1;  //Method for operator.

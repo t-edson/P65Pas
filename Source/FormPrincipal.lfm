@@ -716,7 +716,7 @@ object frmPrincipal: TfrmPrincipal
       Hint = 'Find'
       ImageIndex = 15
       OnExecute = acSearFindExecute
-      ShortCut = 16450
+      ShortCut = 16454
     end
     object acSearFindNxt: TAction
       Category = 'Sear'
@@ -753,7 +753,7 @@ object frmPrincipal: TfrmPrincipal
       Hint = 'Open File'
       ImageIndex = 3
       OnExecute = acFilOpenExecute
-      ShortCut = 16449
+      ShortCut = 16463
     end
     object acEdPaste: TEditPaste
       Category = 'Edit'
@@ -850,7 +850,7 @@ object frmPrincipal: TfrmPrincipal
       Hint = 'Save File'
       ImageIndex = 4
       OnExecute = acFilSaveExecute
-      ShortCut = 16455
+      ShortCut = 16467
     end
     object acFilSaveAs: TAction
       Category = 'Arc'
