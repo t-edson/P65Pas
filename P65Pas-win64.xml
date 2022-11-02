@@ -7,20 +7,21 @@
   <SplitterCol Val="536870912"/>
   <TextPanel Val="8421504"/>
   <currPath Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\X16.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-1.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="246"/>
-  <EditAsmWidth Val="719"/>
+  <SynTreeWidth Val="183"/>
+  <EditAsmWidth Val="318"/>
   <ViewPanAssem Val="True"/>
-  <winXpos Val="-5"/>
-  <winYpos Val="2"/>
-  <winWidth Val="1166"/>
-  <winHeight Val="790"/>
-  <winState Val="2"/>
+  <winXpos Val="-7"/>
+  <winYpos Val="26"/>
+  <winWidth Val="1240"/>
+  <winHeight Val="752"/>
+  <winState Val="0"/>
   <themLoaded Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\themes\delphi.theme"/>
   <CodExplBack Val="-2147483643"/>
   <CodExplText Val="536870912"/>
@@ -51,11 +52,11 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\IRQ.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\X16.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore64.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\temp\newfile1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\x16.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\IRQ.pas
 "/>
   </Edit>
   <ExternTool>

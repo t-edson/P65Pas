@@ -456,14 +456,22 @@ type  //Expression elements
   end;
 
   TEleFunBase = class;
+  TEleFunDec = class;
 
+  //Constant types
+  TConsType = (
+    ctLiteral,  //Literal like $1234 or 123
+    ctConsRef,  //Reference to a constant delcared like "CONST1"
+    ctVarAddr,  //Constant expression like addr(<variable>)
+    ctFunAddr   //Constant expression like addr(<function>)
+  );
   { TEleExpress }
   {Represents an expression/operand. }
   TEleExpress = class(TxpElement)
   public
-    opType : TopType;     //Operand type: otVariab, otConst, otFunct.
-    Sto    : TStorage;    //Storage of the value (memory, register, value)
-    Typ    : TEleTypeDec;  //Data type for the operand.
+    opType  : TopType;      //Operand type: otVariab, otConst, otFunct.
+    Sto     : TStorage;     //Storage of the value (memory, register, value)
+    Typ     : TEleTypeDec;  //Data type for the operand.
     function opTypeAsStr: string; //"opType" as string
     function StoAsStr: string;  //Storage as string
     procedure StringToArrayOfChar(str: string);
@@ -479,17 +487,23 @@ type  //Expression elements
     function IsVariablePlusConstant: boolean;
     procedure exchange2Children;
   public  //Fields used when "Sto" is stConst
-    evaluated: boolean;  //Activated when constant is evaluated.
-    //Fields used when constant is evaluated, or it's a literal constant.
-    value  : TConsValue;  //Constant value, when storage opType is otConst.
-    //Fields used when constant is solved but not evaluated.
-    cons   : TEleConsDec;
+    evaluated: boolean;     //Activated when constant is evaluated.
+    consType : TConsType;   //Constant type
+    //Fields used when constant is a literal constant.
+    value    : TConsValue;  //Constant value, when consType=ctLiteral
+    //Fields for not literal constans.
+    cons     : TEleConsDec; //Ref. to TEleConsDec when consType=ctConsRef
+    addrVar  : TEleVarDec;  //Ref. to TEleConsDec when consType=ctVarAddr
+    addrFun  : TEleFunDec;  //Ref. to TEleConsDec when consType=ctFunAddr
+    //Functions to read values.
     function val: dword;
     function valL: word;
     function valH: word;
     function valU: word;
     function valE: word;
-    procedure SetBooleanVal(valBool: Boolean);
+    procedure SetLiteralBoolConst(valBool: Boolean);
+    procedure SetLiteraltIntConst(valInt: Int64);
+    procedure SetConstRef(cons0: TEleConsDec);
   public  //Set variable fields.
     procedure SetVariab(var0: TEleVarDec);
     procedure SetVariab(add0: word);
@@ -976,9 +990,10 @@ function TEleExpress.valE: word; inline;
 begin
   Result := (value.valInt >> 16) and $FF;
 end;
-procedure TEleExpress.SetBooleanVal(valBool: Boolean);
+procedure TEleExpress.SetLiteralBoolConst(valBool: Boolean);
 {Set the value of a Constant boolean expression.}
 begin
+  consType := ctLiteral;
   evaluated := true;
   value.valBool := valBool;    //Tal vez no sea necesario si usamos solo "value.ValInt"
   //Como en algunos casos se usa el valor numérico, lo fijamos también.
@@ -988,6 +1003,27 @@ begin
     value.ValInt := 0;
   end;
 end;
+procedure TEleExpress.SetLiteraltIntConst(valInt: Int64);
+begin
+  consType := ctLiteral;
+  evaluated := true;
+  value.ValInt := valInt;
+end;
+
+procedure TEleExpress.SetConstRef(cons0: TEleConsDec);
+begin
+  consType := ctConsRef;
+  cons := cons0;  //Keep reference
+  if cons0.evaluated then begin
+    //The constant is already calculated. We can obtain the value.
+    evaluated := true;
+    value := cons0.value^;
+  end else begin
+    //No yet calculated. Maybe "cons0" depends on an expression.
+    evaluated := false;
+  end;
+end;
+
 procedure TEleExpress.SetVariab(var0: TEleVarDec);
 {Set as variable type (and storage stRamFix) from a variable.}
 begin

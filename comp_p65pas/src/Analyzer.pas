@@ -2662,6 +2662,7 @@ begin
   curLocation := locImplement;
   //Empiezan las declaraciones
   while StartOfSection do begin
+    tokL := lowercase(token);
     if tokL = 'var' then begin
       Next;    //lo toma
       while not StartOfSection and (tokL <>'end') do begin

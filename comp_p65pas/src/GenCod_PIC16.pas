@@ -273,7 +273,7 @@ If cannot invert the operand, returns FALSE.
 begin
   if fun.Sto = stConst then begin
     //In constants, we can change the value.
-    fun.SetBooleanVal(not fun.value.valBool);
+    fun.SetLiteralBoolConst(not fun.value.valBool);
   end else if fun.Sto = stRegister then begin
     if lastASMcode = lacCopyZtoA then begin
       pic.iRam := lastASMaddr;   //Delete last instructions
@@ -6092,8 +6092,6 @@ begin
 
   CreateInBOMethod(etyp, '+=', '_aadd', typWord, etyp, @SIF_word_aadd_word);
   CreateInBOMethod(etyp, '+=', '_aadd', typByte, etyp, @SIF_word_aadd_byte);
-//
-//  etyp.CreateUnaryPreOperator('@', 6, 'addr', @SIF_address); //defined in all types
 
 //  etyp.CreateUnaryPostOperator('^',6, 'deref', @SIF_derefPointer);  //dereferencia
 end;

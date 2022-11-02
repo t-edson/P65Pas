@@ -69,8 +69,6 @@ protected  //Parser routines
   function CaptureDelExpres: boolean;
   procedure ProcCommentsNoExec;
   procedure ProcComments;
-  procedure TipDefecNumber(out typ: TEleTypeDec; out value: TConsValue;
-    toknum: string);
   procedure TipDefecString(out typ: TEleTypeDec; out value: TConsValue;
     tokcad: string);
   function CaptureTok(ctok: string): boolean;
@@ -327,65 +325,6 @@ begin
     SkipWhites;  //limpia blancos
   end;
 end;
-procedure TCompilerBase.TipDefecNumber(out typ: TEleTypeDec; out value: TConsValue; toknum: string);
-{Procesa constantes numéricas, ubicándolas en el tipo de dato apropiado (byte, word, ... )
- Si no logra ubicar el tipo de número, o no puede leer su valor, generará  un error.}
-var
-  n: int64;   //para almacenar a los enteros
-//  f: extended;  //para almacenar a reales
-begin
-  if pos('.',toknum) <> 0 then begin  //es flotante
-    GenError('Unvalid float number.');  //No hay soporte aún para flotantes
-//    try
-//      f := StrToFloat(toknum);  //carga con la mayor precisión posible
-//    except
-//      Op.typ := nil;
-//      GenError('Unvalid float number.');
-//      exit;
-//    end;
-//    //busca el tipo numérico más pequeño que pueda albergar a este número
-//    Op.size := 4;   //se asume que con 4 bytes bastará
-//    {Aquí se puede decidir el tamaño de acuerdo a la cantidad de decimales indicados}
-//
-//    Op.valFloat := f;  //debe devolver un extended
-//    menor := 1000;
-//    for i:=0 to typs.Count-1 do begin
-//      { TODO : Se debería tener una lista adicional TFloatTypes, para acelerar la
-//      búsqueda}
-//      if (typs[i].cat = t_float) and (typs[i].size>=Op.size) then begin
-//        //guarda el menor
-//        if typs[i].size < menor then  begin
-//           imen := i;   //guarda referencia
-//           menor := typs[i].size;
-//        end;
-//      end;
-//    end;
-//    if menor = 1000 then  //no hubo tipo
-//      Op.typ := nil
-//    else  //encontró
-//      Op.typ:=typs[imen];
-//
-  end else begin     //es entero
-    //Intenta convertir la cadena. Notar que se reconocen los formatos $FF y %0101
-    if not TryStrToInt64(toknum, n) then begin
-      //Si el lexer ha hecho bien su trabajo, esto solo debe pasar, cuando el
-      //número tiene mucHos dígitos.
-      GenError('Error in number.');
-      exit;
-    end;
-    value.valInt := n;   //copia valor de constante entera
-    {Asigna un tipo, de acuerdo al rango. Notar que el tipo más pequeño, usado
-    es el byte, y no el bit.}
-    if (n>=0) and  (n<=255) then begin
-      typ := typByte;
-    end else if (n>= 0) and (n<=$FFFF) then begin
-      typ := typWord;
-    end else  begin //no encontró
-      GenError(ER_NOTYPDEF_NU);
-      typ := typNull;
-    end;
-  end;
-end;
 procedure TCompilerBase.TipDefecString(out typ: TEleTypeDec; out value: TConsValue; tokcad: string);
 //Devuelve el tipo de cadena encontrado en un token
 //var
@@ -636,8 +575,7 @@ a literal numeric of type Byte.}
 begin
   Result := CreateExpression(name, typByte, otConst, srcPos);
   Result.Sto := stConst;
-  Result.evaluated := true;
-  Result.value.ValInt := bytValue;
+  Result.SetLiteraltIntConst(bytValue);
   TreeElems.AddElement(Result);
 end;
 function TCompilerBase.AddExpressionConstBool(name: string; boolValue: Boolean;
@@ -647,8 +585,7 @@ a literal boolean.}
 begin
   Result := CreateExpression(name, typBool, otConst, srcPos);
   Result.Sto := stConst;
-  Result.evaluated := true;
-  Result.value.ValBool := boolValue;
+  Result.SetLiteralBoolConst(boolValue);
   TreeElems.AddElement(Result);
 end;
 function TCompilerBase.AddVarDecAndOpen(varName: string; eleTyp: TEleTypeDec;
@@ -1498,6 +1435,65 @@ The operand read is added to the syntax tree, as a TxpEleExpress element, and re
 in this function.
 
 }
+  procedure TipDefecNumber(out typ: TEleTypeDec; out valInt: Int64; toknum: string);
+  {Procesa constantes numéricas, ubicándolas en el tipo de dato apropiado (byte, word, ... )
+   Si no logra ubicar el tipo de número, o no puede leer su valor, generará  un error.}
+  var
+    n: int64;   //para almacenar a los enteros
+  //  f: extended;  //para almacenar a reales
+  begin
+    if pos('.',toknum) <> 0 then begin  //es flotante
+      GenError('Unvalid float number.');  //No hay soporte aún para flotantes
+  //    try
+  //      f := StrToFloat(toknum);  //carga con la mayor precisión posible
+  //    except
+  //      Op.typ := nil;
+  //      GenError('Unvalid float number.');
+  //      exit;
+  //    end;
+  //    //busca el tipo numérico más pequeño que pueda albergar a este número
+  //    Op.size := 4;   //se asume que con 4 bytes bastará
+  //    {Aquí se puede decidir el tamaño de acuerdo a la cantidad de decimales indicados}
+  //
+  //    Op.valFloat := f;  //debe devolver un extended
+  //    menor := 1000;
+  //    for i:=0 to typs.Count-1 do begin
+  //      { TODO : Se debería tener una lista adicional TFloatTypes, para acelerar la
+  //      búsqueda}
+  //      if (typs[i].cat = t_float) and (typs[i].size>=Op.size) then begin
+  //        //guarda el menor
+  //        if typs[i].size < menor then  begin
+  //           imen := i;   //guarda referencia
+  //           menor := typs[i].size;
+  //        end;
+  //      end;
+  //    end;
+  //    if menor = 1000 then  //no hubo tipo
+  //      Op.typ := nil
+  //    else  //encontró
+  //      Op.typ:=typs[imen];
+  //
+    end else begin     //es entero
+      //Intenta convertir la cadena. Notar que se reconocen los formatos $FF y %0101
+      if not TryStrToInt64(toknum, n) then begin
+        //Si el lexer ha hecho bien su trabajo, esto solo debe pasar, cuando el
+        //número tiene mucHos dígitos.
+        GenError('Error in number.');
+        exit;
+      end;
+      valInt := n;   //copia valor de constante entera
+      {Asigna un tipo, de acuerdo al rango. Notar que el tipo más pequeño, usado
+      es el byte, y no el bit.}
+      if (n>=0) and  (n<=255) then begin
+        typ := typByte;
+      end else if (n>= 0) and (n<=$FFFF) then begin
+        typ := typWord;
+      end else  begin //no encontró
+        GenError(ER_NOTYPDEF_NU);
+        typ := typNull;
+      end;
+    end;
+  end;
   function ResolveFunction(const pars: TxpParFuncArray;   //Parameters
            xfun: TEleFunBase;   //First function found in the Syntax Tree.
            searchState: TxpFindState): TEleFunBase;
@@ -1532,27 +1528,27 @@ var
   xfun: TEleFunBase;
   findState: TxpFindState;
   upTok: String;
-  value: TConsValue;
+//  value: TConsValue;
   typ: TEleTypeDec;
   cod: Longint;
   opr1: TEleFun;
+  valInt: Int64;
 begin
   SkipWhites;
   upTok := UpCase(token);
   if tokType = tkLitNumber then begin
-    TipDefecNumber(typ, value, token); //encuentra tipo de número, tamaño y valor
+    TipDefecNumber(typ, valInt, token); //encuentra tipo de número, tamaño y valor
     if HayError then exit;  //verifica
     Op1 := AddExpressAndOpen(token, typ, otConst, GetSrcPos);
-    Op1.evaluated := true;  //We have the value directly.
-    Op1.value := value;
+    Op1.SetLiteraltIntConst(valInt);
     Next;    //Pasa al siguiente
   end else if upTok = 'TRUE' then begin  //Constant boolean.
     Op1 := AddExpressAndOpen('T', typBool, otConst, GetSrcPos);
-    Op1.SetBooleanVal(true);
+    Op1.SetLiteralBoolConst(true);
     Next;    //Pasa al siguiente
   end else if upTok = 'FALSE' then begin  //Constant boolean.
     Op1 := AddExpressAndOpen('F', typBool, otConst, GetSrcPos);
-    Op1.SetBooleanVal(false);
+    Op1.SetLiteralBoolConst(false);
     Next;    //Pasa al siguiente
   end else if toktype = tkIdentifier then begin
     ele := TreeElems.FindFirst(token); //Identify element
@@ -1566,15 +1562,7 @@ begin
       xcon := TEleConsDec(ele);
       AddCallerToFromCurr(ele);
       Op1 := AddExpressAndOpen(ele.name, xcon.Typ, otConst, GetSrcPos);
-      if xcon.evaluated then begin
-        //The constant is already calculated. We can obtain the value.
-        Op1.evaluated := true;
-        Op1.value := xcon.value^;
-      end else begin
-        //No yet calculated. Maybe "xcon" depends on an expression.
-        Op1.evaluated := false;
-        Op1.cons := xcon;  //Keep reference to calculate later.
-      end;
+      Op1.SetConstRef(xcon);
       Next;    //Pasa al siguiente
     end else if ele.idClass = eleVarDec then begin  //Is variable
       xvar := TEleVarDec(ele);

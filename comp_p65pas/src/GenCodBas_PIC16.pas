@@ -556,7 +556,7 @@ end;
 procedure TGenCodBas.SetFunConst_bool(fun: TEleExpress; valBool: Boolean);
 begin
   SetFunConst(fun);
-  fun.SetBooleanVal(valBool);
+  fun.SetLiteralBoolConst(valBool);
 end;
 procedure TGenCodBas.SetFunConst_byte(fun: TEleExpress; valByte: integer);
 begin
