@@ -3,6 +3,8 @@
 TAnalyzer.DoAnalyzeUnit().
 - Se agrega soporte para los comentarios de tipo (* ... *) en el compilador.
 - Se cambia los atajos para "Grabar" y "Buscar" a Ctrl+G y Ctrl+S.
+2/11/2022
+- Se corrige el error al compilar ASM jsr $123 END;
 
 P65PAS 1.0.0
 =============
@@ -1202,9 +1204,9 @@ Implementar esta funcionalidad en etapas tempranas daría la ventaja de que el le
 ya con soporte básico a objetos.
 Otra de las tareas pendientes es hacer que la creación de funciones de sistema sea igual 
 que las funciones definidas por el usuario (incluyendo el uso de variables locales).
-Pero este acercamiento, debe también darse del lado de las funciones definidas por el usuario. De 
-modo que se permita especificar parámetros REGISTER, diferenciados. Se recomienda implementar las 
-palabras resrevadas REGISTERA, REGISTERX, REGISTERY, REGISTERSP,...
+Pero este acercamiento, debe también darse del lado de las funciones definidas por el usuario. 
+De modo que se permita especificar parámetros REGISTER, diferenciados. Se recomienda 
+implementar las palabras resrevadas REGISTERA, REGISTERX, REGISTERY, REGISTERSP,...
 
 Revisar las instrucciones "if not AcumStatInZ" porque están después de SetROBResult* y no tiene
 sentido, porque siempre cambia AcumStatInZ.
@@ -1216,5 +1218,6 @@ la lógica invertida solo debería aplicarse a expresiones, pero es un tema de aná
 
 P65PAS 0.2
 ==========
-Se mejora el desarrollo del compilador, mejorando el análisis de los almacenamientos: stVarRefVar y stVarRefExp.
+Se mejora el desarrollo del compilador, mejorando el análisis de los almacenamientos: 
+stVarRefVar y stVarRefExp.
 Se elimina las instrucciones _BTFSC y _BTFSS, que eran un remanente del compilador PicPas.

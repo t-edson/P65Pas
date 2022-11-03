@@ -539,6 +539,9 @@ begin
         UpdateInstruction(idInst, aAbsolute, curInst.operVal);
       end;
     end;
+    if (cpx.tokType=tkIdentifier) and (Upcase(cpx.token)='END') then begin
+      blkEnd := true;
+    end;
   end;
 end;
 procedure TParserAsm_6502.ProcASMline(out blkEnd: boolean);
