@@ -5,9 +5,9 @@ escuchar, una serie de pitidos cortos. Si se escucha un pitido
 largo, es que hubo algún error en el resultado de alguna operación.}
 uses Commodore64;
 var
-  a, i, fin: byte;
+  a, i, j, fin: byte;
 	b,c: boolean;
-
+  w,x,y:word;
   procedure bien;
   begin
     CHROUT('O');
@@ -290,6 +290,24 @@ begin
 	if a<>2 then mal; end;
 
   //////////////////////////////////////////////////////////
+	///////////////////  IF in long blocks ///////////////////
+  //////////////////////////////////////////////////////////
+  a := 0;
+  if a=0 then 
+	  w := w+x+y+w+x+y+w;  //Long block
+    bien; 
+  else
+    mal;
+  end; 
+  a := 1;
+  if a=0 then 
+    mal;
+  else
+	  w := w+x+y+w+x+y+w;  //Long block
+    bien; 
+  end; 
+  
+  //////////////////////////////////////////////////////////
 	/////////////////////  WHILE //////////////////////
   //////////////////////////////////////////////////////////
 
@@ -402,6 +420,14 @@ begin
     inc(a); 
   end;
   if a<>4 then mal; end;
+  //For anidado
+  a := 0;
+  for i:=0 to 2 do 
+    for j:=0 to 2 do 
+      inc(a); 
+    end;
+  end;
+  if a<>9 then mal; end;
   
   asm rts end; 
 end.

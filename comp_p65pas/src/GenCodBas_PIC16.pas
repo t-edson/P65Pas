@@ -46,11 +46,12 @@ type
     procedure GenCodeREPEAT(sen: TEleSentence);
     procedure JUMP_IF_C_pre(Invert: boolean; igoto: integer);
     procedure JUMP_IF_pre(OpRes: TEleExpress; boolVal: boolean; igoto: integer);
-    procedure JUMP_IF_Z_post(Invert: boolean; out curAddr: integer);
-    procedure JUMP_IF_C_post(Invert: boolean; out curAddr: integer);
-    procedure JUMP_IF_post(OpRes: TEleExpress; boolVal: boolean; out
+    procedure JUMP_IF_Z_post(Invert, longJump: boolean; out curAddr: integer);
+    procedure JUMP_IF_C_post(Invert, longJump: boolean; out curAddr: integer);
+    procedure JUMP_IF_post(OpRes: TEleExpress; boolVal, longJump: boolean; out
       curAddr: integer);
     procedure JUMP_IF_Z_pre(Invert: boolean; igoto: integer);
+    procedure BRA2JMP(var info: TIfInfo);
     procedure StartCodeGen;
     procedure StopCodeGen;
     procedure ProcByteUsed(offs: word; regPtr: TCPURamCellPtr);
@@ -181,9 +182,9 @@ type
     procedure _TAY;
     procedure _TYA;
     procedure _TXA;
-    procedure IF_TRUE(OpRes: TEleExpress; out info: TIfInfo);
+    procedure IF_TRUE(OpRes: TEleExpress; longJump: boolean; out info: TIfInfo);
 //    procedure IF_FALSE(OpRes: TEleExpress; out info: TIfInfo);
-    procedure IF_END(const info: TIfInfo);
+    procedure IF_END(const info: TIfInfo; out relatOver: boolean);
   protected  //Functions for types
     //////////////// Tipo Boolean /////////////
     procedure bool_LoadToRT(fun: TEleExpress);
@@ -592,7 +593,8 @@ begin
   Result := pic.frequen;
 end;
 procedure TGenCodBas._LABEL_post(igoto: integer);
-{Finish a previous JMP_lbl, BNE_post, BEQ_post, ... instructions.}
+{Finish a previous absolute jump (JMP_post), or relative jump (BNE_post, BEQ_post, ...)
+instructions.}
 var
   offset: integer;
 begin
@@ -1055,22 +1057,44 @@ begin
     _BCS(igoto - _PC - 2);
   end;
 end;
-procedure TGenCodBas.JUMP_IF_Z_post(Invert: boolean; out curAddr: integer);
-{Jump using the Z flag. Jump if Z is set.}
+procedure TGenCodBas.JUMP_IF_Z_post(Invert, longJump: boolean; out curAddr: integer);
+{Jump using the Z flag. Jump if Z is set.
+If "longJump" is set it generates a long jump (more than 128 bytes). }
 begin
-  if Invert then begin
-    _BNE_post(curAddr);
+  if longJump then begin          //Long jump
+      if Invert then begin
+        _BEQ(3);
+        _JMP_post(curAddr);
+      end else begin
+        _BNE(3);
+        _JMP_post(curAddr);
+      end;
   end else begin
-    _BEQ_post(curAddr);
+      if Invert then begin
+        _BNE_post(curAddr);
+      end else begin
+        _BEQ_post(curAddr);
+      end;
   end;
 end;
-procedure TGenCodBas.JUMP_IF_C_post(Invert: boolean; out curAddr: integer);
-{Jump using the C flag. Jump if C is set.}
+procedure TGenCodBas.JUMP_IF_C_post(Invert, longJump: boolean; out curAddr: integer);
+{Jump using the C flag. Jump if C is set.
+If "longJump" is set it generates a long jump (more than 128 bytes). }
 begin
-  if Invert then begin
-    _BCC_post(curAddr);
+  if longJump then begin          //Long jump
+      if Invert then begin
+        _BCS(3);
+        _JMP_post(curAddr);
+      end else begin
+        _BCC(3);
+        _JMP_post(curAddr);
+      end;
   end else begin
-    _BCS_post(curAddr);
+      if Invert then begin
+        _BCC_post(curAddr);
+      end else begin
+        _BCS_post(curAddr);
+      end;
   end;
 end;
 procedure TGenCodBas.JUMP_IF_pre(OpRes: TEleExpress; boolVal: boolean;
@@ -1124,58 +1148,59 @@ begin
     genError('Expression storage not supported.');
   end;
 end;
-procedure TGenCodBas.JUMP_IF_post(OpRes: TEleExpress; boolVal: boolean;
+procedure TGenCodBas.JUMP_IF_post(OpRes: TEleExpress; boolVal, longJump: boolean;
                                   out curAddr: integer);
 {Jump to a post label, if the last operand "OpRes" returned a boolean result equal to
-"boolVal".}
+"boolVal".
+If "longJump" is set it generates a long jump (more than 128 bytes). }
 begin
   if OpRes.Sto = stRamFix then begin
     //Result in variable
     _LDA(OpRes.rVar.addr);
-    JUMP_IF_Z_post(boolVal, curAddr);  //We cannot apply optimization
+    JUMP_IF_Z_post(boolVal, longJump, curAddr);  //We cannot apply optimization
   end else if OpRes.Sto = stRegister then begin
     {We first evaluate the case when it could be done an optimization}
     if lastASMcode = lacCopyCtoA then begin
       //Expression result has been copied from C to A
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check C flag
-      JUMP_IF_C_post(not boolVal, curAddr);
+      JUMP_IF_C_post(not boolVal, longJump, curAddr);
     end else if lastASMcode = lacInvCtoA then begin
       //Expression result has been copied from C to A inverted
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check C flag
-      JUMP_IF_C_post(boolVal, curAddr);
+      JUMP_IF_C_post(boolVal, longJump, curAddr);
     end else if lastASMcode = lacCopyZtoA then begin
       //Expression result has been copied from Z to A
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
-      JUMP_IF_Z_post(not boolVal, curAddr);
+      JUMP_IF_Z_post(not boolVal, longJump, curAddr);
     end else if lastASMcode = lacInvZtoA then begin
       //Expression result has been copied from Z to A inverted
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
-      JUMP_IF_Z_post(boolVal, curAddr);
+      JUMP_IF_Z_post(boolVal, longJump, curAddr);
     end else if lastASMcode = lacInvAtoA then begin
       //Expression result has been copied from A to A inverted, and Z reflect the regA boolVal.
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
-      JUMP_IF_Z_post(not boolVal, curAddr);
+      JUMP_IF_Z_post(not boolVal, longJump, curAddr);
     end else begin
       {Cannot be (or should be) optimized }
       if AcumStatInZ then begin
         //Still we can use the optimizaction of testing Z flag
-        JUMP_IF_Z_post(boolVal, curAddr);
+        JUMP_IF_Z_post(boolVal, longJump, curAddr);
       end else begin
         //Operand boolVal in A but not always in Z
         _TAX;  //To update Z
-        JUMP_IF_Z_post(boolVal, curAddr);
+        JUMP_IF_Z_post(boolVal, longJump, curAddr);
       end;
     end;
   end else begin
     genError('Expression storage not supported.');
   end;
 end;
-procedure TGenCodBas.IF_TRUE(OpRes: TEleExpress; out info: TIfInfo);
+procedure TGenCodBas.IF_TRUE(OpRes: TEleExpress; longJump: boolean; out info: TIfInfo);
 {Conditional instruction. Test if last expression is TRUE. In this case, execute
 the following block. The syntax is:
 
@@ -1188,12 +1213,62 @@ This instruction require to call to IF_END() to define the End of the block.
 The block of code can be one or more instructions.
 }
 begin
-  JUMP_IF_post(OpRes, false, info.igoto);
+  JUMP_IF_post(OpRes, false, longJump, info.igoto);
 end;
-procedure TGenCodBas.IF_END(const info: TIfInfo);
-{Define the End of the block, created with IF_TRUE().}
+procedure TGenCodBas.IF_END(const info: TIfInfo; out relatOver: boolean);
+{Define the End of the block, created with IF_TRUE().
+Note the similarity with _LABEL_post().}
+var
+  offset, igoto: integer;
 begin
-  _LABEL_post(info.igoto);  //termina de codificar el salto
+  igoto := info.igoto;
+  relatOver := false;
+  if pic.ram[igoto].value = 0 then begin
+    //Es salto absoluto
+    pic.ram[igoto].value   := lo(_PC);
+    pic.ram[igoto+1].value := hi(_PC);
+  end else begin
+    //Es salto relativo. Salto hacia adelante
+    offset := _PC - igoto-1;
+    if offset>127 then begin
+      relatOver := true;
+      exit;
+    end;
+    pic.ram[igoto].value := offset;
+  end;
+end;
+procedure TGenCodBas.BRA2JMP(var info: TIfInfo);
+{Change a relative jump (BEQ, BNE, BCS o BCC) of the form:
+  BNE <offset>
+To an absolute (long) jump:
+  BEQ <+3>
+  JMP <offset>
+To generate the new code, the all jump instruction if overwritten and the pointer "iram"
+is set to the next free position after the new junp instructions.
+The IN/OUT parameter "info" give the addres (info.igoto) of the parameter of the relative
+jump (BNE).
+Field "info.igoto" will be set to the absolute jump after finishing this
+procedure.}
+var
+  ramcell: TCPURamCellPtr;
+begin
+  ramcell := @pic.ram[info.igoto-1];  //Read Jump Opcode
+  pic.iRam := info.igoto-1;    //Go to the start of the Opcode
+  if (ramcell^.value = $F0) then begin  //BEQ
+    _BNE(3);
+    _JMP_post(info.igoto);
+  end else if (ramcell^.value = $D0) then begin  //BNE
+    _BEQ(3);
+    _JMP_post(info.igoto);
+  end else if (ramcell^.value = $90) then begin  //BCC
+    _BCS(3);
+    _JMP_post(info.igoto);
+  end else if (ramcell^.value = $B0) then begin  //BCS
+    _BCC(3);
+    _JMP_post(info.igoto);
+  end else begin
+    GenError('Unsupported branch Opcode.');
+  end;
 end;
 //////////////// Tipo Boolean /////////////
 procedure TGenCodBas.bool_LoadToRT(fun: TEleExpress);
@@ -1964,6 +2039,7 @@ var
   //Variables for jumps completion.
   njumps: integer;
   jumps: array of integer;
+  relatOver: boolean;
 begin
   njumps := 0;
   SetLength(jumps, njumps);
@@ -1983,17 +2059,31 @@ begin
       end;
     end else begin
       //Not constant expressions.
-      IF_TRUE(expBool, lbl1);
-      GenCodeBlock(TEleBlock(sen.elements[i+1]));
-      //Check if there is more conditions
-      if i+2<sen.elements.Count then begin
-        //There are more conditions.
-        //We need to include a jump to the end
+      //Check if we need to create space for a jump.
+      if i+2<sen.elements.Count then begin  //There are more conditions.
+        //We creates space for a JMP instruction
         inc(njumps);
         SetLength(jumps, njumps);  //Create new jump address
+      end;
+      //Creates the tentative conditional using short jumps
+      IF_TRUE(expBool, false, lbl1);
+      GenCodeBlock(TEleBlock(sen.elements[i+1]));
+      if i+2<sen.elements.Count then begin  //There are more conditions.
+        //We need to include a jump to the end
         _JMP_post(jumps[njumps-1]); //New jump to complete later
       end;
-      IF_END(lbl1);
+      IF_END(lbl1, relatOver);
+      if relatOver then begin
+        //GenError('Block to long.', sen.srcDec);
+        //Block to long for short jump. We recompile using a long block.
+        BRA2JMP(lbl1);  //We cannot use IF_TRUE() again because probably IF_TRUE() has made some optimization (delete Opcodes) before of generate the jump instruction.
+        GenCodeBlock(TEleBlock(sen.elements[i+1]));
+        if i+2<sen.elements.Count then begin  //There are more conditions.
+          //We need to include a jump to the end
+          _JMP_post(jumps[njumps-1]); //New jump to complete later
+        end;
+        IF_END(lbl1, relatOver);
+      end;
       i+=2;
     end;
   end;
@@ -2008,6 +2098,7 @@ var
   lbl1: Word;
   expBool: TEleExpress;
   lbl2: TIfInfo;
+  relatOver: boolean;
 begin
   lbl1 := _PC;        //guarda dirección de inicio
   expBool := GenCodeCodition(sen.elements[0]);
@@ -2022,11 +2113,17 @@ begin
       _JMP(lbl1);
     end;
   end else begin  //otVariab. otFunct
-    IF_TRUE(expBool, lbl2);
-    //_JMP_post(dg);  //salto pendiente
+    IF_TRUE(expBool, false, lbl2);
     GenCodeBlock(TEleBlock(sen.elements[1]));
     _JMP(lbl1);   //salta a evaluar la condición
-    IF_END(lbl2);
+    IF_END(lbl2, relatOver);
+    if relatOver then begin
+      //GenError('Block to long.');
+      BRA2JMP(lbl2);
+      GenCodeBlock(TEleBlock(sen.elements[1]));
+      _JMP(lbl1);   //salta a evaluar la condición
+      IF_END(lbl2, relatOver);
+    end;
     //ya se tiene el destino del salto
     //_LABEL_post(dg);   //Termina de codificar el salto
   end;
@@ -2037,6 +2134,7 @@ var
   expSet, expBool: TEleExpress;
   lbl1: Word;
   lbl2: TIfInfo;
+  relatOver: boolean;
 begin
   //Generate code for the assigment
   assign := sen.elements[0];
@@ -2058,10 +2156,17 @@ begin
       _JMP(lbl1);
     end;
   end else begin  //otVariab, otFunct
-    IF_TRUE(expBool, lbl2);
+    IF_TRUE(expBool, false, lbl2);
     GenCodeBlock(TEleBlock(sen.elements[2]));
     _JMP(lbl1);   //salta a evaluar la condición
-    IF_END(lbl2);
+    IF_END(lbl2, relatOver);
+    if relatOver then begin
+      //GenError('Block to long.');
+      BRA2JMP(lbl2);
+      GenCodeBlock(TEleBlock(sen.elements[2]));
+      _JMP(lbl1);   //salta a evaluar la condición
+      IF_END(lbl2, relatOver);
+    end;
   end;
 
 end;
