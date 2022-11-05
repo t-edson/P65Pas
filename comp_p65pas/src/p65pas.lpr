@@ -124,7 +124,7 @@ begin
   writeln('  -Ac Include commnents in ASM output.');
   writeln('  -Av Include variables information section.');
   writeln('  -Au Exclude unused variables in variable section.');
-  writeln('  -An Include nombres de variables en las instrucciones.');
+  writeln('  -An Include variable names in instructions.');
   writeln('  -Aa Include memory address in instructions.');
   writeln('');
   writeln('OTHER OPTIONS:');

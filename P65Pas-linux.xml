@@ -66,6 +66,7 @@
   </AftChg6502>
   <Compiler6502>
     <unitPath Val="{AppPath}/comp_p65pas/units/"/>
+    <saveBefcomp Val="True"/>
     <ForToRepeat Val="True"/>
     <OptimLev Val="1"/>
     <ReuProcVar Val="False"/>
