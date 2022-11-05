@@ -51,11 +51,11 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test3_Structs1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-1.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore64.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test3_Structs1.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test3_Structs2.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test6_Directives.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test5_arrays_3.pas
 "/>
   </Edit>
   <ExternTool>
@@ -68,7 +68,8 @@ Execute in VIC-20	                        	D:\Programas\GTK3VICE-3.6.1-win64\bin
     <actAfterChg Val="3"/>
   </AftChg6502>
   <Compiler6502>
-    <unitPath Val="{AppPath}/comp_p65pas/units/"/>
+    <unitPath Val="{AppPath}/comp_p65pas/units2/; {AppPath}/comp_p65pas/units/"/>
+    <saveBefcomp Val="True"/>
     <ForToRepeat Val="True"/>
     <OptimLev Val="1"/>
     <ReuProcVar Val="True"/>

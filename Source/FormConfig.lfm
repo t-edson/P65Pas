@@ -60,10 +60,10 @@ object Config: TConfig
     Height = 439
     Top = 0
     Width = 514
-    ActivePage = tabEnviron
+    ActivePage = tabEditor
     Align = alClient
     ShowTabs = False
-    TabIndex = 0
+    TabIndex = 5
     TabOrder = 1
     object tabEnviron: TTabSheet
       Caption = 'Enviroment'
@@ -418,8 +418,8 @@ object Config: TConfig
         Height = 431
         Top = 0
         Width = 506
-        HorzScrollBar.Page = 260
-        VertScrollBar.Page = 240
+        HorzScrollBar.Page = 267
+        VertScrollBar.Page = 208
         Align = alClient
         BorderStyle = bsNone
         ClientHeight = 431
@@ -428,7 +428,7 @@ object Config: TConfig
         object grpTabEdiState: TRadioGroup
           Left = 24
           Height = 120
-          Top = 120
+          Top = 88
           Width = 236
           AutoFill = True
           Caption = 'Tab Editor State:'
@@ -451,9 +451,9 @@ object Config: TConfig
         object chkShowErrMsg: TCheckBox
           Left = 24
           Height = 24
-          Top = 64
-          Width = 164
-          Caption = 'Show Error Messages'
+          Top = 24
+          Width = 243
+          Caption = 'Show Compiler Error Dialog box '
           TabOrder = 1
         end
       end
@@ -643,7 +643,7 @@ object Config: TConfig
     }
   end
   object OpenDialog1: TOpenDialog
-    Left = 272
-    Top = 240
+    Left = 464
+    Top = 16
   end
 end

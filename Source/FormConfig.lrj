@@ -26,7 +26,7 @@
 {"hash":224973841,"name":"tconfig.tabenvextra1.caption","sourcebytes":[116,97,98,69,110,118,69,120,116,114,97,49],"value":"tabEnvExtra1"},
 {"hash":231000124,"name":"tconfig.tabeditor.caption","sourcebytes":[71,101,110,101,114,97,108],"value":"General"},
 {"hash":161507466,"name":"tconfig.grptabedistate.caption","sourcebytes":[84,97,98,32,69,100,105,116,111,114,32,83,116,97,116,101,58],"value":"Tab Editor State:"},
-{"hash":204057699,"name":"tconfig.chkshowerrmsg.caption","sourcebytes":[83,104,111,119,32,69,114,114,111,114,32,77,101,115,115,97,103,101,115],"value":"Show Error Messages"},
+{"hash":136359872,"name":"tconfig.chkshowerrmsg.caption","sourcebytes":[83,104,111,119,32,67,111,109,112,105,108,101,114,32,69,114,114,111,114,32,68,105,97,108,111,103,32,98,111,120,32],"value":"Show Compiler Error Dialog box "},
 {"hash":79367010,"name":"tconfig.tabediappear.caption","sourcebytes":[69,100,105,116,111,114],"value":"Editor"},
 {"hash":95443592,"name":"tconfig.tabedisyntax.caption","sourcebytes":[83,121,110,116,97,120],"value":"Syntax"},
 {"hash":7743230,"name":"tconfig.tabediextra1.caption","sourcebytes":[65,102,116,101,114,32,69,100,105,116,32,65,99,116,105,111,110],"value":"After Edit Action"},

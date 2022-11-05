@@ -6,11 +6,11 @@ unit adapter6502;
 {$mode ObjFPC}{$H+}
 interface
 uses
-  Classes, SysUtils, ComCtrls, Controls, ActnList, Menus, ExtCtrls, Graphics,
-  Forms, SynEdit, adapterBase, CodeTools6502, Compiler_PIC16, LexPas,
+  Classes, SysUtils, Types, ComCtrls, Controls, ActnList, Menus, ExtCtrls,
+  Graphics, Forms, SynEdit, adapterBase, CodeTools6502, Compiler_PIC16, LexPas,
   FrameEditView, Globales, FrameCfgSynEdit, MisUtils, SynFacilHighlighter,
-  EditView, MiConfigXML, FrameStatist6502, FrameSynTree6502,
-  FormAdapter6502, FrameCfgAfterChg6502, FrameCfgCompiler6502, FormDebugger6502,
+  EditView, MiConfigXML, FrameStatist6502, FrameSynTree6502, FormAdapter6502,
+  FrameCfgAfterChg6502, FrameCfgCompiler6502, FormDebugger6502,
   FormRAMExplorer6502, FrameCfgAsmOut6502;
 type
   { TAdapter6502 }
@@ -122,7 +122,7 @@ begin
     ed := fraEditView1.editors[i];
     if Compiling then begin
       //En compilación guarda siempre los archivos afectados.
-      ed.SaveFile;
+      if fraCfgCompiler.saveBefcomp then ed.SaveFile;
     end else begin
       {En verificación de sintaxis no es coveniente. Puede resultar molesto al usuario.
       A menos que tenga activada alguna opción de "Autosave".}
@@ -305,13 +305,19 @@ begin
 end;
 procedure TAdapter6502.ReadCompilerSettings(var pars: string);
 {Read the compiler setting from the Setting frame and add them to "pars".}
+var
+  upaths: TStringDynArray;
+  i: Integer;
 begin
   //Compiler options
   if not fraCfgCompiler.ForToRepeat then AddLine(pars,'-Cf');  //Convertir bucles FOR a REPEAT
   if fraCfgCompiler.ReuProcVar then AddLine(pars, '-Ov');  //Reusar variables de proced.
   if fraCfgCompiler.OptRetProc then AddLine(pars, '-Or');  //Optimizar Retorno de proced.
   if fraCfgCompiler.RemUnOpcod then AddLine(pars, '-Ou');  //Eliminar Instrucciones ASM innecesarias.
-  AddLine(pars, '-Fu"' + fraCfgCompiler.unitPathExpanded + '"');  //Agrega esta ruta a las rutas de unidades del compilador.
+  upaths := Explode(';', fraCfgCompiler.unitPathExpanded);  //Puede haber varias rutas
+  for i:=0 to high(upaths) do begin
+    AddLine(pars, '-Fu"' + trim(upaths[i]) + '"');  //Agrega esta ruta a las rutas de unidades del compilador.
+  end;
   //Assembler output settings
   if fraCfgAsmOut.asmOutType=0 then AddLine(pars, '-A0');  //Salida en ASM normal
   if fraCfgAsmOut.asmOutType=1 then AddLine(pars, '-A1');  //Salida en POKE's del BASIC

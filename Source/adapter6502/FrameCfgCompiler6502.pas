@@ -11,6 +11,7 @@ type
 
   { TfraCfgCompiler6502 }
   TfraCfgCompiler6502 = class(TFrame)
+    chkSaveBefComp: TCheckBox;
     chkOptRetProc: TCheckBox;
     chkRemUnOpcod: TCheckBox;
     chkReuProcVar: TCheckBox;
@@ -22,6 +23,7 @@ type
 
   public
     unitPath    : string;
+    saveBefcomp : boolean;
     ForToRepeat : boolean;
     OptimLev    : TOptimLev;
     ReuProcVar  : boolean;
@@ -53,6 +55,7 @@ end;
 procedure TfraCfgCompiler6502.Init(section: string; cfgFile: TMiConfigXML);
 begin
   cfgFile.Asoc_Str (section+ '/unitPath'    , @unitPath    , txtUnitpath, '{AppPath}/comp_p65pas/units/');
+  cfgFile.Asoc_Bol (section+ '/saveBefcomp' , @saveBefcomp , chkSaveBefComp  , true);
   cfgFile.Asoc_Bol (section+ '/ForToRepeat' , @ForToRepeat , chkForToRepeat  , true);
   cfgFile.Asoc_Enum(section+ '/OptimLev'    , @OptimLev    , Sizeof(TOptimLev),grpOptimLev, 1);
   cfgFile.Asoc_Bol (section+ '/ReuProcVar'  , @ReuProcVar  , chkReuProcVar   , false);

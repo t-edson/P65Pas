@@ -1,10 +1,16 @@
+
+4/11/2022
+- Se quita la limitación de crear bloques del IF o FOR que sean mayores a 127 bytes.
+- Se agrega opción "Grabar antes de compilar" a la configuración del compilador P65pas.
+- Se habilita la configuración "Unit Path" para poder modificar la ruta de las unidades.
+
+2/11/2022
+- Se corrige el error al compilar ASM jsr $123 END;
 1/11/2022: 
 - Se corrige el procesamiento de las unidades después de IMPLEMENTATION en 
 TAnalyzer.DoAnalyzeUnit().
 - Se agrega soporte para los comentarios de tipo (* ... *) en el compilador.
 - Se cambia los atajos para "Grabar" y "Buscar" a Ctrl+G y Ctrl+S.
-2/11/2022
-- Se corrige el error al compilar ASM jsr $123 END;
 
 P65PAS 1.0.0
 =============
