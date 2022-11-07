@@ -50,6 +50,7 @@ begin
   fra.Left := 0;
   fra.Top := 0;
   fra.panTitle.Visible := false;
+  fra.Align := alClient;
   shpRamUsed.Brush.Color  := fra.COL_USED_CODE;
   shpSpecRAM.Brush.Color  := fra.COL_IMPLE_SFR;
   shpUnimplem.Brush.Color := fra.COL_UNIMPLEM;

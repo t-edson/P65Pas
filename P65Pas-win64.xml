@@ -6,18 +6,20 @@
   <PanelsCol Val="536870912"/>
   <SplitterCol Val="536870912"/>
   <TextPanel Val="8421504"/>
-  <currPath Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+  <currPath Val="D:\work\Publicly-Shared\X16\Pascal"/>
+  <filesClosed Val="D:\work\Publicly-Shared\X16\Pascal\Test\Test_X16.pas
+D:\work\Publicly-Shared\X16\Pascal\Test\Test_C64.pas
+D:\work\Publicly-Shared\X16\Pascal\lib\VERA.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
   <VerBarHerram Val="True"/>
   <ViewSynTree Val="True"/>
-  <SynTreeWidth Val="249"/>
+  <SynTreeWidth Val="226"/>
   <EditAsmWidth Val="472"/>
   <ViewPanAssem Val="True"/>
-  <winXpos Val="223"/>
-  <winYpos Val="5"/>
+  <winXpos Val="749"/>
+  <winYpos Val="168"/>
   <winWidth Val="1166"/>
   <winHeight Val="790"/>
   <winState Val="0"/>
@@ -51,25 +53,26 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore64.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test3_Structs1.pas
+    <recient Val="D:\work\Publicly-Shared\X16\Pascal\lib\VERA.pas
+D:\work\Publicly-Shared\X16\Pascal\Test\Test_C64.pas
+D:\work\Publicly-Shared\X16\Pascal\Test\Test_X16.pas
+D:\work\Publicly-Shared\X16\Pascal\lib\X16.pas
+D:\work\Publicly-Shared\X16\Pascal\Test\Hello World.pas
 "/>
   </Edit>
   <ExternTool>
     <extern_tools Val="Execute in C64	                        	C:\Program Files (x86)\Computerbrains\CCS64 v3.9.3\CCS64.exe	$(hexFile)	F	V					
 Execute in C128	                        	D:\Programas\GTK3VICE-3.6.1-win64\bin\x128.exe	$(hexFile)	F	V					
 Execute in VIC-20	                        	D:\Programas\GTK3VICE-3.6.1-win64\bin\xvic.exe	$(hexFile)	F	V					
+X16	                        	D:\tools\x16\x16emu.exe	-prg $(hexFile) -run -debug	F	V					
 "/>
   </ExternTool>
   <AftChg6502>
-    <actAfterChg Val="3"/>
+    <actAfterChg Val="0"/>
   </AftChg6502>
   <Compiler6502>
-    <unitPath Val="{AppPath}/comp_p65pas/units/"/>
-    <saveBefcomp Val="True"/>
+    <unitPath Val="{AppPath}/comp_p65pas/units/; D:\work\Publicly-Shared\X16\Pascal\lib\"/>
+    <saveBefcomp Val="False"/>
     <ForToRepeat Val="True"/>
     <OptimLev Val="1"/>
     <ReuProcVar Val="True"/>

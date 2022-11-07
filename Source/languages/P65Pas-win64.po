@@ -1,214 +1,1077 @@
 msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8"
 
-#: tfrasyntaxtree.acgenexpall.caption
-msgid "Expand All"
+#: adapter6502.msg_synfil_nof
+msgctxt "adapter6502.msg_synfil_nof"
+msgid "Syntax file not found: %s"
 msgstr ""
 
-#: tfrasyntaxtree.acgengoto.caption
-msgid "Go To..."
+#: editview.msg_allfiles
+msgctxt "editview.msg_allfiles"
+msgid "All files"
 msgstr ""
 
-#: tfrasyntaxtree.acgenprop.caption
-msgid "&Properties"
+#: editview.msg_modifsav
+msgid "File %s has been modified. Save?"
 msgstr ""
 
-#: tfrasyntaxtree.acgenrefres.caption
+#: editview.msg_pasfiles
+msgctxt "editview.msg_pasfiles"
+msgid "Pascal Files"
+msgstr ""
+
+#: formconfig.cpage_cmp_extra1
+msgctxt "formconfig.cpage_cmp_extra1"
+msgid "Extra Subpanel 1"
+msgstr ""
+
+#: formconfig.cpage_cmp_extra2
+msgid "Extra Subpanel 2"
+msgstr ""
+
+#: formconfig.cpage_cmp_extra3
+msgid "Extra Subpanel 3"
+msgstr ""
+
+#: formconfig.cpage_compil
+msgid "Extra Panel"
+msgstr ""
+
+#: formconfig.cpage_editor
+msgctxt "formconfig.cpage_editor"
+msgid "Editor"
+msgstr ""
+
+#: formconfig.cpage_edi_appear
+msgid "Appearance"
+msgstr ""
+
+#: formconfig.cpage_edi_extra1
+msgctxt "formconfig.cpage_edi_extra1"
+msgid "Extra Subpanel 1"
+msgstr ""
+
+#: formconfig.cpage_edi_syntax
+msgctxt "formconfig.cpage_edi_syntax"
+msgid "Syntax"
+msgstr ""
+
+#: formconfig.cpage_environ
+msgid "Environment"
+msgstr ""
+
+#: formconfig.cpage_env_extra1
+msgctxt "formconfig.cpage_env_extra1"
+msgid "Extra Subpanel 1"
+msgstr ""
+
+#: formconfig.cpage_env_filexp
+msgctxt "formconfig.cpage_env_filexp"
+msgid "File Explorer"
+msgstr ""
+
+#: formconfig.cpage_env_mespan
+msgid "Message Panel"
+msgstr ""
+
+#: formconfig.cpage_env_themes
+msgid "Themes"
+msgstr ""
+
+#: formconfig.cpage_extool
+msgid "External Tool"
+msgstr ""
+
+#: formconfig.label_them_none
+msgid "None"
+msgstr ""
+
+#: formconfig.msg_allfiles
+msgctxt "formconfig.msg_allfiles"
+msgid "All files"
+msgstr ""
+
+#: formconfig.theme_file_desc
+msgid "Theme file"
+msgstr ""
+
+#: formprincipal.msg_filsavcomp
+msgid "File must be saved before compiling."
+msgstr ""
+
+#: formprincipal.msg_modified
+msgid "(*)Modified"
+msgstr ""
+
+#: formprincipal.msg_nofiles
+msgid "No files."
+msgstr ""
+
+#: formprincipal.msg_nofound_
+msgid "No found \"%s\""
+msgstr ""
+
+#: formprincipal.msg_n_replac
+msgid "%d words replaced"
+msgstr ""
+
+#: formprincipal.msg_project
+msgid "Project: "
+msgstr ""
+
+#: formprincipal.msg_repthis
+msgid "Replace this?"
+msgstr ""
+
+#: formprincipal.msg_saved
+msgid "Saved"
+msgstr ""
+
+#: formprincipal.msg_synfil_nof
+msgctxt "formprincipal.msg_synfil_nof"
+msgid "Syntax file not found: %s"
+msgstr ""
+
+#: framecfgexttool.er_fail_exec_
+msgid "Fail executing: %s"
+msgstr ""
+
+#: framecfgexttool.pre_tool_name
+msgid "Tool"
+msgstr ""
+
+#: frameeditview.msg_allfiles
+msgctxt "frameeditview.msg_allfiles"
+msgid "All files"
+msgstr ""
+
+#: frameeditview.msg_nofiles
+msgid "No files"
+msgstr ""
+
+#: frameeditview.msg_nosynfil
+msgctxt "frameeditview.msg_nosynfil"
+msgid "Syntax file not found: %s"
+msgstr ""
+
+#: frameeditview.msg_pasfiles
+msgctxt "frameeditview.msg_pasfiles"
+msgid "Pascal Files"
+msgstr ""
+
+#: framefileexplor.folder_name
+msgid "folder"
+msgstr ""
+
+#: framefileexplor.new_file_name
+msgid "newfile.pas"
+msgstr ""
+
+#: framefileexplor.txt_alread_exist
+msgid "A file with that name already exists."
+msgstr ""
+
+#: framefileexplor.txt_delfile
+msgid "Delete file \"%s\"?"
+msgstr ""
+
+#: framefileexplor.txt_dir_notexist
+msgid "Directory doesn't exist."
+msgstr ""
+
+#: framefileexplor.txt_empty
+msgid "<empty>"
+msgstr ""
+
+#: framefileexplor.txt_err_renaming
+msgid "An error occurred renaming file."
+msgstr ""
+
+#: framefileexplor.txt_fold
+msgid "C&ollapse"
+msgstr ""
+
+#: framefileexplor.txt_notac_filexp
+msgid "File is not accessible from the File Explorer."
+msgstr ""
+
+#: framefileexplor.txt_notdelfol
+msgid "Cannot delete folders"
+msgstr ""
+
+#: framefileexplor.txt_unfold
+msgctxt "framefileexplor.txt_unfold"
+msgid "E&xpand"
+msgstr ""
+
+#: framemessageswin.msg_compil
+msgid "Compiled in: "
+msgstr ""
+
+#: framemessageswin.msg_error
+msgid "Error"
+msgstr ""
+
+#: framemessageswin.msg_errors
+msgid "Errors"
+msgstr ""
+
+#: framemessageswin.msg_inicomp
+msgid "Starting Compilation..."
+msgstr ""
+
+#: framemessageswin.msg_warn
+msgid "Warning"
+msgstr ""
+
+#: framemessageswin.msg_warns
+msgid "Warnings"
+msgstr ""
+
+#: tconfig.bitaceptar.caption
+msgid "&OK"
+msgstr ""
+
+#: tconfig.bitaplicar.caption
+msgid "&Apply"
+msgstr ""
+
+#: tconfig.bitcancel.caption
+msgid "Cancel"
+msgstr ""
+
+#: tconfig.butloadtheme.caption
+msgid "&Load theme ..."
+msgstr ""
+
+#: tconfig.butsavecurthem.caption
+msgid "&Save current config. as theme"
+msgstr ""
+
+#: tconfig.caption
+msgid "Configuración"
+msgstr ""
+
+#: tconfig.chkloadlast.caption
+msgid "Load last file edited"
+msgstr ""
+
+#: tconfig.chkshowerrmsg.caption
+msgid "Show Compiler Error Dialog box "
+msgstr ""
+
+#: tconfig.grpfiltype.caption
+msgid "File types shown"
+msgstr ""
+
+#: tconfig.grptabedistate.caption
+msgid "Tab Editor State:"
+msgstr ""
+
+#: tconfig.grptoolbarsta.caption
+msgid "Toolbar"
+msgstr ""
+
+#: tconfig.label2.caption
+msgid "Language:"
+msgstr ""
+
+#: tconfig.lblcodexplcol1.caption
+msgctxt "tconfig.lblcodexplcol1.caption"
+msgid "Back color:"
+msgstr ""
+
+#: tconfig.lblcodexplcol2.caption
+msgid "Text Color:"
+msgstr ""
+
+#: tconfig.lblmesspan1.caption
+msgid "Back color"
+msgstr ""
+
+#: tconfig.lblmesspan2.caption
+msgctxt "tconfig.lblmesspan2.caption"
+msgid "Text color:"
+msgstr ""
+
+#: tconfig.lblmesspan3.caption
+msgid "Error color:"
+msgstr ""
+
+#: tconfig.lblmesspan4.caption
+msgid "Selection color:"
+msgstr ""
+
+#: tconfig.lblpanelcol.caption
+msgid "Panels Color:"
+msgstr ""
+
+#: tconfig.lblsplitcol.caption
+msgid "Splitters color:"
+msgstr ""
+
+#: tconfig.lblsplitcol1.caption
+msgid "Panel Text Color:"
+msgstr ""
+
+#: tconfig.lblthemload.caption
+msgid "Theme loaded:"
+msgstr ""
+
+#: tconfig.tabcmpextra1.caption
+msgid "Assembler"
+msgstr ""
+
+#: tconfig.tabcmpextra2.caption
+msgid "tabCmpExtra2"
+msgstr ""
+
+#: tconfig.tabcmpextra3.caption
+msgid "tabCmpExtra3"
+msgstr ""
+
+#: tconfig.tabcompiler.caption
+msgctxt "tconfig.tabcompiler.caption"
+msgid "Compiler"
+msgstr ""
+
+#: tconfig.tabediappear.caption
+msgctxt "tconfig.tabediappear.caption"
+msgid "Editor"
+msgstr ""
+
+#: tconfig.tabediextra1.caption
+msgid "After Edit Action"
+msgstr ""
+
+#: tconfig.tabedisyntax.caption
+msgctxt "tconfig.tabedisyntax.caption"
+msgid "Syntax"
+msgstr ""
+
+#: tconfig.tabeditor.caption
+msgid "General"
+msgstr ""
+
+#: tconfig.tabenvextra1.caption
+msgid "tabEnvExtra1"
+msgstr ""
+
+#: tconfig.tabenvfilexp.caption
+msgid "tabEnvFilExp"
+msgstr ""
+
+#: tconfig.tabenviron.caption
+msgid "Enviroment"
+msgstr ""
+
+#: tconfig.tabenvmespan.caption
+msgid "tabEnvMesPan"
+msgstr ""
+
+#: tconfig.tabenvthemes.caption
+msgid "tabEnvThemes"
+msgstr ""
+
+#: tconfig.tabexttool.caption
+msgid "tabExtTool"
+msgstr ""
+
+#: tfracfgafterchg6502.grpafteredit_6502.caption
+msgid "Actions after changes in editor:"
+msgstr ""
+
+#: tfracfgasmout6502.chkexcunused.caption
+msgid "Exclude unused"
+msgstr ""
+
+#: tfracfgasmout6502.chkincaddress.caption
+msgid "Include &Memory Address"
+msgstr ""
+
+#: tfracfgasmout6502.chkinccomment.caption
+msgid "Include &Comments"
+msgstr ""
+
+#: tfracfgasmout6502.chkincdecvar.caption
+msgid "Include &Variables declaration"
+msgstr ""
+
+#: tfracfgasmout6502.chkincvarname.caption
+msgid "Include &Variable names"
+msgstr ""
+
+#: tfracfgasmout6502.radiogroup2.caption
+msgid "Output"
+msgstr ""
+
+#: tfracfgcompiler6502.chkfortorepeat.caption
+msgid "Convert FOR loop to REPEAT loop"
+msgstr ""
+
+#: tfracfgcompiler6502.chkoptretproc.caption
+msgid "Optimize RETURN in procedures"
+msgstr ""
+
+#: tfracfgcompiler6502.chkremunopcod.caption
+msgid "Remove unnecessary Opcodes"
+msgstr ""
+
+#: tfracfgcompiler6502.chkreuprocvar.caption
+msgid "Reuse Procedures Variables"
+msgstr ""
+
+#: tfracfgcompiler6502.chksavebefcomp.caption
+msgid "Save file before compiling"
+msgstr ""
+
+#: tfracfgcompiler6502.grpoptimlev.caption
+msgid "Optimizacion Level: "
+msgstr ""
+
+#: tfracfgcompiler6502.label1.caption
+msgid "Units Path:"
+msgstr ""
+
+#: tfracfgexttool.butadd.caption
+msgid "Add"
+msgstr ""
+
+#: tfracfgexttool.butremove.caption
+msgid "Remove"
+msgstr ""
+
+#: tfracfgexttool.buttest.caption
+msgid "&Test"
+msgstr ""
+
+#: tfracfgexttool.chkshowtbar.caption
+msgid "&Show in Toolbar"
+msgstr ""
+
+#: tfracfgexttool.chkwaitexit.caption
+msgid "&Wait On Exit"
+msgstr ""
+
+#: tfracfgexttool.label1.caption
+msgid "Name:"
+msgstr ""
+
+#: tfracfgexttool.label2.caption
+msgid "Program path:"
+msgstr ""
+
+#: tfracfgexttool.label3.caption
+msgid "Command Line:"
+msgstr ""
+
+#: tfracfgexttool.label4.caption
+msgid "Tools:"
+msgstr ""
+
+#: tfracfgexttool.label5.caption
+msgid "To reference the source file, use $(mainFile)"
+msgstr ""
+
+#: tfracfgexttool.label6.caption
+msgid "To reference the output *.hex file, use $(hexFile)"
+msgstr ""
+
+#: tfracfgsynedit.chkautoindent.caption
+msgid "Autoindent"
+msgstr ""
+
+#: tfracfgsynedit.chkfullword.caption
+msgid "Full Word"
+msgstr ""
+
+#: tfracfgsynedit.chkhighcurlin.caption
+msgid "Highlight current line"
+msgstr ""
+
+#: tfracfgsynedit.chkhighcurword.caption
+msgid "Highlight current word"
+msgstr ""
+
+#: tfracfgsynedit.chkvermarple.caption
+msgid "Show folding marks"
+msgstr ""
+
+#: tfracfgsynedit.chkvernumlin.caption
+msgid "Show line number"
+msgstr ""
+
+#: tfracfgsynedit.chkverpanver.caption
+msgid "Gutter"
+msgstr ""
+
+#: tfracfgsynedit.chkviewhscroll.caption
+msgid "&Horizontal Scrollbar"
+msgstr ""
+
+#: tfracfgsynedit.chkviewvscroll.caption
+msgid "&Vertical Scrollbar"
+msgstr ""
+
+#: tfracfgsynedit.cmbfontname.text
+msgid "cmbFontName"
+msgstr ""
+
+#: tfracfgsynedit.groupbox1.caption
+msgid "   "
+msgstr ""
+
+#: tfracfgsynedit.groupbox2.caption
+msgid "              "
+msgstr ""
+
+#: tfracfgsynedit.label1.caption
+msgid "Color:"
+msgstr ""
+
+#: tfracfgsynedit.label10.caption
+msgctxt "tfracfgsynedit.label10.caption"
+msgid "Back color:"
+msgstr ""
+
+#: tfracfgsynedit.label11.caption
+msgctxt "tfracfgsynedit.label11.caption"
+msgid "Text color:"
+msgstr ""
+
+#: tfracfgsynedit.label12.caption
+msgid "Frame color:"
+msgstr ""
+
+#: tfracfgsynedit.label2.caption
+msgctxt "tfracfgsynedit.label2.caption"
+msgid "Back color:"
+msgstr ""
+
+#: tfracfgsynedit.label3.caption
+msgctxt "tfracfgsynedit.label3.caption"
+msgid "Text color:"
+msgstr ""
+
+#: tfracfgsynedit.label8.caption
+msgid "Back Color:"
+msgstr ""
+
+#: tfracfgsynedit.label9.caption
+msgid "Font color:"
+msgstr ""
+
+#: tfracfgsynedit.lblfontname.caption
+msgid "Font Name:"
+msgstr ""
+
+#: tfracfgsynedit.lblfontsize.caption
+msgid "Font Size:"
+msgstr ""
+
+#: tfraeditview.lblbackground.caption
+msgid "<<No files>>"
+msgstr ""
+
+#: tfraeditview.mncloseall.caption
+msgid "Close &All"
+msgstr ""
+
+#: tfraeditview.mncloseothers.caption
+msgid "Close &Others"
+msgstr ""
+
+#: tfraeditview.mnclosetab.caption
+msgid "&Close"
+msgstr ""
+
+#: tfraeditview.mnlocfileexp.caption
+msgid "&Locate on File Explorer"
+msgstr ""
+
+#: tfraeditview.mnnewtab.caption
+msgid "&New"
+msgstr ""
+
+#: tfrafileexplor.btnopenfolder.caption
+msgctxt "tfrafileexplor.btnopenfolder.caption"
+msgid "Open Folder..."
+msgstr ""
+
+#: tfrafileexplor.mnfilchanname.caption
+msgid "C&hange Name"
+msgstr ""
+
+#: tfrafileexplor.mnfilcrecopfrom.caption
+msgid "Create Co&py from"
+msgstr ""
+
+#: tfrafileexplor.mnfildelete.caption
+msgid "El&iminar"
+msgstr ""
+
+#: tfrafileexplor.mnfilopen.caption
+msgid "&Open"
+msgstr ""
+
+#: tfrafileexplor.mnfilrefrescar.caption
+msgid "&Refrescar"
+msgstr ""
+
+#: tfrafileexplor.mnfolchanname.caption
+msgid "Cha&nge Name"
+msgstr ""
+
+#: tfrafileexplor.mnfoldelete.caption
+msgid "&Delete"
+msgstr ""
+
+#: tfrafileexplor.mnfolexpandcol.caption
+msgctxt "tfrafileexplor.mnfolexpandcol.caption"
+msgid "E&xpand"
+msgstr ""
+
+#: tfrafileexplor.mnfolnewfile.caption
+msgid "&New File"
+msgstr ""
+
+#: tfrafileexplor.mnfolnewfolder.caption
+msgid "New &Folder"
+msgstr ""
+
+#: tfrafileexplor.mnfolopeninexplor.caption
+msgid "Open on &Windows Explorer"
+msgstr ""
+
+#: tfrafileexplor.mnfolrefresh.caption
+msgctxt "tfrafileexplor.mnfolrefresh.caption"
 msgid "&Refresh"
 msgstr ""
 
-#: tfrasyntaxtree.acgenviewdec.caption
-msgid "View by &Declaration"
+#: tfralateralpanel.label1.caption
+msgid " File Explorer"
 msgstr ""
 
-#: tfrasyntaxtree.comboboxex1.itemsex[1].caption
-msgctxt "tfrasyntaxtree.comboboxex1.itemsex[1].caption"
-msgid "ItemEx2"
+#: tfralateralpanel.tabsheet1.caption
+msgctxt "tfralateralpanel.tabsheet1.caption"
+msgid "File Explorer"
 msgstr ""
 
-#: tfrasyntaxtree.label1.caption
-msgid "Syntax Tree"
+#: tframessageswin.lblerrors.caption
+msgid "&Errors"
 msgstr ""
 
-#: tfrasyntaxtree.menuitem1.caption
-msgctxt "tfrasyntaxtree.menuitem1.caption"
-msgid "View by &Groups"
+#: tframessageswin.lblinform.caption
+msgid "&Information"
 msgstr ""
 
-#: tfrmelemproperty.butdetails.caption
-msgid "&Details ..."
+#: tframessageswin.lblram.caption
+msgctxt "tframessageswin.lblram.caption"
+msgid "RAM"
 msgstr ""
 
-#: tfrmelemproperty.caption
-msgid "Element Properties"
+#: tframessageswin.lblrom.caption
+msgctxt "tframessageswin.lblrom.caption"
+msgid "ROM"
 msgstr ""
 
-#: tfrmelemproperty.lblelemname.caption
-msgid "Element name:"
+#: tframessageswin.lblwarns.caption
+msgid "&Warnings"
 msgstr ""
 
-#: tfrmelemproperty.lblelemname1.caption
-msgid "Element type:"
+#: tframessageswin.mnclearall.caption
+msgid "Clear &All"
 msgstr ""
 
-#: tfrmelemproperty.lblelemname2.caption
-msgid "Location:"
+#: tframessageswin.mncopyrow.caption
+msgid "&Copy Row"
 msgstr ""
 
-#: tfrmelemproperty.lblelemname3.caption
-msgid "Status:"
+#: tframessageswin.pangrilla.caption
+msgid "<< No messages >>"
 msgstr ""
 
-#: tfrmelemproperty.lblelemname4.caption
-msgid "Path:"
+#: tfraramexplorer6502.label1.caption
+msgid "RAM map"
 msgstr ""
 
-#: tfrmelemproperty.lblelemname5.caption
-msgid "File:"
+#: tfraramexplorer6502.speedbutton1.caption
+msgid "X"
 msgstr ""
 
-#: tfrmelemproperty.lblused.caption
-msgid "lblUsed"
+#: tfrastatist6502.lblram.caption
+msgctxt "tfrastatist6502.lblram.caption"
+msgid "RAM"
 msgstr ""
 
-#: tfrmprincipal.acarcclosefile.caption
-msgid "Close &File"
+#: tfrastatist6502.lblrom.caption
+msgctxt "tfrastatist6502.lblrom.caption"
+msgid "ROM"
 msgstr ""
 
-#: tfrmprincipal.acarccloseproj.caption
-msgid "&Close Project"
+#: tfrasynxtree6502.acgendoanalys.caption
+msgid "Do Analysis"
 msgstr ""
 
-#: tfrmprincipal.acarcnewfile.caption
-msgid "New &File"
+#: tfrasynxtree6502.acgendooptim.caption
+msgid "Do Optimization"
 msgstr ""
 
-#: tfrmprincipal.acarcnewfile.hint
-msgid "New File"
+#: tfrasynxtree6502.acgendosinth.caption
+msgid "Do Synthesis"
 msgstr ""
 
-#: tfrmprincipal.acarcnewproj.caption
-msgid "New &Project"
+#: tfrasynxtree6502.acgenexpall.caption
+msgctxt "tfrasynxtree6502.acgenexpall.caption"
+msgid "Expand All"
 msgstr ""
 
-#: tfrmprincipal.acarcnewproj.hint
-msgid "New Project"
+#: tfrasynxtree6502.acgengoto.caption
+msgctxt "tfrasynxtree6502.acgengoto.caption"
+msgid "Go To..."
 msgstr ""
 
-#: tfrmprincipal.acarcopen.caption
-msgid "&Open..."
+#: tfrasynxtree6502.acgenprop.caption
+msgctxt "tfrasynxtree6502.acgenprop.caption"
+msgid "&Properties"
 msgstr ""
 
-#: tfrmprincipal.acarcopen.hint
-msgid "Abrir Archivo"
+#: tfrasynxtree6502.acgenrefres.caption
+msgctxt "tfrasynxtree6502.acgenrefres.caption"
+msgid "&Refresh"
 msgstr ""
 
-#: tfrmprincipal.acarcquit.caption
-msgid "&Salir"
+#: tfrmadapter6502.actoolasmdebug.caption
+msgctxt "tfrmadapter6502.actoolasmdebug.caption"
+msgid "ASM &Debugger"
 msgstr ""
 
-#: tfrmprincipal.acarcquit.hint
-msgid "Salir"
+#: tfrmadapter6502.actoolasmdebug.hint
+msgid "ASM debugger"
 msgstr ""
 
-#: tfrmprincipal.acarcsave.caption
-msgid "&Save"
+#: tfrmadapter6502.actoolchecksyn.caption
+msgid "Check S&yntax"
 msgstr ""
 
-#: tfrmprincipal.acarcsave.hint
-msgid "Guardar Archivo"
+#: tfrmadapter6502.actoolchecksyn.hint
+msgid "Check syntax"
 msgstr ""
 
-#: tfrmprincipal.acarcsaveas.caption
-msgid "Save &as..."
+#: tfrmadapter6502.actoolcomejec.caption
+msgid "Compile and execute..."
 msgstr ""
 
-#: tfrmprincipal.acarcsaveas.hint
-msgid "Guardar como..."
+#: tfrmadapter6502.actoolcomejec.hint
+msgid "Compile and execute"
+msgstr ""
+
+#: tfrmadapter6502.actoolcompil.caption
+msgid "&Compile"
+msgstr ""
+
+#: tfrmadapter6502.actoolcompil.hint
+msgid "Compile current file"
+msgstr ""
+
+#: tfrmadapter6502.actoolfinddec.caption
+msgctxt "tfrmadapter6502.actoolfinddec.caption"
+msgid "Find Declaration"
+msgstr ""
+
+#: tfrmadapter6502.actoolfinddec.hint
+msgctxt "tfrmadapter6502.actoolfinddec.hint"
+msgid "Find Declaration"
+msgstr ""
+
+#: tfrmadapter6502.actoollistrep.caption
+msgctxt "tfrmadapter6502.actoollistrep.caption"
+msgid "&List Report"
+msgstr ""
+
+#: tfrmadapter6502.actoollistrep.hint
+msgid "List Report"
+msgstr ""
+
+#: tfrmadapter6502.actoolramexp.caption
+msgctxt "tfrmadapter6502.actoolramexp.caption"
+msgid "&RAM Explorer"
+msgstr ""
+
+#: tfrmadapter6502.actoolramexp.hint
+msgid "Ram Explorer"
+msgstr ""
+
+#: tfrmadapter6502.actooltestunit.caption
+msgctxt "tfrmadapter6502.actooltestunit.caption"
+msgid "Test Device Units"
+msgstr ""
+
+#: tfrmadapter6502.actooltestunit.hint
+msgid "Test Units"
+msgstr ""
+
+#: tfrmadapter6502.caption
+msgid "frmAdapter6502"
+msgstr ""
+
+#: tfrmadapter6502.extramenu1.caption
+msgctxt "tfrmadapter6502.extramenu1.caption"
+msgid "extraMenu1"
+msgstr ""
+
+#: tfrmadapter6502.extramenu2.caption
+msgctxt "tfrmadapter6502.extramenu2.caption"
+msgid "extraMenu2"
+msgstr ""
+
+#: tfrmdebugger6502.acgenaddwatch.caption
+msgid "Add &Watcher on ?"
+msgstr ""
+
+#: tfrmdebugger6502.acgenaddwatch.hint
+msgid "Add Watcher on"
+msgstr ""
+
+#: tfrmdebugger6502.acgenclearcc.caption
+msgctxt "tfrmdebugger6502.acgenclearcc.caption"
+msgid "Reset Cycles Counter"
+msgstr ""
+
+#: tfrmdebugger6502.acgenclearcc.hint
+msgctxt "tfrmdebugger6502.acgenclearcc.hint"
+msgid "Reset Cycles Counter"
+msgstr ""
+
+#: tfrmdebugger6502.acgenexecher.caption
+msgctxt "tfrmdebugger6502.acgenexecher.caption"
+msgid "Exec until here"
+msgstr ""
+
+#: tfrmdebugger6502.acgenexecher.hint
+msgctxt "tfrmdebugger6502.acgenexecher.hint"
+msgid "Exec until here"
+msgstr ""
+
+#: tfrmdebugger6502.acgenpause.caption
+msgctxt "tfrmdebugger6502.acgenpause.caption"
+msgid "Pause"
+msgstr ""
+
+#: tfrmdebugger6502.acgenpause.hint
+msgctxt "tfrmdebugger6502.acgenpause.hint"
+msgid "Pause"
+msgstr ""
+
+#: tfrmdebugger6502.acgenreset.caption
+msgid "Restart"
+msgstr ""
+
+#: tfrmdebugger6502.acgenreset.hint
+msgid "Reset"
+msgstr ""
+
+#: tfrmdebugger6502.acgenrun.caption
+msgid "&Run"
+msgstr ""
+
+#: tfrmdebugger6502.acgenrun.hint
+msgid "Run"
+msgstr ""
+
+#: tfrmdebugger6502.acgensetbrkpnt.caption
+msgctxt "tfrmdebugger6502.acgensetbrkpnt.caption"
+msgid "Set Break Point"
+msgstr ""
+
+#: tfrmdebugger6502.acgensetbrkpnt.hint
+msgctxt "tfrmdebugger6502.acgensetbrkpnt.hint"
+msgid "Set Break Point"
+msgstr ""
+
+#: tfrmdebugger6502.acgensetpc.caption
+msgid "Set PC here"
+msgstr ""
+
+#: tfrmdebugger6502.acgensetpc.hint
+msgid "Set PC position"
+msgstr ""
+
+#: tfrmdebugger6502.acgenstep.caption
+msgid "Step Over"
+msgstr ""
+
+#: tfrmdebugger6502.acgenstep.hint
+msgid "Step"
+msgstr ""
+
+#: tfrmdebugger6502.acgenstepin.caption
+msgid "Step Into"
+msgstr ""
+
+#: tfrmdebugger6502.acgenstepin.hint
+msgid "Step In"
+msgstr ""
+
+#: tfrmdebugger6502.caption
+msgid "Debugger"
+msgstr ""
+
+#: tfrmdebugger6502.toolbar1.caption
+msgctxt "tfrmdebugger6502.toolbar1.caption"
+msgid "ToolBar1"
+msgstr ""
+
+#: tfrmdebugger6502.toolbutton4.caption
+msgid "ToolButton4"
 msgstr ""
 
 #: tfrmprincipal.acedcopy.caption
-msgid "&Copiar"
+msgid "&Copy"
 msgstr ""
 
 #: tfrmprincipal.acedcopy.hint
-msgid "Copiar"
+msgid "Copy"
 msgstr ""
 
 #: tfrmprincipal.acedcut.caption
-msgid "Cor&tar"
+msgid "C&ut"
 msgstr ""
 
 #: tfrmprincipal.acedcut.hint
-msgid "Cortar"
+msgid "Cut"
 msgstr ""
 
 #: tfrmprincipal.acedpaste.caption
-msgid "&Pegar"
+msgid "&Paste"
 msgstr ""
 
 #: tfrmprincipal.acedpaste.hint
-msgid "Pegar"
+msgid "Paste"
 msgstr ""
 
 #: tfrmprincipal.acedredo.caption
-msgid "&Rehacer"
+msgid "&Redo"
 msgstr ""
 
 #: tfrmprincipal.acedredo.hint
-msgid "Rehacer"
+msgid "Redo"
 msgstr ""
 
 #: tfrmprincipal.acedselecall.caption
-msgid "Seleccionar &Todo"
+msgid "Select &All"
 msgstr ""
 
 #: tfrmprincipal.acedselecall.hint
-msgid "Selecciona todo el texto"
+msgid "Select all"
 msgstr ""
 
 #: tfrmprincipal.acedundo.caption
-msgid "&Deshacer"
+msgid "&Undo"
 msgstr ""
 
 #: tfrmprincipal.acedundo.hint
-msgid "Deshacer"
+msgid "Undo"
+msgstr ""
+
+#: tfrmprincipal.acfilclosefile.caption
+msgctxt "tfrmprincipal.acfilclosefile.caption"
+msgid "Close &File"
+msgstr ""
+
+#: tfrmprincipal.acfilclosefile.hint
+msgid "Close File"
+msgstr ""
+
+#: tfrmprincipal.acfilnewfile.caption
+msgctxt "tfrmprincipal.acfilnewfile.caption"
+msgid "New &File"
+msgstr ""
+
+#: tfrmprincipal.acfilnewfile.hint
+msgctxt "tfrmprincipal.acfilnewfile.hint"
+msgid "New File"
+msgstr ""
+
+#: tfrmprincipal.acfilopen.caption
+msgctxt "tfrmprincipal.acfilopen.caption"
+msgid "&Open..."
+msgstr ""
+
+#: tfrmprincipal.acfilopen.hint
+msgid "Open File"
+msgstr ""
+
+#: tfrmprincipal.acfilopendir.caption
+msgctxt "tfrmprincipal.acfilopendir.caption"
+msgid "Open Folder..."
+msgstr ""
+
+#: tfrmprincipal.acfilquit.caption
+msgid "&Quit"
+msgstr ""
+
+#: tfrmprincipal.acfilquit.hint
+msgctxt "tfrmprincipal.acfilquit.hint"
+msgid "Salir"
+msgstr ""
+
+#: tfrmprincipal.acfilsave.caption
+msgctxt "tfrmprincipal.acfilsave.caption"
+msgid "&Save"
+msgstr ""
+
+#: tfrmprincipal.acfilsave.hint
+msgid "Save File"
+msgstr ""
+
+#: tfrmprincipal.acfilsaveas.caption
+msgctxt "tfrmprincipal.acfilsaveas.caption"
+msgid "Save &as..."
+msgstr ""
+
+#: tfrmprincipal.acfilsaveas.hint
+msgid "Save as..."
 msgstr ""
 
 #: tfrmprincipal.acsearfind.caption
 msgid "Find..."
 msgstr ""
 
+#: tfrmprincipal.acsearfind.hint
+msgid "Find"
+msgstr ""
+
 #: tfrmprincipal.acsearfindnxt.caption
 msgid "Find &Next"
+msgstr ""
+
+#: tfrmprincipal.acsearfindnxt.hint
+msgid "Find Next"
 msgstr ""
 
 #: tfrmprincipal.acsearfindprv.caption
 msgid "Find &Previous"
 msgstr ""
 
+#: tfrmprincipal.acsearfindprv.hint
+msgid "Find Previous"
+msgstr ""
+
 #: tfrmprincipal.acsearreplac.caption
 msgid "&Replace..."
 msgstr ""
 
-#: tfrmprincipal.actoolasmdebug.caption
-msgid "ASM &Debugger"
-msgstr ""
-
-#: tfrmprincipal.actoolcomejec.caption
-msgid "Compilar y Ejecutar"
-msgstr ""
-
-#: tfrmprincipal.actoolcompil.caption
-msgid "&Compilar"
-msgstr ""
-
-#: tfrmprincipal.actoolcompil.hint
-msgid "Compila el archivo Actual"
+#: tfrmprincipal.acsearreplac.hint
+msgid "Replace"
 msgstr ""
 
 #: tfrmprincipal.actoolconfig.caption
-msgid "&Confi&gurar"
+msgid "&Settings"
+msgstr ""
+
+#: tfrmprincipal.actoolconfig.hint
+msgid "Settings"
 msgstr ""
 
 #: tfrmprincipal.actoolext1.caption
@@ -231,77 +1094,51 @@ msgstr ""
 msgid "External Tool 5"
 msgstr ""
 
-#: tfrmprincipal.actoolfinddec.caption
-msgid "Find Declaration"
+#: tfrmprincipal.actoolsel_kickc.caption
+msgid "KickC"
 msgstr ""
 
-#: tfrmprincipal.actoollistrep.caption
-msgid "&List Report"
-msgstr ""
-
-#: tfrmprincipal.actoolpicexpl.caption
-msgid "Explorador de PIC"
-msgstr ""
-
-#: tfrmprincipal.actoolramexp.caption
-msgid "&RAM Explorer"
-msgstr ""
-
-#: tfrmprincipal.actoolselpic10.caption
-msgid "Baseline Compiler"
-msgstr ""
-
-#: tfrmprincipal.actoolselpic16.caption
-msgid "Mid-range Compiler"
-msgstr ""
-
-#: tfrmprincipal.actoolselpic17.caption
-msgid "Enhanced Mid-range Compiler"
-msgstr ""
-
-#: tfrmprincipal.actooltestpic10.caption
-msgid "Test PIC10 compiler"
-msgstr ""
-
-#: tfrmprincipal.actooltestunit.caption
-msgid "Test Device Units"
-msgstr ""
-
-#: tfrmprincipal.acviewasmpan.caption
-msgid "&Assembler Panel"
+#: tfrmprincipal.actoolsel_p65pas.caption
+msgid "P65Pas"
 msgstr ""
 
 #: tfrmprincipal.acviewmsgpan.caption
-msgid "&Panel de Mensajes"
+msgid "&Messages Panel"
+msgstr ""
+
+#: tfrmprincipal.acviewpanleft.caption
+msgid "&File Explorer"
+msgstr ""
+
+#: tfrmprincipal.acviewpanright.caption
+msgctxt "tfrmprincipal.acviewpanright.caption"
+msgid "&Assembler Panel"
 msgstr ""
 
 #: tfrmprincipal.acviewstatbar.caption
 msgid "&Statusbar"
 msgstr ""
 
-#: tfrmprincipal.acviewsyntree.caption
-msgid "&Code Explorer"
-msgstr ""
-
 #: tfrmprincipal.acviewtoolbar.caption
 msgid "&Toolbar"
-msgstr ""
-
-#: tfrmprincipal.butselcompiler.caption
-msgid "tbSelCompiler"
-msgstr ""
-
-#: tfrmprincipal.butselcompiler.hint
-msgctxt "tfrmprincipal.butselcompiler.hint"
-msgid "Select Compiler"
 msgstr ""
 
 #: tfrmprincipal.caption
 msgid "frmPrincipal"
 msgstr ""
 
-#: tfrmprincipal.menuitem49.caption
-msgid "CPU6502"
+#: tfrmprincipal.extramenu1.caption
+msgctxt "tfrmprincipal.extramenu1.caption"
+msgid "extraMenu1"
+msgstr ""
+
+#: tfrmprincipal.extramenu2.caption
+msgctxt "tfrmprincipal.extramenu2.caption"
+msgid "extraMenu2"
+msgstr ""
+
+#: tfrmprincipal.extramenu3.caption
+msgid "extraMenu3"
 msgstr ""
 
 #: tfrmprincipal.menuitem51.caption
@@ -309,47 +1146,81 @@ msgctxt "tfrmprincipal.menuitem51.caption"
 msgid "Select Compiler"
 msgstr ""
 
+#: tfrmprincipal.menuitem54.caption
+msgctxt "tfrmprincipal.menuitem54.caption"
+msgid "Enhanced Mid-range Compiler"
+msgstr ""
+
 #: tfrmprincipal.mnedit.caption
-msgid "&Edicion"
+msgid "&Edit"
 msgstr ""
 
 #: tfrmprincipal.mnfile.caption
-msgid "&Archivo"
+msgid "&File"
 msgstr ""
 
 #: tfrmprincipal.mnfind.caption
-msgid "&Buscar"
+msgid "&Search"
 msgstr ""
 
 #: tfrmprincipal.mnrecents.caption
-msgid "Recents"
-msgstr ""
-
-#: tfrmprincipal.mnsamples.caption
-msgid "&Samples"
+msgid "&Recents"
 msgstr ""
 
 #: tfrmprincipal.mntools.caption
-msgid "Herramientas"
+msgid "&Tools"
 msgstr ""
 
 #: tfrmprincipal.mnview.caption
-msgid "&Ver"
+msgid "&View"
 msgstr ""
 
-#: tfrmprincipal.toolbar1.caption
-msgid "ToolBar1"
+#: tfrmprincipal.toolbar2.caption
+msgid "ToolBar2"
 msgstr ""
 
-#: tfrmprincipal.toolbutton11.caption
-msgid "ToolButton11"
+#: tfrmprincipal.toolbar3.caption
+msgid "ToolBar3"
 msgstr ""
 
-#: tfrmprincipal.toolbutton15.caption
-msgid "ToolButton15"
+#: tfrmprincipal.toolbar4.caption
+msgid "ToolBar4"
 msgstr ""
 
-#: tfrmprincipal.toolbutton5.caption
-msgid "ToolButton5"
+#: tfrmprincipal.toolbar5.caption
+msgid "ToolBar5"
+msgstr ""
+
+#: tfrmprincipal.toolbar6.caption
+msgid "ToolBar6"
+msgstr ""
+
+#: tfrmprincipal.toolbutton39.caption
+msgctxt "tfrmprincipal.toolbutton39.caption"
+msgid "Compiler"
+msgstr ""
+
+#: tfrmramexplorer6502.caption
+msgid "RAM Explorer"
+msgstr ""
+
+#: tfrmramexplorer6502.label2.caption
+msgid "Special RAM"
+msgstr ""
+
+#: tfrmramexplorer6502.label4.caption
+msgid "Unimplem."
+msgstr ""
+
+#: tfrmramexplorer6502.label5.caption
+msgid "Used RAM"
+msgstr ""
+
+#: tfrmramexplorer6502.mnzommneg.caption
+msgid "Zoom -"
+msgstr ""
+
+#: tfrmramexplorer6502.mnzoompos.caption
+msgid "Zoom +"
 msgstr ""
 
