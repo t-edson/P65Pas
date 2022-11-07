@@ -1,0 +1,6 @@
+
+*.o
+*.ppu
+
+Source/lib/
+Source/languages/
