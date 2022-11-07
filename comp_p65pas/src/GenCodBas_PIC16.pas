@@ -44,13 +44,14 @@ type
     procedure GenCodeWHILE(sen: TEleSentence);
     procedure GenCodeFOR(sen: TEleSentence);
     procedure GenCodeREPEAT(sen: TEleSentence);
-    procedure JUMP_IF_C_pre(Invert: boolean; igoto: integer);
-    procedure JUMP_IF_pre(OpRes: TEleExpress; boolVal: boolean; igoto: integer);
+    procedure JUMP_IF_C_pre(Invert, longJump: boolean; igoto: integer);
+    procedure JUMP_IF_pre(OpRes: TEleExpress; boolVal, longJump: boolean;
+      igoto: integer; out relatOver: boolean);
     procedure JUMP_IF_Z_post(Invert, longJump: boolean; out curAddr: integer);
     procedure JUMP_IF_C_post(Invert, longJump: boolean; out curAddr: integer);
     procedure JUMP_IF_post(OpRes: TEleExpress; boolVal, longJump: boolean; out
       curAddr: integer);
-    procedure JUMP_IF_Z_pre(Invert: boolean; igoto: integer);
+    procedure JUMP_IF_Z_pre(Invert, longJump: boolean; igoto: integer);
     procedure BRA2JMP(var info: TIfInfo);
     procedure StartCodeGen;
     procedure StopCodeGen;
@@ -79,7 +80,6 @@ type
     compMod: TCompMod;  //Mode of the compiler
     function requireA: boolean;  //Declare use of register A
   protected
-    procedure ResetRAM;
     procedure functCall(fun: TEleFunBase; out AddrUndef: boolean);
     procedure CreateVarsAndPars;
     procedure codRTS(isInterrupt: boolean);
@@ -1039,22 +1039,42 @@ begin
   pic.codAsm(i_TXA, aImplicit, 0);
 end;
 {%ENDREGION}
-procedure TGenCodBas.JUMP_IF_Z_pre(Invert: boolean; igoto: integer);
+procedure TGenCodBas.JUMP_IF_Z_pre(Invert, longJump: boolean; igoto: integer);
 {Jump using the Z flag. Jump if Z is set.}
 begin
-  if Invert then begin
-    _BNE(igoto - _PC - 2);
+  if longJump then begin          //Long jump
+      if Invert then begin
+        _BEQ(3);
+        _JMP(igoto);
+      end else begin
+        _BNE(3);
+        _JMP(igoto);
+      end;
   end else begin
-    _BEQ(igoto - _PC - 2);
+      if Invert then begin
+        _BNE(igoto - _PC - 2);
+      end else begin
+        _BEQ(igoto - _PC - 2);
+      end;
   end;
 end;
-procedure TGenCodBas.JUMP_IF_C_pre(Invert: boolean; igoto: integer);
+procedure TGenCodBas.JUMP_IF_C_pre(Invert, longJump: boolean; igoto: integer);
 {Jump using the C flag. Jump if C is set.}
 begin
-  if Invert then begin
-    _BCC(igoto - _PC - 2);
+  if longJump then begin          //Long jump
+      if Invert then begin
+        _BCS(3);
+        _JMP(igoto);
+      end else begin
+        _BCC(3);
+        _JMP(igoto);
+      end;
   end else begin
-    _BCS(igoto - _PC - 2);
+      if Invert then begin
+        _BCC(igoto - _PC - 2);
+      end else begin
+        _BCS(igoto - _PC - 2);
+      end;
   end;
 end;
 procedure TGenCodBas.JUMP_IF_Z_post(Invert, longJump: boolean; out curAddr: integer);
@@ -1097,51 +1117,65 @@ begin
       end;
   end;
 end;
-procedure TGenCodBas.JUMP_IF_pre(OpRes: TEleExpress; boolVal: boolean;
-                                 igoto: integer);
+procedure TGenCodBas.JUMP_IF_pre(OpRes: TEleExpress; boolVal, longJump: boolean;
+                                 igoto: integer; out relatOver: boolean);
 {Jump to a pre label, if the last operand "OpRes" returned a boolean result equal to
-"boolVal".}
+"boolVal".
+If "longJump" is set it generates a long jump (more than 128 bytes). }
+var
+  offset: Integer;
 begin
+  if longJump then begin
+    //In lonj jumps, we won't have overflow
+    relatOver := false;
+  end else begin
+    //For short jumps, we need to verifiy the ffset
+    offset := _PC-igoto + 2;
+    if offset>127 then begin
+      relatOver := true;
+      exit;
+    end;
+  end;
   if OpRes.Sto = stRamFix then begin
     //Result in variable
     _LDA(OpRes.rVar.addr);
-    JUMP_IF_Z_pre(boolVal, igoto);  //We cannot apply optimization
+    JUMP_IF_Z_pre(boolVal, longJump, igoto);  //We cannot apply optimization
   end else if OpRes.Sto = stRegister then begin
     {We first evaluate the case when it could be done an optimization}
     if lastASMcode = lacCopyCtoA then begin
       //Expression result has been copied from C to A
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check C flag
-      JUMP_IF_C_pre(not boolVal, igoto);
+      JUMP_IF_C_pre(not boolVal, longJump, igoto);
     end else if lastASMcode = lacInvCtoA then begin
       //Expression result has been copied from C to A inverted
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check C flag
-      JUMP_IF_C_pre(boolVal, igoto);
+      JUMP_IF_C_pre(boolVal, longJump, igoto);
     end else if lastASMcode = lacCopyZtoA then begin
       //Expression result has been copied from Z to A
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
-      JUMP_IF_Z_pre(not boolVal, igoto);
+      JUMP_IF_Z_pre(not boolVal, longJump, igoto);
     end else if lastASMcode = lacInvZtoA then begin
       //Expression result has been copied from Z to A inverted
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
-      JUMP_IF_Z_pre(boolVal, igoto);
+      JUMP_IF_Z_pre(boolVal, longJump, igoto);
     end else if lastASMcode = lacInvAtoA then begin
       //Expression result has been copied from A to A inverted, and Z reflect the regA boolVal.
       pic.iRam := lastASMaddr;   //Delete last instructions
       //Check Z flag
-      JUMP_IF_Z_pre(not boolVal, igoto);
+      JUMP_IF_Z_pre(not boolVal, longJump, igoto);
     end else begin
       {Cannot be (or should be) optimized }
       if AcumStatInZ then begin
         //Still we can use the optimizaction of testing Z flag
-        JUMP_IF_Z_pre(boolVal, igoto);
+        JUMP_IF_Z_pre(boolVal, longJump, igoto);
       end else begin
         //Operand boolVal in A but not always in Z
         _TAX;  //To update Z
-        JUMP_IF_Z_pre(boolVal, igoto);
+        JUMP_IF_Z_pre(boolVal, longJump, igoto);
       end;
     end;
   end else begin
@@ -1687,13 +1721,6 @@ begin
     AddrUndef := true;
   end;
 end;
-procedure TGenCodBas.ResetRAM;
-{Reset the device RAM memory, and set the pointer iRam to start writing at the
-beggining of the RAM.}
-begin
-  pic.iRam := 0;  //Ubica puntero al inicio.
-  pic.ClearMemRAM;  //Pone las celdas como no usadas y elimina nombres.
-end;
 procedure TGenCodBas.CreateVarsAndPars;
 {Create in RAM, local variables and parameters for functions.}
 var
@@ -2174,6 +2201,7 @@ procedure TGenCodBas.GenCodeREPEAT(sen: TEleSentence);
 var
   lbl1: Word;
   expBool: TEleExpress;
+  relatOver: boolean;
 begin
   lbl1 := pic.iRam;        //guarda dirección de inicio
   //Compile Body
@@ -2189,7 +2217,18 @@ begin
       _JMP(lbl1);
     end;
   end else begin  //otVariab. otFunct
-    JUMP_IF_pre(expBool, false, lbl1);
+    JUMP_IF_pre(expBool, false, false, lbl1, relatOver);
+    if relatOver then begin
+      //Let's use long jumps
+//      GenError('Block too long.', sen.srcDec);
+//      exit;
+      pic.iRam := lbl1; //Lets to the begin to compile loop again.
+      //Compile Body
+      GenCodeBlock(TEleBlock(sen.elements[0]));
+      //Compile condition
+      expBool := GenCodeCodition(sen.elements[1]);
+      JUMP_IF_pre(expBool, false, true, lbl1, relatOver);
+    end;
   end;
 end;
 procedure TGenCodBas.GenCodeExit(sen: TEleSentence);

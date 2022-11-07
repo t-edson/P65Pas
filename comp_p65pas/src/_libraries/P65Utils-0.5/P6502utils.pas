@@ -1455,12 +1455,9 @@ begin
   Model := '6502';
   CPUMAXRAM  := $10000; //Máx RAM memory
   SetLength(ram, CPUMAXRAM);
-  //inicia una configuración común
-  ClearMemRAM;
-  SetStatRAM($0000, $FFFF, cs_impleGPR);
-
-  //Estado inicial
-  iRam := 0;   //posición de inicio
+  //Start a common config
+  //InitMemRAM;    For not to waste time in cosntructor.
+  iRam := 0;   //Start position
 end;
 destructor TP6502.Destroy;
 begin

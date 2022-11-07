@@ -16,10 +16,10 @@
   <SynTreeWidth Val="250"/>
   <EditAsmWidth Val="346"/>
   <ViewPanAssem Val="True"/>
-  <winXpos Val="171"/>
-  <winYpos Val="249"/>
-  <winWidth Val="1152"/>
-  <winHeight Val="641"/>
+  <winXpos Val="118"/>
+  <winYpos Val="56"/>
+  <winWidth Val="1223"/>
+  <winHeight Val="767"/>
   <winState Val="2"/>
   <themLoaded Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/themes/dark.theme"/>
   <CodExplBack Val="2434341"/>

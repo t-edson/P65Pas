@@ -649,7 +649,7 @@ Se debe llamar después de llamar a DoAnalyzeProgram().}
 begin
   if IsUnit then exit;
   ExprLevel := 0;
-  ResetRAM;    //2ms aprox.
+
   ClearError;
   //Detecting unused elements
   RefreshAllElementLists; //Actualiza lista de elementos
@@ -954,6 +954,8 @@ begin
     pic.dataAddr1 := -1;  //Reset flag
     pic.MsjError := '';
     //Compila el archivo actual como programa o como unidad
+    pic.InitMemRAM;  //Init RAM and clear.
+    pic.iRam := 0;  //Ubica puntero al inicio.
     IsUnit := GetUnitDeclaration();
     DoAnalyze;
     if HayError then exit;

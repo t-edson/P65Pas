@@ -7,6 +7,6 @@ begin
   ChrOUT('L');
   ChrOUT('L');
   ChrOUT('O');
-  asm RTS end 
+  asm RTS end
 end.
 

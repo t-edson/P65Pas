@@ -106,6 +106,7 @@ type
   public    //RAM memory functions
     dataAddr1: integer;   //Start address for Data variables (-1 if not used). Used too as flag.
     dataAddr2: integer;   //End address for Data variables (-1 if not used)
+    procedure InitMemRAM;
     procedure ClearMemRAM;
     procedure DisableAllRAM;
     procedure SetStatRAM(i1, i2: word; status0: TCPUCellState);
@@ -163,6 +164,7 @@ function TCPURamCell.Free: boolean;
 begin
   Result := (state = cs_impleGPR) and (used = ruUnused);
 end;
+{ TCPUCore }
 function TCPUCore.GetTokAddress(var str: string; delimiter: char): word;
 {Extract a number (address) from a string and delete until de delimiter.
 If delimiter is #0, it's consider all the text.
@@ -198,27 +200,43 @@ begin
   end;
   exit(n);
 end;
-
-{ TCPUCore }
 //RAM memory functions
+procedure TCPUCore.InitMemRAM;
+{Set state and clear content of RAM.}
+var
+  i: Integer;
+  cell: TCPURamCellPtr;
+begin
+  for i:=0 to high(ram) do begin
+    cell := @ram[i];
+    cell^.dvalue     := $00;
+    cell^.used       := ruUnused;
+    cell^.name       :='';
+    cell^.shared     := false;
+    cell^.breakPnt   := false;
+    cell^.sideComment:= '';
+    cell^.topComment := '';
+    cell^.idFile     := -1;        //Not initialized.
+    //Set state
+    ram[i].state     := cs_impleGPR;
+  end;
+end;
 procedure TCPUCore.ClearMemRAM;
 {Clear content of RAM. Doesn't change the state.}
 var
   i: Integer;
+  cell: TCPURamCellPtr;
 begin
   for i:=0 to high(ram) do begin
-    ram[i].dvalue     := $00;
-    ram[i].used       := ruUnused;
-    ram[i].name       :='';
-    ram[i].shared     := false;
-    ram[i].breakPnt   := false;
-//    ram[i].topLabel   := '';
-    ram[i].sideComment:= '';
-    ram[i].topComment := '';
-    ram[i].idFile     := -1;        //Not initialized.
-    {Don't change the implementation. Because "state" must be defined just once at the
-    beginning }
-//    ram[i].state     := cs_impleGPR;
+    cell := @ram[i];
+    cell^.dvalue     := $00;
+    cell^.used       := ruUnused;
+    cell^.name       :='';
+    cell^.shared     := false;
+    cell^.breakPnt   := false;
+    cell^.sideComment:= '';
+    cell^.topComment := '';
+    cell^.idFile     := -1;        //Not initialized.
   end;
 end;
 procedure TCPUCore.DisableAllRAM;
