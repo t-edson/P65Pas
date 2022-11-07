@@ -2,6 +2,7 @@
 - Se implementa los saltos largos para los bucles con REPEAT ... UNTIL.
 - Se corrige la inicialización de la memoria RAM para que aparezca implementada
 al iniciar la compilación.
+- Se traduce al inglés, el menú contextual del explorador de archivos.
 
 4/11/2022
 - Se quita la limitación de crear bloques del IF o FOR que sean mayores a 127 bytes.

@@ -304,14 +304,14 @@ object fraFileExplor: TfraFileExplor
       OnClick = mnFilCreCopFromClick
     end
     object mnFilDelete: TMenuItem
-      Caption = 'El&iminar'
+      Caption = '&Delete'
       OnClick = mnFilDeleteClick
     end
     object MenuItem1: TMenuItem
       Caption = '-'
     end
     object mnFilRefrescar: TMenuItem
-      Caption = '&Refrescar'
+      Caption = '&Refresh'
       OnClick = mnFilRefrescarClick
     end
   end
