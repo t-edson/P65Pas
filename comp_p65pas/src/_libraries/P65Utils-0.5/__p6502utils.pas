@@ -12,7 +12,7 @@ The aim of this unit is to be used as base for assemblers, compilers and simulat
                                          Created by Tito Hinostroza   19/05/2018
 }
 
-unit P6502utils;
+unit __p6502utils;
 {$mode objfpc}{$H+}
 interface
 uses
