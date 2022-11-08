@@ -5,7 +5,7 @@ unit Compiler_PIC16;
 interface
 uses
   Classes, SysUtils, LazLogger,
-  P65c02utils, CPUCore, CompBase, ParserDirec, GenCodBas_PIC16,
+  P65C02utils, CPUCore, CompBase, ParserDirec, GenCodBas_PIC16,
   GenCod_PIC16, CompGlobals, XpresElemP65, ParserASM_6502, StrUtils;
 type
   { TCompiler_PIC16 }

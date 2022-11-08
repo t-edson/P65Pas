@@ -104,20 +104,28 @@ type  //Instructions set
     aZeroPagX,  //Zero page Indexed by X : LDA $10, X
     aZeroPagY,  //Zero page Indexed by Y : LDA $10, Y
     aIndirecX,  //Indexed Indirect: LDA ($40,X)  Only for X
-    aIndirecY   //Indirect Indexed: LDA ($40),Y  Only for Y
+    aIndirecY,  //Indirect Indexed: LDA ($40),Y  Only for Y
+    aAbsInIdX   //Absolute Indexed Indirect X    (65C02 only)
   );
   TP6502AddModes = set of TP6502AddMode;
+
+  //Device support
+  TDeviceSupport = (
+    ALL_DEVICES,  //Supported in 6502 and 65C02
+    ONLY_65C02    //Supported only by 65C02
+  );
   //Instruction Information for each Address Mode
   TInstructInform = record
-    Opcode   : byte; //Code for instruction
-    nBytes   : byte; //Num. of bytes of the instruction.
-    Cycles   : byte; //Num. of cycles the instruction takes.
-    optCycles: byte; {Extra options in Num. of cycles:
-                      0 -> No aditional cycles.
-                      1 -> Add 1 to cycles if page boundery is crossed
-                      2 -> Add 1 to cycles if branch occurs on same page.
-                           Add 2 to cycles if branch occurs to different page.
-                     }
+    Opcode    : byte; //Code for instruction
+    nBytes    : byte; //Num. of bytes of the instruction.
+    Cycles    : byte; //Num. of cycles the instruction takes.
+    optCycles : byte; {Extra options in Num. of cycles:
+                       0 -> No aditional cycles.
+                       1 -> Add 1 to cycles if page boundery is crossed
+                       2 -> Add 1 to cycles if branch occurs on same page.
+                            Add 2 to cycles if branch occurs to different page.
+                      }
+    devSupport: TDeviceSupport;   //Support
   end;
 
   { TP6502Instruct }
@@ -133,7 +141,7 @@ type  //Instructions set
   public
     procedure Init(name0: string);
     procedure AddAddressMode(aMode: TP6502AddMode; Opcode, nBytes, nCycles: Byte;
-      optCycles: byte);
+      optCycles: byte; devSupport: TDeviceSupport = ALL_DEVICES);
     function HasOpcode(opc: byte; out adMod: TP6502AddMode): boolean;
   end;
 
@@ -270,13 +278,14 @@ begin
 end;
 procedure TP6502Instruct.AddAddressMode(aMode: TP6502AddMode;
           Opcode, nBytes, nCycles: Byte;
-          optCycles: byte);
+          optCycles: byte; devSupport: TDeviceSupport = ALL_DEVICES);
 {Add a new Address Mode including additional information.
-"optCycles" is a flag and indicate aditional considerations on cycles:
-0 -> No aditional considerations.
-1 -> Add 1 to cycles if page boundery is crossed
-2 -> Add 1 to cycles if branch occurs on same page.
-     Add 2 to cycles if branch occurs to different page.
+* "optCycles" is a flag and indicate aditional considerations on cycles:
+  0 -> No aditional considerations.
+  1 -> Add 1 to cycles if page boundery is crossed
+  2 -> Add 1 to cycles if branch occurs on same page.
+       Add 2 to cycles if branch occurs to different page.
+* "devSupport" defines the deviced supported by this addressing mode.
 }
 begin
   addressModes := addressModes + [aMode];  //Register Mode
@@ -285,6 +294,7 @@ begin
   instrInform[aMode].nBytes:= nBytes;
   instrInform[aMode].Cycles:= nCycles;
   instrInform[aMode].optCycles := optCycles;
+  instrInform[aMode].devSupport := devSupport;
 end;
 function TP6502Instruct.HasOpcode(opc: byte; out adMod: TP6502AddMode
   ): boolean;
@@ -426,6 +436,12 @@ begin
     ram[iRam].value := lo(param);
     useRAMCodeDa;
   end;
+  aAbsInIdX: begin
+    ram[iRam].value := lo(param);
+    useRAMCodeDa;
+    ram[iRam].value := hi(param);
+    useRAMCodeDa;
+  end
   else
     raise Exception.Create('Implementation Error.');
   end;
@@ -656,6 +672,12 @@ begin
     nBytesProc := 2;
     Result := nemo + '$('+IntToHex(par1, 2)+'),Y';
   end;
+  aAbsInIdX: begin
+    nBytesProc := 3;
+    if addr+2>CPUMAXRAM-1 then exit('');
+    par2   := ram[addr+2].value;
+    Result := nemo + '($'+IntToHex(par1 + par2*256, 4)+',X)';
+  end;
   end;
 end;
 function TP6502.CurInstruction: TP6502Inst;
@@ -703,6 +725,8 @@ begin
              addr := ram[tmp].value  + 256*ram[tmp+1].value + Y;
     end;
   end;
+  //aAbsInIdX: *********** TO DO ***********
+
   //Execute
   case idIns of
   i_ADC: begin  //add with carry
@@ -1689,37 +1713,41 @@ begin
   PIC16InstName[i_TYA].name := 'TYA';  //Transfer Index Y to Accumulator
   PIC16InstName[i_TYA].AddAddressMode(aImplicit,$98,1,2,0);
 
+    //New instructions for 65C02
     PIC16InstName[i_BRA].name := 'BRA';  //Branch on Result not Zero
-    PIC16InstName[i_BRA].AddAddressMode(aRelative,$80,3,3,0);
+    PIC16InstName[i_BRA].AddAddressMode(aRelative,$80,3,3,0, ONLY_65C02);
     PIC16InstName[i_STZ].name := 'STZ';  //Store Index X in Memory
-    PIC16InstName[i_STZ].AddAddressMode(aZeroPage,$64,2,3,0);
-    PIC16InstName[i_STZ].AddAddressMode(aZeroPagX,$74,2,4,0);
-    PIC16InstName[i_STZ].AddAddressMode(aAbsolute,$9C,3,4,0);
-    PIC16InstName[i_STZ].AddAddressMode(aAbsolutX,$9E,3,5,0);
+    PIC16InstName[i_STZ].AddAddressMode(aZeroPage,$64,2,3,0, ONLY_65C02);
+    PIC16InstName[i_STZ].AddAddressMode(aZeroPagX,$74,2,4,0, ONLY_65C02);
+    PIC16InstName[i_STZ].AddAddressMode(aAbsolute,$9C,3,4,0, ONLY_65C02);
+    PIC16InstName[i_STZ].AddAddressMode(aAbsolutX,$9E,3,5,0, ONLY_65C02);
     PIC16InstName[i_PHX].name := 'PHX';
-    PIC16InstName[i_PHX].AddAddressMode(aImplicit,$DA,1,3,0);
+    PIC16InstName[i_PHX].AddAddressMode(aImplicit,$DA,1,3,0, ONLY_65C02);
     PIC16InstName[i_PHY].name := 'PHY';
-    PIC16InstName[i_PHY].AddAddressMode(aImplicit,$5A,1,3,0);
+    PIC16InstName[i_PHY].AddAddressMode(aImplicit,$5A,1,3,0, ONLY_65C02);
     PIC16InstName[i_PLX].name := 'PLX';
-    PIC16InstName[i_PLX].AddAddressMode(aImplicit,$FA,1,4,0);
+    PIC16InstName[i_PLX].AddAddressMode(aImplicit,$FA,1,4,0, ONLY_65C02);
     PIC16InstName[i_PLY].name := 'PLY';
-    PIC16InstName[i_PLY].AddAddressMode(aImplicit,$7A,1,4,0);
+    PIC16InstName[i_PLY].AddAddressMode(aImplicit,$7A,1,4,0, ONLY_65C02);
     PIC16InstName[i_TRB].name := 'TRB';
-    PIC16InstName[i_TRB].AddAddressMode(aZeroPage,$14,2,5,0);
-    PIC16InstName[i_TRB].AddAddressMode(aAbsolute,$1C,3,6,0);
+    PIC16InstName[i_TRB].AddAddressMode(aZeroPage,$14,2,5,0, ONLY_65C02);
+    PIC16InstName[i_TRB].AddAddressMode(aAbsolute,$1C,3,6,0, ONLY_65C02);
     PIC16InstName[i_TSB].name := 'TSB';
-    PIC16InstName[i_TSB].AddAddressMode(aZeroPage,$04,2,5,0);
-    PIC16InstName[i_TSB].AddAddressMode(aAbsolute,$0C,3,6,0);
+    PIC16InstName[i_TSB].AddAddressMode(aZeroPage,$04,2,5,0, ONLY_65C02);
+    PIC16InstName[i_TSB].AddAddressMode(aAbsolute,$0C,3,6,0, ONLY_65C02);
     PIC16InstName[i_STP].name := 'STP';
-    PIC16InstName[i_STP].AddAddressMode(aImplicit,$DB,1,3,0);
+    PIC16InstName[i_STP].AddAddressMode(aImplicit,$DB,1,3,0, ONLY_65C02);
     PIC16InstName[i_WAI].name := 'WAI';
-    PIC16InstName[i_WAI].AddAddressMode(aImplicit,$CB,1,3,0);
-    PIC16InstName[i_DEC].AddAddressMode(aImplicit,$3A,1,2,0);
-    PIC16InstName[i_INC].AddAddressMode(aImplicit,$1A,1,2,0);
-    //PIC16InstName[i_JMP].AddAddressMode(aAbsInIdX,$7C,3,6,0);
-    PIC16InstName[i_BIT].AddAddressMode(aImmediat,$89,2,3,0);
-    PIC16InstName[i_BIT].AddAddressMode(aZeroPagX,$34,2,2,0);
-    PIC16InstName[i_BIT].AddAddressMode(aAbsolutX,$3C,3,4,0);
+    PIC16InstName[i_WAI].AddAddressMode(aImplicit,$CB,1,3,0, ONLY_65C02);
+
+    //New addressing modes for 65C02
+    PIC16InstName[i_DEC].AddAddressMode(aImplicit,$3A,1,2,0, ONLY_65C02);
+    PIC16InstName[i_INC].AddAddressMode(aImplicit,$1A,1,2,0, ONLY_65C02);
+    PIC16InstName[i_JMP].AddAddressMode(aAbsInIdX,$7C,3,6,0, ONLY_65C02);
+
+    PIC16InstName[i_BIT].AddAddressMode(aImmediat,$89,2,3,0, ONLY_65C02);
+    PIC16InstName[i_BIT].AddAddressMode(aZeroPagX,$34,2,2,0, ONLY_65C02);
+    PIC16InstName[i_BIT].AddAddressMode(aAbsolutX,$3C,3,4,0, ONLY_65C02);
     // ToDo: must add BBRn, BBSn, RMBn, SMBn
 
   PIC16InstName[i_Inval].name := 'Inv';

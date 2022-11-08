@@ -52,10 +52,10 @@
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
     <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore64.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\samples\hello_vic20.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore128.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-2.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test3_Structs1.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore64.pas
 "/>
   </Edit>
   <ExternTool>
