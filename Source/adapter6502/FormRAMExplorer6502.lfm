@@ -146,6 +146,7 @@ object frmRAMExplorer6502: TfrmRAMExplorer6502
   KeyPreview = True
   OnCreate = FormCreate
   OnKeyDown = FormKeyDown
+  OnResize = FormResize
   LCLVersion = '2.0.8.0'
   object panStatBar: TPanel
     Left = 0
@@ -222,10 +223,12 @@ object frmRAMExplorer6502: TfrmRAMExplorer6502
     top = 231
     object mnZoomPos: TMenuItem
       Caption = 'Zoom +'
+      ShortCut = 187
       OnClick = mnZoomPosClick
     end
     object mnZommNeg: TMenuItem
       Caption = 'Zoom -'
+      ShortCut = 189
       OnClick = mnZommNegClick
     end
   end

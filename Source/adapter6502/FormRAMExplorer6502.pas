@@ -22,6 +22,7 @@ type
     shpRamUsed: TShape;
     procedure FormCreate(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormResize(Sender: TObject);
     procedure mnZommNegClick(Sender: TObject);
     procedure mnZoomPosClick(Sender: TObject);
     procedure ScrollBox1MouseWheel(Sender: TObject; Shift: TShiftState;
@@ -67,6 +68,19 @@ begin
     Key := 0;
     self.Hide;
   end;
+  if Key = VK_ADD then begin
+    Key := 0;
+    mnZoomPosClick(Self);
+  end;
+  if Key = VK_SUBTRACT then begin
+    Key := 0;
+    mnZommNegClick(Self);
+  end;
+end;
+
+procedure TfrmRAMExplorer6502.FormResize(Sender: TObject);
+begin
+  fra.Width := ScrollBox1.Width - 22;
 end;
 
 procedure TfrmRAMExplorer6502.mnZoomPosClick(Sender: TObject);
