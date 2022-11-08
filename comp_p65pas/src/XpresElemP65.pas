@@ -33,6 +33,7 @@ type  //Hardware dependent definitions
   TxpAdicDeclar = (
     decNone,   //Normal declaration. Will be mapped in free RAM.
     decAbsol,  //Mapped in ABSOLUTE address
+    decZeroP,  //Mapped in Zero page
     decRegis,  //Mapped at WR
     decRegisA, //Mapped at A register
     decRegisX, //Mapped at X register

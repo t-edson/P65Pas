@@ -3,6 +3,7 @@
 - Se corrige la inicialización de la memoria RAM para que aparezca implementada
 al iniciar la compilación.
 - Se traduce al inglés, el menú contextual del explorador de archivos.
+- Se agrega el valor "decZeroP" al enumerado TxpAdicDeclar. Aún falta usarse.
 
 4/11/2022
 - Se quita la limitación de crear bloques del IF o FOR que sean mayores a 127 bytes.

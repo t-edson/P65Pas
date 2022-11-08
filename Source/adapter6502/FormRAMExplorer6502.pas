@@ -46,7 +46,7 @@ implementation
 procedure TfrmRAMExplorer6502.FormCreate(Sender: TObject);
 begin
   fra:= TfraRamExplorer6502.Create(self);
-  fra.Align:=alClient;;
+//  fra.Align:=alClient;;
   fra.Parent := ScrollBox1;
   fra.Left := 0;
   fra.Top := 0;
