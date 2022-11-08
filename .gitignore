@@ -1,6 +1,7 @@
 
 *.o
 *.ppu
+*.dbg
 
 Source/lib/
 Source/languages/
