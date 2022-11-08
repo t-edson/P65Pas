@@ -49,7 +49,7 @@ unit GenCod_PIC16;
 interface
 uses
   Classes, SysUtils,
-  P6502utils, CPUCore, GenCodBas_PIC16,
+  P65c02utils, CPUCore, GenCodBas_PIC16,
   CompBase, CompGlobals, XpresElemP65, LexPas;
 type
     { TGenCod }

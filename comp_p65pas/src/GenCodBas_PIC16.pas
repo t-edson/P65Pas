@@ -4,7 +4,7 @@ unit GenCodBas_PIC16;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, CPUCore, P6502utils, CompBase, ParserDirec, CompGlobals,
+  Classes, SysUtils, CPUCore, P65c02utils, CompBase, ParserDirec, CompGlobals,
   XpresElemP65, LexPas, StrUtils, LazLogger;
 const
   STACK_SIZE = 8;      //tamaño de pila para subrutinas en el PIC

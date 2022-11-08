@@ -3,7 +3,7 @@ unit FrameRegWatcher6502;
 interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Grids, ExtCtrls, StdCtrls,
-  Buttons, Graphics, LCLType, Menus, LCLProc, ActnList, P6502utils, MisUtils,
+  Buttons, Graphics, LCLType, Menus, LCLProc, ActnList, P65c02utils, MisUtils,
   UtilsGrilla, CibGrillas, CompBase, CPUCore, Globales, XpresElemP65, Analyzer;
 type
 

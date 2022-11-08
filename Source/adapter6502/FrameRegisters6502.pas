@@ -4,7 +4,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, StdCtrls, LCLProc,
   LCLIntf, LCLType, Grids, ExtCtrls, CompBase, Analyzer,
-  CPUCore, P6502utils;
+  CPUCore, P65c02utils;
 type
 
   { TfraPicRegisters }

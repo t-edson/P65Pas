@@ -4,7 +4,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
   ComCtrls, ExtCtrls, StdCtrls, Grids, ActnList, Menus, LCLType, CompBase,
-  P6502utils, CPUCore, FrameRamExplorer6502, FrameRegisters6502,
+  P65c02utils, CPUCore, FrameRamExplorer6502, FrameRegisters6502,
   FrameRegWatcher6502, FrameAsm6502, MisUtils, Analyzer;
 type
   { TfrmDebugger6502 }

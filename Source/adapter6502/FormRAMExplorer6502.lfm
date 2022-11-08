@@ -218,7 +218,7 @@ object frmRAMExplorer6502: TfrmRAMExplorer6502
     OnMouseWheel = ScrollBox1MouseWheel
   end
   object PopupMenu1: TPopupMenu
-    left = 146
+    left = 144
     top = 231
     object mnZoomPos: TMenuItem
       Caption = 'Zoom +'
