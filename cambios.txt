@@ -1,3 +1,5 @@
+8/11/2022
+- New options for locate variables in RAM are created. TGenCodBas.CreateVarInRAM() updated.
 6/11/2022
 - Se implementa los saltos largos para los bucles con REPEAT ... UNTIL.
 - Se corrige la inicialización de la memoria RAM para que aparezca implementada
