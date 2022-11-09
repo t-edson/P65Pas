@@ -31,10 +31,11 @@ type  //Hardware dependent definitions
   { TxpAdicDeclar }
   {Define aditional declaration settings for variable. Depends on target CPU architecture.}
   TxpAdicDeclar = (
-    decNone,   //Normal declaration. Will be mapped in free RAM.
+    decNone,   //Normal declaration. Will be mapped in RAM according compiler decision.
     decAbsol,  //Mapped in ABSOLUTE address
     decZeroP,  //Mapped in Zero page
-    decRegis,  //Mapped at WR
+    decDatSec, //Mapped at the Data section (Normal)
+    decRegis,  //Mapped at Work Register (WR)
     decRegisA, //Mapped at A register
     decRegisX, //Mapped at X register
     decRegisY  //Mapped at Y register

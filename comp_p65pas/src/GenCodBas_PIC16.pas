@@ -412,10 +412,36 @@ begin
       //ABSOLUTE to a fixed address.
       startAdd := xVar.adicPar.absAddr;
     end;
-  end else begin
-    if not pic.GetFreeBytes(nbytes, startAdd) then begin
-      GenError(MSG_NO_ENOU_RAM);
+  end else if xVar.adicPar.hasAdic = decZeroP then begin
+    //Required to locate in Zero page.
+    if not pic.GetFreeBytes(nbytes, 0, 255, startAdd) then begin
+      GenError('Not free bytes in Zero page to allocate: ' + xVar.name);
       exit;
+    end;
+  end else if xVar.adicPar.hasAdic = decDatSec then begin
+    //Required to locate in the Data section.
+    if not pic.GetFreeBytes(nbytes, GeneralORG, pic.cpuMAXRAM-1, startAdd) then begin
+      GenError('Not free bytes in Data section to allocate: ' + xVar.name);
+      exit;
+    end;
+  end else begin
+    //Compiler decide where to locate.
+    if pic.dataAddr1<>-1 then begin   //Exist Data Zone?
+      //First search in the Data zone, defined by {$SET_DATA_ADDR}
+      if not pic.GetFreeBytes(nbytes, pic.dataAddr1, pic.dataAddr2, startAdd) then begin
+        //OK. We found a free zone.
+      end else begin
+        //Lets try in the Normal Data section
+        if not pic.GetFreeBytes(nbytes, GeneralORG, pic.CPUMAXRAM-1, startAdd) then begin
+          GenError(MSG_NO_ENOU_RAM);
+          exit;
+        end;
+      end;
+    end else begin  //No Data Zone.
+      if not pic.GetFreeBytes(nbytes, GeneralORG, pic.CPUMAXRAM-1, startAdd) then begin
+        GenError(MSG_NO_ENOU_RAM);
+        exit;
+      end;
     end;
   end;
   xVar.addr:=startAdd;  //Set address

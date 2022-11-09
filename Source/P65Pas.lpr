@@ -7,7 +7,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, lazcontrols, FormPrincipal, Globales, FormConfig,
+  Forms, lazcontrols, tachartlazaruspkg, FormPrincipal, Globales, FormConfig,
   PicPasProject, FrameEditView, FrameMessagesWin, FormElemProperty,
   FrameCfgExtTool,
   FrameLateralPanel,
