@@ -8,6 +8,7 @@
   <TextPanel Val="8421504"/>
   <currPath Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas"/>
   <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test1_Vars.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
@@ -16,10 +17,10 @@
   <SynTreeWidth Val="249"/>
   <EditAsmWidth Val="472"/>
   <ViewPanAssem Val="True"/>
-  <winXpos Val="223"/>
-  <winYpos Val="5"/>
+  <winXpos Val="259"/>
+  <winYpos Val="13"/>
   <winWidth Val="1166"/>
-  <winHeight Val="790"/>
+  <winHeight Val="730"/>
   <winState Val="0"/>
   <themLoaded Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\themes\delphi.theme"/>
   <CodExplBack Val="-2147483643"/>
@@ -51,11 +52,11 @@
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test1_Vars.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\samples\hello_vic20.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore128.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-1.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore64.pas
 "/>
   </Edit>
   <ExternTool>
