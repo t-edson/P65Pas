@@ -1,5 +1,13 @@
+9/11/2022
+- Added option for external tools to change the icon used on the ToolBar. Added couple of icons for different compiuters - Commandex X16, Commodere C64/C128/Vic-20/... TExternTooltype extended to acomodate the extra info.
+
 8/11/2022
-- New options for locate variables in RAM are created. TGenCodBas.CreateVarInRAM() updated.
+- Added initial support for 65C02. The new instructions and address modes were added, excluding WD specific set. Now "asm ... end" can include the new instructions and modes.
+
+7/11/2022
+- Fixed RAM form to respond on resize.
+- Added keyboard shorcuts for zoom in RAM form: "+" and "-"
+
 6/11/2022
 - Se implementa los saltos largos para los bucles con REPEAT ... UNTIL.
 - Se corrige la inicialización de la memoria RAM para que aparezca implementada
