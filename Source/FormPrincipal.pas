@@ -725,26 +725,31 @@ begin
          acToolExt1.Visible := true;
          acToolExt1.Caption:= tool.name;
          acToolExt1.Hint := tool.name;
+         acToolExt1.ImageIndex:=tool.ImageIndex;
        end;
     1: if tool.ShowInTbar then begin
          acToolExt2.Visible := true;
          acToolExt2.Caption:= tool.name;
          acToolExt2.Hint := tool.name;
+         acToolExt2.ImageIndex:=tool.ImageIndex;
        end;
     2: if tool.ShowInTbar then begin
          acToolExt3.Visible := true;
          acToolExt3.Caption:= tool.name;
          acToolExt3.Hint := tool.name;
+         acToolExt3.ImageIndex:=tool.ImageIndex;
        end;
     3: if tool.ShowInTbar then begin
          acToolExt4.Visible := true;
          acToolExt4.Caption:= tool.name;
          acToolExt4.Hint := tool.name;
+         acToolExt4.ImageIndex:=tool.ImageIndex;
        end;
     4: if tool.ShowInTbar then begin
          acToolExt5.Visible := true;
          acToolExt5.Caption:= tool.name;
          acToolExt5.Hint := tool.name;
+         acToolExt5.ImageIndex:=tool.ImageIndex;
        end;
     end;
   end;
