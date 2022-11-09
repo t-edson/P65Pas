@@ -3,8 +3,8 @@ unit FrameCfgExtTool;
 interface
 uses
   Classes, SysUtils, FileUtil, LazUTF8, Forms, Controls, StdCtrls, LCLProc,
-  Graphics, MisUtils, Types, LCLIntf, Dialogs, Buttons, EditBtn, Globales,
-  SynFacilBasic, MiConfigXML, process;
+  Graphics, MisUtils, Types, LCLIntf, Dialogs, Buttons, EditBtn, ExtCtrls,
+  Globales, SynFacilBasic, MiConfigXML, process;
 type
   //Representa una herramienta exterrna
 
@@ -16,6 +16,7 @@ type
     ComLine: string;  //Línea de comandos
     WaitOnExit: boolean;  //Esperar hasta que termine
     ShowInTbar: boolean;  //Mostrar en barra de herramientas
+    ImageIndex: integer;  // Icon Index in the Image List
     procedure ReadFromString(const str: string);
     function ToString: string;
   end;
@@ -23,13 +24,18 @@ type
   { TfraCfgExtTool }
   TfraCfgExtTool = class(TFrame)
     butAdd: TBitBtn;
+    butLeft: TSpeedButton;
     butRemove: TBitBtn;
+    butRight: TSpeedButton;
     butTest: TButton;
+    butToolIcon: TSpeedButton;
     chkWaitExit: TCheckBox;
     chkShowTBar: TCheckBox;
     Label3: TLabel;
     Label4: TLabel;
     Label6: TLabel;
+    Label7: TLabel;
+    Panel1: TPanel;
     txtName: TEdit;
     txtComLine: TEdit;
     txtPath: TFileNameEdit;
@@ -38,7 +44,9 @@ type
     Label5: TLabel;
     ListBox1: TListBox;
     procedure butAddClick(Sender: TObject);
+    procedure butLeftClick(Sender: TObject);
     procedure butRemoveClick(Sender: TObject);
+    procedure butRightClick(Sender: TObject);
     procedure butTestClick(Sender: TObject);
     procedure chkShowTBarChange(Sender: TObject);
     procedure chkWaitExitChange(Sender: TObject);
@@ -70,6 +78,10 @@ resourcestring
   ER_FAIL_EXEC_ = 'Fail executing: %s';
   PRE_TOOL_NAME = 'Tool'        ;
 
+const
+  cIndexMin = 13;
+  cIndexMax = 29;
+
 { TExternTool }
 procedure TExternTool.ReadFromString(const str: string);
 var
@@ -81,6 +93,8 @@ begin
   ComLine := a[3];
   WaitOnExit := f2B(a[4]);
   ShowInTbar := f2B(a[5]);
+  if a[6] = '' then ImageIndex := 13
+               else ImageIndex := f2I(a[6]);
 end;
 function TExternTool.ToString: string;
 begin
@@ -92,6 +106,7 @@ begin
             ComLine + #9 +
             B2f(WaitOnExit) + #9 +
             B2f(ShowInTbar) + #9 +
+            I2f(ImageIndex) + #9 +
             '' + #9 +   //Campo de ampliación
             '' + #9 +   //Campo de ampliación
             '' + #9 +   //Campo de ampliación
@@ -155,13 +170,32 @@ begin
   r.ComLine := '';
   r.ShowInTbar := false;
   r.WaitOnExit := false;
+  r.ImageIndex := 13;
   ListBox1.AddItem(r.ToString, nil);
 end;
+
+procedure TfraCfgExtTool.butLeftClick(Sender: TObject);
+begin
+  if butToolIcon.ImageIndex > cIndexMin then begin
+    butToolIcon.ImageIndex := butToolIcon.ImageIndex - 1;
+    ControlsToListBox;
+  end;
+end;
+
 procedure TfraCfgExtTool.butRemoveClick(Sender: TObject);
 begin
   if ListBox1.ItemIndex=-1 then exit;
   ListBox1.Items.Delete(ListBox1.ItemIndex);
 end;
+
+procedure TfraCfgExtTool.butRightClick(Sender: TObject);
+begin
+  if butToolIcon.ImageIndex < cIndexMax then begin
+    butToolIcon.ImageIndex := butToolIcon.ImageIndex + 1;
+    ControlsToListBox;
+  end;
+end;
+
 procedure TfraCfgExtTool.EstadoCampos(estado: boolean);
 begin
   label1.Enabled := estado;
@@ -174,6 +208,9 @@ begin
   chkWaitExit.Enabled := estado;
   chkShowTBar.Enabled := estado;
   butTest.Enabled := estado;
+  butLeft.Enabled := estado;
+  butRight.Enabled := estado;
+  butToolIcon.Enabled := estado;
 end;
 procedure TfraCfgExtTool.fraCfgExtToolPaint(Sender: TObject);
 begin
@@ -192,6 +229,7 @@ begin
   txtComLine.Text     := curTool.ComLine;
   chkWaitExit.Checked := curTool.WaitOnExit;
   chkShowTBar.Checked := curTool.ShowInTbar;
+  butToolIcon.ImageIndex := curTool.ImageIndex;
   debugln('ListBoxToControls');
   NoEvents := false;
 end;
@@ -207,6 +245,7 @@ begin
   curTool.ComLine    := txtComLine.Text;
   curTool.WaitOnExit := chkWaitExit.Checked;
   curTool.ShowInTbar := chkShowTBar.Checked;
+  curTool.ImageIndex := butToolIcon.ImageIndex;
   ListBox1.Items[ListBox1.ItemIndex] := curTool.ToString;
 end;
 procedure TfraCfgExtTool.ListBox1Click(Sender: TObject);

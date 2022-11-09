@@ -1,6 +1,11 @@
 
-*.o
 *.ppu
+*.o
+*.a
+*.lps
+*.or
+*.rst
+*.compiled
 *.dbg
 
 Source/lib/
