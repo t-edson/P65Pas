@@ -61,7 +61,6 @@
         <EditorIndex Value="6"/>
         <TopLine Value="153"/>
         <CursorPos X="31" Y="162"/>
-        <FoldState Value=" T3lS0%51821_"/>
         <UsageCount Value="200"/>
         <Loaded Value="True"/>
       </Unit4>
@@ -353,12 +352,12 @@
         <Filename Value="..\comp_p65pas\src\Compiler_PIC16.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="1"/>
-        <CursorPos X="14" Y="8"/>
+        <WindowIndex Value="1"/>
+        <CursorPos X="44" Y="17"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="1"/>
-          <WindowIndex Value="1"/>
-          <CursorPos X="44" Y="17"/>
+          <CursorPos X="14" Y="8"/>
         </ExtraEditor1>
         <UsageCount Value="309"/>
         <Loaded Value="True"/>
@@ -382,7 +381,6 @@
         <EditorIndex Value="3"/>
         <TopLine Value="7"/>
         <CursorPos X="14" Y="46"/>
-        <FoldState Value=" T4302 T5iR0S TLiK420151114 T8A23211 T3jD072 pjQjc0}-4 pl3n72)1 pobkd2-[S4alF2P T6jE01C T0jQG3A piZiPF3A]XBj5YF7]IYbQCF[)4iURPD1[J5kQZ4E]9gkPZ29]T6j5l43]IfHOG9]8Xk0M]HTMq661011317231F18121 TFsb6o TE-H45 TH=IS71y"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -410,7 +408,6 @@
         <EditorIndex Value="7"/>
         <TopLine Value="16"/>
         <CursorPos X="14" Y="37"/>
-        <FoldState Value=" TL007077112113151242 p0tJ210431155]J]RK]LvB230422521]l39]Ju20103]X[b4 T4B0]65D01[^4211 pjBtC0{92 plCnJ03 TMiE250Y13];tL420U[94M09031]u35172J]JxX21 T7QH2]giXmZJ1215[B4o1IN9 T8ig24C]HcmI2133E]BaoW23C TCx9F6 T3-E07I]OgjY0C[i4YjK0AD]9Zja06A[95N051 pj0C2C3]85jS0H6]97kN04F[r5G03D]I4jP049]IejE088 T0-GK1S[Z4sIUkE[&apos;5ga1T[94qIb25 T6;J01M."/>
         <UsageCount Value="100"/>
         <Loaded Value="True"/>
       </Unit37>
@@ -434,7 +431,6 @@
         <EditorIndex Value="2"/>
         <TopLine Value="377"/>
         <CursorPos X="19" Y="398"/>
-        <FoldState Value=" T0q5)301121~"/>
         <ExtraEditorCount Value="1"/>
         <ExtraEditor1>
           <EditorIndex Value="-1"/>
@@ -483,7 +479,6 @@
         <EditorIndex Value="5"/>
         <TopLine Value="259"/>
         <CursorPos X="30" Y="314"/>
-        <FoldState Value=" TL00401111612211 T480]65A0O TCCD8 T8ic2]J3kK03421[b46kg02019 T0l3N25]M3121C THneP7 TEo822m"/>
         <UsageCount Value="45"/>
         <Loaded Value="True"/>
       </Unit43>
@@ -498,9 +493,9 @@
         <Filename Value="..\comp_p65pas\src\_libraries\P65Utils-0.5\P65C02utils.pas"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="4"/>
-        <TopLine Value="1304"/>
-        <CursorPos X="35" Y="1315"/>
-        <FoldState Value=" TL00C23112711 p0tY01326]A+8021 T4H0]65J0{k2 pj7m804 TM*8420g2 TCjVKB T7k3JD]f8k426A T3ma0I8 pkclQ05J pibjK05[.4Yjg[95rNrV0T536]KVoI0d3 T6me029 p0@C016 T0n2t5M]-YkcC3L]9XmBD5E[94jSM1D[R4i594B]9di3M1H[R4iT94[R5j193[94Zj794[s4ajDL521]34G[p4mFM3A THpLF{11]Ibp3EF]9qLmSGAY"/>
+        <TopLine Value="1316"/>
+        <CursorPos X="17" Y="1333"/>
+        <FoldState Value=" TL00C2311271 T4H0]65J0{k2 pj7m804 TM*842 TCjVKB T7k3JD]c8k426A T3ma0I8 pkclQ05J pibjK05[;4Yjg[95rNrV0T5 T6me029 T0n2t5M]hYkcC3L]9XmBD5E[94jSM1D[R4i594B]9di3M1H[R4iT94[R5j193[94Zj794[s4ajDL521]34G THpLF{11]Obp3EF]9qLmSGAQ"/>
         <UsageCount Value="47"/>
         <Loaded Value="True"/>
       </Unit45>
