@@ -428,7 +428,7 @@ begin
     //Compiler decide where to locate.
     if pic.dataAddr1<>-1 then begin   //Exist Data Zone?
       //First search in the Data zone, defined by {$SET_DATA_ADDR}
-      if not pic.GetFreeBytes(nbytes, pic.dataAddr1, pic.dataAddr2, startAdd) then begin
+     if pic.GetFreeBytes(nbytes, pic.dataAddr1, pic.dataAddr2, startAdd) then begin
         //OK. We found a free zone.
       end else begin
         //Lets try in the Normal Data section

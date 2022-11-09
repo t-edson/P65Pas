@@ -7,8 +7,9 @@
   <SplitterCol Val="536870912"/>
   <TextPanel Val="8421504"/>
   <currPath Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas"/>
-  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+  <filesClosed Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-2.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test1_Vars.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
 "/>
   <VerPanMensaj Val="True"/>
   <VerStatusbar Val="True"/>
@@ -17,8 +18,8 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test1_
   <SynTreeWidth Val="249"/>
   <EditAsmWidth Val="472"/>
   <ViewPanAssem Val="True"/>
-  <winXpos Val="259"/>
-  <winYpos Val="13"/>
+  <winXpos Val="197"/>
+  <winYpos Val="27"/>
   <winWidth Val="1166"/>
   <winHeight Val="730"/>
   <winState Val="0"/>
@@ -52,17 +53,17 @@ D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test1_
     <VerMarPle Val="True"/>
     <cFonPan Val="16777215"/>
     <cTxtPan Val="0"/>
-    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test1_Vars.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+    <recient Val="D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-0.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\testcode65\Simul_1\Test1_Vars.pas
+D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-2.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\samples\hello_vic20.pas
 D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\units\Commodore128.pas
-D:\Proyectos_Software\Lazarus\P65Pas-trunk\comp_p65pas\temp\newfile-1.pas
 "/>
   </Edit>
   <ExternTool>
-    <extern_tools Val="Execute in C64	                        	C:\Program Files (x86)\Computerbrains\CCS64 v3.9.3\CCS64.exe	$(hexFile)	F	V					
-Execute in C128	                        	D:\Programas\GTK3VICE-3.6.1-win64\bin\x128.exe	$(hexFile)	F	V					
-Execute in VIC-20	                        	D:\Programas\GTK3VICE-3.6.1-win64\bin\xvic.exe	$(hexFile)	F	V					
+    <extern_tools Val="Execute in C64	                        	C:\Program Files (x86)\Computerbrains\CCS64 v3.9.3\CCS64.exe	$(hexFile)	F	V	25					
+Execute in C128	                        	D:\Programas\GTK3VICE-3.6.1-win64\bin\x128.exe	$(hexFile)	F	V	26					
+Execute in VIC-20	                        	D:\Programas\GTK3VICE-3.6.1-win64\bin\xvic.exe	$(hexFile)	F	V	27					
 "/>
   </ExternTool>
   <AftChg6502>
