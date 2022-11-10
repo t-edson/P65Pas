@@ -396,12 +396,13 @@ begin
   end;
   varName := xVar.name;
   typ := xVar.typ;
-  //Find the memory address where to place the variable.
-  pic.freeStart := GeneralORG;  //Find at the current program block.
+  //Get the size of the variable
   nbytes := typ.size;
   if (typ.catType = tctArray) and (typ.itmType = typChar) and str_nullterm then begin
     inc(nbytes);  //On more byte for the NULL character
   end;
+  //Find the memory address where to place the variable.
+  pic.freeStart := GeneralORG;  //Find at the current program block.
   if xVar.adicPar.hasAdic = decAbsol then begin
     //It's ABSOLUTE to something
     if xVar.adicPar.absVar<>nil then begin
@@ -425,19 +426,12 @@ begin
       exit;
     end;
   end else begin
-    //Compiler decide where to locate.
-    if pic.dataAddr1<>-1 then begin   //Exist Data Zone?
-      //First search in the Data zone, defined by {$SET_DATA_ADDR}
-     if pic.GetFreeBytes(nbytes, pic.dataAddr1, pic.dataAddr2, startAdd) then begin
-        //OK. We found a free zone.
-      end else begin
-        //Lets try in the Normal Data section
-        if not pic.GetFreeBytes(nbytes, GeneralORG, pic.CPUMAXRAM-1, startAdd) then begin
-          GenError(MSG_NO_ENOU_RAM);
-          exit;
-        end;
-      end;
-    end else begin  //No Data Zone.
+    //Compiler decides where to locate.
+    //First search in the Data zone, defined by {$SET_DATA_ADDR}
+    if pic.GetFreeBytes(nbytes, pic.dataAddr1, pic.dataAddr2, startAdd) then begin
+      //OK. We found a free zone.
+    end else begin
+      //Lets try in the Normal Data section
       if not pic.GetFreeBytes(nbytes, GeneralORG, pic.CPUMAXRAM-1, startAdd) then begin
         GenError(MSG_NO_ENOU_RAM);
         exit;
