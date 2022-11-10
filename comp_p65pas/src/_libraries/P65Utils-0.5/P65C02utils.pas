@@ -75,6 +75,7 @@ type  //Instructions set
     i_TXA,  //transfer X to accumulator
     i_TXS,  //transfer X to stack pointer
     i_TYA,  //transfer Y to accumulator
+
     i_BRA,
     i_STZ,
     i_PHX,
@@ -85,6 +86,42 @@ type  //Instructions set
     i_TSB,
     i_STP,
     i_WAI,
+
+    I_RMB0,
+    I_RMB1,
+    I_RMB2,
+    I_RMB3,
+    I_RMB4,
+    I_RMB5,
+    I_RMB6,
+    I_RMB7,
+
+    I_SMB0,
+    I_SMB1,
+    I_SMB2,
+    I_SMB3,
+    I_SMB4,
+    I_SMB5,
+    I_SMB6,
+    I_SMB7,
+
+    I_BBR0,
+    I_BBR1,
+    I_BBR2,
+    I_BBR3,
+    I_BBR4,
+    I_BBR5,
+    I_BBR6,
+    I_BBR7,
+
+    I_BBS0,
+    I_BBS1,
+    I_BBS2,
+    I_BBS3,
+    I_BBS4,
+    I_BBS5,
+    I_BBS6,
+    I_BBS7,
   //INVALID INSTRUCTION
     i_Inval
   );
@@ -133,7 +170,7 @@ type  //Instructions set
   TP6502Instruct = object
   public
     //Name of the instruction
-    name: string[3];
+    name: string[4];
     //Address Modes supported
     addressModes: TP6502AddModes;
     //Information for each Address Mode supported
@@ -1730,7 +1767,75 @@ begin
     PIC16InstName[i_BIT].AddAddressMode(aImmediat,$89,2,3,0, ONLY_65C02);
     PIC16InstName[i_BIT].AddAddressMode(aZeroPagX,$34,2,2,0, ONLY_65C02);
     PIC16InstName[i_BIT].AddAddressMode(aAbsolutX,$3C,3,4,0, ONLY_65C02);
-    // ToDo: must add BBRn, BBSn, RMBn, SMBn
+
+    // 65C02 extra WDC set: BBRn, BBSn, RMBn, SMBn
+    PIC16InstName[i_RMB0].name := 'RMB0';
+    PIC16InstName[i_RMB0].AddAddressMode(aZeroPage,$07,2,5,0, ONLY_65C02);
+    PIC16InstName[i_RMB1].name := 'RMB1';
+    PIC16InstName[i_RMB1].AddAddressMode(aZeroPage,$17,2,5,0, ONLY_65C02);
+    PIC16InstName[i_RMB2].name := 'RMB2';
+    PIC16InstName[i_RMB2].AddAddressMode(aZeroPage,$27,2,5,0, ONLY_65C02);
+    PIC16InstName[i_RMB3].name := 'RMB3';
+    PIC16InstName[i_RMB3].AddAddressMode(aZeroPage,$37,2,5,0, ONLY_65C02);
+    PIC16InstName[i_RMB4].name := 'RMB4';
+    PIC16InstName[i_RMB4].AddAddressMode(aZeroPage,$47,2,5,0, ONLY_65C02);
+    PIC16InstName[i_RMB5].name := 'RMB5';
+    PIC16InstName[i_RMB5].AddAddressMode(aZeroPage,$57,2,5,0, ONLY_65C02);
+    PIC16InstName[i_RMB6].name := 'RMB6';
+    PIC16InstName[i_RMB6].AddAddressMode(aZeroPage,$67,2,5,0, ONLY_65C02);
+    PIC16InstName[i_RMB7].name := 'RMB7';
+    PIC16InstName[i_RMB7].AddAddressMode(aZeroPage,$77,2,5,0, ONLY_65C02);
+
+    PIC16InstName[i_SMB0].name := 'SMB0';
+    PIC16InstName[i_SMB0].AddAddressMode(aZeroPage,$87,2,5,0, ONLY_65C02);
+    PIC16InstName[i_SMB1].name := 'SMB1';
+    PIC16InstName[i_SMB1].AddAddressMode(aZeroPage,$97,2,5,0, ONLY_65C02);
+    PIC16InstName[i_SMB2].name := 'SMB2';
+    PIC16InstName[i_SMB2].AddAddressMode(aZeroPage,$A7,2,5,0, ONLY_65C02);
+    PIC16InstName[i_SMB3].name := 'SMB3';
+    PIC16InstName[i_SMB3].AddAddressMode(aZeroPage,$B7,2,5,0, ONLY_65C02);
+    PIC16InstName[i_SMB4].name := 'SMB4';
+    PIC16InstName[i_SMB4].AddAddressMode(aZeroPage,$C7,2,5,0, ONLY_65C02);
+    PIC16InstName[i_SMB5].name := 'SMB5';
+    PIC16InstName[i_SMB5].AddAddressMode(aZeroPage,$D7,2,5,0, ONLY_65C02);
+    PIC16InstName[i_SMB6].name := 'SMB6';
+    PIC16InstName[i_SMB6].AddAddressMode(aZeroPage,$E7,2,5,0, ONLY_65C02);
+    PIC16InstName[i_SMB7].name := 'SMB7';
+    PIC16InstName[i_SMB7].AddAddressMode(aZeroPage,$F7,2,5,0, ONLY_65C02);
+
+    PIC16InstName[i_BBR0].name := 'BBR0';
+    PIC16InstName[i_BBR0].AddAddressMode(aAbsolute,$0F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR1].name := 'BBR1';
+    PIC16InstName[i_BBR1].AddAddressMode(aAbsolute,$1F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR2].name := 'BBR2';
+    PIC16InstName[i_BBR2].AddAddressMode(aAbsolute,$2F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR3].name := 'BBR3';
+    PIC16InstName[i_BBR3].AddAddressMode(aAbsolute,$3F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR4].name := 'BBR4';
+    PIC16InstName[i_BBR4].AddAddressMode(aAbsolute,$4F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR5].name := 'BBR5';
+    PIC16InstName[i_BBR5].AddAddressMode(aAbsolute,$5F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR6].name := 'BBR6';
+    PIC16InstName[i_BBR6].AddAddressMode(aAbsolute,$6F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR7].name := 'BBR7';
+    PIC16InstName[i_BBR7].AddAddressMode(aAbsolute,$7F,2,5,0, ONLY_65C02);
+
+    PIC16InstName[i_BBS0].name := 'BBS0';
+    PIC16InstName[i_BBS0].AddAddressMode(aAbsolute,$8F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS1].name := 'BBS1';
+    PIC16InstName[i_BBS1].AddAddressMode(aAbsolute,$9F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS2].name := 'BBS2';
+    PIC16InstName[i_BBS2].AddAddressMode(aAbsolute,$AF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS3].name := 'BBS3';
+    PIC16InstName[i_BBS3].AddAddressMode(aAbsolute,$BF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS4].name := 'BBS4';
+    PIC16InstName[i_BBS4].AddAddressMode(aAbsolute,$CF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS5].name := 'BBS5';
+    PIC16InstName[i_BBS5].AddAddressMode(aAbsolute,$DF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS6].name := 'BBS6';
+    PIC16InstName[i_BBS6].AddAddressMode(aAbsolute,$EF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS7].name := 'BBS7';
+    PIC16InstName[i_BBS7].AddAddressMode(aAbsolute,$FF,2,5,0, ONLY_65C02);
 
   PIC16InstName[i_Inval].name := 'Inv';
 

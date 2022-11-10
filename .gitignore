@@ -7,6 +7,10 @@
 *.rst
 *.compiled
 *.dbg
+*.exe
+*.xml
 
 Source/lib/
 Source/languages/
+
+Source/P65Pas.res
