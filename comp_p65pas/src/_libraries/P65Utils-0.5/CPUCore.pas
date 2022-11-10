@@ -112,7 +112,7 @@ type
     procedure SetStatRAM(i1, i2: word; status0: TCPUCellState);
     function SetStatRAMCom(strDef: string): boolean;
     function SetDataAddr(strDef: string): boolean;
-    function HaveConsecRAM(const i, n: word; maxRam: dword): boolean; //Indica si hay "n" bytes libres
+    function HaveConsecRAM(const i, nBytes: word; maxRam: dword): boolean; //Indica si hay "n" bytes libres
     procedure UseConsecRAM(const i, n: word);  //Ocupa "n" bytes en la posición "i"
     procedure SetSharedUnused;
     procedure SetSharedUsed;
@@ -348,24 +348,23 @@ begin
   dataAddr1 := add1;    //Save
   dataAddr2 := add2;    //Save end
 end;
-function TCPUCore.HaveConsecRAM(const i, n: word; maxRam: dword): boolean;
-{Indica si hay "n" bytes consecutivos libres en la posicióm "i", en RAM.
-La búsqueda se hace solo hasta la posición "maxRam"}
+function TCPUCore.HaveConsecRAM(const i, nBytes: word; maxRam: dword): boolean;
+{Indicates if there is "n" free consecutives bytes in location "i", in RAM.
+Searching is done until location "maxRam"}
 var
   c: Integer;
   j: dword;
 begin
-  Result := false;
   c := 0;
   j := i;
-  while (j<=maxRam) and (c<n) do begin
-    if not ram[j].Free then exit;
+  while (j<=maxRam) and (c<nBytes) do begin
+    if not ram[j].Free then exit(false);
     inc(c);      //verifica siguiente
     inc(j);
   end;
-  if j>maxRam then exit;  //no hay más espacio
-  //Si llega aquí es porque estaban libres los bloques
-  Result := true;
+  if c>=nBytes then exit(true);  //We got the nBytes searched
+  //Otherwise
+  exit(false);
 end;
 procedure TCPUCore.UseConsecRAM(const i, n: word);
 {Marca "n" bytes como usados en la posición de memoria "i", en la RAM.

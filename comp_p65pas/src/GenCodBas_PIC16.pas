@@ -387,6 +387,7 @@ var
   typ: TEleTypeDec;
   startAdd: word;
   i: integer;
+  in_DATA_ADDR: boolean;  //Variable located in DATA_ADDR section.
   outOfProgram: Boolean;
 begin
   //Validation
@@ -403,6 +404,7 @@ begin
   end;
   //Find the memory address where to place the variable.
   pic.freeStart := GeneralORG;  //Find at the current program block.
+  in_DATA_ADDR := false;
   if xVar.adicPar.hasAdic = decAbsol then begin
     //It's ABSOLUTE to something
     if xVar.adicPar.absVar<>nil then begin
@@ -428,8 +430,9 @@ begin
   end else begin
     //Compiler decides where to locate.
     //First search in the Data zone, defined by {$SET_DATA_ADDR}
-    if pic.GetFreeBytes(nbytes, pic.dataAddr1, pic.dataAddr2, startAdd) then begin
-      //OK. We found a free zone.
+    if (pic.dataAddr1<>-1) and pic.GetFreeBytes(nbytes, pic.dataAddr1, pic.dataAddr2, startAdd) then begin
+      //OK. We found a free zone here.
+      in_DATA_ADDR := true;
     end else begin
       //Lets try in the Normal Data section
       if not pic.GetFreeBytes(nbytes, GeneralORG, pic.CPUMAXRAM-1, startAdd) then begin
@@ -446,8 +449,8 @@ begin
   separates blocks of memory to fill. For example if we have specified an address like
   $FFFF for an absolute variable, and the program start at $0000, all the RAM must be
   included in *.PRG.}
-  outOfProgram := (xVar.adicPar.hasAdic = decAbsol) or
-                  (pic.dataAddr1<>-1);  //This means the variable has been placed in the primary data address.
+  outOfProgram := (xVar.adicPar.hasAdic in [decAbsol, decZeroP]) or
+                  in_DATA_ADDR;  //The variable has been placed in the primary data address.
   //Mark as used as variable Data. Not instruction.
   if outOfProgram then begin
     //Out of the program block, mark as "ruAbsData", in order to not be considered

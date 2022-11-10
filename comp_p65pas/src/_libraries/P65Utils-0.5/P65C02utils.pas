@@ -212,7 +212,6 @@ type
   public  //RAM memory functions
     freeStart: word;  //Start address where Free RAM will be searched.
     function GetFreeByte(out addr: word): boolean;
-    function GetFreeBytes(const size: integer; out addr: word): boolean;  //obtiene una dirección libre
     function GetFreeBytes(const size: integer; ad1, ad2: word; out addr: word): boolean;  //obtiene una dirección libre
     function TotalMemRAM: integer; //devuelve el total de memoria RAM
     function UsedMemRAM: word;  //devuelve el total de memoria RAM usada
@@ -1281,42 +1280,6 @@ begin
       addr := i;
       //Notar que la posición de memoria puede estar mapeada.
       exit(true);  //indica que encontró espacio
-    end;
-  end;
-end;
-function TP6502.GetFreeBytes(const size: integer; out addr: word): boolean;
-{Returns a free memory address of RAM to locate a block of the specified size (in bytes).
- If found returns TRUE. }
-var
-  i: dword;
-  maxRam: dWord;
-begin
-  Result := false;  //Default value
-  if size=0 then begin
-    addr := 0;
-    exit(true);
-  end;
-  maxRam := CPUMAXRAM;
-  //Verifica si hay zona de varaibles
-  if dataAddr1<>-1 then begin
-    //Busca en zona especial
-    for i:=dataAddr1 to dataAddr2 do begin
-      if HaveConsecRAM(i, size, maxRam) then begin
-        //Encontró del tamaño buscado
-        addr := i;
-        exit(true);
-      end;
-    end;
-    //No found. No more space available.
-    dataAddr1 := -1;  //Deactivate
-    //Continue in the normal RAM
-  end;
-  //Busca en la zona normal
-  for i:=freeStart to maxRam-1 do begin  //verifica 1 a 1, por seguridad
-    if HaveConsecRAM(i, size, maxRam) then begin
-      //Encontró del tamaño buscado
-      addr := i;
-      exit(true);
     end;
   end;
 end;
