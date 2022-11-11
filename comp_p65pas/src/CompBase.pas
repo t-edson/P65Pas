@@ -1328,6 +1328,7 @@ begin
   nElem := length(token) - 2;  //Don't consider quotes
   str := copy(token, 2, nElem);
   Next;    //Pasa al siguiente
+  //To include additional characters like #41 or #00
   while tokType = tkChar do begin  //like #255
     //Concat the next char to simulate concat, considering there is not a
     //string type.
@@ -1348,6 +1349,10 @@ begin
     Op1.evaluated := true;
   end else begin
     //Will be considered as array of char
+    if str_nullterm then begin    //Needed to include delimiter
+      str += #0;
+      inc(nElem);
+    end;
     if not TreeElems.ExistsArrayType(typChar, nElem, xtyp) then begin
       //There is not a similar type. We create a new type.
       typName := GenArrayTypeName('char', nElem); //Op.nItems won't work

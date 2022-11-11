@@ -174,7 +174,7 @@ begin
         init := GetConstantArray(']');
         TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
         if HayError then exit(nil);
-      end else if tokType = tkString then begin  //Alternate syntax "abc" onlcy for char.
+      end else if tokType = tkString then begin  //Alternate syntax "abc" only for char.
         init := GetConstantArrayStr(false);
         TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
         if HayError then exit(nil);

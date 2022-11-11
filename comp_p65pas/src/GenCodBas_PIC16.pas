@@ -399,9 +399,6 @@ begin
   typ := xVar.typ;
   //Get the size of the variable
   nbytes := typ.size;
-  if (typ.catType = tctArray) and (typ.itmType = typChar) and str_nullterm then begin
-    inc(nbytes);  //On more byte for the NULL character
-  end;
   //Find the memory address where to place the variable.
   pic.freeStart := GeneralORG;  //Find at the current program block.
   in_DATA_ADDR := false;
@@ -492,12 +489,6 @@ begin
     //Here, we need to know the type
     WriteVaLueToRAM(@pic.ram, startAdd, typ, xVar.adicPar.constDec.value);
     if HayError then  exit;
-    if (typ.catType = tctArray) and (typ.itmType = typChar) and str_nullterm then begin
-      //Special case. Literal arrays of chars (strings) with Null character
-      pic.ram[pic.iRam+nbytes].used := ruData;
-      pic.ram[pic.iRam+nbytes].value := 0;
-      inc(nBytes);
-    end;
   end;
 end;
 procedure TGenCodBas.CreateValueInCode(typ: TEleTypeDec;
