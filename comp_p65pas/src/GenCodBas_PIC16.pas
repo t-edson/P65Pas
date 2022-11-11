@@ -2021,6 +2021,7 @@ var
   finalOperVal: Integer;
 begin
   if asmInst.iType = itOpcode then begin   //Instrucción normal.
+    pic.MsjError := '';
     //Calculate the final Opcode operand parameter.
     ReadOperandValue(operRef, finalOperVal);
     //Validates possible operations to the operand
@@ -2030,6 +2031,10 @@ begin
     cpu_inst := TP6502Inst(asmInst.opcode);
     cpu_amod := TP6502AddMode(asmInst.addMode);
     WriteInstruction(cpu_inst, cpu_amod, finalOperVal);
+    if pic.MsjError <> '' then begin
+      GenError(pic.MsjError, asmInst.srcDec);
+      exit;
+    end;
     lastASMLabel := '';
   end else if asmInst.iType = itLabel then begin  //Instrucción etiqueta.
     asmInst.addr := pic.iRam;   //Actualiza dirección actual

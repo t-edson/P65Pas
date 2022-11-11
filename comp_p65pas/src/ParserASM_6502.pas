@@ -447,7 +447,7 @@ begin
     end;
     cpx.SkipWhitesNoEOL;
   end else if tok = '(' then begin
-    //Direccionamiento Indirecto: (indirect), (indirect,X) o (indirect),Y
+    //Direccionamiento Indirecto: (indirect), (indirect,X), (indirect),Y o (aAbsInIdX, X)
     AddInstruction(idInst, aIndirect, 0, srcInst);  //Add the instruction with "aImplicit" temporally. Later will be updated.
     cpx.Next;
     if cpx.tokType in [tkLitNumber, tkIdentifier] then begin
@@ -465,7 +465,14 @@ begin
           cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
           exit;
         end;
-        UpdateInstruction(idInst, aIndirecX, curInst.operVal);
+        cpx.Next;  //Take X
+        cpx.SkipWhitesNoEOL;
+        //Only could be aIndirecX or aAbsInIdX
+        if aAbsInIdX in addressModes then begin  //Only JMP have this mode and don't have aIndirecX
+          UpdateInstruction(idInst, aAbsInIdX, curInst.operVal);
+        end else begin  //The only option
+          UpdateInstruction(idInst, aIndirecX, curInst.operVal);
+        end;
         //Verify ')'
         if not CaptureParenthes then begin
           cpx.GenError(ER_EXPEC_PAREN);

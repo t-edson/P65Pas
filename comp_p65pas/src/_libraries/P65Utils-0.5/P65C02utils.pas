@@ -679,7 +679,7 @@ begin
     nBytesProc := 3;
     if addr+2>CPUMAXRAM-1 then exit('');
     par2   := ram[addr+2].value;
-    Result := nemo + '$('+IntToHex(par1 + par2*256, 4)+')';
+    Result := nemo + '($'+IntToHex(par1 + par2*256, 4)+')';
   end;
   aAbsolutX: begin
     nBytesProc := 3;
@@ -703,11 +703,11 @@ begin
   end;
   aIndirecX: begin
     nBytesProc := 2;
-    Result := nemo + '$('+IntToHex(par1, 2)+',X)';
+    Result := nemo + '($'+IntToHex(par1, 2)+',X)';
   end;
   aIndirecY: begin
     nBytesProc := 2;
-    Result := nemo + '$('+IntToHex(par1, 2)+'),Y';
+    Result := nemo + '($'+IntToHex(par1, 2)+'),Y';
   end;
   aAbsInIdX: begin
     nBytesProc := 3;
