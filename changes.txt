@@ -1,3 +1,14 @@
+11/11/2022
+- Implemented the option for allocate initialized variables in Data Section in order to
+avoid message "Cannot initialize variable", when compiler try to allocate in location 
+defined by SET_DATA_ADDR.
+- Implemented reserved word ZEROPAGE to allow variables declaration like:
+  VAR x: byte ZEROPAGE;
+- Updated unit Commodore with definition os Special Register in Zero-page.
+
+10/11/2022
+- Fixed the runtime error when initializing long arrays (>255).
+
 9/11/2022
 - Added option for external tools to change the icon used on the ToolBar. Added couple of icons for different compiuters - Commandex X16, Commodere C64/C128/Vic-20/... TExternTooltype extended to acomodate the extra info.
 

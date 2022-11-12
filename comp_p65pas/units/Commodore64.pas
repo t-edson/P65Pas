@@ -7,11 +7,10 @@ Based on information of: http://sta.c64.org/cbm64krnfunc.html
 {$BOOTLOADER C64}
 {$STRING NULL_TERMINATED}
 //Set RAM for Commodore 64
-//{$CLEAR_STATE_RAM} If we clears, we'll need to define all RAM map
-//{$SET_STATE_RAM '0000-FFFF:GPR'}
+{$SET_STATE_RAM '0000-00F6:SFR'} //Zero page
+{$SET_STATE_RAM '0100-01FF:SFR'} //Stack
 {$SET_DATA_ADDR ''}
 {$SET_DATA_ADDR '00F7-00FE'}  //Some bytes from Zero page
-{$SET_STATE_RAM '0100-01FF:SFR'} //Stack
 unit Commodore64;
 interface
 type 

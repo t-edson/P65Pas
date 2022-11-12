@@ -483,7 +483,7 @@ begin
   //Set initial value.
   if xVar.adicPar.hasInit then begin
     if outOfProgram then begin  //Only allowed in the program block
-      GenError('Cannot initialize absolute variable "%s" in location $%x.',
+      GenError('Cannot initialize variable "%s" in location $%x.',
                        [varName, startAdd], xvar.srcDec);
     end;
     //Here, we need to know the type

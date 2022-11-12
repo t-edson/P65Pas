@@ -375,6 +375,9 @@ begin
     end else if aditVar.hasAdic = decAbsol then begin
       GenError('Cannot initialize ABSOLUTE variables.');
       exit;
+    end else if aditVar.hasAdic = decZeroP then begin
+      GenError('Cannot initialize ZEROPAGE variables.');
+      exit;
     end else if aditVar.hasAdic = decNone then begin
       //Not specified declaration
       {We force to be in Data Section. Otherwise compiler could try to allocate it in
