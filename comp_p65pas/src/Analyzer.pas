@@ -329,24 +329,24 @@ begin
       Next;    //pasa siempre
       exit;
     end;
-  end else if tokL = 'register' then begin
-    //Es de tipo registro
+  end else if tokL = 'register' then begin    //Register type
     aditVar.hasAdic := decRegis;    //marca bandera
     Next;
     ProcComments;
-  end else if tokL = 'registera' then begin
-    // Es de tipo registro
+  end else if tokL = 'registera' then begin //Register type
     aditVar.hasAdic := decRegisA;    //marca bandera
     Next;
     ProcComments;
-  end else if tokL = 'registerx' then begin
-    // Es de tipo registro
+  end else if tokL = 'registerx' then begin  //Register type
     aditVar.hasAdic := decRegisX;    //marca bandera
     Next;
     ProcComments;
-  end else if tokL = 'registery' then begin
-    // Es de tipo registro
+  end else if tokL = 'registery' then begin  //Register type
     aditVar.hasAdic := decRegisY;    //marca bandera
+    Next;
+    ProcComments;
+  end else if tokL = 'zeropage' then begin   //Zero page
+    aditVar.hasAdic := decZeroP;    //Set flag
     Next;
     ProcComments;
   end;
@@ -370,8 +370,17 @@ begin
     consTyp := consIni.Typ;
     //Ya se tiene el valor constante para inicializar variable.
     if aditVar.hasAdic in [decRegis, decRegisA, decRegisX, decRegisY] then begin
-      GenError('Cannot initialize register variables.');
+      GenError('Cannot initialize REGISTER variables.');
       exit;
+    end else if aditVar.hasAdic = decAbsol then begin
+      GenError('Cannot initialize ABSOLUTE variables.');
+      exit;
+    end else if aditVar.hasAdic = decNone then begin
+      //Not specified declaration
+      {We force to be in Data Section. Otherwise compiler could try to allocate it in
+      primary Data section (defined by SET_DATA_ADDR ) and then it won't be able to be
+      initialized.}
+      aditVar.hasAdic := decDatSec;
     end;
   end else begin
     //No hay asignación inicial.
