@@ -575,8 +575,10 @@ begin
 end;
 procedure TGenCodBas.SetFunConst_byte(fun: TEleExpress; valByte: integer);
 begin
-  if not ValidateByteRange(valByte) then
-    exit;  //Error de rango
+  if (valByte <0) or (valByte>=256) then begin
+    GenError('Numeric value exceeds a byte range.', fun.srcDec);
+    exit;
+  end;
   SetFunConst(fun);
   fun.evaluated := true;
   fun.value.valInt := valByte;
@@ -589,8 +591,10 @@ begin
 end;
 procedure TGenCodBas.SetFunConst_word(fun: TEleExpress; valWord: integer);
 begin
-  if not ValidateWordRange(valWord) then
-    exit;  //Error de rango
+  if (valWord <0) or (valWord>=65536) then begin
+    GenError('Numeric value exceeds a word range.', fun.srcDec);
+    exit;
+  end;
   SetFunConst(fun);
   fun.evaluated := true;
   fun.value.valInt := valWord;

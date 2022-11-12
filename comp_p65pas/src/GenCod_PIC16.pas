@@ -3813,7 +3813,7 @@ begin
   case stoOperation(parA, parB) of
   stConst_Const: begin
     //Optimiza
-    SetFunConst_byte(fun, parA.val << parB.val);
+    SetFunConst_word(fun, parA.val << parB.val);
   end;
   stConst_RamFix: begin
     SetFunExpres(fun);
