@@ -204,6 +204,7 @@ protected  //Command line options.
   enabDirMsgs : boolean;   //Bandera para permitir generar mensajes desde las directivas.
 protected //Compiling Options. Set by directives.
   syntaxMode  : (modPascal, modPicPas);
+  cpuMode     : (cpu6502, cpu65C02);
   bootloader  : TBootloader;  //Bootloader code for the compiled binary.
   loaderBytes : array of integer; //Custom Bootloader bytes.
   str_nullterm: boolean;   //Flag to activate the Null-terminated string for literals.

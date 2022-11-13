@@ -104,6 +104,7 @@ type
     procedure ProcMSGERR;
     procedure ProcMSGWAR;
     procedure ProcMODE;
+    procedure ProcPROCESSOR;
     procedure ProcDEFINE(lin: string);
     procedure ProcIF(lin: string; negated: boolean);
     procedure ProcELSE;
@@ -163,7 +164,7 @@ implementation
 var
   ER_UNKNO_DIREC, ER_ERROR_DIREC: String;
   ER_UNEXP_ELSE, ER_ENDIF_NOFOU, ER_UNEXP_ENDIF : string;
-  ER_MODE_UNKNOWN,
+  ER_MODE_UNKNOWN, ER_PROC_UNKNOWN,
   ER_ERROR_FREQ, ER_IDENT_EXPEC, ER_EXPEC_EQUAL,
   ER_SYNTAX_ERRO, ER_SYNTAX_ERR_,ER_EXPECTED_BR: String;
   ER_FILE_NO_FND_, ER_ERIN_NUMBER_, ER_UNKNW_IDENT_: String;
@@ -1334,7 +1335,7 @@ procedure TParserDirecBase.ProcMODE;
 var
   txtMode: String;
 begin
-  lexDir.Next;  //pasa al siguiente
+  lexDir.Next;  //Go to next token
   skipWhites;
   txtMode := UpCase(lexDir.ReadToken);
   if txtMode = 'P65PAS' then begin
@@ -1346,6 +1347,23 @@ begin
     exit;
   end;
 end;
+procedure TParserDirecBase.ProcPROCESSOR;
+var
+  txtMode: String;
+begin
+  lexDir.Next;  //Go to next token
+  skipWhites;
+  txtMode := UpCase(lexDir.ReadToken);
+  if txtMode = 'CPU6502' then begin
+    self.cpuMode := cpu6502;
+  end else if txtMode = 'CPU65C02' then begin
+    self.cpuMode := cpu65C02;
+  end else begin
+    GenErrorDir(ER_PROC_UNKNOWN, [txtMode]);
+    exit;
+  end;
+end;
+
 //Access to system variables
 function TParserDirecBase.read_PIC_MODEL: string;
 begin
@@ -1586,6 +1604,7 @@ begin
   'WARNING'     : ProcWARNING;
   'ERROR'       : ProcERROR;
   'SET'         : ProcSET;
+  'PROCESSOR'   : ProcPROCESSOR;
   'CLEAR_STATE_RAM':ProcCLEAR_STATE_RAM;
   'SET_STATE_RAM': ProcSET_STATE_RAM;
   'SET_DATA_ADDR': ProcSET_DATA_ADDR;

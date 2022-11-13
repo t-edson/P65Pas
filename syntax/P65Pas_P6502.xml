@@ -140,12 +140,8 @@
 	  "{$SET_STATE_RAM '000-00B:GPR'}"
 	  "{$SET_DATA_ADDR '\_'}"
 	  "{$SET_DATA_ADDR '00F0-00FF'}"
-	  "{$RESET_PINS}"
-	  "{$SET_PIN_NAME '\_'}"
-	  "{$SET_PIN_NAME '1:VCC'}"
-	  "{$MAP_RAM_TO_PIN '\_'}"
-	  "{$MAP_RAM_TO_PIN '005:0-17,1-18,2-1,3-2,4-3'}"
-	  
+	  "{$PROCESSOR CPU6502}"
+	  "{$PROCESSOR CPU65C02}"
 	</OpenOn>	
 	<!-- Completado en ASM-->
 	<OpenOn AfterPattern="Asm" FilterBy="LastIdentPart">

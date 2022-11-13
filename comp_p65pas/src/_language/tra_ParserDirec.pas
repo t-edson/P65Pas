@@ -6,6 +6,7 @@ ER_UNKNO_DEVIC := trans('Unknown device: %s'   , 'Dispositivo desconocido: %s','
                         'Unbekanntes Gerät: %s','Невизначений прилад: %s','Неизвестное устройство: %s', 'Modèle inconnu : %s');
 ER_MODE_UNKNOWN:= trans('Mode unknown: %s'     , 'Modo inválido'           , '',
                         'Unbekannter Modus: %s','Невизначений режим: %s','Неизвестный режим: %s', 'Mode inconnu : %s');
+ER_PROC_UNKNOWN:= trans('Processor unknown: %s', 'Procesador desconocido: %s', '', '', '', '', '');
 ER_UNKNO_DIREC := trans('Unknown directive: %s', 'Directiva desconocida: %s','',
                         'Unbekannte Direktive: %s','Невизначена директива: %s','Неизвестная директива: %s', 'Directive inconnue : %s');
 ER_ERROR_FREQ  := trans('Error in frequency.'  , 'Error en frecuencia.'    , '',

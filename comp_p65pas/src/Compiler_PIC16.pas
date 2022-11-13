@@ -1300,6 +1300,7 @@ begin
   IncAddress  := false;
   //Default settings for Directive settings.
   syntaxMode  := modPicPas;   //Por defecto en sintaxis nueva
+  cpuMode     := cpu6502;
   bootloader  := bldJMP;
   str_nullterm:= false;
   //Load parameters in a list
