@@ -112,20 +112,10 @@ begin
       { TODO : ¿No debería llamarse también a functCall(). Allí también se genera código.? }
     end;
   end else if eleExp.opType = otConst then begin
-    if eleExp.evaluated then exit;  //No problem it's evaluated.
-    if eleExp.cons = nil then begin
-      //We cannot evaluate it.
+    eleExp.Evaluate();
+    if not eleExp.evaluated then begin
       GenError('Constant not evaluated.', eleExp.srcDec);
       exit;
-    end else begin
-      //Could be evaluated using "cons"
-      if eleExp.cons.evaluated then begin
-        eleExp.value := eleExp.cons.value^;
-        eleExp.evaluated := true;
-      end else begin
-        GenError('Constant not evaluated.', eleExp.srcDec);
-        exit;
-      end;
     end;
   end;
 end;
@@ -213,16 +203,29 @@ procedure TCompiler_PIC16.ConstantFolding;
     expFun: TEleExpress;
     sen: TEleSentence;
     eleSen: TxpElement;
+    ele: TxpElement;
+    i: Integer;
   begin
     //Process body
     TreeElems.OpenElement(body);
     for eleSen in TreeElems.curNode.elements do begin
       if eleSen.idClass <> eleSenten then continue;
       sen := TEleSentence(eleSen);
-      if sen.sntType = sntAssign then begin    //assignment)
-        expFun := TEleExpress(sen.elements[0]);  //Takes root node.
-        ConstantFoldExpr(expFun);
-        if HayError then exit;
+      if sen.sntType = sntAssign then begin    //assignment
+        {After preparation, assignment sentences could be splitted in several assignment.}
+        for ele in sen.elements do begin
+          expFun := TEleExpress(ele);
+          ConstantFoldExpr(expFun);  //Try to evaluate constant.
+          if HayError then exit;
+        end;
+      end else if sen.sntType = sntProcCal then begin
+        {After preparation, sntProcCal sentences could be include several
+        assignment before the Call.}
+        for i:=0 to sen.elements.Count-2 do begin  //Excluding the call
+          expFun := TEleExpress(sen.elements[i]);
+          ConstantFoldExpr(expFun);  //Try to evaluate constant.
+          if HayError then exit;
+        end;
       end;
     end;
     TreeElems.CloseElement;              //Close the Body.
@@ -333,7 +336,7 @@ procedure TCompiler_PIC16.ConstanPropagation;
     for eleSen in TreeElems.curNode.elements do begin
       if eleSen.idClass <> eleSenten then continue;
       sen := TEleSentence(eleSen);
-      if sen.sntType = sntAssign then begin    //assignment)
+      if sen.sntType = sntAssign then begin    //Assignment
         //Explore previous posssible assigments
         n := sen.elements.Count;
         replaceMode := false;
@@ -358,7 +361,7 @@ procedure TCompiler_PIC16.ConstanPropagation;
           end;
         end;
         //Delete assigment
-        {Fromally we can delete an assigment of the form: <variable> := <constant>
+        {Formally we can delete an assigment of the form: <variable> := <constant>
         even if it hasn't been replaced. In that case it will mean that <variable> is
         not used (if it cannot be replaced is other problem but we assume it can be
         replaced in all cases.).}

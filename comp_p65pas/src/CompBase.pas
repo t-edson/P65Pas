@@ -1678,15 +1678,7 @@ begin
         eleMeth.opType := otConst;
         eleMeth.Sto    := stConst;
         eleMeth.Typ    := xcon.typ;
-        if xcon.evaluated then begin
-          //The constant is already calculated. We can obtain the value.
-          eleMeth.evaluated := true;
-          eleMeth.value := xcon.value^;
-        end else begin
-          //No yet calculated. Maybe "xcon" depends on an expression.
-          eleMeth.evaluated := false;
-          eleMeth.cons := xcon;  //Keep reference to calculate later.
-        end;
+        eleMeth.SetConstRef(xcon);
         Next;   //Take the identifier
       end else if field.idClass = eleVarDec then begin
         xvar := TEleVarDec(field);

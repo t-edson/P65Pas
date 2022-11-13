@@ -463,7 +463,7 @@ type  //Expression elements
   //Constant types
   TConsType = (
     ctLiteral,  //Literal like $1234 or 123
-    ctConsRef,  //Reference to a constant delcared like "CONST1"
+    ctConsRef,  //Reference to a constant declared like "CONST1"
     ctVarAddr,  //Constant expression like addr(<variable>)
     ctFunAddr   //Constant expression like addr(<function>)
   );
@@ -491,12 +491,13 @@ type  //Expression elements
   public  //Fields used when "Sto" is stConst
     evaluated: boolean;     //Activated when constant is evaluated.
     consType : TConsType;   //Constant type
-    //Fields used when constant is a literal constant.
+    //Fields used according to "consType" value.
     value    : TConsValue;  //Constant value, when consType=ctLiteral
-    //Fields for not literal constans.
-    cons     : TEleConsDec; //Ref. to TEleConsDec when consType=ctConsRef
+    private
+    consRef  : TEleConsDec; //Ref. to TEleConsDec when consType=ctConsRef
     addrVar  : TEleVarDec;  //Ref. to TEleConsDec when consType=ctVarAddr
     addrFun  : TEleFunDec;  //Ref. to TEleConsDec when consType=ctFunAddr
+    public
     //Functions to read values.
     function val: dword;
     function valL: word;
@@ -506,6 +507,7 @@ type  //Expression elements
     procedure SetLiteralBoolConst(valBool: Boolean);
     procedure SetLiteraltIntConst(valInt: Int64);
     procedure SetConstRef(cons0: TEleConsDec);
+    procedure Evaluate();
   public  //Set variable fields.
     procedure SetVariab(var0: TEleVarDec);
     procedure SetVariab(add0: word);
@@ -1011,21 +1013,52 @@ begin
   evaluated := true;
   value.ValInt := valInt;
 end;
-
 procedure TEleExpress.SetConstRef(cons0: TEleConsDec);
 begin
   consType := ctConsRef;
-  cons := cons0;  //Keep reference
-  if cons0.evaluated then begin
-    //The constant is already calculated. We can obtain the value.
-    evaluated := true;
-    value := cons0.value^;
-  end else begin
-    //No yet calculated. Maybe "cons0" depends on an expression.
-    evaluated := false;
+  consRef := cons0;  //Keep reference
+  evaluated := false;  //To force evaluation
+  Evaluate;
+end;
+procedure TEleExpress.Evaluate;
+begin
+  if evaluated then exit;  //Already evaluated
+  case consType of
+  ctLiteral: //Literal like $1234 or 123
+    begin
+      //This shouldn't happens, beacuse literal are always evaluated.
+    end;
+  ctConsRef: //Reference to a constant declared like "CONST1"
+    begin
+      //Could be evaluated using "consRef"
+      if consRef.evaluated then begin
+        value := consRef.value^;
+        evaluated := true;
+      end else begin
+        //Constant not yet evaluated.
+      end;
+    end;
+  ctVarAddr: //Constant expression like addr(<variable>)
+    begin
+      if addrVar.allocated then begin
+        value.ValInt := addrVar.addr;
+        evaluated := true;
+      end else begin
+        //Variable not yet allocated
+      end;
+    end;
+  ctFunAddr: //Constant expression like addr(<function>)
+    begin
+      if addrFun.implem=nil then exit;
+      if addrFun.implem.coded then begin
+        value.ValInt := addrFun.implem.adrr;
+        evaluated := true;
+      end else begin
+        //Function not yet allocated
+      end;
+    end;
   end;
 end;
-
 procedure TEleExpress.SetVariab(var0: TEleVarDec);
 {Set as variable type (and storage stRamFix) from a variable.}
 begin

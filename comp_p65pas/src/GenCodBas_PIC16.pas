@@ -2323,6 +2323,7 @@ begin
         for ele in sen.elements do begin
           expSet := TEleExpress(ele);  //Takes assigment function.
           GenCodeExpr(expSet);
+          if HayError then exit;
         end;
       end;
       sntProcCal: begin  //Call to function or method

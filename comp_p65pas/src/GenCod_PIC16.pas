@@ -1330,6 +1330,7 @@ var
 begin
     fac1 := fun.pars[0].pvar;
     fac2 := fun.pars[1].pvar;
+    PutLabel('__byt_mul_byt');
     //A*256 + X = FAC1 * FAC2
     _ldai($00);
     _ldxi($08);
