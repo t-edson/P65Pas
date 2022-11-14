@@ -182,6 +182,8 @@ type
     procedure _TAY;
     procedure _TYA;
     procedure _TXA;
+    procedure _STZ(addr: integer);        //STZ Absolute/Zeropage
+    procedure _STZx(addr: integer);       //STZ Absolute/Zeropage, X
     procedure IF_TRUE(OpRes: TEleExpress; longJump: boolean; out info: TIfInfo);
 //    procedure IF_FALSE(OpRes: TEleExpress; out info: TIfInfo);
     procedure IF_END(const info: TIfInfo; out relatOver: boolean);
@@ -1055,6 +1057,22 @@ end;
 procedure TGenCodBas._TXA;
 begin
   pic.codAsm(i_TXA, aImplicit, 0);
+end;
+procedure TGenCodBas._STZ(addr: integer);
+begin
+  if addr<256 then begin
+    pic.codAsm(i_STZ, aZeroPage, addr);
+  end else begin
+    pic.codAsm(i_STZ, aAbsolute, addr);
+  end;
+end;
+procedure TGenCodBas._STZx(addr: integer);
+begin
+  if addr<256 then begin
+    pic.codAsm(i_STZ, aZeroPagX, addr);
+  end else begin
+      pic.codAsm(i_STZ, aAbsolutX, addr);
+  end;
 end;
 {%ENDREGION}
 procedure TGenCodBas.JUMP_IF_Z_pre(Invert, longJump: boolean; igoto: integer);

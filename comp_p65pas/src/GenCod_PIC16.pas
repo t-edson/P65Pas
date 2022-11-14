@@ -427,8 +427,12 @@ begin
     //Assignment to a common variable (constant Address)
     case parB.Sto of
     stConst: begin
-      _LDAi(parB.val);
-      _STA(parA.add);
+      if (ParB.val = 0) and (cpuMode = cpu65C02) then
+        _STZ(parA.add)
+      else begin
+        _LDAi(parB.val);
+        _STA(parA.add);
+      end;
     end;
     stRamFix: begin
       _LDA(parB.add);
