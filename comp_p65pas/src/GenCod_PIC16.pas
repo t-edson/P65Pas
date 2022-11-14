@@ -1334,7 +1334,7 @@ var
 begin
     fac1 := fun.pars[0].pvar;
     fac2 := fun.pars[1].pvar;
-    PutLabel('__delay_ms');
+    PutLabel('__byt_mul_byt_16');
     //A*256 + X = FAC1 * FAC2
     _ldai($00);
     _ldxi($08);
@@ -6131,7 +6131,7 @@ begin
   f.getset := gsSetInItem;
   f2.funset := f;         //Connect to getter
   //Operation for pointers
-  CreateUOMethod(etyp, '@', 'addr', typWord, @SIF_address);
+//  CreateUOMethod(etyp, '@', 'addr', typWord, @SIF_address);
 end;
 procedure TGenCod.DefineObject(etyp: TEleTypeDec);
 var
@@ -6422,7 +6422,7 @@ begin
   /////////////// Byte type ////////////////////
   //Methods-Operators
   TreeElems.OpenElement(typByte);
-  f:=CreateUOMethod(typByte, '@', 'addr', typWord, @SIF_address);
+  //f:=CreateUOMethod(typByte, '@', 'addr', typWord, @SIF_address);
   f:=CreateInBOMethod(typByte, ':=', '_set', typByte, typNull, @SIF_byte_asig_byte);
   f.getset := gsSetInSimple;
   f:=CreateInBOMethod(typByte, '+=', '_aadd',typByte, typNull, @SIF_byte_aadd_byte);
@@ -6552,9 +6552,9 @@ begin
   AddCallerToFrom(H, sifWord.BodyNode);  //Reqire H
 
   //Create system function "addr"
-  setlength(pars, 0);  //Reset parameters
-  AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  AddSysInlineFunction('addr', typWord, srcPosNull, pars, @SIF_Addr);
+//  setlength(pars, 0);  //Reset parameters
+//  AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
+//  AddSysInlineFunction('addr', typWord, srcPosNull, pars, @SIF_Addr);
 
     //Create system function "_ref"
   setlength(pars, 0);  //Reset parameters

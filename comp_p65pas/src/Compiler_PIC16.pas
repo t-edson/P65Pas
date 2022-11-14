@@ -112,11 +112,12 @@ begin
       { TODO : ¿No debería llamarse también a functCall(). Allí también se genera código.? }
     end;
   end else if eleExp.opType = otConst then begin
-    eleExp.Evaluate();
-    if not eleExp.evaluated then begin
-      GenError('Constant not evaluated.', eleExp.srcDec);
-      exit;
-    end;
+    eleExp.Evaluate();   //Try to evaluate
+    //Some constants like @variable or @function cannot be evaluated in optimization
+    //if not eleExp.evaluated then begin
+    //  GenError('Constant not evaluated.', eleExp.srcDec);
+    //  exit;
+    //end;
   end;
 end;
 procedure TCompiler_PIC16.EvaluateConstantDeclare;

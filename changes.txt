@@ -1,3 +1,11 @@
+13/11/2022
+- Fixed the optimizer when processing assignment sentences in 
+TCompiler_PIC16.ConstantFolding;
+- Delete all implementation for @ operand in all types. It will be processed for 
+the addr() system function.
+- Implemented function TCompilerBase.proc_addr() to analyze the @ oeprator.
+- Modified code generator to call to Evaluate() if constants not evaluated.
+
 11/11/2022
 - Implemented the option for allocate initialized variables in Data Section in order to
 avoid message "Cannot initialize variable", when compiler try to allocate in location 

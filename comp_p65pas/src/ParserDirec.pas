@@ -1354,10 +1354,12 @@ begin
   lexDir.Next;  //Go to next token
   skipWhites;
   txtMode := UpCase(lexDir.ReadToken);
-  if txtMode = 'CPU6502' then begin
+  if txtMode = 'CPU6502' then begin   //The Default
     self.cpuMode := cpu6502;
+    picCore.Model := '6502';
   end else if txtMode = 'CPU65C02' then begin
     self.cpuMode := cpu65C02;
+    picCore.Model := '65C02';
   end else begin
     GenErrorDir(ER_PROC_UNKNOWN, [txtMode]);
     exit;

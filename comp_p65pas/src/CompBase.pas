@@ -62,6 +62,7 @@ TCompilerBase = class(TContexts)
 private
   function CreateArrayTypeDec(typName: string; nELem: integer;
     itType: TEleTypeDec; const srcPos: TSrcPos): TEleTypeDec;
+  function proc_addr: TEleExpress;
 protected  //Parser routines
   ExprLevel  : Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
   function EOExpres: boolean;
@@ -1440,6 +1441,75 @@ begin
   //Not found
   exit(nil);
 end;
+function  TCompilerBase.proc_addr(): TEleExpress;
+{
+The operand read is added to the syntax tree, as a TxpEleExpress element, and returned
+in this function.
+}
+var
+  ele: TxpElement;
+  Op1: TEleExpress;
+  xvar: TEleVarDec;
+begin
+  Next;    //Pasa al siguiente
+  if toktype = tkIdentifier then begin
+    ele := TreeElems.FindFirst(token); //Identify element
+    if ele = nil then begin
+      //Unidentified element.
+      GenError(ER_UNKNOWN_IDE_, [token]);
+      exit;
+    end;
+    if ele.idClass = eleConsDec then begin  //Is constant
+      GenError('Cannot get the address for a constant.');
+//      xcon := TEleConsDec(ele);
+//      AddCallerToFromCurr(ele);
+//      Op1 := AddExpressAndOpen(ele.name, xcon.Typ, otConst, GetSrcPos);
+//      Op1.SetConstRef(xcon);
+//      Next;    //Pasa al siguiente
+    end else if ele.idClass = eleVarDec then begin  //Is variable
+      xvar := TEleVarDec(ele);
+      AddCallerToFromCurr(ele); //Add reference to variable, however final operand can be: <variable>.<fieldName>
+      //Op1 := AddExpressAndOpen(ele.name, xvar.Typ, otVariab, GetSrcPos);
+      //Op1.SetVariab(xvar);
+      //Next;    //Pasa al siguiente
+
+      //xcon := TEleConsDec(ele);
+      //AddCallerToFromCurr(ele);
+      Op1 := AddExpressAndOpen(ele.name, typWord, otConst, GetSrcPos);
+      Op1.SetAddrVar(xvar);
+      Next;    //Pasa al siguiente
+
+    end else if ele.idClass in [eleFunc, eleFuncDec] then begin  //Is function
+//      {It's a function (or procedure), but we don't know what's the exact funtion because
+//      could be different overload versions.}
+//      posCall := GetSrcPos;  //Save position of the call.
+//      Next;               //Take identifier
+//      SkipWhites;         //Take spaces
+//      xfun := TEleFunBase(ele);  //The ancestor of eleFunc and eleFuncDec
+//      {We create the expression here because we're going to create parameters nodes
+//      when scanning with CaptureParams()}
+//      Op1 := AddExpressAndOpen(ele.name, xfun.retType, otFunct, posCall);
+//      //Op1.Sto := ; { TODO : ¿No es necesario completar el almacenamiento de esta función? }
+//      //Capture parameters
+//      CaptureParams(pars);    //Read parameters in "pars".
+//      if HayError then exit(nil);
+//      //Resolve final function called, acording to parameters.
+//      xfun := ResolveFunction(pars, xfun, findState);
+//      if HayError then exit(nil);
+//      AddCallerToFromCurr(xfun).curPos := posCall;  {Fix call position, otherwise will be pointing to the
+//                                   end of parameters}
+//      Op1.rfun := xfun;  //We can now set the final function.
+      GenError('Invalid parameter for "@" or "addr" function.');
+    end else begin
+      GenError('Invalid parameter for "@" or "addr" function.');
+      exit(nil);
+    end;
+  end else begin
+    GenError('Invalid parameter for "@" or "addr" function.');
+    exit(nil);
+  end;
+  Result := Op1;  //aquí debe haber quedado el resultado
+end;
 function TCompilerBase.GetOperand(): TEleExpress;
 {Get an "Operand" element of the Pascal language, from the current context.
 If an operand is obtained, it is added to the current node in the AST as a TxpEleExpress
@@ -1784,6 +1854,10 @@ begin
   ProcComments;
   //------------- Get first operand ---------------
   if tokType = tkOperator then begin
+    if token = '@' then begin  //Address
+      //This an special SIF, not declared in System, because it's easier process it here.
+      exit(proc_addr);
+    end;
     //First token should be an pre-unary operator.
     p := GetCtxState;     //In the case we need to go back.
     oprPos := GetSrcPos;  //Save start position for operator.

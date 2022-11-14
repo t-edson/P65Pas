@@ -507,6 +507,7 @@ type  //Expression elements
     procedure SetLiteralBoolConst(valBool: Boolean);
     procedure SetLiteraltIntConst(valInt: Int64);
     procedure SetConstRef(cons0: TEleConsDec);
+    procedure SetAddrVar(var0: TEleVarDec);
     procedure Evaluate();
   public  //Set variable fields.
     procedure SetVariab(var0: TEleVarDec);
@@ -1017,6 +1018,13 @@ procedure TEleExpress.SetConstRef(cons0: TEleConsDec);
 begin
   consType := ctConsRef;
   consRef := cons0;  //Keep reference
+  evaluated := false;  //To force evaluation
+  Evaluate;
+end;
+procedure TEleExpress.SetAddrVar(var0: TEleVarDec);
+begin
+  consType := ctVarAddr;
+  addrVar := var0;  //Keep reference
   evaluated := false;  //To force evaluation
   Evaluate;
 end;

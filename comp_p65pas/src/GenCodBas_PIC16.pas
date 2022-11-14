@@ -1883,6 +1883,7 @@ begin
     end;
   end else if eleExp.opType = otConst then begin
     //A constant expression. We have to evaluate it, if not already evaluated.
+    eleExp.Evaluate();  //Just in case
     if not eleExp.evaluated then begin
       //It's a simple constant
       GenError('Constant not evaluated.', eleExp.srcDec);
