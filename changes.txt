@@ -7,6 +7,8 @@ defined by SET_DATA_ADDR.
 - Updated unit Commodore with definition os Special Register in Zero-page.
 
 10/11/2022
+- Added WDC instructions for 65c02
+- Implemnted a new 65c02 addressing mode: JMP ($1234, X)
 - Fixed the runtime error when initializing long arrays (>255).
 
 9/11/2022
