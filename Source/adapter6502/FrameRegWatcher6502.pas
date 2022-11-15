@@ -378,8 +378,8 @@ begin
   col_bit := tmp.idx;
   //Faltaría una o más columbas para el formato
   //Columnas visibles
-  COL_ADD := UtilGrilla.AgrEncab('Address' , 40).idx;
-  COL_NAM := UtilGrilla.AgrEncab('Name' , 60).idx;
+  COL_ADD := UtilGrilla.AgrEncab('Address' , 50).idx;
+  COL_NAM := UtilGrilla.AgrEncab('Name' , 100).idx;
   COL_VAL := UtilGrilla.AgrEncab('Value' , 50, -1, taRightJustify).idx;
   UtilGrilla.FinEncab;
   UtilGrilla.OnFinEditarCelda := @UtilGrillaFinEditarCelda;
