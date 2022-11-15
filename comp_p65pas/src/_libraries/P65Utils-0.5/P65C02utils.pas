@@ -952,10 +952,16 @@ begin
     end;
   end;
   i_DEC: begin  //decrement
-    tmp := (ram[addr].value - 1) and $FF;
-    ram[addr].value := tmp;
-    STATUS_Z := tmp = 0;
-    STATUS_N := tmp > 127;
+    if modIns = aImplicit then begin
+      W := (W - 1) and $FF;
+      STATUS_Z := W = 0;
+      STATUS_N := W > 127;
+    end else begin
+      tmp := (ram[addr].value - 1) and $FF;
+      ram[addr].value := tmp;
+      STATUS_Z := tmp = 0;
+      STATUS_N := tmp > 127;
+    end;
   end;
   i_DEX: begin  //decrement X
     X := (X - 1) and $FF;
@@ -973,10 +979,16 @@ begin
     STATUS_N := W > 127;
   end;
   i_INC: begin  //increment
-    tmp := (ram[addr].value + 1) and $FF;
-    ram[addr].value := tmp;
-    STATUS_Z := tmp = 0;
-    STATUS_N := tmp > 127;
+    if modIns = aImplicit then begin
+      W := (W + 1) and $FF;
+      STATUS_Z := W = 0;
+      STATUS_N := W > 127;
+    end else begin
+      tmp := (ram[addr].value + 1) and $FF;
+      ram[addr].value := tmp;
+      STATUS_Z := tmp = 0;
+      STATUS_N := tmp > 127;
+    end
   end;
   i_INX: begin  //increment X
     X := (X + 1) and $FF;
@@ -1170,6 +1182,11 @@ begin
     STATUS_Z := W = 0;
     STATUS_N := W > 127;
   end;
+
+  i_STZ: begin //store accumulator
+    ram[addr].value := 0;
+  end;
+
   i_Inval: begin
       MsjError := 'Invalid Opcode';
     end;
