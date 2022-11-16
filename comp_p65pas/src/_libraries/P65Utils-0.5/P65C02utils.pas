@@ -142,7 +142,7 @@ type  //Instructions set
     aZeroPagY,  //Zero page Indexed by Y : LDA $10, Y
     aIndirecX,  //Indexed Indirect: LDA ($40,X)  Only for X
     aIndirecY,  //Indirect Indexed: LDA ($40),Y  Only for Y
-    aAbsInIdX   //Absolute Indexed Indirect X    (65C02 only)
+    aAbsInIdX   //Absolute Indexed Indirect X: JMP ($1000, X) (65C02 only)
   );
   TP6502AddModes = set of TP6502AddMode;
 
@@ -732,12 +732,29 @@ procedure TP6502.Exec(aPC: word);
 {Ejecuta la instrución actual con dirección "pc".
 Falta implementar las operaciones, cuando acceden al registro INDF, el Watchdog timer,
 los contadores, las interrupciones}
+    // Helper functions
+    // WARNING: if Range Check is on, it will raise exception
+  procedure Push(Value: byte);
+  begin
+    ram[$100 + SP].value := Value;
+    dec(SP);
+  end;
+  function Pull: byte;
+  begin
+    inc(SP);
+    Result := ram[$100 + SP].value;
+    STATUS_Z := Result = 0;
+    STATUS_N := Result > 127;
+  end;
+
 var
   opc: byte;
   nCycles, nBytes, tmp, off, OP1, OP2: byte;
-  target , addr: word;
+  addr: word;
   C_tmp: Boolean;
   tmpRes: integer;
+  tmpW: word;
+  tmpS: ShortInt;
 begin
   //Decodifica instrucción
   aPC := PC.W;
@@ -760,6 +777,18 @@ begin
   aIndirecY: begin
              tmp := ram[aPC+1].value;
              addr := ram[tmp].value  + 256*ram[tmp+1].value + Y;
+    end;
+  aIndirect: begin
+             tmpW := (ram[aPC+1].value + 256*ram[aPC+2].value) and $FFFF;
+             addr := ram[tmpW].value  + 256*ram[tmpW+1].value;
+    end;
+  aAbsInIdX: begin
+             tmpW := (ram[aPC+1].value + 256*ram[aPC+2].value + X) and $FFFF;
+             addr := ram[tmpW].value  + 256*ram[tmpW+1].value;
+    end;
+  aRelative: begin
+             tmpS := shortint(ram[aPC+1].value + nBytes);
+             addr := (PC.W + tmpS) and $FFFF;
     end;
   end;
   //aAbsInIdX: *********** TO DO ***********
@@ -850,9 +879,11 @@ begin
     end;
   end;
   i_BIT: begin  //bit test
-    STATUS_N := (ram[addr].value AND $80) <> 0;
-    STATUS_V := (ram[addr].value AND $40) <> 0;
-    STATUS_Z := (W and ram[addr].value) <> 0;
+    STATUS_Z := (W and ram[addr].value) = 0;
+    if modIns <> aImmediat then begin;
+      STATUS_N := (ram[addr].value AND $80) <> 0;
+      STATUS_V := (ram[addr].value AND $40) <> 0;
+    end;
   end;
   i_BPL: begin  //branch on plus (negative clear)
     if not STATUS_N then begin
@@ -1001,7 +1032,7 @@ begin
     STATUS_N := Y > 127;
   end;
   i_JMP: begin    //jump
-    case modIns of
+    {case modIns of
     aAbsolute : begin
       PC.L := ram[aPC+1].value;
       PC.H := ram[aPC+2].value;
@@ -1011,7 +1042,12 @@ begin
       PC.L := ram[target+1].value;
       PC.H := ram[target+2].value;
     end;
-    end;
+    aAbsInIdX: begin
+      PC.L := ram[addr].value;
+      PC.H := ram[addr+1].value;
+     end;
+    end;}
+    PC.W := addr;
     //Inc(PC.W, nBytes);  //No apply
     Inc(nClck, nCycles);
     exit;
@@ -1062,22 +1098,10 @@ begin
     STATUS_Z := W = 0;
     STATUS_N := W > 127;
   end;
-  i_PHA: begin  //Push accumulator
-    ram[$100 + SP].value := W;
-    if SP = $00 then SP := $FF else dec(SP);
-  end;
-  i_PHP: begin  //Push processor status (SR)
-    ram[$100 + SP].value := STATUS;
-    if SP = $00 then SP := $FF else dec(SP);
-  end;
-  i_PLA: begin  //Pull accumulator
-    if SP = $FF then SP := $00 else inc(SP);
-    W := ram[$100 + SP].value;
-  end;
-  i_PLP: begin  //Pull processor status (SR)
-    if SP = $FF then SP := $00 else inc(SP);
-    SR := ram[$100 + SP].value;
-  end;
+  i_PHA: Push(W);    //Push accumulator
+  i_PHP: Push(SR);   //Push processor status (SR)
+  i_PLA: W := Pull;  //Pull accumulator
+  i_PLP: SR := Pull; //Pull processor status (SR)
   i_ROL: begin  //Rotate left
     STATUS_N := false;
     if modIns = aAcumulat then tmp := W
@@ -1183,8 +1207,27 @@ begin
     STATUS_N := W > 127;
   end;
 
-  i_STZ: begin //store accumulator
+  i_STZ: begin // store zero
     ram[addr].value := 0;
+  end;
+  i_BRA: begin  // brunch always
+    PC.W := addr;
+    Inc(nClck, nCycles);
+    exit;
+  end;
+  i_PHX: Push(X);  //push X in stack
+  i_PHY: Push(Y);  //push Y in stack
+  i_PLX: X := Pull;  //pull X from stack
+  i_PLY: Y := Pull;  //push Y from stack
+  i_TRB: begin
+    tmp := ram[addr].value;
+    STATUS_Z := (W and tmp) = 0;
+    ram[addr].value := tmp AND (W XOR $FF);
+  end;
+  i_TSB: begin
+    tmp := ram[addr].value;
+    STATUS_Z := (W and tmp) = 0;
+    ram[addr].value := tmp OR W;
   end;
 
   i_Inval: begin
@@ -1751,7 +1794,7 @@ begin
 
     //New instructions for 65C02
     PIC16InstName[i_BRA].name := 'BRA';  //Branch on Result not Zero
-    PIC16InstName[i_BRA].AddAddressMode(aRelative,$80,3,3,0, ONLY_65C02);
+    PIC16InstName[i_BRA].AddAddressMode(aRelative,$80,2,3,0, ONLY_65C02);
     PIC16InstName[i_STZ].name := 'STZ';  //Store Index X in Memory
     PIC16InstName[i_STZ].AddAddressMode(aZeroPage,$64,2,3,0, ONLY_65C02);
     PIC16InstName[i_STZ].AddAddressMode(aZeroPagX,$74,2,4,0, ONLY_65C02);

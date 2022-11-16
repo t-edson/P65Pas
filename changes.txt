@@ -1,3 +1,10 @@
+16/11/2022
+- Implemted the bahvior for the new 65c02 instruction (for Debugger)
+
+14/11/2022
+- Visual improvments on Debugger (more compact to see more variables)
+- Fix for main screen of the 3 check boxes at the bottom.
+
 13/11/2022
 - Fixed the optimizer when processing assignment sentences in 
 TCompiler_PIC16.ConstantFolding;
