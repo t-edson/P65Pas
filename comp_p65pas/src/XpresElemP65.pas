@@ -494,9 +494,9 @@ type  //Expression elements
     //Fields used according to "consType" value.
     value    : TConsValue;  //Constant value, when consType=ctLiteral
     private
-    consRef  : TEleConsDec; //Ref. to TEleConsDec when consType=ctConsRef
-    addrVar  : TEleVarDec;  //Ref. to TEleConsDec when consType=ctVarAddr
-    addrFun  : TEleFunDec;  //Ref. to TEleConsDec when consType=ctFunAddr
+    consRef  : TEleConsDec;  //Ref. to TEleConsDec when consType=ctConsRef
+    addrVar  : TEleVarDec;   //Ref. to TEleVarDec  when consType=ctVarAddr
+    addrFun  : TEleFunBase;  //Ref. to TEleFun when consType=ctFunAddr
     public
     //Functions to read values.
     function val: dword;
@@ -508,6 +508,7 @@ type  //Expression elements
     procedure SetLiteraltIntConst(valInt: Int64);
     procedure SetConstRef(cons0: TEleConsDec);
     procedure SetAddrVar(var0: TEleVarDec);
+    procedure SetAddrFun(fun0: TEleFunBase);
     procedure Evaluate();
   public  //Set variable fields.
     procedure SetVariab(var0: TEleVarDec);
@@ -762,7 +763,7 @@ type  //Declaration elements (functions)
   end;
 
   { TxpEleFunDec }
-  {Basic class to represent a function header or declaration (INTERFACE o FORWARD).
+  {Represent a function declaration or header (INTERFACE o FORWARD).
   Basically what we store here is a reference to the implementation.}
   TEleFunDec = class(TEleFunBase)
   public
@@ -772,7 +773,7 @@ type  //Declaration elements (functions)
   end;
 
   { TxpEleFun }
-  { Represents a common function (simple or inline) or a method (simple or inline). }
+  { Represents a function implementation (simple or inline) or a method (simple or inline). }
   TEleFun = class(TEleFunBase)
   public  //Main attributes
     adrr   : integer;  //Physical address where function is compiled.
@@ -1028,16 +1029,23 @@ begin
   evaluated := false;  //To force evaluation
   Evaluate;
 end;
-procedure TEleExpress.Evaluate;
+procedure TEleExpress.SetAddrFun(fun0: TEleFunBase);
+begin
+  consType := ctFunAddr;
+  addrFun := fun0;  //Keep reference
+  evaluated := false;  //To force evaluation
+  Evaluate;
+end;
+procedure TEleExpress.Evaluate();
+var
+  xfun: TEleFun;
 begin
   if evaluated then exit;  //Already evaluated
   case consType of
-  ctLiteral: //Literal like $1234 or 123
-    begin
-      //This shouldn't happens, beacuse literal are always evaluated.
-    end;
-  ctConsRef: //Reference to a constant declared like "CONST1"
-    begin
+  ctLiteral: begin  //Literal like $1234 or 123
+      //This shouldn't happens, because literal are always evaluated.
+  end;
+  ctConsRef: begin  //Reference to a constant declared like "CONST1"
       //Could be evaluated using "consRef"
       if consRef.evaluated then begin
         value := consRef.value^;
@@ -1045,26 +1053,37 @@ begin
       end else begin
         //Constant not yet evaluated.
       end;
-    end;
-  ctVarAddr: //Constant expression like addr(<variable>)
-    begin
+  end;
+  ctVarAddr: begin  //Constant expression like addr(<variable>)
       if addrVar.allocated then begin
         value.ValInt := addrVar.addr;
         evaluated := true;
       end else begin
         //Variable not yet allocated
       end;
-    end;
-  ctFunAddr: //Constant expression like addr(<function>)
-    begin
-      if addrFun.implem=nil then exit;
-      if addrFun.implem.coded then begin
-        value.ValInt := addrFun.implem.adrr;
+  end;
+  ctFunAddr: begin  //Constant expression like addr(<function>)
+      //Get the implementation
+      if addrFun.idClass = eleFunc then begin
+        //It's already the implementation.
+        xfun := TEleFun(addrFun);
+      end else begin
+        //Must be a declaration
+        xfun := TEleFunDec(addrFun).implem;
+      end;
+      if xfun = nil then exit;  //Not implemented
+      //We have an implementation.
+      if xfun.coded then begin
+        value.ValInt := xfun.adrr;
         evaluated := true;
       end else begin
         //Function not yet allocated
+//        if not pic.disableCodegen then begin  //Verify if we are in mode no-code-generation.
+//          xfun.AddAddresPend(pic.iRam-2);  //Register the address to complete later
+//        end;
+//        AddrUndef := true;
       end;
-    end;
+  end;
   end;
 end;
 procedure TEleExpress.SetVariab(var0: TEleVarDec);

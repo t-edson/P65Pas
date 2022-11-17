@@ -142,7 +142,9 @@ type  //Instructions set
     aZeroPagY,  //Zero page Indexed by Y : LDA $10, Y
     aIndirecX,  //Indexed Indirect: LDA ($40,X)  Only for X
     aIndirecY,  //Indirect Indexed: LDA ($40),Y  Only for Y
-    aAbsInIdX   //Absolute Indexed Indirect X: JMP ($1000, X) (65C02 only)
+    //New addressing mode for 65C02
+    aAbsInIdX,  //Absolute Indexed Indirect X: JMP ($1000, X) (65C02 only)
+    aZeroPRel   //Zero page relative: BBR0 $12,LABEL
   );
   TP6502AddModes = set of TP6502AddMode;
 

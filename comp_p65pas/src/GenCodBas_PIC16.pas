@@ -1738,13 +1738,15 @@ var
 begin
   //////// Make the CALL
   AddrUndef := false;
-  //In linking, it's supposed all functions are implemented ?????
+  //Get the implementation
   if fun.idClass = eleFunc then begin
+    //It's already the implementation.
     xfun := TEleFun(fun);
   end else begin
     //Must be a declaration
     xfun := TEleFunDec(fun).implem;
   end;
+  //In Code Generation (when executing this) it's supposed all functions are implemented.
   if xfun.coded then begin
     //We have a real address
     _JSR(xfun.adrr);  //It's a complete function

@@ -1449,7 +1449,12 @@ in this function.
 var
   ele: TxpElement;
   Op1: TEleExpress;
-  xvar: TEleVarDec;
+  xvar, _varaux: TEleVarDec;
+  xfun: TEleFunBase;
+  cntBody: TxpEleCodeCont;
+  typName: String;
+  xtyp: TEleTypeDec;
+  nElem: Integer;
 begin
   Next;    //Pasa al siguiente
   if toktype = tkIdentifier then begin
@@ -1461,49 +1466,44 @@ begin
     end;
     if ele.idClass = eleConsDec then begin  //Is constant
       GenError('Cannot get the address for a constant.');
-//      xcon := TEleConsDec(ele);
-//      AddCallerToFromCurr(ele);
-//      Op1 := AddExpressAndOpen(ele.name, xcon.Typ, otConst, GetSrcPos);
-//      Op1.SetConstRef(xcon);
-//      Next;    //Pasa al siguiente
     end else if ele.idClass = eleVarDec then begin  //Is variable
       xvar := TEleVarDec(ele);
       AddCallerToFromCurr(ele); //Add reference to variable, however final operand can be: <variable>.<fieldName>
-      //Op1 := AddExpressAndOpen(ele.name, xvar.Typ, otVariab, GetSrcPos);
-      //Op1.SetVariab(xvar);
-      //Next;    //Pasa al siguiente
-
-      //xcon := TEleConsDec(ele);
-      //AddCallerToFromCurr(ele);
       Op1 := AddExpressAndOpen(ele.name, typWord, otConst, GetSrcPos);
       Op1.SetAddrVar(xvar);
       Next;    //Pasa al siguiente
-
     end else if ele.idClass in [eleFunc, eleFuncDec] then begin  //Is function
-//      {It's a function (or procedure), but we don't know what's the exact funtion because
+      {It's a function (or procedure), but we don't know what's the exact funtion because
 //      could be different overload versions.}
-//      posCall := GetSrcPos;  //Save position of the call.
-//      Next;               //Take identifier
-//      SkipWhites;         //Take spaces
-//      xfun := TEleFunBase(ele);  //The ancestor of eleFunc and eleFuncDec
-//      {We create the expression here because we're going to create parameters nodes
-//      when scanning with CaptureParams()}
-//      Op1 := AddExpressAndOpen(ele.name, xfun.retType, otFunct, posCall);
-//      //Op1.Sto := ; { TODO : ¿No es necesario completar el almacenamiento de esta función? }
-//      //Capture parameters
-//      CaptureParams(pars);    //Read parameters in "pars".
-//      if HayError then exit(nil);
-//      //Resolve final function called, acording to parameters.
-//      xfun := ResolveFunction(pars, xfun, findState);
-//      if HayError then exit(nil);
-//      AddCallerToFromCurr(xfun).curPos := posCall;  {Fix call position, otherwise will be pointing to the
-//                                   end of parameters}
-//      Op1.rfun := xfun;  //We can now set the final function.
-      GenError('Invalid parameter for "@" or "addr" function.');
+      xfun := TEleFunBase(ele);  //The ancestor of eleFunc and eleFuncDec
+      AddCallerToFromCurr(xfun);
+      Op1 := AddExpressAndOpen(ele.name, typWord, otConst, GetSrcPos);
+      Op1.SetAddrFun(xfun);
+      Next;               //Take identifier
     end else begin
       GenError('Invalid parameter for "@" or "addr" function.');
       exit(nil);
     end;
+  end else if tokType = tkString then begin
+    //Literal string generates a variable declared as arrays of char.
+nElem := 0; // ************
+    //Creates a new type
+    typName := GenArrayTypeName('char', nElem); //Op.nItems won't work
+    xtyp := CreateArrayTypeDec(typName, nElem, typChar, GetSrcPos);
+
+    cntBody := TreeElems.curCodCont;
+
+    //Create a new variable in the declaration section of this sntBlock.
+    _varaux := CreateEleVarDec('_x' + IntToStr(cntBody.Index), xtyp);  //Generate a unique name in this cntBody
+    _varaux.elements := TxpElements.Create(true);   //A real variable needs this.
+    TreeElems.openElement(cntBody.Parent);
+    TreeElems.AddElement(_varaux, cntBody.Index);  //Add before the cntBody.
+
+//    xvar := TEleVarDec(ele);
+//    AddCallerToFromCurr(ele); //Add reference to variable, however final operand can be: <variable>.<fieldName>
+    Op1 := AddExpressAndOpen(ele.name, typWord, otConst, GetSrcPos);
+//    Op1.SetAddrVar(xvar);
+    Next;    //Pasa al siguiente
   end else begin
     GenError('Invalid parameter for "@" or "addr" function.');
     exit(nil);
