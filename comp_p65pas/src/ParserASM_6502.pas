@@ -517,7 +517,7 @@ begin
       exit;
     end;
     {Get the addressing mode, considering operand is 16bits. If it's 8 bits, the
-     addressing mode should be changed when linking.}
+     addressing mode should be changed when code is generated.}
     cpx.SkipWhitesNoEOL;
     //Verify is follows ,X o ,Y
     if cpx.token = ',' then begin

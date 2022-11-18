@@ -1146,7 +1146,7 @@ procedure TAnalyzer.AnalyzeVarDeclar;
     //Inicia campos
     xvar.adicPar := adicVarDec;    //Actualiza propiedades adicionales
     xvar.location := curLocation;  //Actualiza bandera
-    //Updte storage
+    //Update storage
     case adicVarDec.hasAdic of
     decRegis : xvar.storage := stRegister;
     decRegisA: xvar.storage := stRegistA;

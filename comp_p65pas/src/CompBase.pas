@@ -1488,15 +1488,11 @@ The operand read is added to the syntax tree, as a TxpEleExpress element, and re
 in this function.
 }
 var
-  ele, curNode: TxpElement;
-  Op1: TEleExpress;
+  ele, curLoc: TxpElement;
+  Op1, constArr: TEleExpress;
   xvar, _varaux: TEleVarDec;
   xfun: TEleFunBase;
-  cntBody: TEleCodeCont;
-  typName: String;
   arrtyp: TEleTypeDec;
-  nElem: Integer;
-  aditVar: TAdicVarDec;
 begin
   Next;    //Pasa al siguiente
   if toktype = tkIdentifier then begin
@@ -1527,23 +1523,22 @@ begin
       exit(nil);
     end;
   end else if tokType = tkString then begin
+    curLoc := TreeElems.curNode;
     //Literal string generates a variable declared as arrays of char.
-nElem := 0; // ************
-    GetConstantArrayStr(arrtyp);
+    constArr := GetConstantArrayStr(arrtyp);
     //Create a new variable in the declaration section of this sntBlock.
     _varaux := AddVarDecCC('', arrtyp, TreeElems.curCodCont);
     AddCallerToFromCurr(arrtyp);
-//
-//    //Add initialization for new variable
-//    aditVar.hasAdic  := decNone;       //Bandera
-//    aditVar.hasInit  := true;
-//    aditVar.absVar   := nil;         //Por defecto
-//
-//    //Add constant Operand
-//    AddCallerToFromCurr(_varaux); //Add reference
-//    Op1 := AddExpressAndOpen('ref', typWord, otConst, GetSrcPos);
-//    Op1.SetAddrVar(_varaux);
-//    Next;    //Pasa al siguiente
+    _varaux.adicPar.hasAdic  := decDatSec;  //To asure it can be initialized.
+    _varaux.adicPar.hasInit := true;   //
+    _varaux.adicPar.constDec := constArr;
+    //Move the constant array
+    TreeElems.ChangeParentTo(_varaux, constArr);
+    //Add constant Operand
+    TreeElems.openElement(curLoc);
+    AddCallerToFromCurr(_varaux); //Add reference
+    Op1 := AddExpressAndOpen('ref', typWord, otConst, GetSrcPos);
+    Op1.SetAddrVar(_varaux);
   end else begin
     GenError('Invalid parameter for "@" or "addr" function.');
     exit(nil);

@@ -736,12 +736,12 @@ Falta implementar las operaciones, cuando acceden al registro INDF, el Watchdog 
 los contadores, las interrupciones}
     // Helper functions
     // WARNING: if Range Check is on, it will raise exception
-  procedure Push(Value: byte);
+  procedure Push(Value: byte); inline;
   begin
     ram[$100 + SP].value := Value;
     dec(SP);
   end;
-  function Pull: byte;
+  function Pull: byte; inline;
   begin
     inc(SP);
     Result := ram[$100 + SP].value;
@@ -1866,38 +1866,38 @@ begin
     PIC16InstName[i_SMB7].AddAddressMode(aZeroPage,$F7,2,5,0, ONLY_65C02);
 
     PIC16InstName[i_BBR0].name := 'BBR0';
-    PIC16InstName[i_BBR0].AddAddressMode(aAbsolute,$0F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR0].AddAddressMode(aZeroPRel,$0F,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBR1].name := 'BBR1';
-    PIC16InstName[i_BBR1].AddAddressMode(aAbsolute,$1F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR1].AddAddressMode(aZeroPRel,$1F,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBR2].name := 'BBR2';
-    PIC16InstName[i_BBR2].AddAddressMode(aAbsolute,$2F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR2].AddAddressMode(aZeroPRel,$2F,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBR3].name := 'BBR3';
-    PIC16InstName[i_BBR3].AddAddressMode(aAbsolute,$3F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR3].AddAddressMode(aZeroPRel,$3F,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBR4].name := 'BBR4';
-    PIC16InstName[i_BBR4].AddAddressMode(aAbsolute,$4F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR4].AddAddressMode(aZeroPRel,$4F,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBR5].name := 'BBR5';
-    PIC16InstName[i_BBR5].AddAddressMode(aAbsolute,$5F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR5].AddAddressMode(aZeroPRel,$5F,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBR6].name := 'BBR6';
-    PIC16InstName[i_BBR6].AddAddressMode(aAbsolute,$6F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR6].AddAddressMode(aZeroPRel,$6F,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBR7].name := 'BBR7';
-    PIC16InstName[i_BBR7].AddAddressMode(aAbsolute,$7F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR7].AddAddressMode(aZeroPRel,$7F,2,5,0, ONLY_65C02);
 
     PIC16InstName[i_BBS0].name := 'BBS0';
-    PIC16InstName[i_BBS0].AddAddressMode(aAbsolute,$8F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS0].AddAddressMode(aZeroPRel,$8F,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBS1].name := 'BBS1';
-    PIC16InstName[i_BBS1].AddAddressMode(aAbsolute,$9F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS1].AddAddressMode(aZeroPRel,$9F,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBS2].name := 'BBS2';
-    PIC16InstName[i_BBS2].AddAddressMode(aAbsolute,$AF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS2].AddAddressMode(aZeroPRel,$AF,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBS3].name := 'BBS3';
-    PIC16InstName[i_BBS3].AddAddressMode(aAbsolute,$BF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS3].AddAddressMode(aZeroPRel,$BF,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBS4].name := 'BBS4';
-    PIC16InstName[i_BBS4].AddAddressMode(aAbsolute,$CF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS4].AddAddressMode(aZeroPRel,$CF,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBS5].name := 'BBS5';
-    PIC16InstName[i_BBS5].AddAddressMode(aAbsolute,$DF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS5].AddAddressMode(aZeroPRel,$DF,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBS6].name := 'BBS6';
-    PIC16InstName[i_BBS6].AddAddressMode(aAbsolute,$EF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS6].AddAddressMode(aZeroPRel,$EF,2,5,0, ONLY_65C02);
     PIC16InstName[i_BBS7].name := 'BBS7';
-    PIC16InstName[i_BBS7].AddAddressMode(aAbsolute,$FF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS7].AddAddressMode(aZeroPRel,$FF,2,5,0, ONLY_65C02);
 
   PIC16InstName[i_Inval].name := 'Inv';
 
