@@ -25,8 +25,8 @@ TOperType = (operUnary,  //Operación Unaria
              operBinary  //Operación Binaria
              );
 TTypeLocat = (
-             tlCurrNode,   //Type at the current node
-             tlParentNode  //Type at the parent node
+             tlCurrNode,    //Type at the current node.
+             tlCurrCodeCon  //At the current Code conatainer.
            );
 //Information about the las ASM code generated. Used for optimization.
 TLastASMcode = (
@@ -60,7 +60,7 @@ Esta clase debe ser el ancestro común de todos los compialdores a usar en PicPa
 Contiene métodos abstractos que deben ser impleemntados en las clases descendeintes.}
 TCompilerBase = class(TContexts)
 private
-  function CreateArrayTypeDec(typName: string; nELem: integer;
+  function AddArrayTypeDecCC(typName: string; nELem: integer;
     itType: TEleTypeDec; const srcPos: TSrcPos): TEleTypeDec;
   function proc_addr: TEleExpress;
 protected  //Parser routines
@@ -85,14 +85,14 @@ protected  //Flags for boolean type.
 protected  //Elements creation
   nTypesCreated: integer;
   function NameExistsIn(eName: string; list: TxpElements): boolean;
-  function CreateEleVarDec(varName: string; eleTyp: TEleTypeDec): TEleVarDec;
-  function CreateEleType(const typName: string; const srcPos: TSrcPos;
+//  function CreateEleVarDec(varName: string; eleTyp: TEleTypeDec): TEleVarDec;
+  function CreateEleTypeDec(const typName: string; const srcPos: TSrcPos;
     size0: smallint; catType: TxpCatType; group: TTypeGroup): TEleTypeDec;
-  function CreateEleTypePtr(const typName: string; const srcPos: TSrcPos;
+  function CreateEleTypeDecPtr(const typName: string; const srcPos: TSrcPos;
                          ptrType: TEleTypeDec): TEleTypeDec;
-  function CreateEleTypeObject(const typName: string; const srcPos: TSrcPos): TEleTypeDec;
-  function CreateUnit(uniName: string): TEleUnit;
-  function CreateFunction(funName: string; typ: TEleTypeDec): TEleFun;
+  function CreateEleTypeDecObject(const typName: string; const srcPos: TSrcPos): TEleTypeDec;
+  function CreateEleUnit(uniName: string): TEleUnit;
+  function CreateEleFunction(funName: string; typ: TEleTypeDec): TEleFun;
   function CreateExpression(opName: string; dtType: TEleTypeDec; opType: TopType;
                             srcPos: TSrcPos): TEleExpress;
   function AddExpressAndOpen(opName: string; dtType: TEleTypeDec; opType: TopType;
@@ -103,6 +103,8 @@ protected  //Elements creation
     ): TEleConsDec;
   function AddTypeDecAndOpen(typName: string; typeSize: integer; catType: TxpCatType;
     group: TTypeGroup; srcPos: TSrcPos): TEleTypeDec;
+  function AddVarDecCC(varName: string; eleTyp: TEleTypeDec; curCodCont: TEleCodeCont
+    ): TEleVarDec;
   function OpenTypeDec(const srcPos: TSrcPos; tname: string; tsize: word;
     catType: TxpCatType; group: TTypeGroup; location: TTypeLocat): TEleTypeDec;
   procedure CloseTypeDec(typeDec: TEleTypeDec);
@@ -163,7 +165,8 @@ protected //Expressions
     ): TEleFunBase;
   function AddConstDeclarByte(decName: string; consVal: integer): TEleConsDec;
   function GetConstantArray(arrDelimt: char): TEleExpress;
-  function GetConstantArrayStr(allowChar: boolean = true): TEleExpress;
+  function GetConstantArrayStr(out arrtyp: TEleTypeDec; allowChar: boolean = true
+    ): TEleExpress;
   function GetOperand: TEleExpress;
   function GetExpression(const prec: Integer): TEleExpress;
   function AddExpressionConstByte(name: string; bytValue: byte; srcPos: TSrcPos
@@ -492,20 +495,20 @@ begin
   end;
   exit(false);
 end;
-function TCompilerBase.CreateEleVarDec(varName: string; eleTyp: TEleTypeDec): TEleVarDec;
-{Rutina para crear una variable. Devuelve referencia a la variable creada.}
-var
-  xVar: TEleVarDec;
-begin
-  xVar        := TEleVarDec.Create;
-  xVar.name   := varName;
-  xVar.typ    := eleTyp;
-  xVar.adicPar.hasAdic := decNone;
-//  xVar.adicPar.hasInit := false;
-  xVar.storage := stRamFix;  //The most common storage for variables
-  Result       := xVar;
-end;
-function TCompilerBase.CreateEleType(const typName: string; const srcPos: TSrcPos;
+//function TCompilerBase.CreateEleVarDec(varName: string; eleTyp: TEleTypeDec): TEleVarDec;
+//{Rutina para crear una variable. Devuelve referencia a la variable creada.}
+//var
+//  xVar: TEleVarDec;
+//begin
+//  xVar        := TEleVarDec.Create;
+//  xVar.name   := varName;
+//  xVar.typ    := eleTyp;
+//  xVar.adicPar.hasAdic := decNone;
+////  xVar.adicPar.hasInit := false;
+//  xVar.storage := stRamFix;  //The most common storage for variables
+//  Result       := xVar;
+//end;
+function TCompilerBase.CreateEleTypeDec(const typName: string; const srcPos: TSrcPos;
                      size0: smallint; catType: TxpCatType; group: TTypeGroup): TEleTypeDec;
 begin
   Result := TEleTypeDec.Create;
@@ -515,23 +518,23 @@ begin
   Result.catType := catType;
   Result.group := group;
 end;
-function TCompilerBase.CreateEleTypePtr(const typName: string;
+function TCompilerBase.CreateEleTypeDecPtr(const typName: string;
   const srcPos: TSrcPos; ptrType: TEleTypeDec): TEleTypeDec;
 var
   xtyp: TEleTypeDec;
 begin
-  xtyp := CreateEleType(typName, srcPos, -1, tctPointer, t_object);
+  xtyp := CreateEleTypeDec(typName, srcPos, -1, tctPointer, t_object);
   xtyp.ptrType := ptrType; //Item type
   callDefinePointer(xtyp);   //Define operations to array
   exit(xtyp);
 end;
-function TCompilerBase.CreateEleTypeObject(const typName: string;
+function TCompilerBase.CreateEleTypeDecObject(const typName: string;
   const srcPos: TSrcPos): TEleTypeDec;
 begin
-  Result := CreateEleType(typName, srcPos, -1, tctObject, t_object);
+  Result := CreateEleTypeDec(typName, srcPos, -1, tctObject, t_object);
 
 end;
-function TCompilerBase.CreateUnit(uniName: string): TEleUnit;
+function TCompilerBase.CreateEleUnit(uniName: string): TEleUnit;
 var
   uni: TEleUnit;
 begin
@@ -539,7 +542,7 @@ begin
   uni.name := uniName;
   Result := uni;
 end;
-function TCompilerBase.CreateFunction(funName: string; typ: TEleTypeDec): TEleFun;
+function TCompilerBase.CreateEleFunction(funName: string; typ: TEleTypeDec): TEleFun;
 {Crea una nueva función y devuelve la referencia a la función.}
 var
   fun : TEleFun;
@@ -607,8 +610,7 @@ function TCompilerBase.AddVarDecAndOpen(varName: string; eleTyp: TEleTypeDec;
 {Crea un elemento variable y lo agrega en el nodo actual del árbol de sintaxis.
 Si no hay errores, devuelve la referencia a la variable. En caso contrario,
 devuelve NIL.
-Notar que este método, no asigna RAM a la variable. En una creación completa de
-variables, se debería llamar a CreateVarInRAM(), después de agregar la variable.}
+Notar que este método, no asigna RAM a la variable. }
 var
   xvar: TEleVarDec;
 begin
@@ -659,11 +661,11 @@ begin
   type is opened.
   This instruction must used with CloseTypeDec()
   }
-  if location = tlParentNode then begin
+  if location = tlCurrCodeCon then begin
     //Create in the parent location.
     tmp := TreeElems.curNode;  //Save current location
     //Change to the parent of the current code container. This will work always.
-    progFrame := TreeElems.curCodCont.Parent;  //Should be TEleProgFrame (Function, unit or main program)
+    progFrame := TreeElems.curCodCont.Parent;  //Should be TEleCodCont (Function, unit or main program)
     TreeElems.OpenElement(progFrame);
     ipos := progFrame.elements.Count-1;  //Before of the current COde container
   end else begin
@@ -682,20 +684,19 @@ begin
   TreeElems.CloseElement;  //Close type declaration.
   TreeElems.curNode := typeDec.tmpNode;  //Restore location
 end;
-function TCompilerBase.CreateArrayTypeDec(typName: string; nELem: integer;
+function TCompilerBase.AddArrayTypeDecCC(typName: string; nELem: integer;
                                           itType: TEleTypeDec;
                                           const srcPos: TSrcPos): TEleTypeDec;
-{Creates a type declaration for an array.
-"typName"  must be unique in the scope. Verification isn't done here.
-The location where the type is created is before the current node.
-}
+{Add a type declaration for an array in the AST. The declaration is created before the
+current Code container (The declaration section).
+"typName"  must be unique in the scope. Verification isn't done here.}
 var
   xtyp: TEleTypeDec;
   consDec: TEleConsDec;
   //tmp, progFrame: TxpElement;
   //ipos: Integer;
 begin
-  xtyp := OpenTypeDec(srcPos, typName, 0, tctArray, t_object, tlParentNode);
+  xtyp := OpenTypeDec(srcPos, typName, 0, tctArray, t_object, tlCurrCodeCon);
     //Crea campo "length".
     consDec := AddConstDeclarByte('length', nElem);
     //Termina definición
@@ -707,6 +708,41 @@ begin
   CloseTypeDec(xtyp);
   inc(nTypesCreated);   //Updates counter for types created
   exit(xtyp);
+end;
+function TCompilerBase.AddVarDecCC(varName: string; eleTyp: TEleTypeDec;
+                                   curCodCont: TEleCodeCont): TEleVarDec;
+{Add a variable declaration. The declaration is created before the current
+Code container (The declaration section).}
+var
+  xVar: TEleVarDec;
+  curNode: TxpElement;
+begin
+  {To obtain the Current code container it will be easy to do:
+   curCodCont := TreeElems.curCodCont;
+   However this function not always works in Analisys but also in Optimization}
+
+  if varName='' then varName := '_x' + IntToStr(curCodCont.Index);
+//  Result := TreeElems.AddVarDecAndOpen(GetSrcPos, varName, eleTyp);
+//  Result.adicPar.hasAdic := decNone;
+//  Result.storage := stRamFix;
+//  TreeElems.CloseElement;
+
+  xVar        := TEleVarDec.Create;
+  xVar.name   := varName;
+  xVar.typ    := eleTyp;
+  xVar.adicPar.hasAdic := decNone;
+//  xVar.adicPar.hasInit := false;
+  xVar.storage := stRamFix;  //The most common storage for variables
+
+  xVar.elements := TxpElements.Create(true);   //A real variable needs this.
+
+  curNode := TreeElems.curNode;   //Save current location
+  TreeElems.openElement(curCodCont.Parent);
+  TreeElems.AddElement(xVar, curCodCont.Index);  //Add before the cntBody.
+  TreeElems.curNode := curNode;  //Restore AST location
+
+  Result       := xVar;
+
 end;
 procedure TCompilerBase.CreateFunctionParams(var funPars: TxpParFuncArray);
 {Crea los parámetros de una función como variables globales, a partir de un arreglo
@@ -781,7 +817,7 @@ in Implementation section) and add it to the Syntax Tree in the current node.
 var
   xfun: TEleFun;
 begin
-  xfun := CreateFunction(funName, retTyp);
+  xfun := CreateEleFunction(funName, retTyp);
   xfun.srcDec := srcPos;   //Toma ubicación en el código
   xfun.declar := nil;   //This is declaration
   xfun.pars := pars;    //Copy parameters
@@ -820,7 +856,7 @@ var
   xfun: TEleFun;
   tmp: TxpListCallers;
 begin
-  xfun := CreateFunction(funName, retTyp);
+  xfun := CreateEleFunction(funName, retTyp);
   xfun.srcDec := srcPos;       //Take position in code.
   functDeclar.implem := xfun;  //Complete reference
   xfun.declar := functDeclar;  //Reference to declaration
@@ -1304,7 +1340,7 @@ begin
     if not TreeElems.ExistsArrayType(itType, nElem, xtyp) then begin
       //The type doesn't exist. We need to create.
       typName := GenArrayTypeName(itType.name, nElem); //Op.nItems won't work
-      xtyp := CreateArrayTypeDec(typName, nElem, itType, srcpos);
+      xtyp := AddArrayTypeDecCC(typName, nElem, itType, srcpos);
     end;
     //Finally we set the operand type.
     Op.Typ := xtyp;
@@ -1317,14 +1353,19 @@ begin
   end;
   exit(Op);
 end;
-function TCompilerBase.GetConstantArrayStr(allowChar: boolean = true): TEleExpress;
+function TCompilerBase.GetConstantArrayStr(out arrtyp: TEleTypeDec;
+                                           allowChar: boolean = true): TEleExpress;
+{Get a string token, including the adjacent characters in the format: #32 or #0.
+The strings are interpreted as an arrays of char.
+Generates a constant TEleExpress in the current position of the AST.
+If it's needed, creates a new array type in the declaration section.
+The type used for the constants array is returned in "arrtyp".}
 var
   Op1: TEleExpress;
   srcpos: TSrcPos;
   nElem: SizeInt;
   str, typName: String;
   ascCode: Longint;
-  xtyp: TEleTypeDec;
 begin
   srcpos := GetSrcPos;
   nElem := length(token) - 2;  //Don't consider quotes
@@ -1355,14 +1396,14 @@ begin
       str += #0;
       inc(nElem);
     end;
-    if not TreeElems.ExistsArrayType(typChar, nElem, xtyp) then begin
+    if not TreeElems.ExistsArrayType(typChar, nElem, arrtyp) then begin
       //There is not a similar type. We create a new type.
       typName := GenArrayTypeName('char', nElem); //Op.nItems won't work
-      xtyp := CreateArrayTypeDec(typName, nElem, typChar, srcpos);
+      arrtyp := AddArrayTypeDecCC(typName, nElem, typChar, srcpos);
 
     end;
-    Op1 := AddExpressAndOpen('str', xtyp, otConst, srcPos);
-    AddCallerToFromCurr(xtyp);
+    Op1 := AddExpressAndOpen('str', arrtyp, otConst, srcPos);
+    AddCallerToFromCurr(arrtyp);
     Op1.StringToArrayOfChar(str);
     Op1.evaluated := true;
   end;
@@ -1447,14 +1488,15 @@ The operand read is added to the syntax tree, as a TxpEleExpress element, and re
 in this function.
 }
 var
-  ele: TxpElement;
+  ele, curNode: TxpElement;
   Op1: TEleExpress;
   xvar, _varaux: TEleVarDec;
   xfun: TEleFunBase;
-  cntBody: TxpEleCodeCont;
+  cntBody: TEleCodeCont;
   typName: String;
-  xtyp: TEleTypeDec;
+  arrtyp: TEleTypeDec;
   nElem: Integer;
+  aditVar: TAdicVarDec;
 begin
   Next;    //Pasa al siguiente
   if toktype = tkIdentifier then begin
@@ -1487,23 +1529,21 @@ begin
   end else if tokType = tkString then begin
     //Literal string generates a variable declared as arrays of char.
 nElem := 0; // ************
-    //Creates a new type
-    typName := GenArrayTypeName('char', nElem); //Op.nItems won't work
-    xtyp := CreateArrayTypeDec(typName, nElem, typChar, GetSrcPos);
-
-    cntBody := TreeElems.curCodCont;
-
+    GetConstantArrayStr(arrtyp);
     //Create a new variable in the declaration section of this sntBlock.
-    _varaux := CreateEleVarDec('_x' + IntToStr(cntBody.Index), xtyp);  //Generate a unique name in this cntBody
-    _varaux.elements := TxpElements.Create(true);   //A real variable needs this.
-    TreeElems.openElement(cntBody.Parent);
-    TreeElems.AddElement(_varaux, cntBody.Index);  //Add before the cntBody.
-
-//    xvar := TEleVarDec(ele);
-//    AddCallerToFromCurr(ele); //Add reference to variable, however final operand can be: <variable>.<fieldName>
-    Op1 := AddExpressAndOpen(ele.name, typWord, otConst, GetSrcPos);
-//    Op1.SetAddrVar(xvar);
-    Next;    //Pasa al siguiente
+    _varaux := AddVarDecCC('', arrtyp, TreeElems.curCodCont);
+    AddCallerToFromCurr(arrtyp);
+//
+//    //Add initialization for new variable
+//    aditVar.hasAdic  := decNone;       //Bandera
+//    aditVar.hasInit  := true;
+//    aditVar.absVar   := nil;         //Por defecto
+//
+//    //Add constant Operand
+//    AddCallerToFromCurr(_varaux); //Add reference
+//    Op1 := AddExpressAndOpen('ref', typWord, otConst, GetSrcPos);
+//    Op1.SetAddrVar(_varaux);
+//    Next;    //Pasa al siguiente
   end else begin
     GenError('Invalid parameter for "@" or "addr" function.');
     exit(nil);
@@ -1622,7 +1662,7 @@ var
   findState: TxpFindState;
   upTok: String;
 //  value: TConsValue;
-  typ: TEleTypeDec;
+  typ, arrtyp: TEleTypeDec;
   cod: Longint;
   opr1: TEleFun;
   valInt: Int64;
@@ -1703,7 +1743,7 @@ begin
     Op1.evaluated := true;
     Next;
   end else if tokType = tkString then begin  //Constant String
-    Op1 := GetConstantArrayStr();
+    Op1 := GetConstantArrayStr(arrtyp);
     if HayError then exit(nil);
   end else if token = '(' then begin  // (...)
     Next;

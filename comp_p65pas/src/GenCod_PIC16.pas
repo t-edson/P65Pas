@@ -6349,25 +6349,25 @@ begin
   unit (more less) and we create the system function here, so we use the same code for
   linking, calling and optimization that we use in common functions. Moreover, we can
   create private functions.}
-  uni := CreateUnit('System');  //System unit
+  uni := CreateEleUnit('System');  //System unit
   TreeElems.AddElementAndOpen(uni);  //Open Unit
   /////////////// System types ////////////////////
-  typBool := CreateEleType('boolean', srcPosNull, 1, tctAtomic, t_boolean);
+  typBool := CreateEleTypeDec('boolean', srcPosNull, 1, tctAtomic, t_boolean);
   typBool.OnLoadToWR := @byte_LoadToWR;
   typBool.location := locInterface;   //Location for type (Interface/Implementation/...)
   TreeElems.AddElementAndOpen(typBool);  //Open to create "elements" list.
   TreeElems.CloseElement;   //Close Type
-  typByte := CreateEleType('byte', srcPosNull, 1, tctAtomic, t_uinteger);
+  typByte := CreateEleTypeDec('byte', srcPosNull, 1, tctAtomic, t_uinteger);
   typByte.OnLoadToWR := @byte_LoadToWR;
   typByte.location := locInterface;
   TreeElems.AddElementAndOpen(typByte);  //Open to create "elements" list.
   TreeElems.CloseElement;
-  typChar := CreateEleType('char', srcPosNull, 1, tctAtomic, t_string);
+  typChar := CreateEleTypeDec('char', srcPosNull, 1, tctAtomic, t_string);
   typChar.OnLoadToWR := @byte_LoadToWR;
   typChar.location := locInterface;
   TreeElems.AddElementAndOpen(typChar);
   TreeElems.CloseElement;
-  typWord := CreateEleType('word', srcPosNull, 2, tctAtomic, t_uinteger);
+  typWord := CreateEleTypeDec('word', srcPosNull, 2, tctAtomic, t_uinteger);
   typWord.OnLoadToWR := @word_LoadToWR;
   typWord.OnRequireWR := @word_RequireWR;
   typWord.location := locInterface;

@@ -50,7 +50,7 @@ type
     function GetCondition(out ex: TEleExpress; ConstBool: boolean = false): boolean;
     function OpenContextFrom(filePath: string): boolean;
     function AnalyzeStructBody: boolean;
-    function MoveNodeToAssign(cntBody: TxpEleCodeCont; curContainer: TxpElement;
+    function MoveNodeToAssign(cntBody: TEleCodeCont; curContainer: TxpElement;
                               Op: TEleExpress): TEleExpress;
     procedure AnalyzeSentence;
     procedure AnalyzeCurBlock;
@@ -154,6 +154,7 @@ var
   init: TEleExpress;
   ntyp, typesCreated, indexNode: Integer;
   parentNod, typDecElem: TxpElement;
+  arrtyp: TEleTypeDec;
 begin
 
   //Debe seguir una expresión constante, que no genere código
@@ -175,7 +176,7 @@ begin
         TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
         if HayError then exit(nil);
       end else if tokType = tkString then begin  //Alternate syntax "abc" only for char.
-        init := GetConstantArrayStr(false);
+        init := GetConstantArrayStr(arrtyp, false);
         TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
         if HayError then exit(nil);
       end else begin
@@ -996,7 +997,7 @@ begin
     //Debe seguir, el tipo
     Next;  //Takes ":"
     ProcComments;
-    decTyp := GetTypeDeclar(decStyle, TypeCreated, tlParentNode);  //Can create a Type element at this level.
+    decTyp := GetTypeDeclar(decStyle, TypeCreated, tlCurrCodeCon);  //Can create a Type element at this level.
     if HayError then exit(false);
     ProcComments;
     if TypeCreated then begin
@@ -1660,7 +1661,7 @@ begin
   //Salió sin errores
   exit(true);
 end;
-function TAnalyzer.MoveNodeToAssign(cntBody: TxpEleCodeCont; curContainer: TxpElement; Op: TEleExpress): TEleExpress;
+function TAnalyzer.MoveNodeToAssign(cntBody: TEleCodeCont; curContainer: TxpElement; Op: TEleExpress): TEleExpress;
 {Mueve el nodo especificado "Op" a una nueva instruccion de asignación (que es creada
 al inicio del bloque "curContainer") y reemplaza el nodo faltante por una variable
 temporal. Esta variable temporal se crea en el contenedor "cntBody" y es la que se usa
@@ -1677,10 +1678,7 @@ var
   OpParent: TxpElement;
 begin
   //Create a new variable in the declaration section of this sntBlock.
-  _varaux := CreateEleVarDec('_x' + IntToStr(cntBody.Index), Op.typ);  //Generate a unique name in this cntBody
-  _varaux.elements := TxpElements.Create(true);   //A real variable needs this.
-  TreeElems.openElement(cntBody.Parent);
-  TreeElems.AddElement(_varaux, cntBody.Index);  //Add before the cntBody.
+  _varaux := AddVarDecCC('', Op.typ, cntBody);  //Generate a unique name in this cntBody
 
   //Create the new _set() expression.
   _setaux := CreateExpression('_set', typNull, otFunct, Op.srcDec);
@@ -2537,7 +2535,7 @@ begin
       end;
       //hay un identificador de unidad
       uName := token;
-      uni := CreateUnit(uName);
+      uni := CreateEleUnit(uName);
       //Verifica si existe ya el nombre de la unidad
       if NameExistsIn(uni.uname, TreeElems.curNode.elements) then begin
         GenError('Identifier duplicated: %s.', [uName]);

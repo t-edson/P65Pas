@@ -31,7 +31,7 @@ type  //Abstract Syntax Tree
   public  //Tree definition/events
     main      : TEleProg;  //Root node
     curNode   : TxpElement;  //Reference to current node
-    curCodCont: TxpEleCodeCont;  {Reference to current code container, used to solve
+    curCodCont: TEleCodeCont;  {Reference to current code container, used to solve
                                  identifiers. It could be:
                                    - Body opened.
                                    - Constant declaration opened.

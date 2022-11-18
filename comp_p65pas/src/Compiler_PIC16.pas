@@ -15,7 +15,7 @@ type
     addVariab : integer;  //Address where start Variables section.
     addFuncts : integer;  //Address where start function section.
     procedure ConstantFoldExpr(eleExp: TEleExpress);
-    procedure PrepareBody(cntBody, sntBlock: TxpEleCodeCont);
+    procedure PrepareBody(cntBody, sntBlock: TEleCodeCont);
     procedure PrepareSentences;
   private  //Compilers steps
     procedure EvaluateConstantDeclare;
@@ -395,7 +395,7 @@ begin
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   ConstantPropagBody(bod);
 end;
-procedure TCompiler_PIC16.PrepareBody(cntBody, sntBlock: TxpEleCodeCont);
+procedure TCompiler_PIC16.PrepareBody(cntBody, sntBlock: TEleCodeCont);
 {Do a separation for assigmente sentences in order to have the "three-address code" form
 like used in several compilers.
 Parameters:
@@ -550,7 +550,7 @@ var
   sen: TEleSentence;
   eleSen, _set, ele, _proc: TxpElement;
   _exp, Op1, Op2, val1, val2: TEleExpress;
-  _blk, _blk0: TxpEleCodeCont;
+  _blk, _blk0: TEleCodeCont;
 begin
   //Prepare assignments for arrays.
   for eleSen in sntBlock.elements do begin
@@ -595,7 +595,7 @@ begin
           _exp := TEleExpress(ele.elements[0]);  //The first item is a TEleExpress
           SplitExpress(ele, _exp)
         end else if ele.idClass = eleBlock then begin   //body of IF
-          _blk := TxpEleCodeCont(ele);  //The first item is a TEleExpress
+          _blk := TEleCodeCont(ele);  //The first item is a TEleExpress
           PrepareBody(cntBody, _blk);
         end;
       end;
@@ -607,7 +607,7 @@ begin
           _exp := TEleExpress(ele.elements[0]);  //The first item is a TEleExpress
           SplitExpress(ele, _exp)
         end else if ele.idClass = eleBlock then begin   //Initialization or body
-          _blk := TxpEleCodeCont(ele);  //The first item is a TEleExpress
+          _blk := TEleCodeCont(ele);  //The first item is a TEleExpress
           PrepareBody(cntBody, _blk);
           if _blk0 = nil then _blk0 := _blk;  //Get intialization block
         end;

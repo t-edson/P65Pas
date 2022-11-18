@@ -212,7 +212,7 @@ type  //TxpElement class
                 eleAsmInstr,  //ASM instruction
                 eleAsmBlock   //ASM block
                 );
-  TxpEleCodeCont = class;
+  TEleCodeCont = class;
   { TxpElement }
   //Base class for all syntactic elements
   TxpElement = class
@@ -248,7 +248,7 @@ type  //TxpElement class
     idClass : TxpIDClass;  //To avoid use RTTI
     elements: TxpElements; //Container list for other elements
     location: TxpEleLocation;  //Element location
-    codCont : TxpEleCodeCont;  //Temporal field for Code container.
+    codCont : TEleCodeCont;  //Temporal field for Code container.
     property name: string read Fname write Setname;
     property uname: string read Funame;
     function Path: string;
@@ -273,8 +273,8 @@ type  //TxpElement class
 type  //Declaration elements
   TEleFun = class;
 
-  {Base class to derivate "Program frame structures".}
-  TxpEleCodeCont = class(TxpElement)
+  {Base class to derivate: Body, Blocks, Or a Declaration  }
+  TEleCodeCont = class(TxpElement)
   end;
 
   TEleTypeDec= class;
@@ -287,7 +287,7 @@ type  //Declaration elements
 
   { TEleTypeDec }
 
-  TEleTypeDec = class(TxpEleCodeCont)
+  TEleTypeDec = class(TEleCodeCont)
   private
     fSize: word;
     internalTypes: TEleTypeDecs;  //Container for types recursively defined.
@@ -333,7 +333,7 @@ type  //Declaration elements
 
   { TxpEleCon }
   //Class to modelate constants declaration.
-  TEleConsDec = class(TxpEleCodeCont)
+  TEleConsDec = class(TEleCodeCont)
     //Element type
     typ      : TEleTypeDec;
     {Flag to indicate if the constant value, stored in "value" field, is valid.
@@ -406,7 +406,7 @@ type  //Declaration elements
 
   { TEleVarDec }
   //Class to modelate variable declarations.
-  TEleVarDec = class(TxpEleCodeCont)
+  TEleVarDec = class(TEleCodeCont)
   private
     ftyp: TEleTypeDec;
     function Gettyp: TEleTypeDec;
@@ -560,7 +560,7 @@ type  //Structural elements
 
   { TxpEleBody }
   //Class to modelate the body of the main program or the procedures.
-  TEleBody = class(TxpEleCodeCont)
+  TEleBody = class(TEleCodeCont)
     adrr   : integer;  //Physical address
     constructor Create; override;
     destructor Destroy; override;
@@ -568,7 +568,7 @@ type  //Structural elements
 
   { TxpEleBlock }
   //Class to modelate a block of code, like a BEGIN...END or the body of conditional.
-  TEleBlock = class(TxpEleCodeCont)
+  TEleBlock = class(TEleCodeCont)
     //adrr   : integer;  //dirección física
     constructor Create; override;
     destructor Destroy; override;
