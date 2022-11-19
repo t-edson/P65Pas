@@ -792,6 +792,10 @@ begin
              tmpS := shortint(ram[aPC+1].value + nBytes);
              addr := (PC.W + tmpS) and $FFFF;
     end;
+  aZeroPRel: begin
+             tmpS := shortint(ram[aPC+2].value + nBytes);
+             addr := (PC.W + tmpS) and $FFFF;
+    end;
   end;
   //aAbsInIdX: *********** TO DO ***********
 
@@ -1231,6 +1235,28 @@ begin
     STATUS_Z := (W and tmp) = 0;
     ram[addr].value := tmp OR W;
   end;
+  i_RMB0: ram[addr].value := ram[addr].value and $FE;
+  i_RMB1: ram[addr].value := ram[addr].value and $FD;
+  i_RMB2: ram[addr].value := ram[addr].value and $FB;
+  i_RMB3: ram[addr].value := ram[addr].value and $F7;
+  i_RMB4: ram[addr].value := ram[addr].value and $EF;
+  i_RMB5: ram[addr].value := ram[addr].value and $DF;
+  i_RMB6: ram[addr].value := ram[addr].value and $BF;
+  i_RMB7: ram[addr].value := ram[addr].value and $7F;
+  i_SMB0: ram[addr].value := ram[addr].value or (1 << 0);
+  i_SMB1: ram[addr].value := ram[addr].value or (1 << 1);
+  i_SMB2: ram[addr].value := ram[addr].value or (1 << 2);
+  i_SMB3: ram[addr].value := ram[addr].value or (1 << 3);
+  i_SMB4: ram[addr].value := ram[addr].value or (1 << 4);
+  i_SMB5: ram[addr].value := ram[addr].value or (1 << 5);
+  i_SMB6: ram[addr].value := ram[addr].value or (1 << 6);
+  i_SMB7: ram[addr].value := ram[addr].value or (1 << 7);
+  i_BBR0:  // Branch if Bit 0 is 0
+    if (ram[aPC+1].value and 1) = 0 then begin
+      PC.W := addr;
+      Inc(nClck, nCycles + 1);  //Extra cycle in branch
+      exit;
+    end;
 
   i_Inval: begin
       MsjError := 'Invalid Opcode';
