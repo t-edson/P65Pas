@@ -1616,12 +1616,16 @@ begin
     end else begin
       //We cannot set a variable yet
       SetFunExpres(fun);
-      //_LDA(par.addH);
     end;
   end;
   stConst: begin
-    //Se devuelve una constante
-    SetFunConst_byte(fun, par.value.ValInt and $ff);
+    if par.evaluated then begin
+      //We can take the low part
+      SetFunConst_byte(fun, par.value.ValInt and $ff);
+    end else begin
+      //We cannot set a variable yet
+      SetFunExpres(fun);
+    end;
   end;
   else
     GenError('Syntax error.');
@@ -1641,12 +1645,16 @@ begin
     end else begin
       //We cannot set a variable yet
       SetFunExpres(fun);
-      //_LDA(par.addH);
     end;
   end;
   stConst: begin
-    //Se devuelve una constante
-    SetFunConst_byte(fun, par.value.ValInt and $ff00 >>8);
+    if par.evaluated then begin
+      //We can take the high part
+      SetFunConst_byte(fun, par.value.ValInt and $ff00 >>8);
+    end else begin
+      //We cannot set a variable yet
+      SetFunExpres(fun);
+    end;
   end;
   else
     GenError('Syntax error.');
