@@ -167,17 +167,32 @@ procedure TfraRegWatcher.RefreshRow(f: integer);
 {Refresca el valor de la fila indicada. No toca ni la dirección ni el nombre.
 Se usa para cuando se quiere ver la grilla actualizada.}
 var
-  addrStr, newValue, bitStr: String;
+  newValue{, addrStr, bitStr}: String;
   addr: Longint;
-  bit, valByte: byte;
+  //bit, valByte: byte;
+  v: TEleVarDec;
 begin
   //Lee dirección
-  addrStr := grilla.Cells[col_adr,f];
-  bitStr := grilla.Cells[col_bit,f];
+  //addrStr := grilla.Cells[col_adr,f];
+  //bitStr := grilla.Cells[col_bit,f];
+
+  addr := StrToIntDef(grilla.Cells[col_adr,f], -1);
+  v := TEleVarDec(grilla.Objects[0, f]);
+  if addr = -1 then newValue := ''
+  else if (v <> nil) and v.typ.IsWordSize then
+    newValue := '$'+IntToHex(pic.ram[addr].value + 256*pic.ram[addr+1].value, 4)
+  else if (v <> nil) and v.typ.IsDWordSize then
+    newValue := '$'+IntToHex(pic.ram[addr].value + pic.ram[addr+1].value << 8 + pic.ram[addr+2].value << 16 + pic.ram[addr+2].value << 24, 8)
+  else newValue := '$'+IntToHex(pic.ram[addr].value, 2);
+  if grilla.Cells[COL_VAL,f] <> newValue then begin
+    grilla.Objects[1, f] := Tobject(Pointer(255));  //Pone color
+    grilla.Cells[COL_VAL,f] := newValue;
+  end;
+
   {No se hacen muchas validaciones porque se espera que el campo "col_adr"
   deba contener solo valores predecibles, ya que no son modiifcados por el
   usuario.}
-  if addrStr = '' then begin
+{  if addrStr = '' then begin
      //No hay dato
      grilla.Cells[COL_VAL, f] := '';
   end else begin
@@ -203,7 +218,7 @@ begin
          grilla.Cells[COL_VAL,f] := newValue;
       end;
     end;
-  end;
+  end;}
 end;
 procedure TfraRegWatcher.UtilGrillaFinEditarCelda(var eveSal: TEvSalida; col,
   fil: integer; var ValorAnter, ValorNuev: string);
@@ -299,24 +314,57 @@ begin
 end;
 procedure TfraRegWatcher.acAddVarsExecute(Sender: TObject);
 {Agrega todas las variables usdas, del programa al inspector.}
+const
+  cRegName: array[stRegistA .. stRegistY] of char = ('A', 'X', 'Y');
 var
   v: TEleVarDec;
   i, maxBytes: Integer;
+
+  procedure AddRow;
+  begin
+    i := grilla.RowCount-1;  //última fila
+    if not RowIsEmpty(i) then begin
+      //Hay que agregar una fila
+      grilla.RowCount := grilla.RowCount + 1;
+      i := grilla.RowCount-1;
+    end;
+  end;
+
 begin
   for v in cxp.TreeElems.AllVars do begin   //Se supone que "AllVars" ya se actualizó.
       if v.nCalled = 0 then continue;
+      if v.storage in [stRegistA .. stRegistY] then begin
+        AddRow;
+        grilla.Cells[COL_NAM,i] := v.name;
+        grilla.Cells[COL_ADD,i] := cRegName[v.storage];
+        grilla.Cells[col_adr,i] := '';
+        grilla.Cells[col_bit,i] := '';
+        continue;
+      end;
       if v.typ.IsByteSize then begin
         AddWatch(v.name);
       end else if v.typ.IsWordSize then begin
 //        AddWatch(v.name+'@1');
 //        AddWatch(v.name+'@0');
-        AddWatch(v.addr);
-        AddWatch(v.addr+1);
+//        AddWatch(v.addr);
+//        AddWatch(v.addr+1);
+        AddRow;
+        grilla.Objects[0, i] := v;
+        grilla.Cells[COL_NAM,i] := v.name;
+        grilla.Cells[COL_ADD,i] := '$'+IntToHex(v.addr,3);
+        grilla.Cells[col_adr,i] := '$'+IntToHex(v.addr,3);
+        grilla.Cells[col_bit,i] := '';
       end else if v.typ.IsDWordSize then begin
-        AddWatch(v.addr);
-        AddWatch(v.addr+1);
-        AddWatch(v.addr+2);
-        AddWatch(v.addr+3);
+        //AddWatch(v.addr);
+        //AddWatch(v.addr+1);
+        //AddWatch(v.addr+2);
+        //AddWatch(v.addr+3);
+        AddRow;
+        grilla.Objects[0, i] := v;
+        grilla.Cells[COL_NAM,i] := v.name;
+        grilla.Cells[COL_ADD,i] := '$'+IntToHex(v.addr,3);
+        grilla.Cells[col_adr,i] := '$'+IntToHex(v.addr,3);
+        grilla.Cells[col_bit,i] := '';
       end else if v.typ.catType = tctArray then begin
         //Arreglo
         //Agrega primer byte
