@@ -1290,7 +1290,6 @@ begin
   //Start reading the items
   ReadType := true;  //Set flag to read the item type
   Op := AddExpressAndOpen(token, typNull, otConst, srcPos);
-  Op.evaluated := true;  //We have the value directly.
   Op.value.InitItems;
   while not atEof and (token <> arrDelimt) do begin
     //Must be an item
@@ -1351,6 +1350,11 @@ begin
     Op.value.CloseItems;  //Resize
     Op.Typ := xtyp;
   end;
+  //Check if it's evaluated
+  Op.evaluated := true;  //We have the value directly.
+//  for i:=0 to Op.value.nItems-1 do begin
+//    if Op.value.items[i].;
+//  end;
   exit(Op);
 end;
 function TCompilerBase.GetConstantArrayStr(out arrtyp: TEleTypeDec;
@@ -1368,22 +1372,29 @@ var
   ascCode: Longint;
 begin
   srcpos := GetSrcPos;
-  nElem := length(token) - 2;  //Don't consider quotes
-  str := copy(token, 2, nElem);
-  Next;    //Pasa al siguiente
-  //To include additional characters like #41 or #00
-  while tokType = tkChar do begin  //like #255
-    //Concat the next char to simulate concat, considering there is not a
-    //string type.
-    if TryStrToInt(Copy(token,2,3), ascCode) then begin
-      str += chr(ascCode and $FF);
+  str := '';
+  nElem := 0;
+  while tokType in [tkString, tkChar] do begin
+    if tokType = tkString then begin    //'Hello'
+      nElem += length(token) - 2;  //Don't consider quotes
+      str += copy(token, 2, nElem);
       Next;    //Pasa al siguiente
-      inc(nElem);
-    end else begin
-      GenError(ER_IN_CHARACTER);   //Casi seguro que es el caracter "#" solo.
-      exit;
+    end else if tokType = tkChar  then begin  //#10#13
+      while tokType = tkChar do begin  //like #255
+        //Concat the next char to simulate concat, considering there is not a
+        //string type.
+        if TryStrToInt(Copy(token,2,3), ascCode) then begin
+          str += chr(ascCode and $FF);
+          Next;    //Pasa al siguiente
+          inc(nElem);
+        end else begin
+          GenError(ER_IN_CHARACTER);   //Casi seguro que es el caracter "#" solo.
+          exit;
+        end;
+      end;
     end;
   end;
+  //To include additional characters like #41 or #00
   {$IFDEF LogExpres} Op.txt:= cIn.tok; {$ENDIF}   //toma el texto
   if allowChar and (length(str) = 1) then begin
     //De un caracter. Se asume de tipo Char
@@ -1509,6 +1520,7 @@ begin
       AddCallerToFromCurr(ele); //Add reference to variable, however final operand can be: <variable>.<fieldName>
       Op1 := AddExpressAndOpen(ele.name, typWord, otConst, GetSrcPos);
       Op1.SetAddrVar(xvar);
+      TreeElems.CloseElement;
       Next;    //Pasa al siguiente
     end else if ele.idClass in [eleFunc, eleFuncDec] then begin  //Is function
       {It's a function (or procedure), but we don't know what's the exact funtion because
@@ -1526,6 +1538,7 @@ begin
     curLoc := TreeElems.curNode;
     //Literal string generates a variable declared as arrays of char.
     constArr := GetConstantArrayStr(arrtyp);
+    if HayError then exit(nil);
     //Create a new variable in the declaration section of this sntBlock.
     _varaux := AddVarDecCC('', arrtyp, TreeElems.curCodCont);
     AddCallerToFromCurr(arrtyp);

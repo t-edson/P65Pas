@@ -179,6 +179,10 @@ begin
         init := GetConstantArrayStr(arrtyp, false);
         TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
         if HayError then exit(nil);
+      end else if tokType = tkChar then begin  //Could be char like #13.
+        init := GetConstantArrayStr(arrtyp, true);
+        TreeElems.OpenElement(init.Parent);  //Returns to parent because GetConstantArray() has created an opened a node.
+        if HayError then exit(nil);
       end else begin
         GenError('Expected "("');
         exit(nil);

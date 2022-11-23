@@ -803,7 +803,13 @@ begin
     tokType := tkString;
   end;
   '#': begin
-    repeat inc(fcol); until _Eol or not(curline[fcol] in ['0'..'9']);
+    _NextChar;
+    if _ReadChar = '$' then begin
+      _NextChar;
+      while not _Eol and (curline[fcol] in ['0'..'9','A'..'F','a'..'f']) do inc(fcol);
+    end else  begin
+      while not _Eol and (curline[fcol] in ['0'..'9']) do inc(fcol);
+    end;
     tokType := tkChar;
   end;
   '{': begin
