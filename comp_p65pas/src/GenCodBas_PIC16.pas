@@ -1853,6 +1853,7 @@ begin
         for ele in eleExp.elements do begin
           parExpr := TEleExpress(ele);
           GenCodeExpr(parExpr);
+          if HayError then exit;
           //Check availability of registers
           if parExpr.opType = otFunct then begin
             //An Expression result use registers.

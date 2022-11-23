@@ -1039,11 +1039,30 @@ end;
 procedure TEleExpress.Evaluate();
 var
   xfun: TEleFun;
+  ele: TxpElement;
+  itemExp: TEleExpress;
+  i: Integer;
 begin
   if evaluated then exit;  //Already evaluated
   case consType of
   ctLiteral: begin  //Literal like $1234 or 123
       //This shouldn't happens, because literal are always evaluated.
+      //Unless it's an array literal like [@var1, @var2]
+      i := 0;
+      if self.Typ.catType = tctArray then begin
+        //Constant array. Let's evaluate by items
+        evaluated := true;    //Defaule
+        for ele in elements do begin
+          itemExp := TEleExpress(ele);   //Recover type.
+          itemExp.Evaluate();
+          if not itemExp.evaluated then begin
+            evaluated := false;
+            break;
+          end;
+          value.items[i] := itemExp.value;
+          inc(i);
+        end;
+      end;
   end;
   ctConsRef: begin  //Reference to a constant declared like "CONST1"
       //Could be evaluated using "consRef"

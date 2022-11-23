@@ -1279,10 +1279,11 @@ Paraemters
 var
   srcpos: TSrcPos;
   ReadType, endWithComma: Boolean;
-  Op, Op1: TEleExpress;
+  Op, Op1, itemExp: TEleExpress;
   itType, xtyp: TEleTypeDec;
   nElem: Integer;
   typName: String;
+  ele: TxpElement;
 begin
   srcpos := GetSrcPos;
   Next;  //Get '['
@@ -1350,11 +1351,15 @@ begin
     Op.value.CloseItems;  //Resize
     Op.Typ := xtyp;
   end;
-  //Check if it's evaluated
-  Op.evaluated := true;  //We have the value directly.
-//  for i:=0 to Op.value.nItems-1 do begin
-//    if Op.value.items[i].;
-//  end;
+  //Check if it's evaluated. *** ¿Y no sería mejor llamar a Op.Evaluate() ?
+  Op.evaluated := true;  //This will be the more common
+  for ele in Op.elements do begin
+    itemExp := TEleExpress(ele);   //Recover type.
+    if not itemExp.evaluated then begin
+      Op.evaluated := false;
+      break;
+    end;
+  end;
   exit(Op);
 end;
 function TCompilerBase.GetConstantArrayStr(out arrtyp: TEleTypeDec;
