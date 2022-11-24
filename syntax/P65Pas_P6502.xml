@@ -4,10 +4,10 @@
   <Attribute Name="Keyword"   ForeCol="#0000FF" Bold="True"  Italic="False" Underline="False"/>
   <Attribute Name="Comment"   ForeCol="#008000" Bold="False" Italic="False" Underline="False"/>
   <Attribute Name="Number"    ForeCol="#074BFF" Bold="False" Italic="False" Underline="False"/>
-  <Attribute Name="String"    ForeCol="#074BFF" Bold="False" Italic="False" Underline="False"/>
+  <Attribute Name="String"    ForeCol="#00CE34" Bold="False" Italic="False" Underline="False"/>
   <Attribute Name="Boolean"   ForeCol="#000000" Bold="False" Italic="False" Underline="False"/>
   <Attribute Name="Directive" ForeCol="#FE2EF7" Bold="False" Italic="False" Underline="False"/>
-  <Attribute Name="Asm"       ForeCol="#60C060" Bold="False" Italic="True" Underline="False"/>
+  <Attribute Name="Asm"       ForeCol="#FF7DBE" Bold="False" Italic="False" Underline="False"/>
   <Attribute Name="Types"     ForeCol="#000000" Bold="False" Italic="False" Underline="False"/>
   <Attribute Name="Symbol"    ForeCol="#000000" Bold="False" Italic="False" Underline="False"/>
   <Completion OpenOnKeyUp="True">
