@@ -143,7 +143,7 @@ type  //Instructions set
     aIndirecX,  //Indexed Indirect: LDA ($40,X)  Only for X
     aIndirecY,  //Indirect Indexed: LDA ($40),Y  Only for Y
     //New addressing mode for 65C02
-    aIndirectZP, // Indirect to ZP: ADC ($12)
+    aIndirecZP, // Indirect to ZP: ADC ($12)
     aAbsInIdX,  //Absolute Indexed Indirect X: JMP ($1000, X) (65C02 only)
     aZeroPRel   //Zero page relative: BBR0 $12,LABEL
   );
@@ -481,6 +481,10 @@ begin
     useRAMCodeDa;
     ram[iRam].value := hi(param);
     useRAMCodeDa;
+  end;
+  aIndirecZP: begin
+    ram[iRam].value := lo(param);
+    useRAMCodeDa;
   end
   else
     raise Exception.Create('Implementation Error.');
@@ -718,6 +722,10 @@ begin
     par2   := ram[addr+2].value;
     Result := nemo + '($'+IntToHex(par1 + par2*256, 4)+',X)';
   end;
+  aIndirecZP: begin
+    nBytesProc := 2;
+    Result := nemo + '($'+IntToHex(par1, 2)+')';
+  end;
   end;
 end;
 function TP6502.CurInstruction: TP6502Inst;
@@ -785,7 +793,7 @@ begin
              tmpW := (ram[aPC+1].value + 256*ram[aPC+2].value) and $FFFF;
              addr := ram[tmpW].value  + 256*ram[tmpW+1].value;
     end;
-  aIndirectZP: begin
+  aIndirecZP: begin
              tmp  := ram[aPC+1].value;
              addr := ram[tmp].value  + 256*ram[tmp+1].value;
     end;
@@ -1852,14 +1860,14 @@ begin
     PIC16InstName[i_WAI].AddAddressMode(aImplicit,$CB,1,3,0, ONLY_65C02);
 
     //New addressing modes for 65C02
-    PIC16InstName[i_ADC].AddAddressMode(aIndirectZP,$72,2,5,1, ONLY_65C02);
-    PIC16InstName[i_AND].AddAddressMode(aIndirectZP,$32,2,5,0, ONLY_65C02);
-    PIC16InstName[i_CMP].AddAddressMode(aIndirectZP,$D2,2,5,0, ONLY_65C02);
-    PIC16InstName[i_EOR].AddAddressMode(aIndirectZP,$52,2,5,0, ONLY_65C02);
-    PIC16InstName[i_LDA].AddAddressMode(aIndirectZP,$B2,2,5,0, ONLY_65C02);
-    PIC16InstName[i_ORA].AddAddressMode(aIndirectZP,$12,2,5,0, ONLY_65C02);
-    PIC16InstName[i_SBC].AddAddressMode(aIndirectZP,$F2,2,5,1, ONLY_65C02);
-    PIC16InstName[i_STA].AddAddressMode(aIndirectZP,$92,2,5,0, ONLY_65C02);
+    PIC16InstName[i_ADC].AddAddressMode(aIndirecZP,$72,2,5,1, ONLY_65C02);
+    PIC16InstName[i_AND].AddAddressMode(aIndirecZP,$32,2,5,0, ONLY_65C02);
+    PIC16InstName[i_CMP].AddAddressMode(aIndirecZP,$D2,2,5,0, ONLY_65C02);
+    PIC16InstName[i_EOR].AddAddressMode(aIndirecZP,$52,2,5,0, ONLY_65C02);
+    PIC16InstName[i_LDA].AddAddressMode(aIndirecZP,$B2,2,5,0, ONLY_65C02);
+    PIC16InstName[i_ORA].AddAddressMode(aIndirecZP,$12,2,5,0, ONLY_65C02);
+    PIC16InstName[i_SBC].AddAddressMode(aIndirecZP,$F2,2,5,1, ONLY_65C02);
+    PIC16InstName[i_STA].AddAddressMode(aIndirecZP,$92,2,5,0, ONLY_65C02);
 
     PIC16InstName[i_DEC].AddAddressMode(aImplicit,$3A,1,2,0, ONLY_65C02);
     PIC16InstName[i_INC].AddAddressMode(aImplicit,$1A,1,2,0, ONLY_65C02);

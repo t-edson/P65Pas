@@ -2032,6 +2032,8 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
         pic.codAsm(cpu_inst, aZeroPagX, param);
       end else if (cpu_amod = aAbsolutY) and (aZeroPagY in addressModes) then begin
         pic.codAsm(cpu_inst, aZeroPagY, param);
+      end else if (cpu_amod = aIndirect) and (aIndirecZP in addressModes) then begin
+        pic.codAsm(cpu_inst, aIndirecZP, param);
       end else begin
         pic.codAsm(cpu_inst, cpu_amod, param);
       end;
