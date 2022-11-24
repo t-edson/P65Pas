@@ -1372,7 +1372,7 @@ The type used for the constants array is returned in "arrtyp".}
 var
   Op1: TEleExpress;
   srcpos: TSrcPos;
-  nElem: SizeInt;
+  nElem, strsize: SizeInt;
   str, typName: String;
   ascCode: Longint;
 begin
@@ -1381,9 +1381,10 @@ begin
   nElem := 0;
   while tokType in [tkString, tkChar] do begin
     if tokType = tkString then begin    //'Hello'
-      nElem += length(token) - 2;  //Don't consider quotes
-      str += copy(token, 2, nElem);
+      strsize := length(token) - 2;  //Don't consider quotes
+      str += copy(token, 2, strsize);
       Next;    //Pasa al siguiente
+      inc(nElem, strsize);
     end else if tokType = tkChar  then begin  //#10#13
       while tokType = tkChar do begin  //like #255
         //Concat the next char to simulate concat, considering there is not a
@@ -1539,7 +1540,7 @@ begin
       GenError('Invalid parameter for "@" or "addr" function.');
       exit(nil);
     end;
-  end else if tokType = tkString then begin
+  end else if tokType in [tkString, tkChar] then begin
     curLoc := TreeElems.curNode;
     //Literal string generates a variable declared as arrays of char.
     constArr := GetConstantArrayStr(arrtyp);
