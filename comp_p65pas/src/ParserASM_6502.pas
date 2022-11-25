@@ -286,6 +286,9 @@ begin
       inst.operRef := lblEle;  //Referencia a la etiqueta.
       //cpx.AddCallerToFromCurr(lblEle);  //Agrega referencia
       cpx.Next;
+      //Check for operations
+      ScanOperations(positOper);
+      if cpx.HayError then exit(false);
       exit(true);
     end;
     ele := cpx.TreeElems.FindFirst(cpx.token);  //identifica elemento
