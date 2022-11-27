@@ -775,6 +775,32 @@ If some problems happens, Error is generated and the NIL value is returned.
       exit;
     end;
   end;
+  procedure PointerDeclaration(const srcpos: TSrcPos; out refTyp: TEleTypeDec);
+  {Procesa la declaración de un tipo puntero y devuelve el tipo, ya creado para su
+  validación.
+  Se asume que ya se ha identificado el inicio de la declaración de un puntero,
+  sea en su forma larga: "POINTER TO BYTE" o en su forma corta: ^BYTE }
+  var
+    refDecStyle: TTypDeclarStyle;
+    refTypCreated: boolean;
+  begin
+    if token = '^' then begin
+      //Declaración corta
+      Next;  //Toma '^'
+    end else begin
+      //Declaración larga: POINTER TO <tipo>
+      Next; //Toma 'POINTER'. Se asume que ya se identificó.
+      ProcComments;
+      if not CaptureStr('TO') then exit;
+    end;
+//    reftyp := TreeElems.FindType(token); //Busca elemento
+    reftyp := GetTypeDeclar(refDecStyle, refTypCreated); //Recursive definition
+    if refTypCreated then begin
+      //Por ahora solo permitiremos identificadores de tipos
+      GenError('Too complex type definition.');
+      exit;
+    end;
+  end;
   procedure ObjectDeclaration(xtyp: TEleTypeDec; const srcpos: Tsrcpos);
   {Procesa la declaración de un tipo objeto y devuelve el tipo, ya creado para su
   validación. No agrega el tipo al árbol de sintaxis.
@@ -857,32 +883,6 @@ If some problems happens, Error is generated and the NIL value is returned.
     end;
     //Capture final "END"
     if not CaptureStr('END') then exit;
-  end;
-  procedure PointerDeclaration(const srcpos: TSrcPos; out refTyp: TEleTypeDec);
-  {Procesa la declaración de un tipo puntero y devuelve el tipo, ya creado para su
-  validación.
-  Se asume que ya se ha identificado el inicio de la declaración de un puntero,
-  sea en su forma larga: "POINTER TO BYTE" o en su forma corta: ^BYTE }
-  var
-    refDecStyle: TTypDeclarStyle;
-    refTypCreated: boolean;
-  begin
-    if token = '^' then begin
-      //Declaración corta
-      Next;  //Toma '^'
-    end else begin
-      //Declaración larga: POINTER TO <tipo>
-      Next; //Toma 'POINTER'. Se asume que ya se identificó.
-      ProcComments;
-      if not CaptureStr('TO') then exit;
-    end;
-//    reftyp := TreeElems.FindType(token); //Busca elemento
-    reftyp := GetTypeDeclar(refDecStyle, refTypCreated); //Recursive definition
-    if refTypCreated then begin
-      //Por ahora solo permitiremos identificadores de tipos
-      GenError('Too complex type definition.');
-      exit;
-    end;
   end;
 var
   typName, tokL: String;

@@ -722,9 +722,11 @@ type  //Declaration elements (functions)
     gsNone,         //Is not neither getter nor setter.
     gsGetInSimple,  //Getter INLINE simple:  _get()
     gsGetInItem,    //Getter INLINE for array: _getitem(index)
+    gsGetInPtr,     //Getter INLINE for pointer: _getptr()
     gsGetOther,     //Other getter.
     gsSetInSimple,  //Setter INLINE simple: _set(value)
     gsSetInItem,    //Setter INLINE for array: _setitem(index, value)
+    gsSetInPtr,     //Setter INLINE for poiner: _setptr(value)
     gsSetOther      //Other setter.
     );
 

@@ -69,6 +69,7 @@ type
       procedure DefineObject(etyp: TEleTypeDec);
       function FillArray(parray: TEleExpress): boolean;
       procedure SIF_bool_or_bool(fun: TEleExpress);
+      procedure SIF_GetPointer(fun: TEleExpress);
       procedure SNF_byt_mul_byt_16(fun: TEleFunBase);
       procedure Invert_A_to_A;
       procedure Copy_Z_to_A;
@@ -76,7 +77,7 @@ type
       procedure Copy_C_to_A;
       procedure Invert_C_to_A;
       function Invert(fun: TEleExpress): boolean;
-      function CreateUOMethod(clsType: TEleTypeDec; opr: string; name: string;
+      function CreateInUOMethod(clsType: TEleTypeDec; opr: string; name: string;
         retType: TEleTypeDec; pCompile: TCodSysInline; operTyp: TOperatorType =
   opkUnaryPre): TEleFun;
       function CreateInBOMethod(clsType: TEleTypeDec; opr: string; name: string;
@@ -6053,6 +6054,24 @@ begin
     GenError('Cannot clear this array');
   end;
 end;
+procedure TGenCod.SIF_GetPointer(fun: TEleExpress);
+{SIF for getting the value referenced by pointer: p^}
+var
+  ptrVar: TEleExpress;
+begin
+  ptrVar := TEleExpress(fun.elements[0]);
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    {Cannot generate a constant.}
+    exit;
+  end;
+  if ptrVar.sto = stRamFix then begin
+    //Applied to a variable pointer. The normal.
+    SetFunVariab(fun, ptrVar.val);
+  end else begin
+    GenError('Cannot get variable pointed by storage %s.', [ptrVar.StoAsStr]);
+  end;
+end;
 procedure TGenCod.DefineShortPointer(etyp: TEleTypeDec);
 {Configura las operaciones que definen la aritmética de punteros.}
 //var
@@ -6075,31 +6094,6 @@ begin
 //
 //  etyp.CreateUnaryPostOperator('^',6,'deref', @SIF_derefPointer);  //dereferencia
 end;
-procedure TGenCod.DefinePointer(etyp: TEleTypeDec);
-{Set operations that defines pointers aritmethic.}
-var
-  f: TEleFun;
-begin
-  //Asignación desde word y Puntero
-  f := CreateInBOMethod(etyp, ':=', '_set', typWord, typNull, @SIF_word_asig_word);
-  f.getset := gsSetInSimple;
-  f := CreateInBOMethod(etyp, ':=', '_set', etyp, typNull, @SIF_word_asig_word);
-  f.getset := gsSetInSimple;
-
-  CreateInBOMethod(etyp, '=','_equ', typWord, typBool, @SIF_word_equal_word);
-  CreateInBOMethod(etyp, '=','_equ', etyp, typBool, @SIF_word_equal_word);
-
-  CreateInBOMethod(etyp, '+', '_add', typWord, etyp, @SIF_pointer_add_word);
-  CreateInBOMethod(etyp, '+', '_add', typByte, etyp, @SIF_pointer_add_byte);
-
-  CreateInBOMethod(etyp, '-', '_sub', typWord, etyp, @SIF_pointer_sub_word);
-  CreateInBOMethod(etyp, '-', '_sub', typByte, etyp, @SIF_pointer_sub_byte);
-
-  CreateInBOMethod(etyp, '+=', '_aadd', typWord, etyp, @SIF_word_aadd_word);
-  CreateInBOMethod(etyp, '+=', '_aadd', typByte, etyp, @SIF_word_aadd_byte);
-
-//  etyp.CreateUnaryPostOperator('^',6, 'deref', @SIF_derefPointer);  //dereferencia
-end;
 procedure TGenCod.DefineArray(etyp: TEleTypeDec);
 var
   consDec: TEleConsDec;
@@ -6113,8 +6107,8 @@ begin
   AddConstDeclarByte('low', 0);
   //Create methods
 //  CreateUOMethod(etyp, '', 'length', typByte, @arrayLength);
-  CreateUOMethod(etyp, '', 'high'  , typByte, @arrayHigh);
-  CreateUOMethod(etyp, '', 'clear' , typNull, @SIF_ArrayClear);
+  CreateInUOMethod(etyp, '', 'high'  , typByte, @arrayHigh);
+  CreateInUOMethod(etyp, '', 'clear' , typNull, @SIF_ArrayClear);
 //  CreateInBOMethod(etyp, '', 'fill' , typByte, typNull, @SIF_ArrayFill);
   //Getters and setters.
   {Note we define only two getters, one for byte-index and one for word-index. Formally
@@ -6132,6 +6126,34 @@ begin
   f2.funset := f;         //Connect to getter
   //Operation for pointers
 //  CreateUOMethod(etyp, '@', 'addr', typWord, @SIF_address);
+end;
+procedure TGenCod.DefinePointer(etyp: TEleTypeDec);
+{Set operations that defines pointers aritmethic.}
+var
+  f, f1: TEleFun;
+begin
+  //Asignación desde word y Puntero
+  f := CreateInBOMethod(etyp, ':=', '_set', typWord, typNull, @SIF_word_asig_word);
+  f.getset := gsSetInSimple;
+  f := CreateInBOMethod(etyp, ':=', '_set', etyp, typNull, @SIF_word_asig_word);
+  f.getset := gsSetInSimple;
+  //Getter and setter
+  f1 := CreateInUOMethod(etyp, '', '_getptr', etyp.itmType, @SIF_GetPointer);
+  f1.getset := gsGetInPtr;
+
+  CreateInBOMethod(etyp, '=','_equ', typWord, typBool, @SIF_word_equal_word);
+  CreateInBOMethod(etyp, '=','_equ', etyp, typBool, @SIF_word_equal_word);
+
+  CreateInBOMethod(etyp, '+', '_add', typWord, etyp, @SIF_pointer_add_word);
+  CreateInBOMethod(etyp, '+', '_add', typByte, etyp, @SIF_pointer_add_byte);
+
+  CreateInBOMethod(etyp, '-', '_sub', typWord, etyp, @SIF_pointer_sub_word);
+  CreateInBOMethod(etyp, '-', '_sub', typByte, etyp, @SIF_pointer_sub_byte);
+
+  CreateInBOMethod(etyp, '+=', '_aadd', typWord, etyp, @SIF_word_aadd_word);
+  CreateInBOMethod(etyp, '+=', '_aadd', typByte, etyp, @SIF_word_aadd_byte);
+
+//  etyp.CreateUnaryPostOperator('^',6, 'deref', @SIF_derefPointer);  //dereferencia
 end;
 procedure TGenCod.DefineObject(etyp: TEleTypeDec);
 var
@@ -6242,7 +6264,7 @@ begin
   TreeElems.CloseElement;  //Close function implementation
   curLocation := tmpLoc;   //Restore current location
 end;
-function TGenCod.CreateUOMethod(
+function TGenCod.CreateInUOMethod(
                       clsType: TEleTypeDec;   //Base type where the method bellow.
                       opr     : string;      //Opertaor associated to the method
                       name    : string;      //Name of the method
@@ -6407,7 +6429,7 @@ begin
   TreeElems.OpenElement(typBool);
   f:=CreateInBOMethod(typBool, ':=',  '_set', typBool, typNull, @SIF_bool_asig_bool);
   f.getset := gsSetInSimple;
-  f:=CreateUOMethod(typBool  , 'NOT', '_not', typBool, @SIF_not_bool, opkUnaryPre);
+  f:=CreateInUOMethod(typBool  , 'NOT', '_not', typBool, @SIF_not_bool, opkUnaryPre);
   f:=CreateInBOMethod(typBool, 'AND', '_and', typBool, typBool, @SIF_bool_and_bool);
   f.fConmutat := true;
   f:=CreateInBOMethod(typBool, 'OR' , '_or' , typBool, typBool, @SIF_bool_or_bool);
@@ -6444,7 +6466,7 @@ begin
   f.fConmutat := true;
   f:=CreateInBOMethod(typByte, 'XOR','_xor', typByte, typByte, @SIF_byte_xor_byte);
   f.fConmutat := true;
-  f:=CreateUOMethod(typByte, 'NOT','_not', typByte, @SIF_not_byte, opkUnaryPre);
+  f:=CreateInUOMethod(typByte, 'NOT','_not', typByte, @SIF_not_byte, opkUnaryPre);
   f:=CreateInBOMethod(typByte, '=' , '_equ', typByte, typBool, @SIF_byte_equal_byte);
   f.fConmutat := true;
   f:=CreateInBOMethod(typByte, '<>', '_dif', typByte, typBool, @SIF_byte_difer_byte);
@@ -6490,7 +6512,7 @@ begin
   f.fConmutat := true;
   f:=CreateInBOMethod(typWord, 'AND', '_and', typWord, typWord, @SIF_word_and_word);
   f.fConmutat := true;
-  f:=CreateUOMethod(typWord, 'NOT', '_not', typWord, @SIF_not_word, opkUnaryPre);
+  f:=CreateInUOMethod(typWord, 'NOT', '_not', typWord, @SIF_not_word, opkUnaryPre);
   f:=CreateInBOMethod(typWord, '>>' , '_shr', typByte, typWord, @SIF_word_shr_byte); { TODO : Definir bien la precedencia }
   f:=CreateInBOMethod(typWord, '<<' , '_shl', typByte, typWord, @SIF_word_shl_byte);
 
@@ -6506,8 +6528,8 @@ begin
   f:=CreateInBOMethod(typWord, '>' , '_gre' , typWord, typBool, @SIF_word_great_word);
   f:=CreateInBOMethod(typWord, '<=', '_lequ', typWord, typBool, @SIF_word_lequ_word);
   //Methods
-  f:=CreateUOMethod(typWord, '', 'low' , typByte, @word_Low);
-  f:=CreateUOMethod(typWord, '', 'high', typByte, @word_High);
+  f:=CreateInUOMethod(typWord, '', 'low' , typByte, @word_Low);
+  f:=CreateInUOMethod(typWord, '', 'high', typByte, @word_High);
 
   TreeElems.CloseElement;   //Close Type
 
