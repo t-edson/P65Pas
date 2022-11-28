@@ -1378,13 +1378,8 @@ begin
   stRamVarOf: begin
     if fun.rvar.typ.IsByteSize then begin
       //Indexado por Byte
-      if fun.offs<256 then begin
-        _LDX(fun.rvar.addr);  //Load address
-        pic.codAsm(i_LDA, aZeroPagX, fun.offs);
-      end else begin
-        _LDX(fun.rvar.addr);  //Load address
-        pic.codAsm(i_LDA, aAbsolutX, fun.offs);
-      end;
+      _LDX(fun.rvar.addr);  //Load address
+      _LDAx(fun.offs);
     end else if fun.rvar.typ.IsWordSize then begin
       if fun.offs<256 then begin
         AddCallerToFromCurr(IX);  //We declare using IX
@@ -1404,82 +1399,13 @@ begin
       end else begin
         GenError(ER_NOT_IMPLEM_, [fun.StoAsStr]);
       end;
+    end else begin
+      GenError(ER_NOT_IMPLEM_, [fun.StoAsStr]);
     end;
   end;
-  stRegister: begin  //Already in WR
+  stRegister, stRegistA: begin
+    //Already in WR
   end;
-//  stVarRef, stExpRef: begin
-//    if Op^.Sto = stExpRef then begin
-//      idx := IX;  //Index variable
-//    end else begin
-//      idx := Op^.rVar;  //Index variable
-//    end;
-//    if idx.typ.IsByteSize then begin
-//      //Indexed in zero page is simple
-//      _LDX(idx.addr);
-//      pic.codAsm(i_LDA, aZeroPagX, 0);
-//    end else if idx.typ.IsWordSize then begin
-//      if idx.addr<256 then begin
-//        //Index in zero page. It's simple
-//        _LDYi(0);
-//        pic.codAsm(i_LDA, aIndirecY, idx.addr);
-//      end else begin
-//        //Index is word and not in zero page
-//        //WARNING this is "Self-modifiying" code.
-//        _LDA(idx.addr);  //Load LSB index
-//addrNextOp1 := pic.iRam + 1;  //Address next instruction
-//        pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-//        _LDA(idx.addr+1);  //Load virtual MSB index
-//addrNextOp2 := pic.iRam + 1;  //Address next instruction
-//        PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
-//        //Modified LDA instruction
-//        pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
-//        //Complete address
-//        pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
-//        pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
-//        pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
-//        pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
-//      end;
-//    end else begin
-//      //refVar can only be byte or word size.
-//      GenError('Not supported this index.');
-//    end;
-//  end;
-//  stVarConRef: begin
-//    idx := Op^.rVar;  //Index variable
-//    off := Op^.valInt and $FFFF;
-//    if idx.typ.IsByteSize then begin
-//      //Indexed in zero page
-//      _LDX(idx.addr);
-//      if off<256 then begin
-//        pic.codAsm(i_LDA, aZeroPagX, off);
-//      end else begin
-//        pic.codAsm(i_LDA, aAbsolutX, off);
-//      end;
-//    end else if idx.typ.IsWordSize then begin
-//      //Index is word and not in zero page
-//      //WARNING this is "Self-modifiying" code.
-//      _CLC;
-//      _LDA(idx.addr);  //Load LSB index
-//      _ADCi(lo(off));
-//addrNextOp1 := pic.iRam + 1;  //Address next instruction
-//      pic.codAsm(i_STA, aAbsolute, 0); //Store forward
-//      _LDA(idx.addr+1);  //Load virtual MSB index
-//      _ADCi(hi(off));
-//addrNextOp2 := pic.iRam + 1;  //Address next instruction
-//      PIC.codAsm(i_STA, aAbsolute, 0);  //Store forward
-//      //Modified LDA instruction
-//      pic.codAsm(i_LDA, aAbsolute, 0); //Store forward
-//      //Complete address
-//      pic.ram[addrNextOp1].value := (pic.iRam - 2) and $FF;
-//      pic.ram[addrNextOp1+1].value := (pic.iRam - 2)>>8;
-//      pic.ram[addrNextOp2].value := (pic.iRam - 1) and $FF;
-//      pic.ram[addrNextOp2+1].value := (pic.iRam - 1)>>8;
-//    end else begin
-//      //refVar can only be byte or word size.
-//      GenError('Not supported this index.');
-//    end;
-//  end
   else
     //Almacenamiento no implementado
     GenError(ER_NOT_IMPLEM_, [fun.StoAsStr]);

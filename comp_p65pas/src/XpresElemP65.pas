@@ -357,6 +357,7 @@ type  //Declaration elements
     stRamReg   = %0100,  //In RAM. Address allocated in Work Register.
 
     stRegister = %1000,  //In default registers (Work register).
+    //Only valid for byte-size types
     stRegistA  = %1001,  //In register A. Only for byte-size variables.
     stRegistX  = %1010,  //In register X. Only for byte-size variables.
     stRegistY  = %1011   //In register Y. Only for byte-size variables.

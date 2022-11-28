@@ -93,7 +93,6 @@ type
       procedure DefinePointer(etyp: TEleTypeDec);
       procedure DefineShortPointer(etyp: TEleTypeDec);
       procedure SIF_Addr(fun: TEleExpress);
-      procedure SIF_Ref(fun: TEleExpress);
       procedure SIF_Byte(fun: TEleExpress);
       procedure SIF_arr_asig_arr(fun: TEleExpress);
       procedure SIF_obj_asig_obj(fun: TEleExpress);
@@ -512,94 +511,6 @@ begin
     end;
     else
       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
-    end;
-  end else if parA.Sto = stRamVarOf then begin
-    //Assignment to a indexed variable.
-    //"parA.rvar" is index variable.
-    //"parA.offs" and "parA.offVar" defines the offset.
-    idxvar := parA.rvar;
-    if parA.offVar = nil then begin
-      offset := parA.offs;
-    end else begin
-      offset := parA.offs + parA.offVar.addr;
-    end;
-    if idxvar.typ = typByte then begin   ///////// Index is byte
-      case parB.Sto of
-      stConst : begin
-        _LDAi(parB.val);
-        _LDX(idxvar.addr);  //Load address
-        _STAx(offset);
-      end;
-      stRamFix: begin
-        _LDA(parB.add);
-        _LDX(idxvar.addr);  //Load address
-        _STAx(offset);
-      end;
-      stRegister, stRegistA: begin  //Already in A
-        _LDX(idxvar.addr);  //Load address
-        _STAx(offset);
-      end;
-  //    stRegistX: begin
-  //      _TXA;  //Modify A
-  //      _TAY;
-  //    end;
-  //    stRegistY: begin //Already in Y
-  //    end;
-      else
-        GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
-      end;
-    end else if idxvar.typ = typWord then begin  ///////// Index is word
-      //Test for word index to be in zero-page.
-      if idxvar.addr>254 then begin
-        GenError('Array index must be allocated in zero page.', fun.srcDec);
-        exit;
-      end;
-      case parB.Sto of
-      stConst : begin
-        if offset<256 then begin
-          _LDAi(parB.val);
-          _LDYi(offset);
-          pic.codAsm(i_STA, aIndirecY, idxvar.addr);
-        end else begin  //Offset is word
-          _LDX(idxvar.addrH); //Save. Not needed if we can alter the index. Like register _IX.
-          _LDAi(hi(offset));   //We'll add the offset to the index
-          _CLC;
-          _ADC(idxvar.addrH);  //Zero page
-          _STA(idxvar.addrH);  //Include offset-H in Index
-          _LDAi(parB.val);     //VAlue to write
-          _LDYi(lo(offset));   //Low byte of offset in Y
-          pic.codAsm(i_STA, aIndirecY, idxvar.addr);
-          _STX(idxvar.addrH);  //Restore. Not needed if we can alter the index. Like register _IX.
-          { #todo : También se podría probar si el código automodificable es del mismo tamaño o no }
-        end;
-      end;
-      stRamFix: begin
-        if offset<256 then begin
-          _LDA(parB.add);
-          _LDYi(offset);
-          pic.codAsm(i_STA, aIndirecY, idxvar.addr);
-        end else begin  //Offset is word
-          _LDX(idxvar.addrH); //Save. Not needed if we can alter the index. Like register _IX.
-          _LDAi(hi(offset));   //We'll add the offset to the index
-          _CLC;
-          _ADC(idxvar.addrH);  //Zero page
-          _STA(idxvar.addrH);  //Include offset-H in Index
-          _LDA(parB.add);      //Value to write
-          _LDYi(lo(offset));   //Low byte of offset in Y
-          pic.codAsm(i_STA, aIndirecY, idxvar.addr);
-          _STX(idxvar.addrH);  //Restore. Not needed if we can alter the index. Like register _IX.
-        end;
-      end;
-//      stRegister, stRegistA: begin  //Already in A
-//        _LDX(idxvar.addr);  //Load address
-//        _STAx(offset);
-//        end;
-//      end;
-      else
-        GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
-      end;
-    end else begin
-      GenError(MSG_IDX_BYT_WORD);
     end;
   end else begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
@@ -4660,42 +4571,6 @@ begin
     genError('Design error.');
   end;
 end;
-procedure TGenCod.SIF_Ref(fun: TEleExpress);
-{Convert an "operand" to the form "operand^".}
-var
-  par: TEleExpress;
-begin
-  par := TEleExpress(fun.elements[0]);  //Only one parameter
-  case par.opType of
-  otVariab: begin
-    //Es una variable simple. Una variable tiene dirección fija
-    if par.Sto = stRamFix then begin
-      {This is a special case where the result operand type, depends on if
-      par is allocated.}
-      if par.allocated then begin
-        SetFunVariab_RamVarOf(fun, par.rvar, 0, nil);
-        fun.value.valInt := par.add;
-      end else begin
-        {No allocated. We keep this as an expression in order to force the
-        evaluation later, when the address must be defined.}
-        SetFunExpres(fun);
-      end;
-    end else begin
-      genError('Cannot use variable "%s" as a pointer.', [par.StoAsStr]);
-      exit;
-    end;
-  end;
-  otConst: begin
-    genError('Cannot use constant as a pointer.');
-  end;
-  otFunct: begin
-    genError('Cannot use expression as a pointer.');
-  end;
-  else
-    //Shouldn't happen
-    genError('Design error.');
-  end;
-end;
 {%REGION Routines for arrays and pointers}
 procedure TGenCod.arrayLow(fun: TEleExpress);
 //Devuelve el índice mínimo de un arreglo
@@ -6065,9 +5940,19 @@ begin
     {Cannot generate a constant.}
     exit;
   end;
-  if ptrVar.sto = stRamFix then begin
+  if ptrVar.sto = stConst then begin
+    //Applied to a constant pointer.
+    SetFunVariab(fun, ptrVar.val);  //Generates a variable
+  end else if ptrVar.sto = stRamFix then begin
     //Applied to a variable pointer. The normal.
-    SetFunVariab(fun, ptrVar.val);
+    if ptrVar.allocated then begin
+      SetFunExpres(fun);
+      //_LDX(idx.add);    //******* Depende del tipo que retorna
+      //_LDAx(offset);
+    end else begin
+      {No allocated. }
+      GenError('Pointer variable %s not allocated.', [ptrVar.name]);
+    end;
   end else begin
     GenError('Cannot get variable pointed by storage %s.', [ptrVar.StoAsStr]);
   end;
@@ -6138,7 +6023,7 @@ begin
   f := CreateInBOMethod(etyp, ':=', '_set', etyp, typNull, @SIF_word_asig_word);
   f.getset := gsSetInSimple;
   //Getter and setter
-  f1 := CreateInUOMethod(etyp, '', '_getptr', etyp.itmType, @SIF_GetPointer);
+  f1 := CreateInUOMethod(etyp, '', '_getptr', etyp.ptrType, @SIF_GetPointer);
   f1.getset := gsGetInPtr;
 
   CreateInBOMethod(etyp, '=','_equ', typWord, typBool, @SIF_word_equal_word);
@@ -6572,18 +6457,6 @@ begin
   sifWord :=
   AddSysInlineFunction('word', typWord, srcPosNull, pars, @SIF_Word);
   AddCallerToFrom(H, sifWord.BodyNode);  //Reqire H
-
-  //Create system function "addr"
-//  setlength(pars, 0);  //Reset parameters
-//  AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-//  AddSysInlineFunction('addr', typWord, srcPosNull, pars, @SIF_Addr);
-
-    //Create system function "_ref"
-  setlength(pars, 0);  //Reset parameters
-  AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
-  sifFunRef :=
-  AddSysInlineFunction('_ref', typNull, srcPosNull, pars, @SIF_Ref);
-  //Se usa "typNull" porque el tipo devuelto no se conoce aquí. Será resuelto en la fase Análisis.
 
   ///////////////// System Normal functions (SNF) ///////////////
   //Multiply system function

@@ -62,6 +62,7 @@ TCompilerBase = class(TContexts)
 private
   function AddArrayTypeDecCC(typName: string; nELem: integer;
     itType: TEleTypeDec; const srcPos: TSrcPos): TEleTypeDec;
+  function MethodGetPtr(const OpType: TEleTypeDec): TEleFunBase;
   function proc_addr: TEleExpress;
 protected  //Parser routines
   ExprLevel  : Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
@@ -150,9 +151,6 @@ protected //Calls to Code Generator (GenCod)
   callStartProgram : procedure of object;
   callEndProgram   : procedure of object;
   sifFunInc: TEleFun;   {Referencia a la función de incremento. Se guarda para evitar
-                        hacer búsqueda innecesaria. Notar que esta es una referencia
-                        hacia el generador de código que se llenará posteriormente.}
-  sifFunRef: TEleFun;   {Referencia a la función de _ref(). Se guarda para evitar
                         hacer búsqueda innecesaria. Notar que esta es una referencia
                         hacia el generador de código que se llenará posteriormente.}
 protected //Expressions
@@ -1499,6 +1497,26 @@ begin
   //Not found
   exit(nil);
 end;
+function TCompilerBase.MethodGetPtr(const OpType: TEleTypeDec): TEleFunBase;
+{Find the method _getptr() in the class "OpType".
+If not a matching method found, returns NIL.
+}
+var
+  xfun: TEleFunBase;
+  att: TxpElement;
+begin
+  if OpType.elements = nil then exit(nil);
+  for att in OpType.elements do begin
+    if att.idClass in [eleFunc, eleFuncDec] then begin  //Only for methods
+      xfun := TEleFunBase(att);
+      if (xfun.getset = gsGetInPtr) then begin
+        exit(xfun);
+      end;
+    end;
+  end;
+  //Not found
+  exit(nil);
+end;
 function  TCompilerBase.proc_addr(): TEleExpress;
 {
 The operand read is added to the syntax tree, as a TxpEleExpress element, and returned
@@ -1834,22 +1852,30 @@ begin
     end else if token='^' then begin
       Next;    //Takes "^".
       //Validates if operand is pointer
-      if Op1.Typ.catType <> tctPointer then begin
-        GenError('Expression is not a pointer type.');
-        exit(nil);
-      end;
+//      if Op1.Typ.catType <> tctPointer then begin
+//        GenError('Expression is not a pointer type.');
+//        exit(nil);
+//      end;
       //Put element as parent of Op1
-      eleMeth := CreateExpression('_ref', typWord, otFunct, GetSrcPos);
+      eleMeth := CreateExpression('', typNull, otFunct, GetSrcPos);
       eleMeth.fcallOp := true;  //Come from an operator.
       TreeElems.InsertParentTo(eleMeth, Op1);
-      TreeElems.OpenElement(eleMeth);  //Set parent to method to allow add parameters as child node.
-      //Get reference to system function _ref().
-      opr1 := sifFunRef;  //Take direct reference to avoid call to TreeElems.FindFirst('_ref')
-      eleMeth.name := opr1.name;
-      eleMeth.rfun := opr1;  //Method for operator.
-      //eleMeth.Typ  := opr1.retType;  //Complete returning type.
-      eleMeth.Typ := Op1.Typ.ptrType;  //Complete with the type referenced.
-      AddCallerToFromCurr(opr1);     //Mark as used.
+      TreeElems.OpenElement(eleMeth);  //Set parent.
+      //Lets find de getptr() method.
+      {This could be a _setptr(), if follows an operator ":=", but we don't know here,
+      so we always generates a _getptr(). If it's neccesary we will change it later.}
+      xfun := MethodGetPtr(Op1.Typ);
+      if xfun=nil then begin
+        //There are not fields for this type
+        GenError('Undefined method _getptr() for type %s', [Op1.Typ.name]);
+        exit(nil);
+      end;
+      //Complete node "eleMeth" now we have the "xfun" created.
+      eleMeth.name := xfun.name;     //Update name.
+      eleMeth.Typ  := xfun.retType;  //Update return type.
+      eleMeth.rfun := xfun;          //Set function
+//      eleMeth.Typ := Op1.Typ.ptrType;  //Complete with the type referenced.
+//      AddCallerToFromCurr(opr1);     //Mark as used.
 //      //Prepare next operation.
 //      Op1 := eleMeth;   //Set new operand 1
 //      TreeElems.OpenElement(Op1.Parent);  //Returns to parent (sentence).
@@ -1860,7 +1886,7 @@ begin
       //Creates element in AST.
       eleMeth := CreateExpression('', typNull, otFunct, GetSrcPos);
       TreeElems.InsertParentTo(eleMeth, Op1);
-      TreeElems.OpenElement(eleMeth);  //Set parent to add parameters.
+      TreeElems.OpenElement(eleMeth);  //Set parent to add parameter (item index).
       //Capture index parameter.
       OpIdx := GetExpression(0);
       if HayError then exit(nil);
