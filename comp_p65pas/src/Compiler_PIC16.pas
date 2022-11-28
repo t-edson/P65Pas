@@ -1007,7 +1007,8 @@ actuales del compilador.
 Se debe llamar despues de llamar a pic.GenHex(), para que se actualicen las variables
 minUsed y maxUsed.}
 const
-  SPACEPAD = '      ';
+  SPACEPAD = '          ';
+  ASMPAD = '  ';
   LSPC = length(SPACEPAD);
 
   procedure VariablesLocation(lins: TStrings; ExcUnused: boolean);
@@ -1086,7 +1087,7 @@ begin
           lins.Add(comLin);
         end;
         lin := pic.GetASMlineAt(i, IncAddress, IncAddress, asmIncComm, incVarName, nBytes);
-        lins.Add(SPACEPAD + lin);
+        lins.Add(ASMPAD + lin);
         i := i + nBytes;   //Incrementa a siguiente instrucción
       end;
     end;

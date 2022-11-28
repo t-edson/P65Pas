@@ -428,7 +428,7 @@ begin
   //Columnas visibles
   COL_ADD := UtilGrilla.AgrEncab('Address' , 50).idx;
   COL_NAM := UtilGrilla.AgrEncab('Name' , 100).idx;
-  COL_VAL := UtilGrilla.AgrEncab('Value' , 50, -1, taRightJustify).idx;
+  COL_VAL := UtilGrilla.AgrEncab('Value' , 70, -1, taRightJustify).idx;
   UtilGrilla.FinEncab;
   UtilGrilla.OnFinEditarCelda := @UtilGrillaFinEditarCelda;
   Utilgrilla.OnLeerColorFondo := @UtilGrillaLeerColorFondo;
