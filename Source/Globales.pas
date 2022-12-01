@@ -24,6 +24,8 @@ var
    MostrarError: Boolean;   //Bandera para mostrar mensajes de error.
    ActConsSeg  : Boolean;   //Activa consultas en segundo plano
 
+   LastProject: string; // the name of the file that will be compiled
+
 /////////////// Campos para manejo del diccionario //////////
 var
  curLanguage: string;  //identificador del lenguaje

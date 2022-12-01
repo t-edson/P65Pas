@@ -351,7 +351,7 @@ begin
      nod := nod.GetNextSibling
    end;
    //Not found.
-   MsgExc(TXT_NOTAC_FILEXP);
+   //MsgExc(TXT_NOTAC_FILEXP);
 end;
 function TfraFileExplor.NodRuta(rut: string): TExplorNode;
 //Devuelve el nodo a partir de la ruta completa

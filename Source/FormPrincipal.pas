@@ -427,7 +427,7 @@ begin
   fraLeftPanel.fraFileExplor1.OnRenamedFile   := @FileExplor1_RenamedFile;
   fraLeftPanel.Init(Config.currPath);
   //Termina configuración
-  fraEditView1.InitMenuRecents(mnRecents, Config.fraCfgSynEdit.ArcRecientes);  //inicia el menú "Recientes"
+  fraEditView1.InitMenuRecents(mnRecents, Config.fraCfgSynEdit.ArcRecientes, 15);  //inicia el menú "Recientes"
   //Primera actualización.
   ConfigChanged;
   //Carga últimos archivos abiertos
