@@ -475,6 +475,7 @@ begin
   s:=cfgFile.Asoc_Int ('winWidth'    , @winWidth , 800);
   s:=cfgFile.Asoc_Int ('winHeight'   , @winHeight, 600);
   s:=cfgFile.Asoc_Enum('winState'    , @winState , SizeOf(TWindowState), 0);
+  cfgFile.Asoc_Str ('LastProject'    , @LastProject, '');
 
   ///////// Configuraciones del Temas
   s:=cfgFile.Asoc_Str('themLoaded'  ,@themLoaded, txtThemLoaded, '');

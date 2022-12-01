@@ -1145,7 +1145,7 @@ begin
 
   //configuración del editor
   sedit.Options:=[eoBracketHighlight];  //quita la línea vertical
-  sedit.Options := sedit.Options - [eoSmartTabs];
+  sedit.Options := sedit.Options + [eoSmartTabs];
   sedit.Options := sedit.Options - [eoTrimTrailingSpaces];
   sedit.Options := sedit.Options + [eoKeepCaretX];
   sedit.Options := sedit.Options + [eoTabIndent];  //permite indentar con <Tab>

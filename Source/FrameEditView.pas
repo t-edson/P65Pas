@@ -18,6 +18,8 @@ type
     imgBookMarks: TImageList;
     ImgCompletion: TImageList;
     lblBackground: TLabel;
+    mnSetProject: TMenuItem;
+    N1: TMenuItem;
     mnLocFileExp: TMenuItem;
     mnCloseOthers: TMenuItem;
     mnCloseAll: TMenuItem;
@@ -37,6 +39,7 @@ type
     procedure mnCloseTabClick(Sender: TObject);
     procedure mnLocFileExpClick(Sender: TObject);
     procedure mnNewTabClick(Sender: TObject);
+    procedure mnSetProjectClick(Sender: TObject);
     procedure UpDown1Click(Sender: TObject; Button: TUDBtnType);
   private  //Métodos para dibujo de las lenguetas
     xIniTabs : integer;  //Coordenada inicial desde donde se dibujan las lenguetas
@@ -82,6 +85,7 @@ type
     property TabIndex: integer read FTabIndex write SetTabIndex;   //panel actualmente activo
     function Count: integer;
     function ActiveEditor: TSynEditor;
+    function SearchEditor(filname: string): TSynEditor;
     function SearchEditorIdx(filname: string): integer;
     function SearchEditorIdxByTab(tabName: string): integer;
     procedure ChangeFileName(editIdx: integer; filName0: string);
@@ -212,6 +216,7 @@ var
   y1, y2, alto, xr1, xr2, xrmin, xrmin2, i: Integer;
   r: TRect;
   colBorde: TColor;
+  IsProject: boolean;
 begin
   //Lee coordenadas horizontales
   x1 := edi.x1;
@@ -219,11 +224,14 @@ begin
   alto := panel1.Height;
   y1 := 0;
   y2 := y1 + alto;
+  IsProject := edi.FileName = LastProject;
   //Inicia dibujo
   cv := Panel1.canvas;
   cv.Font.Size:= FONT_TAB_SIZE;
-  cv.Font.Color := clBlack;
-  cv.Font.Color := coltex;   //Color de texto
+  //cv.Font.Color := clBlack;
+  if IsProject then cv.Font.Color := clBlue
+               else cv.Font.Color := coltex;   //Color de texto
+  cv.Font.Bold := IsProject;
   //Fija Línea y color de fondo
   cv.Pen.Style := psSolid;
   cv.Pen.Width := 1;
@@ -258,7 +266,8 @@ begin
   cv.Pixels[xr1,3] := colBorde;
   cv.Pixels[xr2,3] := colBorde;
   //Dibuja ícono
-  ImgCompletion.Draw(cv, x1+4, 4, 7);
+  if IsProject then ImgCompletion.Draw(cv, x1+4, 4, 0)
+               else ImgCompletion.Draw(cv, x1+4, 4, 7);
   //Elimina objetos y pone texto
   r.Top := y1;
   r.Bottom := y2;
@@ -620,6 +629,19 @@ begin
   if editors.Count = 0 then exit(nil);
   i := TabIndex;
   Result := editors[i];   //Solo funcionará si no se desordenan las enguetas
+end;
+function TfraEditView.SearchEditor(filname: string): TSynEditor;
+{Busca entre las ventanas abiertas al archivo indicado, y devuelve el índice del
+editor. Si no lo encuentra devuelve -1}
+var
+  ed: TSynEditor;
+  i: integer;
+begin
+  for i:=0 to editors.Count-1 do begin
+    ed := editors[i];
+    if Upcase(ed.FileName) = UpCase(filname) then exit(ed);
+  end;
+  exit(nil);
 end;
 function TfraEditView.SearchEditorIdx(filname: string): integer;
 {Busca entre las ventanas abiertas al archivo indicado, y devuelve el índice del
@@ -1082,6 +1104,12 @@ begin
   NewPasFile;
   SetFocus;
 end;
+
+procedure TfraEditView.mnSetProjectClick(Sender: TObject);
+begin
+  LastProject := ActiveEditor.FileName;
+end;
+
 procedure TfraEditView.UpDown1Click(Sender: TObject; Button: TUDBtnType);
 begin
   case Button of

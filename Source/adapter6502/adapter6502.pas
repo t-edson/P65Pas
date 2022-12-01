@@ -375,7 +375,8 @@ var
 begin
   //Validación de editor disponible
   if fraEditView1.ActiveEditor=nil then exit;
-  ed := fraEditView1.ActiveEditor;
+  ed := fraEditView1.SearchEditor(LastProject);
+  if ed = nil then ed := fraEditView1.ActiveEditor;
   if ed.FileName='' then begin
     //No tiene nombre. No debería pasar, porque "fraEditView1" debe generar nombres.
     if fraEditView1.SaveAsDialog then begin
