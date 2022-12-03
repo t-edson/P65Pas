@@ -18,6 +18,7 @@ type
     imgBookMarks: TImageList;
     ImgCompletion: TImageList;
     lblBackground: TLabel;
+    mnClearProject: TMenuItem;
     mnSetProject: TMenuItem;
     N1: TMenuItem;
     mnLocFileExp: TMenuItem;
@@ -34,6 +35,7 @@ type
     SynPluginSyncroEdit1: TSynPluginSyncroEdit;
     UpDown1: TUpDown;
     procedure FrameResize(Sender: TObject);
+    procedure mnClearProjectClick(Sender: TObject);
     procedure mnCloseOthersClick(Sender: TObject);
     procedure mnCloseAllClick(Sender: TObject);
     procedure mnCloseTabClick(Sender: TObject);
@@ -1099,6 +1101,13 @@ begin
   lblBackground.Left := self.Width div 2 - lblBackground.Width div 2;
   lblBackground.Top := self.Height div 2;
 end;
+
+procedure TfraEditView.mnClearProjectClick(Sender: TObject);
+begin
+  LastProject := '';
+  Panel1Paint(Self);
+end;
+
 procedure TfraEditView.mnNewTabClick(Sender: TObject);
 begin
   NewPasFile;
@@ -1108,6 +1117,7 @@ end;
 procedure TfraEditView.mnSetProjectClick(Sender: TObject);
 begin
   LastProject := ActiveEditor.FileName;
+  Panel1Paint(Self);
 end;
 
 procedure TfraEditView.UpDown1Click(Sender: TObject; Button: TUDBtnType);
