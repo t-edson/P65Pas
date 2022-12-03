@@ -1011,7 +1011,7 @@ begin
   //Pasa la directiva, para que al retornar a este contexto se siga con la Sgte. instrucción.
   Next;
   //Abrimos el nuevo archivo y nos quedamos en ese contexto.
-  if FileSize(filPath)> 1024 then begin
+  if FileSize(filPath)> 10240 then begin
     GenError('Too big file' + filPath);
     exit;
   end;
