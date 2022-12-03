@@ -5933,6 +5933,7 @@ procedure TGenCod.SIF_GetPointer(fun: TEleExpress);
 {SIF for getting the value referenced by pointer: p^}
 var
   ptrVar: TEleExpress;
+  ad1, ad2, lab1: Integer;
 begin
   ptrVar := TEleExpress(fun.elements[0]);
   //Process special modes of the compiler.
@@ -5946,15 +5947,66 @@ begin
   end else if ptrVar.sto = stRamFix then begin
     //Applied to a variable pointer. The normal.
     if ptrVar.allocated then begin
-      SetFunExpres(fun);
-      //_LDX(idx.add);    //******* Depende del tipo que retorna
-      //_LDAx(offset);
+      SetFunExpres(fun);  //Devolvemos expresión
+      if ptrVar.Typ.ptrType = typByte then begin          //^byte
+        if ptrVar.add<256 then begin   //In zero page
+          _LDXi(0);
+          pic.codAsm(i_LDA, aIndirecX, ptrVar.add);
+        end else begin
+          _LDA(ptrVar.add);    //LSB
+          _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+          _LDA(ptrVar.add+1);  //MSB
+          _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
+          _LDA($FFFF);  //Self modified code
+          //Complete the addresses.
+          pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+          pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+          pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+          pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+        end;
+      end else if ptrVar.Typ.ptrType = typWord then begin  //^word
+        if ptrVar.add<256 then begin   //In zero page
+          _LDYi(1);
+          pic.codAsm(i_LDA, aIndirecY, ptrVar.add);
+          _STA(H.addr);
+          _DEY;
+          pic.codAsm(i_LDA, aIndirecY, ptrVar.add);
+        end else begin
+          //Load in WR
+          _LDA(ptrVar.add);    //LSB
+          _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+          _LDX(ptrVar.add+1);  //MSB
+          _STX($FFFF); ad2:=pic.iRam-2;  //Save address.
+          //Start a two-cicles loop to load in H,A
+          _LDYi(1);  //Initial offset
+      _LABEL_pre(lab1);
+          _STA(H.addr);  //A->H. Used at the second iteration.
+          pic.codAsm(i_LDA, aAbsolutY, $FFFF);  //Instruction will be overwritten
+          //Complete the addresses.
+          pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+          pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+          pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+          pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+          //Complete the loop
+          _DEY;
+          _BPL_pre(lab1);  //Stop loop when negative
+        end;
+      end else begin  //*** Faltaría implementar los tipos complejos como arreglos
+          {Aquí lo que podemos hacer es simplemente generar una variable "stRamVar"
+          que sería lo más universal para cualquier tipo de datos. De hecho no se
+          necesitaría ya stRamVarOf o stRamReg, porque la regla sería es que todos
+          los puteros se "dereferencien" en stRegister (como se hacen con los tipos
+          byte y word), pero que se dejen en "stRamVar" para los otros tipos.
+          Ya las rutina correspondientes verían como interpretar el "stRamVar",
+          como las asignaciones.}
+          GenError('Cannot get ^%s.', [ptrVar.Typ.ptrType.name], fun.srcDec);
+      end;
     end else begin
       {No allocated. }
-      GenError('Pointer variable %s not allocated.', [ptrVar.name]);
+      GenError('Pointer variable %s not allocated.', [ptrVar.name], fun.srcDec);
     end;
   end else begin
-    GenError('Cannot get variable pointed by storage %s.', [ptrVar.StoAsStr]);
+    GenError('Cannot get variable pointed by storage %s.', [ptrVar.StoAsStr], fun.srcDec);
   end;
 end;
 procedure TGenCod.DefineShortPointer(etyp: TEleTypeDec);

@@ -1874,12 +1874,6 @@ begin
       eleMeth.name := xfun.name;     //Update name.
       eleMeth.Typ  := xfun.retType;  //Update return type.
       eleMeth.rfun := xfun;          //Set function
-//      eleMeth.Typ := Op1.Typ.ptrType;  //Complete with the type referenced.
-//      AddCallerToFromCurr(opr1);     //Mark as used.
-//      //Prepare next operation.
-//      Op1 := eleMeth;   //Set new operand 1
-//      TreeElems.OpenElement(Op1.Parent);  //Returns to parent (sentence).
-//      SkipWhites;  //Prepares for take next operator.
     end else begin  //Must be '['.
       //We have: array[something].
       Next;    //Takes "[".
