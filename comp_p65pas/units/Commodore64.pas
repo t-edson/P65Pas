@@ -4,7 +4,8 @@ Include some routines from the Kernal.
 Based on information of: http://sta.c64.org/cbm64krnfunc.html
 }
 {$ORG $0801}
-{$BOOTLOADER C64}
+//{$BOOTLOADER C64}
+{$BOOTLOADER $0C, $08, $0A, $00, $9E, 'COD_5A', $00, $00, $00}
 {$STRING NULL_TERMINATED}
 //Set RAM for Commodore 64
 {$SET_STATE_RAM '0000-00F6:SFR'} //Zero page
