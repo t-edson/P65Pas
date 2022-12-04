@@ -6087,9 +6087,10 @@ begin
   CreateInBOMethod(etyp, '-', '_sub', typWord, etyp, @SIF_pointer_sub_word);
   CreateInBOMethod(etyp, '-', '_sub', typByte, etyp, @SIF_pointer_sub_byte);
 
-  CreateInBOMethod(etyp, '+=', '_aadd', typWord, etyp, @SIF_word_aadd_word);
-  CreateInBOMethod(etyp, '+=', '_aadd', typByte, etyp, @SIF_word_aadd_byte);
-
+  f := CreateInBOMethod(etyp, '+=', '_aadd', typWord, etyp, @SIF_word_aadd_word);
+  f.getset := gsSetOther;
+  f := CreateInBOMethod(etyp, '+=', '_aadd', typByte, etyp, @SIF_word_aadd_byte);
+  f.getset := gsSetOther;
 //  etyp.CreateUnaryPostOperator('^',6, 'deref', @SIF_derefPointer);  //dereferencia
 end;
 procedure TGenCod.DefineObject(etyp: TEleTypeDec);
@@ -6385,7 +6386,9 @@ begin
   f:=CreateInBOMethod(typByte, ':=', '_set', typByte, typNull, @SIF_byte_asig_byte);
   f.getset := gsSetInSimple;
   f:=CreateInBOMethod(typByte, '+=', '_aadd',typByte, typNull, @SIF_byte_aadd_byte);
+  f.getset := gsSetOther;
   f:=CreateInBOMethod(typByte, '-=', '_asub',typByte, typNull, @SIF_byte_asub_byte);
+  f.getset := gsSetOther;
   f:=CreateInBOMethod(typByte, '+' , '_add', typByte, typByte, @SIF_byte_add_byte);
   f.fConmutat := true;
   f:=CreateInBOMethod(typByte, '+' , '_add', typWord, typWord, @SIF_byte_add_word);
@@ -6436,8 +6439,11 @@ begin
   f:=CreateInBOMethod(typWord, ':=' ,'_set' , typByte, typNull, @SIF_word_asig_byte);
   f.getset := gsSetInSimple;
   f:=CreateInBOMethod(typWord, '+=' ,'_aadd', typByte, typNull, @SIF_word_aadd_byte);
+  f.getset := gsSetOther;
   f:=CreateInBOMethod(typWord, '+=' ,'_aadd', typWord, typNull, @SIF_word_aadd_word);
+  f.getset := gsSetOther;
   f:=CreateInBOMethod(typWord, '-=' ,'_asub', typByte, typNull, @SIF_word_asub_byte);
+  f.getset := gsSetOther;
   f:=CreateInBOMethod(typWord, '+'  , '_add', typByte, typWord, @SIF_word_add_byte);
   f.fConmutat := true;
   f:=CreateInBOMethod(typWord, '+'  , '_add', typWord, typWord, @SIF_word_add_word);

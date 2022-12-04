@@ -2462,8 +2462,8 @@ begin
         if ex.opType = otFunct then begin
           //Should be a procedure or function call.
           if ex.fcallOp then begin   //It comes from an operator
-            //Only assignment ':=' is allowed.
-            if ex.name <> '_set' then begin
+            //Only assignments ':=', '+=' ,'-=' is allowed.
+            if not (ex.rfun.getset in [gsSetInItem,gsSetInPtr,gsSetInSimple,gsSetOther]) then begin
                GenError('Expressions are not allowed here.', ex.srcDec);
             end;
           end else begin             //Should be a function call
