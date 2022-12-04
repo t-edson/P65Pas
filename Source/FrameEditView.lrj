@@ -5,5 +5,5 @@
 {"hash":158729548,"name":"tfraeditview.mncloseall.caption","sourcebytes":[67,108,111,115,101,32,38,65,108,108],"value":"Close &All"},
 {"hash":22838259,"name":"tfraeditview.mncloseothers.caption","sourcebytes":[67,108,111,115,101,32,38,79,116,104,101,114,115],"value":"Close &Others"},
 {"hash":188155330,"name":"tfraeditview.mnlocfileexp.caption","sourcebytes":[38,76,111,99,97,116,101,32,111,110,32,70,105,108,101,32,69,120,112,108,111,114,101,114],"value":"&Locate on File Explorer"},
-{"hash":42358437,"name":"tfraeditview.mnsetproject.caption","sourcebytes":[85,115,101,32,97,115,32,77,105,97,110,32,102,105,108,101],"value":"Use as Mian file"}
+{"hash":134777909,"name":"tfraeditview.mnsetproject.caption","sourcebytes":[85,115,101,32,97,115,32,38,77,97,105,110,32,102,105,108,101],"value":"Use as &Main file"}
 ]}
