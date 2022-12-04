@@ -272,8 +272,16 @@ object fraEditView: TfraEditView
       Caption = '-'
     end
     object mnSetProject: TMenuItem
+<<<<<<< HEAD
       Caption = 'Use as &Main file'
+=======
+      Caption = 'Set as Main file'
+>>>>>>> 80aeca506304f693d3f9706295489ac41a2d7ef4
       OnClick = mnSetProjectClick
+    end
+    object mnClearProject: TMenuItem
+      Caption = 'Clear Main file'
+      OnClick = mnClearProjectClick
     end
   end
   object imgBookMarks: TImageList
