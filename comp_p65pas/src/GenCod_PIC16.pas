@@ -6052,8 +6052,12 @@ begin
     stConst: begin
       _LDAi(parB.val);
       if ptrVar.add<256 then begin       //In zero page.
-        _LDXi(0);
-        pic.codAsm(i_STA, aIndirecX, ptrVar.add);
+        if cpuMode = cpu65C02 then begin
+          _STAin(ptrVar.add);
+        end else begin
+          _LDXi(0);
+          _STAinx(ptrVar.add);
+        end;
       end else begin
         _LDX(ptrVar.add);    //LSB
         _STX($FFFF); ad1:=pic.iRam-2;  //Save address.
@@ -6070,8 +6074,12 @@ begin
     stRamFix: begin
       _LDA(parB.add);
       if ptrVar.add<256 then begin       //In zero page.
-        _LDXi(0);
-        pic.codAsm(i_STA, aIndirecX, ptrVar.add);
+        if cpuMode = cpu65C02 then begin
+          _STAin(ptrVar.add);
+        end else begin
+          _LDXi(0);
+          _STAinx(ptrVar.add);
+        end;
       end else begin
         _LDX(ptrVar.add);    //LSB
         _STX($FFFF); ad1:=pic.iRam-2;  //Save address.
@@ -6087,8 +6095,12 @@ begin
     end;
     stRegister, stRegistA: begin  //Already in A
       if ptrVar.add<256 then begin       //In zero page.
-        _LDXi(0);
-        pic.codAsm(i_STA, aIndirecX, ptrVar.add);
+        if cpuMode = cpu65C02 then begin
+          _STAin(ptrVar.add);
+        end else begin
+          _LDXi(0);
+          _STAinx(ptrVar.add);
+        end;
       end else begin
         _LDX(ptrVar.add);    //LSB
         _STX($FFFF); ad1:=pic.iRam-2;  //Save address.
@@ -6105,8 +6117,12 @@ begin
     stRegistX: begin
       _TXA;
       if ptrVar.add<256 then begin       //In zero page.
-        _LDXi(0);
-        pic.codAsm(i_STA, aIndirecX, ptrVar.add);
+        if cpuMode = cpu65C02 then begin
+          _STAin(ptrVar.add);
+        end else begin
+          _LDXi(0);
+          _STAinx(ptrVar.add);
+        end;
       end else begin
         _LDX(ptrVar.add);    //LSB
         _STX($FFFF); ad1:=pic.iRam-2;  //Save address.
@@ -6123,8 +6139,12 @@ begin
     stRegistY: begin
       _TYA;
       if ptrVar.add<256 then begin       //In zero page.
-        _LDXi(0);
-        pic.codAsm(i_STA, aIndirecX, ptrVar.add);
+        if cpuMode = cpu65C02 then begin
+          _STAin(ptrVar.add);
+        end else begin
+          _LDXi(0);
+          _STAinx(ptrVar.add);
+        end;
       end else begin
         _LDX(ptrVar.add);    //LSB
         _STX($FFFF); ad1:=pic.iRam-2;  //Save address.

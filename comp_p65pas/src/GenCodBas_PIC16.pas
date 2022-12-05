@@ -175,6 +175,8 @@ type
     procedure _SBC(const addr: integer);  //SBC Absolute/Zeropage
     procedure _STA(addr: integer);        //STA Absolute/Zeropage
     procedure _STAx(addr: integer; forceAbsolute: boolean = false);       //STA X indexed
+    procedure _STAin(const addr: integer); // STA (zp)
+    procedure _STAinx(const addr: integer); // STA (zp,X)
     procedure _STX(const addr: integer);  //STX Absolute/Zeropage
     procedure _STY(const addr: integer);  //STY Absolute/Zeropage
     procedure _TAX;
@@ -1012,6 +1014,14 @@ begin
       pic.codAsm(i_STA, aAbsolutX, addr);
     end;
   end;
+end;
+procedure TGenCodBas._STAin(const addr: integer);
+begin
+  pic.codAsm(i_STA, aIndirecZP, addr);
+end;
+procedure TGenCodBas._STAinx(const addr: integer);
+begin
+  pic.codAsm(i_STA, aIndirecX, addr);
 end;
 procedure TGenCodBas._STX(const addr: integer);  //STA Absolute/Zeropage
 begin
