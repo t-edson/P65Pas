@@ -976,6 +976,7 @@ declaración de nuevos tipos, como: ARRAY OF ...}
 var
   decStyle: TTypDeclarStyle;
   TypeCreated: boolean;
+  par: TxpElement;
 begin
   if TreeElems.curCodCont=nil then TreeElems.curCodCont:=typByte; {Ver comentario de AnalyzeVarDeclar()}
   Result := GetTypeDeclar(decStyle, TypeCreated);  //lee tipo
@@ -983,7 +984,9 @@ begin
   if TypeCreated then begin
     //No se permiten declaraciones elaboradas aquí.
     GenError('Only simple types expected here.');
-    Result.Destroy;  //Destroy the new type created
+    par := Result.Parent;
+    par.elements.Remove(Result);
+    //Result.Destroy;  //Destroy the new type created
     Result := nil;
   end;
 end;
@@ -1899,7 +1902,13 @@ begin
     GenError(ER_VARIAB_EXPEC);
     exit;
   end;
-  if (idx.Typ<>typByte) and (idx.Typ<>typWord) then begin
+  if idx.Typ=typByte then begin
+    //Allowed
+  end else if idx.Typ=typWord then begin
+    //Allowed
+  end else if (idx.Typ.catType=tctPointer) then begin
+    //Allowed
+  end else begin
     GenError(ER_ONL_BYT_WORD);
     exit;
   end;
@@ -2216,7 +2225,7 @@ begin
   if HayError then exit;
   //Aplica estructura IF REPEAT.
   if not CaptureStr('TO') then exit;
-  if idx.Typ = typWord then begin
+  if idx.Typ.size = 2 then begin   //Word or pointer index
     //Solo aplica estructura WHILE
     TreeElems.AddElementSentAndOpen(GetSrcPos, sntWHILE);  //Open sentence
 

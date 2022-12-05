@@ -1927,11 +1927,11 @@ var
 begin
   ProcComments;
   //------------- Get first operand ---------------
-  if tokType = tkOperator then begin
-    if token = '@' then begin  //Address
-      //This an special SIF, not declared in System, because it's easier process it here.
-      exit(proc_addr);
-    end;
+  if token = '@' then begin  //Address
+    //This an special SIF, not declared in System, because it's easier process it here.
+    Op1 := proc_addr();
+    if HayError then exit(nil);
+  end else if tokType = tkOperator then begin
     //First token should be an pre-unary operator.
     p := GetCtxState;     //In the case we need to go back.
     oprPos := GetSrcPos;  //Save start position for operator.

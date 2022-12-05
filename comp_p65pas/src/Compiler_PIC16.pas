@@ -562,15 +562,30 @@ begin
       Op1 := TEleExpress(_set.elements[0]);  //Takes assigment target.
       Op2 := TEleExpress(_set.elements[1]);  //Takes assigment target.
       if (Op1.opType = otFunct) and (Op1.rfun.getset = gsGetInItem) then begin
-        //It's an _set() for a _getitem() INLINE assignment for array.
+        //It's a _set() for a _getitem() INLINE assignment for array.
         if Op1.rfun.funset = nil then begin
           GenError('Cannot locate the setter for this type.');
+          exit;
         end;
         //Convert getter() to setter().
         Op1.rfun := Op1.rfun.funset;     //Must be gsSetInItem
         Op1.name := Op1.rfun.name;
         Op1.Typ  := Op1.rfun.retType;
         //Move third parameter to _setitem() and locate it at the Top
+        TreeElems.ChangeParentTo(Op1, Op2);
+        TreeElems.ChangeParentTo(Op1.Parent.Parent, Op1);
+        _set.Parent.elements.Remove(_set);
+      end else if (Op1.opType = otFunct) and (Op1.rfun.getset = gsGetInPtr) then begin
+        //It's a _set() for a _getptr() INLINE assignment for POINTER.
+        if Op1.rfun.funset = nil then begin
+          GenError('Cannot locate the setter for this type.');
+          exit;
+        end;
+        //Convert getter() to setter().
+        Op1.rfun := Op1.rfun.funset;     //Must be gsSetInPtr;
+        Op1.name := Op1.rfun.name;
+        Op1.Typ  := Op1.rfun.retType;
+        //Move third parameter to _setptr() and locate it at the Top
         TreeElems.ChangeParentTo(Op1, Op2);
         TreeElems.ChangeParentTo(Op1.Parent.Parent, Op1);
         _set.Parent.elements.Remove(_set);

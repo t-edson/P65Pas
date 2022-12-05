@@ -70,6 +70,7 @@ type
       function FillArray(parray: TEleExpress): boolean;
       procedure SIF_bool_or_bool(fun: TEleExpress);
       procedure SIF_GetPointer(fun: TEleExpress);
+      procedure SIF_SetPointer(fun: TEleExpress);
       procedure SNF_byt_mul_byt_16(fun: TEleFunBase);
       procedure Invert_A_to_A;
       procedure Copy_Z_to_A;
@@ -2741,7 +2742,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_word(fun, parA.val + parB.val);
+      if parA.evaluated and parB.evaluated then begin
+         SetFunConst_word(fun, parA.val + parB.val);
+      end;
     end;
     exit;
   end;
@@ -6003,10 +6006,190 @@ begin
       end;
     end else begin
       {No allocated. }
-      GenError('Pointer variable %s not allocated.', [ptrVar.name], fun.srcDec);
+      GenError('Variable %s not allocated.', [ptrVar.name], fun.srcDec);
     end;
   end else begin
     GenError('Cannot get variable pointed by storage %s.', [ptrVar.StoAsStr], fun.srcDec);
+  end;
+end;
+procedure TGenCod.SIF_SetPointer(fun: TEleExpress);
+{Setter for asignent values to pointer: p^ := }
+var
+  ptrVar, parB: TEleExpress;
+  ptrTypeTo: TEleTypeDec;
+  parA_add: DWord;
+  offset: Word;
+  ad1, ad2: Integer;
+begin
+  SetFunNull(fun);  //In Pascal an assigment doesn't return type.
+  ptrVar := TEleExpress(fun.elements[0]);
+  parB := TEleExpress(fun.elements[1]);  //Value to assign.
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    exit;  //We don't calculate constant here.
+  end;
+  if ptrVar.sto <> stRamFix then begin
+    //Applied to a variable array.
+    GenError('Cannot write to this pointer: %s.', [ptrVar.name]);
+    exit;
+  end;
+  if not ptrVar.allocated then begin
+    GenError('Variable not allocated: %s.', [ptrVar.name]);
+    exit;
+  end;
+  ptrTypeTo := ptrVar.Typ.ptrType;    //Must be the same as parB.typ.
+  if ptrTypeTo.size<>parB.Typ.size then begin
+    {Type compatibility is done in Analysis but can be relaxed because of some BOR like
+    word := byte.}
+    //genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+    genError('Incompatible types', parB.srcDec);
+    exit;
+  end;
+  //Generate code
+  if ptrTypeTo.IsByteSize then begin     //^byte
+    offset := ptrVar.add;
+    case parB.Sto of
+    stConst: begin
+      _LDAi(parB.val);
+      if ptrVar.add<256 then begin       //In zero page.
+        _LDXi(0);
+        pic.codAsm(i_STA, aIndirecX, ptrVar.add);
+      end else begin
+        _LDX(ptrVar.add);    //LSB
+        _STX($FFFF); ad1:=pic.iRam-2;  //Save address.
+        _LDX(ptrVar.add+1);  //MSB
+        _STX($FFFF); ad2:=pic.iRam-2;  //Save address.
+        _STA($FFFF);  //Self modified code
+        //Complete the addresses.
+        pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+        pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+        pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+        pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+      end;
+    end;
+    stRamFix: begin
+      _LDA(parB.add);
+      if ptrVar.add<256 then begin       //In zero page.
+        _LDXi(0);
+        pic.codAsm(i_STA, aIndirecX, ptrVar.add);
+      end else begin
+        _LDX(ptrVar.add);    //LSB
+        _STX($FFFF); ad1:=pic.iRam-2;  //Save address.
+        _LDX(ptrVar.add+1);  //MSB
+        _STX($FFFF); ad2:=pic.iRam-2;  //Save address.
+        _STA($FFFF);  //Self modified code
+        //Complete the addresses.
+        pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+        pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+        pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+        pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+      end;
+    end;
+    stRegister, stRegistA: begin  //Already in A
+      if ptrVar.add<256 then begin       //In zero page.
+        _LDXi(0);
+        pic.codAsm(i_STA, aIndirecX, ptrVar.add);
+      end else begin
+        _LDX(ptrVar.add);    //LSB
+        _STX($FFFF); ad1:=pic.iRam-2;  //Save address.
+        _LDX(ptrVar.add+1);  //MSB
+        _STX($FFFF); ad2:=pic.iRam-2;  //Save address.
+        _STA($FFFF);  //Self modified code
+        //Complete the addresses.
+        pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+        pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+        pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+        pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+      end;
+    end;
+    stRegistX: begin
+      _TXA;
+      if ptrVar.add<256 then begin       //In zero page.
+        _LDXi(0);
+        pic.codAsm(i_STA, aIndirecX, ptrVar.add);
+      end else begin
+        _LDX(ptrVar.add);    //LSB
+        _STX($FFFF); ad1:=pic.iRam-2;  //Save address.
+        _LDX(ptrVar.add+1);  //MSB
+        _STX($FFFF); ad2:=pic.iRam-2;  //Save address.
+        _STA($FFFF);  //Self modified code
+        //Complete the addresses.
+        pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+        pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+        pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+        pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+      end;
+    end;
+    stRegistY: begin
+      _TYA;
+      if ptrVar.add<256 then begin       //In zero page.
+        _LDXi(0);
+        pic.codAsm(i_STA, aIndirecX, ptrVar.add);
+      end else begin
+        _LDX(ptrVar.add);    //LSB
+        _STX($FFFF); ad1:=pic.iRam-2;  //Save address.
+        _LDX(ptrVar.add+1);  //MSB
+        _STX($FFFF); ad2:=pic.iRam-2;  //Save address.
+        _STA($FFFF);  //Self modified code
+        //Complete the addresses.
+        pic.ram[ad1].value   := (pic.iRam-2) and $FF;
+        pic.ram[ad1+1].value := (pic.iRam-2) >> 8;
+        pic.ram[ad2].value   := (pic.iRam-1) and $ff;
+        pic.ram[ad2+1].value := (pic.iRam-1) >> 8;
+      end;
+    end;
+    else
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    end;
+//  end else if ptrTypeTo.IsWordSize then begin
+//    offset := ptrVar.add;
+//    case parB.Sto of
+//    stConst : begin
+//      _LDA(idx.add);  // Load index.
+//      _ASLa;          // A*2->A. Only work for A<128
+//      _TAX;           //Move to X
+//      if parB.valL = parB.valH then begin  //Lucky case
+//        _LDAi(parB.valL);
+//        _STAx(offset);
+//        _STAx(offset+1);
+//      end else begin  //General case
+//        _LDAi(parB.valL);
+//        _STAx(offset);
+//        _LDAi(parB.valH);
+//        _STAx(offset+1);
+//      end;
+//    end;
+//    stRamFix: begin
+//      _LDA(idx.add);  // Load index.
+//      _ASLa;          // A*2->A. Only work for A<128
+//      _TAX;           //Move to X
+//      _LDA(parB.add);
+//      _STAx(offset);
+//      _LDA(parB.add+1);
+//      _STAx(offset+1);
+//    end;
+//    stRegister: begin   //se asume que se tiene en A
+//      _TAY;     //Save A
+//      _LDA(idx.add);  // Load index.
+//      _ASLa;          // A*2->A. Only work for A<128
+//      _TAX;           //Move to X
+//      if offset<255 then begin
+//        pic.codAsm(i_STY, aZeroPagX, offset);
+//        _LDA(H.addr);
+//        pic.codAsm(i_STY, aZeroPagX, offset+1);
+//      end else begin
+//        _TYA;           //Restore A
+//        _STAx(offset);
+//        _LDA(H.addr);
+//        _STAx(offset+1);
+//      end;
+//    end;
+//    else
+//      genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+//      exit;
+//    end;
+  end else begin
+    GenError('Cannot set item to this pointer type: %s.', [ptrVar.Typ.name]);
   end;
 end;
 procedure TGenCod.DefineShortPointer(etyp: TEleTypeDec);
@@ -6077,6 +6260,9 @@ begin
   //Getter and setter
   f1 := CreateInUOMethod(etyp, '', '_getptr', etyp.ptrType, @SIF_GetPointer);
   f1.getset := gsGetInPtr;
+  f := CreateInUOMethod(etyp, '', '_setptr', etyp.ptrType, @SIF_SetPointer);
+  f.getset := gsSetInPtr;
+  f1.funset := f;
 
   CreateInBOMethod(etyp, '=','_equ', typWord, typBool, @SIF_word_equal_word);
   CreateInBOMethod(etyp, '=','_equ', etyp, typBool, @SIF_word_equal_word);
