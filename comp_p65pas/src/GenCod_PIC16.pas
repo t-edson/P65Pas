@@ -6043,8 +6043,6 @@ procedure TGenCod.SIF_SetPointer(fun: TEleExpress);
 var
   ptrVar, parB: TEleExpress;
   ptrTypeTo: TEleTypeDec;
-  parA_add: DWord;
-  offset: Word;
   ad1, ad2: Integer;
 begin
   SetFunNull(fun);  //In Pascal an assigment doesn't return type.
@@ -6073,7 +6071,6 @@ begin
   end;
   //Generate code
   if ptrTypeTo.IsByteSize then begin     //^byte
-    offset := ptrVar.add;
     case parB.Sto of
     stConst: begin
       _LDAi(parB.val);
@@ -6188,47 +6185,15 @@ begin
       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
     end;
 //  end else if ptrTypeTo.IsWordSize then begin
-//    offset := ptrVar.add;
 //    case parB.Sto of
 //    stConst : begin
-//      _LDA(idx.add);  // Load index.
-//      _ASLa;          // A*2->A. Only work for A<128
-//      _TAX;           //Move to X
-//      if parB.valL = parB.valH then begin  //Lucky case
-//        _LDAi(parB.valL);
-//        _STAx(offset);
-//        _STAx(offset+1);
-//      end else begin  //General case
-//        _LDAi(parB.valL);
-//        _STAx(offset);
-//        _LDAi(parB.valH);
-//        _STAx(offset+1);
-//      end;
+
 //    end;
 //    stRamFix: begin
-//      _LDA(idx.add);  // Load index.
-//      _ASLa;          // A*2->A. Only work for A<128
-//      _TAX;           //Move to X
-//      _LDA(parB.add);
-//      _STAx(offset);
-//      _LDA(parB.add+1);
-//      _STAx(offset+1);
+
 //    end;
 //    stRegister: begin   //se asume que se tiene en A
-//      _TAY;     //Save A
-//      _LDA(idx.add);  // Load index.
-//      _ASLa;          // A*2->A. Only work for A<128
-//      _TAX;           //Move to X
-//      if offset<255 then begin
-//        pic.codAsm(i_STY, aZeroPagX, offset);
-//        _LDA(H.addr);
-//        pic.codAsm(i_STY, aZeroPagX, offset+1);
-//      end else begin
-//        _TYA;           //Restore A
-//        _STAx(offset);
-//        _LDA(H.addr);
-//        _STAx(offset+1);
-//      end;
+
 //    end;
 //    else
 //      genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
