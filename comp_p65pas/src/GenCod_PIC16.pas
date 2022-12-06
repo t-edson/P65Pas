@@ -71,6 +71,7 @@ type
       procedure SIF_bool_or_bool(fun: TEleExpress);
       procedure SIF_GetPointer(fun: TEleExpress);
       procedure SIF_SetPointer(fun: TEleExpress);
+      procedure SIF_word_mul_byte(fun: TEleExpress);
       procedure SNF_byt_mul_byt_16(fun: TEleFunBase);
       procedure Invert_A_to_A;
       procedure Copy_Z_to_A;
@@ -3115,6 +3116,31 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
   end;
 end;
+procedure TGenCod.SIF_word_mul_byte(fun: TEleExpress);
+var
+  parA, parB: TEleExpress;
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_word(fun, parA.val * parB.val);
+      end;
+    end;
+    exit;
+  end;
+  //Code generation
+  case stoOperation(parA, parB) of
+  stConst_Const: begin
+    SetFunConst_word(fun, parA.val*parB.val);  //puede generar error
+  end;
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+  end;
+end;
 procedure TGenCod.SIF_word_aadd_byte(fun: TEleExpress);
 var
   L1, L2: integer;
@@ -6055,8 +6081,8 @@ begin
         if cpuMode = cpu65C02 then begin
           _STAin(ptrVar.add);
         end else begin
-          _LDXi(0);
-          _STAinx(ptrVar.add);
+          _LDYi(0);
+          _STAiny(ptrVar.add);
         end;
       end else begin
         _LDX(ptrVar.add);    //LSB
@@ -6077,8 +6103,8 @@ begin
         if cpuMode = cpu65C02 then begin
           _STAin(ptrVar.add);
         end else begin
-          _LDXi(0);
-          _STAinx(ptrVar.add);
+          _LDYi(0);
+          _STAiny(ptrVar.add);
         end;
       end else begin
         _LDX(ptrVar.add);    //LSB
@@ -6098,8 +6124,8 @@ begin
         if cpuMode = cpu65C02 then begin
           _STAin(ptrVar.add);
         end else begin
-          _LDXi(0);
-          _STAinx(ptrVar.add);
+          _LDYi(0);
+          _STAiny(ptrVar.add);
         end;
       end else begin
         _LDX(ptrVar.add);    //LSB
@@ -6120,8 +6146,8 @@ begin
         if cpuMode = cpu65C02 then begin
           _STAin(ptrVar.add);
         end else begin
-          _LDXi(0);
-          _STAinx(ptrVar.add);
+          _LDYi(0);
+          _STAiny(ptrVar.add);
         end;
       end else begin
         _LDX(ptrVar.add);    //LSB
@@ -6142,8 +6168,8 @@ begin
         if cpuMode = cpu65C02 then begin
           _STAin(ptrVar.add);
         end else begin
-          _LDXi(0);
-          _STAinx(ptrVar.add);
+          _LDYi(0);
+          _STAiny(ptrVar.add);
         end;
       end else begin
         _LDX(ptrVar.add);    //LSB
@@ -6292,6 +6318,7 @@ begin
 
   CreateInBOMethod(etyp, '-', '_sub', typWord, etyp, @SIF_pointer_sub_word);
   CreateInBOMethod(etyp, '-', '_sub', typByte, etyp, @SIF_pointer_sub_byte);
+  CreateInBOMethod(etyp, '<=', '_lequ', etyp, typBool, @SIF_word_lequ_word);
 
   f := CreateInBOMethod(etyp, '+=', '_aadd', typWord, etyp, @SIF_word_aadd_word);
   f.getset := gsSetOther;
@@ -6657,6 +6684,9 @@ begin
   AddCallerToFrom(H, f.bodyNode);  //Dependency
   f:=CreateInBOMethod(typWord, '-'  , '_sub', typByte, typWord, @SIF_word_sub_byte);
   f:=CreateInBOMethod(typWord, '-'  , '_sub', typWord, typWord, @SIF_word_sub_word);
+  f:=CreateInBOMethod(typWord, '*' , '_mul', typByte, typWord, @SIF_word_mul_byte);
+  f.fConmutat := true;
+
   f:=CreateInBOMethod(typWord, 'AND', '_and', typByte, typByte, @SIF_word_and_byte);
   f.fConmutat := true;
   f:=CreateInBOMethod(typWord, 'AND', '_and', typWord, typWord, @SIF_word_and_word);

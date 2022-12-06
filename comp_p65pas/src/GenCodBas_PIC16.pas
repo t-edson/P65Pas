@@ -153,6 +153,9 @@ type
     procedure _LDAi(const k: word);
     procedure _LDA(const addr: integer);
     procedure _LDAx(const addr: word);
+    procedure _LDAin(const addr: word);
+    procedure _LDAinx(const addr: word);
+    procedure _LDAiny(const addr: word);
     procedure _LDXi(const k: word);
     procedure _LDX(const addr: integer);
     procedure _LDYi(const k: word);
@@ -177,6 +180,7 @@ type
     procedure _STAx(addr: integer; forceAbsolute: boolean = false);       //STA X indexed
     procedure _STAin(const addr: integer); // STA (zp)
     procedure _STAinx(const addr: integer); // STA (zp,X)
+    procedure _STAiny(const addr: integer); // STA (zp),Y
     procedure _STX(const addr: integer);  //STX Absolute/Zeropage
     procedure _STY(const addr: integer);  //STY Absolute/Zeropage
     procedure _TAX;
@@ -891,6 +895,18 @@ begin
     pic.codAsm(i_LDA, aAbsolutX, addr);
   end;
 end;
+procedure TGenCodBas._LDAin(const addr: word);
+begin
+  pic.codAsm(i_LDA, aIndirecZP, addr);
+end;
+procedure TGenCodBas._LDAinx(const addr: word);
+begin
+  pic.codAsm(i_LDA, aIndirecX, addr);
+end;
+procedure TGenCodBas._LDAiny(const addr: word);
+begin
+  pic.codAsm(i_LDA, aIndirecY, addr);
+end;
 procedure TGenCodBas._LDXi(const k: word); inline;  //LDA Immediate
 begin
   pic.codAsm(i_LDX, aImmediat, k);
@@ -1022,6 +1038,10 @@ end;
 procedure TGenCodBas._STAinx(const addr: integer);
 begin
   pic.codAsm(i_STA, aIndirecX, addr);
+end;
+procedure TGenCodBas._STAiny(const addr: integer);
+begin
+  pic.codAsm(i_STA, aIndirecY, addr);
 end;
 procedure TGenCodBas._STX(const addr: integer);  //STA Absolute/Zeropage
 begin
