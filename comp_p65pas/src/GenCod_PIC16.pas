@@ -72,6 +72,7 @@ type
       procedure SIF_GetPointer(fun: TEleExpress);
       procedure SIF_SetPointer(fun: TEleExpress);
       procedure SIF_word_mul_byte(fun: TEleExpress);
+      procedure SIF_word_or_word(fun: TEleExpress);
       procedure SNF_byt_mul_byt_16(fun: TEleFunBase);
       procedure Invert_A_to_A;
       procedure Copy_Z_to_A;
@@ -3587,7 +3588,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_byte(fun, parA.val and parB.val);
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_byte(fun, parA.val and parB.val);
+      end;
     end;
     exit;
   end;
@@ -3642,7 +3645,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_word(fun, parA.val and parB.val);
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_word(fun, parA.val and parB.val);
+      end;
     end;
     exit;
   end;
@@ -3713,6 +3718,96 @@ begin
     _PHA;  //Save LSB result
     _LDA(parB.addH);
     _AND(H.addr);
+    _STA(H.addr);
+    _PLA;  //Restore LSB result in A
+  end;
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+  end;
+end;
+procedure TGenCod.SIF_word_or_word(fun: TEleExpress);
+var
+  parA, parB: TEleExpress;
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_word(fun, parA.val or parB.val);
+      end;
+    end;
+    exit;
+  end;
+  //Code generation
+  case stoOperation(parA, parB) of
+  stConst_Const: begin
+    //Optimiza
+    SetFunConst_word(fun, parA.val or parB.val);
+  end;
+  stConst_RamFix: begin
+    SetFunExpres(fun);
+    _LDAi(parA.valH);
+    _ORA(parB.addH);
+    _STA(H.addr);
+    _LDAi(parA.valL);
+    _ORA(parB.addL);
+  end;
+  stConst_Regist: begin  //la expresión p2 se evaluó y esta en (A)
+    SetFunExpres(fun);
+    //_LDAi(parA.valL);
+    _ORAi(parA.valL);
+    _PHA;  //Save LSB result
+    _LDAi(parA.valH);
+    _ORA(H.addr);
+    _STA(H.addr);
+    _PLA;  //Restore LSB result in A
+  end;
+  stRamFix_Const: begin
+    SetFunExpres(fun);
+    _LDA(parA.addH);
+    _ORAi(parB.valH);
+    _STA(H.addr);
+    _LDA(parA.addL);
+    _ORAi(parB.valL);
+  end;
+  stRamFix_RamFix:begin
+    SetFunExpres(fun);
+    _LDA(parA.addH);
+    _ORA(parB.addH);
+    _STA(H.addr);
+    _LDA(parA.addL);
+    _ORA(parB.addL);
+  end;
+  stRamFix_Regist:begin   //la expresión p2 se evaluó y esta en (_H,A)
+    SetFunExpres(fun);
+    //_LDAi(parA.valL);
+    _ORA(parA.addL);
+    _PHA;  //Save LSB result
+    _LDA(parA.addH);
+    _ORA(H.addr);
+    _STA(H.addr);
+    _PLA;  //Restore LSB result in A
+  end;
+  stRegist_Const: begin   //la expresión p1 se evaluó y esta en (H,A)
+    SetFunExpres(fun);
+    //_LDAi(parA.valL);
+    _ORAi(parB.valL);
+    _PHA;  //Save LSB result
+    _LDAi(parB.valH);
+    _ORA(H.addr);
+    _STA(H.addr);
+    _PLA;  //Restore LSB result in A
+  end;
+  stRegist_RamFix:begin  //la expresión p1 se evaluó y esta en (H,A)
+    SetFunExpres(fun);
+    //_LDAi(parA.valL);
+    _ORA(parB.addL);
+    _PHA;  //Save LSB result
+    _LDA(parB.addH);
+    _ORA(H.addr);
     _STA(H.addr);
     _PLA;  //Restore LSB result in A
   end;
@@ -6655,6 +6750,8 @@ begin
   f:=CreateInBOMethod(typWord, 'AND', '_and', typByte, typByte, @SIF_word_and_byte);
   f.fConmutat := true;
   f:=CreateInBOMethod(typWord, 'AND', '_and', typWord, typWord, @SIF_word_and_word);
+  f.fConmutat := true;
+  f:=CreateInBOMethod(typWord, 'OR' , '_or' , typWord, typWord, @SIF_word_or_word);
   f.fConmutat := true;
   f:=CreateInUOMethod(typWord, 'NOT', '_not', typWord, @SIF_not_word, opkUnaryPre);
   f:=CreateInBOMethod(typWord, '>>' , '_shr', typByte, typWord, @SIF_word_shr_byte); { TODO : Definir bien la precedencia }

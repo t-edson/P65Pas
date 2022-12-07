@@ -1443,7 +1443,7 @@ begin
       if (xfun.oper = Op) and
          (length(xfun.pars) = 2) and  //Binary methods have 2 parameters.
          CompatibleTypes(xfun.pars[1].typ, OpType2) {(xfun.pars[1].typ = OpType2)}
-      then begin  //Second parameter muts match OpyYpe2
+      then begin  //Second parameter must match OpType2
         exit(xfun);
       end;
     end;
