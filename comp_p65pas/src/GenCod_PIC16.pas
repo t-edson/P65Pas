@@ -3139,7 +3139,7 @@ begin
     SetFunConst_word(fun, parA.val*parB.val);  //puede generar error
   end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SIF_word_aadd_byte(fun: TEleExpress);
