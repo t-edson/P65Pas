@@ -6138,7 +6138,7 @@ procedure TGenCod.SIF_SetPointer(fun: TEleExpress);
 var
   ptrVar, parB: TEleExpress;
   ptrTypeTo: TEleTypeDec;
-  ad1, ad2: Integer;
+  ad1, ad2, lab: Integer;
 begin
   SetFunNull(fun);  //In Pascal an assigment doesn't return type.
   ptrVar := TEleExpress(fun.elements[0]);
@@ -6279,21 +6279,43 @@ begin
     else
       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
     end;
-//  end else if ptrTypeTo.IsWordSize then begin
-//    case parB.Sto of
-//    stConst : begin
+  end else if ptrTypeTo.IsWordSize then begin
+    case parB.Sto of
+    stConst : begin
+      if ptrVar.add<256 then begin
+        _LDYi(0);
+        _LDAi(parB.valL);
+        _STAiny(ptrVar.add);
+        _INY;
+        if parB.valH <> parB.valL then
+          _LDAi(parB.valH);
+        _STAiny(ptrVar.add);
+      end else begin
+        _LDA(ptrVar.addL);
+        _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+        _LDA(ptrVar.addH);
+        _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
 
-//    end;
+        _LDXi(1);
+        _LDAi(parB.valH);
+  _LABEL_pre(lab);
+        _STAx($FFFF); _SELFMODw(ad1, ad2);
+        if parB.valH <> parB.valL then
+          _LDAi(parB.valL);
+        _DEX;
+        _BPL_pre(lab);
+      end;
+    end;
 //    stRamFix: begin
 
 //    end;
 //    stRegister: begin   //se asume que se tiene en A
 
 //    end;
-//    else
-//      genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
-//      exit;
-//    end;
+    else
+      genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+      exit;
+    end;
   end else begin
     GenError('Cannot set item to this pointer type: %s.', [ptrVar.Typ.name]);
   end;
