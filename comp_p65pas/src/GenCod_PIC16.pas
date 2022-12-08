@@ -4085,54 +4085,51 @@ end;
 //////////// Pointer operations
 procedure TGenCod.SIF_pointer_add_byte(fun: TEleExpress);
 {Implementa la suma de un puntero (a cualquier tipo) y un byte.}
-//var
-//  ptrType: TxpEleType;
+var
+  ptrType: TEleTypeDec;
+  parA: TEleExpress;
 begin
-//  {Guarda la referencia al tipo puntero, porque:
-//  * Se supone que este tipo lo define el usuario y no se tiene predefinido.
-//  * Se podrían definir varios tipos de puntero) así que no se tiene una
-//  referencia estática
-//  * Conviene manejar esto de forma dinámica para dar flexibilidad al lenguaje}
-//  ptrType := parA.Typ;   //Se ahce aquí porque después puede cambiar parA.
-//  //La suma de un puntero y un byte, se procesa, como una suma de bytes
-//  SIF_word_add_byte(fun);
-//  //Devuelve byte, oero debe devolver el tipo puntero
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  ptrType := parA.Typ;   //Se hace aquí porque después puede cambiar parA.
+  //La suma de un puntero y un byte, se procesa, como una suma de word y byte.
+  SIF_word_add_byte(fun);
+  //Devuelve word, pero debe devolver el tipo puntero.
+  fun.Typ := ptrType;
 //  case fun.Sto of
-//  stConsta: res.SetAsConst(ptrType);  //Cambia el tipo a la constante
+//  stConst: res.SetAsConst(ptrType);  //Cambia el tipo a la constante
 //  //stRamFix: res.SetAsVariab(res.rVar);
 //  {Si devuelve variable, solo hay dos posibilidades:
 //   1. Que sea la variable puntero, por lo que no hay nada que hacer, porque ya tiene
 //      el tipo puntero.
-//   2. Que sea la variable byte (y que la otra era constante puntero 0 = nil). En este
-//      caso devolverá el tipo Byte, lo cual tiene cierto sentido.}
+//   2. Que sea la variable Word (y que la otra era constante puntero 0 = nil). En este
+//      caso devolverá el tipo Word, lo cual tiene cierto sentido.}
 //  stRegister: res.SetAsExpres(ptrType);  //Cambia tipo a la expresión
 //  end;
 end;
 procedure TGenCod.SIF_pointer_add_word(fun: TEleExpress);
 {Implementa la suma de un puntero (a cualquier tipo) y un byte.}
-//var
-//  ptrType: TxpEleType;
+var
+  ptrType: TEleTypeDec;
+  parA: TEleExpress;
 begin
-//  {Guarda la referencia al tipo puntero, porque:
-//  * Se supone que este tipo lo define el usuario y no se tiene predefinido.
-//  * Se podrían definir varios tipos de puntero) así que no se tiene una
-//  referencia estática
-//  * Conviene manejar esto de forma dinámica para dar flexibilidad al lenguaje}
-//  ptrType := parA.Typ;   //Se hace aquí porque después puede cambiar parA.
-//  //La suma de un puntero y un byte, se procesa, como una suma de bytes
-//  SIF_word_add_word(fun);
-//  //Devuelve byte, oero debe devolver el tipo puntero
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  ptrType := parA.Typ;   //Se hace aquí porque después puede cambiar parA.
+  //La suma de un puntero y un word, se procesa, como una suma de words.
+  SIF_word_add_word(fun);
+  //Devuelve word, pero debe devolver el tipo puntero.
+  fun.Typ := ptrType;
 //  case fun.Sto of
-//  stConsta: res.SetAsConst(ptrType);  //Cambia el tipo a la constante
+//  stConst: res.SetAsConst(ptrType);  //Cambia el tipo a la constante
 //  //stRamFix: res.SetAsVariab(res.rVar);
 //  {Si devuelve variable, solo hay dos posibilidades:
 //   1. Que sea la variable puntero, por lo que no hay nada que hacer, porque ya tiene
 //      el tipo puntero.
-//   2. Que sea la variable byte (y que la otra era constante puntero 0 = nil). En este
-//      caso devolverá el tipo Byte, lo cual tiene cierto sentido.}
+//   2. Que sea la variable Word (y que la otra era constante puntero 0 = nil). En este
+//      caso devolverá el tipo Word, lo cual tiene cierto sentido.}
 //  stRegister: res.SetAsExpres(ptrType);  //Cambia tipo a la expresión
 //  end;
 end;
+
 procedure TGenCod.SIF_pointer_sub_byte(fun: TEleExpress);
 {Implementa la resta de un puntero (a cualquier tipo) y un byte.}
 //var
