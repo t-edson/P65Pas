@@ -110,6 +110,7 @@ type
     function _CLOCK: integer;
     procedure _LABEL_post(igoto: integer);
     procedure _LABEL_pre(out curAddr: integer);
+    procedure _SELFMODw(a1, a2: integer);
     //Instrucciones simples
     procedure _ADCi(const k: word);  //immidiate
     procedure _ADC(const addr: integer);  //Absolute/Zeropage
@@ -654,6 +655,14 @@ procedure TGenCodBas._LABEL_pre(out curAddr: integer);
 begin
   curAddr := pic.iRam;
 end;
+procedure TGenCodBas._SELFMODw(a1, a2: integer);
+begin
+  pic.ram[a1].value   := (pic.iRam-2) and $FF;
+  pic.ram[a1+1].value := (pic.iRam-2) >> 8;
+  pic.ram[a2].value   := (pic.iRam-1) and $ff;
+  pic.ram[a2+1].value := (pic.iRam-1) >> 8;
+end;
+
 {%REGION Instrucciones simples}
 procedure TGenCodBas._ADCi(const k: word);
 begin
