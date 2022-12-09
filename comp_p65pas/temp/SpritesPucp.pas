@@ -18,7 +18,7 @@ var
 begin
   //CLRSCR;
   sprPucp := SPRITEPUCP;  //Copia datos del sprite
-  spritePointers[0] := (@sprPucp) >> 6;  //apunta Sprite 0 a sprPucp.
+//  spritePointers[0] := (@sprPucp) >> 6;  //apunta Sprite 0 a sprPucp.
   spritePosition[0].x := 50;
   spritePosition[0].y := 50;
   spriteColor[0]:=2; 

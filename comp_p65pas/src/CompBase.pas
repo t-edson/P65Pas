@@ -1824,12 +1824,18 @@ begin
         eleMeth.SetConstRef(xcon);
         Next;   //Take the identifier
       end else if field.idClass = eleVarDec then begin
+        //Must be a variable field.
         xvar := TEleVarDec(field);
         //AddCallerTo(field);  { TODO : ¿Es necesario? }
-        eleMeth := CreateExpression(token, xvar.typ, otVariab, GetSrcPos);
-        //TreeElems.AddElementAndOpen(eleMeth);
-        TreeElems.InsertParentTo(eleMeth, Op1);
-        Next;   //Take the identifier
+        if (Op1.opType=otVariab) and (Op1.rvar.storage=stRamFix) and (xvar.storage = stRamFix) then begin
+          eleMeth := CreateExpression(token, xvar.typ, otVariab, GetSrcPos);
+          //TreeElems.AddElementAndOpen(eleMeth);
+          TreeElems.InsertParentTo(eleMeth, Op1);
+          Next;   //Take the identifier
+        end else begin
+          GenError('Not supported storage %s for %s ', [xvar.stoStr, xvar.name]);
+          exit(nil);
+        end;
       end else if field.idClass in [eleFuncDec, eleFunc] then begin
         {It's a method, but we don't know what's the exact method because
         could be different overload versions.}

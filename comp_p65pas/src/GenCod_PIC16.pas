@@ -1944,7 +1944,7 @@ begin
       _STY(parA.add);
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else if parA.Sto in [stRegistA, stRegister] then begin
     //Assignment to register A
@@ -1964,7 +1964,7 @@ begin
       _TYA;
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else if parA.Sto = stRegistX then begin
     //Assignment to register X
@@ -1985,7 +1985,7 @@ begin
       _TAX;
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else if parA.Sto = stRegistY then begin
     //Assignment to register Y
@@ -2006,7 +2006,7 @@ begin
     stRegistY: begin //Already in Y
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else begin
     GenError('Cannot assign to this Operand.'); exit;
@@ -2052,7 +2052,7 @@ begin
        end;
      end;
      else
-       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
      end;
   end else if parA.Sto = stRamFix then begin
     case parB.Sto of
@@ -2076,7 +2076,7 @@ begin
       _AND(parA.add)
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else if parA.Sto in [stRegister, stRegistA] then begin
     case parB.Sto of
@@ -2093,7 +2093,7 @@ begin
       _AND(parB.add)
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
@@ -2139,7 +2139,7 @@ begin
        end;
      end;
      else
-       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
      end;
   end else if parA.Sto = stRamFix then begin
     case parB.Sto of
@@ -2163,7 +2163,7 @@ begin
       _ORA(parA.add)
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else if parA.Sto in [stRegister, stRegistA] then begin
     case parB.Sto of
@@ -2180,7 +2180,7 @@ begin
       _ORA(parB.add);
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
@@ -2227,7 +2227,7 @@ begin
        end;
      end;
      else
-       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
      end;
   end else if parA.Sto = stRamFix then begin
     case parB.Sto of
@@ -2255,7 +2255,7 @@ begin
       Invert_A_to_A;
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else if parA.Sto in [stRegister, stRegistA] then begin
     case parB.Sto of
@@ -2276,7 +2276,7 @@ begin
         Invert_A_to_A;
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
@@ -2323,7 +2323,7 @@ begin
        end;
      end;
      else
-       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+       GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
      end;
   end else if parA.Sto = stRamFix then begin
     case parB.Sto of
@@ -2349,7 +2349,7 @@ begin
       _EOR(parA.add);  //Compare OperA with OperB. Result in A, inverted.
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else if parA.Sto in [stRegister, stRegistA] then begin
     case parB.Sto of
@@ -2369,7 +2369,7 @@ begin
         _EOR(parB.add);  //Compare OperA with OperB
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
@@ -2478,7 +2478,7 @@ begin
     stRegister: begin  //Already in H,A
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else begin
     GenError('Cannot assign to this Operand.', parA.srcDec); exit;
@@ -2621,7 +2621,7 @@ _LABEL_post(sale0);
     Copy_Z_to_A;  //Logic inverted
   end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SIF_word_equal_byte(fun: TEleExpress);
@@ -2671,7 +2671,7 @@ begin
       Copy_Z_to_A;
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end else if parA.Sto = stRamFix then begin
     _LDA(parA.addH);
@@ -2697,7 +2697,7 @@ begin
       _CMP(parA.addL);
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
       exit;
     end;
 _LABEL_post(sale0);
@@ -2719,7 +2719,7 @@ _LABEL_post(sale0);
       _CMP(parB.add);
     end;
     else
-      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      GenError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
 _LABEL_post(sale0);
     Copy_Z_to_A;
@@ -2839,7 +2839,7 @@ begin
     _TXA;
   end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SIF_word_add_word(fun: TEleExpress);
@@ -2946,7 +2946,7 @@ begin
     _TXA;  //Restore A
   end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SIF_word_sub_byte(fun: TEleExpress);
@@ -3030,7 +3030,7 @@ begin
 //    _SBC(parB.add);
 //  end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SIF_word_sub_word(fun: TEleExpress);
@@ -3114,7 +3114,7 @@ begin
 //    _SBC(parB.add);
 //  end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SIF_word_mul_byte(fun: TEleExpress);
@@ -3548,7 +3548,7 @@ _LABEL_post(L1B);
     Copy_C_to_A; //Copy C to A
   end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SIF_word_less_word(fun: TEleExpress);
@@ -3632,7 +3632,7 @@ begin
     _AND(parB.addL);
   end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SIF_word_and_word(fun: TEleExpress);
@@ -3722,7 +3722,7 @@ begin
     _PLA;  //Restore LSB result in A
   end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SIF_word_or_word(fun: TEleExpress);
@@ -3812,7 +3812,7 @@ begin
     _PLA;  //Restore LSB result in A
   end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SNF_word_shift_l(fun: TEleFunBase);
@@ -3976,7 +3976,7 @@ _LABEL_pre(L1);
     end;
   end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 procedure TGenCod.SIF_word_shr_byte(fun: TEleExpress);
@@ -4020,7 +4020,7 @@ begin
         _ROR(H.addr);
       end;
     end else begin
-      genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end;
 //  stRamFix_RamFix:begin
@@ -4035,13 +4035,13 @@ begin
         _ROR(H.addr);
       end;
     end else begin
-      genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+      genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
     end;
   end;
 //  stRegist_RamFix:begin  //la expresión p1 se evaluó y esta en (H,A)
 //  end;
   else
-    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)]);
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
 {%ENDREGION}
