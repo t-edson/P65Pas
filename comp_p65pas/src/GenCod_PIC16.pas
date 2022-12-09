@@ -6278,7 +6278,7 @@ begin
     end;
   end else if ptrTypeTo.IsWordSize then begin
     case parB.Sto of
-    stConst : begin
+    stConst : begin                    // w^ := $1234;
       if ptrVar.add<256 then begin
         _LDYi(0);
         _LDAi(parB.valL);
@@ -6292,7 +6292,6 @@ begin
         _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
         _LDA(ptrVar.addH);
         _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
-
         _LDXi(1);
         _LDAi(parB.valH);
   _LABEL_pre(lab);
@@ -6303,12 +6302,44 @@ begin
         _BPL_pre(lab);
       end;
     end;
-//    stRamFix: begin
-
-//    end;
-//    stRegister: begin   //se asume que se tiene en A
-
-//    end;
+    stRamFix: begin                    // w^ := word_var;
+      if ptrVar.add<256 then begin
+        _LDYi(0);
+        _LDA(parB.addL);
+        _STAiny(ptrVar.add);
+        _INY;
+        if parB.addH <> parB.addL then
+          _LDA(parB.addH);
+        _STAiny(ptrVar.add);
+      end else begin
+        _LDA(ptrVar.addL);
+        _STA($FFFF); ad1:=pic.iRam-2;  //Save address.
+        _LDA(ptrVar.addH);
+        _STA($FFFF); ad2:=pic.iRam-2;  //Save address.
+        _LDXi(1);
+        _LDA(parB.addH);
+  _LABEL_pre(lab);
+        _STAx($FFFF); _SELFMODw(ad1, ad2);
+        if parB.addH <> parB.addL then
+          _LDA(parB.addL);
+        _DEX;
+        _BPL_pre(lab);
+      end;
+    end;
+    stRegister: begin                  // w^ := expression; of type word (_H/A)
+        _LDX(ptrVar.addL);
+        _STX($FFFF); ad1:=pic.iRam-2;  //Save address.
+        _LDX(ptrVar.addH);
+        _STX($FFFF); ad2:=pic.iRam-2;  //Save address.
+        _LDXi(1);
+        _TAY;
+        _LDA(H.addr);
+  _LABEL_pre(lab);
+        _STAx($FFFF); _SELFMODw(ad1, ad2);
+        _TYA;
+        _DEX;
+        _BPL_pre(lab);
+    end;
     else
       genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
       exit;
