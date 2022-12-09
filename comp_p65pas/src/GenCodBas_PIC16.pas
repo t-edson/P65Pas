@@ -111,6 +111,7 @@ type
     procedure _LABEL_post(igoto: integer);
     procedure _LABEL_pre(out curAddr: integer);
     procedure _SELFMODw(a1, a2: integer);
+    procedure _SELFMODb(a1, a2: integer);
     //Instrucciones simples
     procedure _ADCi(const k: word);  //immidiate
     procedure _ADC(const addr: integer);  //Absolute/Zeropage
@@ -661,6 +662,11 @@ begin
   pic.ram[a1+1].value := (pic.iRam-2) >> 8;
   pic.ram[a2].value   := (pic.iRam-1) and $ff;
   pic.ram[a2+1].value := (pic.iRam-1) >> 8;
+end;
+procedure TGenCodBas._SELFMODb(a1, a2: integer);
+begin
+  pic.ram[a1].value := pic.iRam-2; //Should be < 256, otherwise check condition: if pic.iram<
+  pic.ram[a2].value := pic.iRam-1; //Should be < 256, otherwise check condition: if pic.iram<
 end;
 
 {%REGION Instrucciones simples}
