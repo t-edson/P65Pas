@@ -1828,12 +1828,16 @@ begin
         xvar := TEleVarDec(field);
         //AddCallerTo(field);  { TODO : ¿Es necesario? }
         if (Op1.opType=otVariab) and (Op1.rvar.storage=stRamFix) and (xvar.storage = stRamFix) then begin
+          //Two commons variables:  var1.var2
+//          xvar.addr := Op1.rvar.addr + xvar.addr;    //Fix address
+//          Op1.Typ := xvar.typ;
+//          Op1.rvar := xvar;
           eleMeth := CreateExpression(token, xvar.typ, otVariab, GetSrcPos);
           //TreeElems.AddElementAndOpen(eleMeth);
           TreeElems.InsertParentTo(eleMeth, Op1);
           Next;   //Take the identifier
         end else begin
-          GenError('Not supported storage %s for %s ', [xvar.stoStr, xvar.name]);
+          GenError('Not supported this operand %s: ', [Op1.name + '.' + field.name]);
           exit(nil);
         end;
       end else if field.idClass in [eleFuncDec, eleFunc] then begin
