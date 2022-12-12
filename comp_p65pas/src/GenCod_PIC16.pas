@@ -4116,7 +4116,7 @@ begin
   ptrType := parA.Typ;   //Se hace aquí porque después puede cambiar parA.
   //La suma de un puntero y un word, se procesa, como una suma de words.
   SIF_word_add_word(fun);
-  //Devuelve word, pero debe devolver el tipo puntero.
+  //Returns word. MUst returns pointer type.
   fun.Typ := ptrType;
 //  case fun.Sto of
 //  stConst: res.SetAsConst(ptrType);  //Cambia el tipo a la constante
@@ -4132,12 +4132,16 @@ end;
 
 procedure TGenCod.SIF_pointer_sub_byte(fun: TEleExpress);
 {Implementa la resta de un puntero (a cualquier tipo) y un byte.}
-//var
-//  ptrType: TxpEleType;
+var
+  ptrType: TEleTypeDec;
+  parA: TEleExpress;
 begin
-//  //La explicación es la misma que para la rutina SIF_pointer_add_byte
-//  ptrType := parA.Typ;
-//  SIF_word_sub_byte(fun);
+  //Similar to SIF_pointer_add_byte
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  ptrType := parA.Typ;
+  SIF_word_sub_byte(fun);
+  //Returns word. MUst returns pointer type.
+  fun.Typ := ptrType;
 //  case fun.Sto of
 //  stConsta  : res.SetAsConst(ptrType);
 //  stRegister: res.SetAsExpres(ptrType);
@@ -4145,12 +4149,16 @@ begin
 end;
 procedure TGenCod.SIF_pointer_sub_word(fun: TEleExpress);
 {Implementa la resta de un puntero (a cualquier tipo) y un byte.}
-//var
-//  ptrType: TxpEleType;
+var
+  ptrType: TEleTypeDec;
+  parA: TEleExpress;
 begin
-//  //La explicación es la misma que para la rutina SIF_pointer_add_byte
-//  ptrType := parA.Typ;
-//  SIF_word_sub_word(fun);
+  //Similar to SIF_pointer_add_word
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  ptrType := parA.Typ;
+  SIF_word_sub_word(fun);
+  //Returns word. MUst returns pointer type.
+  fun.Typ := ptrType;
 //  case fun.Sto of
 //  stConsta  : res.SetAsConst(ptrType);
 //  stRegister: res.SetAsExpres(ptrType);

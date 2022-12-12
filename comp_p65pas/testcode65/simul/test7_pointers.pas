@@ -112,19 +112,14 @@ begin
   pb := pb + b;
   if pb = $1010 then Pass; else Fail end;  
 
-  //pb := $1345;
-  //pb := pb - $345;
-  //STROUT(@'SUBSTRACTION WITH A CONST:');
-  //if pb = $1000 then Pass; else Fail end;  
+  pb := $1345;
+  pb := pb - $345;
+  if pb = $1000 then Pass; else Fail end;  
 
-  //pb := $1010;
-  //pb := pb - b;
-  //STROUT(@'SUBSTRACTION WITH A VAR:');
-  //if pb = $1010 then Pass; else Fail end;
-  
-  //pb := $1234;
-  //STROUT(@'SUBSTRACTION WITH A CONST:');
-  //if pb <= $1234 then Pass; else Fail end;  
+  pb := $1010;
+  pb := pb - b;
+  STROUT(@'SUBSTRACTION WITH A VAR:');
+  if pb = $1010 then Pass; else Fail end;
     
   pb := $FF0;
   pb += $10;
