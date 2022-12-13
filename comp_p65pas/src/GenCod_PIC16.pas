@@ -2889,6 +2889,7 @@ begin
       SetFunVariab(fun, parA.rVar);
     end else if parB.valL = 0 then begin
       SetFunExpres(fun);
+      _CLC;
       _LDA(parA.addH);
       _ADCi(parB.valH);
       _STA(H.addr);
@@ -3416,8 +3417,62 @@ _LABEL_post(L1);
   end;
 end;
 procedure TGenCod.SIF_word_asub_word(fun: TEleExpress);
+  var
+    parA, parB: TEleExpress;
+    L1: integer;
 begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+    //Process special modes of the compiler.
+  if compMod = cmConsEval then exit;  //We don't calculate constant here.
+  if parA.Sto <> stRamFix then begin
+    GenError('Cannot assign to this Operand.');
+    exit;
+  end;
 
+  SetFunNull(fun);
+  case parB.Sto of
+  stConst : begin
+    if parB.val=0 then begin // do nothing
+    end else if parB.val=1 then begin  // we can optimize by doing Dec
+      _LDA(parA.addL);
+      _BNE_post(L1);
+      _DEC(parA.addH);
+  _LABEL_post(L1);
+      _DEC(parA.addL);
+    end else begin
+      _SEC;
+      _LDA(parA.addL);
+      _SBCi(parB.valL);
+      _STA(parA.addL);
+      _LDA(parA.addH);
+      _SBCi(parB.valH);
+      _STA(parA.addH);
+    end;
+  end;
+  stRamFix : begin
+      _SEC;
+      _LDA(parA.addL);
+      _SBCi(parB.addL);
+      _STA(parA.addL);
+      _LDA(parA.addH);
+      _SBCi(parB.addH);
+      _STA(parA.addH);
+  end;
+  stRegister: begin  //ya está en A
+      SetFunExpres(fun);
+      _STA(E.addr);
+      _SEC;
+      _LDA(parA.addL);
+      _SBC(E.addr);
+      _STA(parA.addL);
+      _LDA(parA.addH);
+      _SBC(H.addr);
+      _STA(parA.addH);
+  end
+  else
+    GenError(MSG_UNSUPPORTED); exit;
+  end;
 end;
 procedure TGenCod.SIF_word_gequ_word(fun: TEleExpress);
 var
@@ -6804,6 +6859,7 @@ begin
   f:=CreateInBOMethod(typWord, '-=' ,'_asub', typByte, typNull, @SIF_word_asub_byte);
   f.getset := gsSetOther;
   f:=CreateInBOMethod(typWord, '-=' ,'_asub', typWord, typNull, @SIF_word_asub_word);
+  AddCallerToFrom(E, f.bodyNode);  // Require _E
   f.getset := gsSetOther;
   f:=CreateInBOMethod(typWord, '+'  , '_add', typByte, typWord, @SIF_word_add_byte);
   f.fConmutat := true;
