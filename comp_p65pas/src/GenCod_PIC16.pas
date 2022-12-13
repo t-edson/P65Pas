@@ -158,6 +158,7 @@ type
       procedure SIF_word_aadd_word(fun: TEleExpress);
       procedure SIF_word_and_word(fun: TEleExpress);
       procedure SIF_word_asub_byte(fun: TEleExpress);
+      procedure SIF_word_asub_word(fun: TEleExpress);
       procedure SIF_word_gequ_word(fun: TEleExpress);
       procedure SIF_word_great_word(fun: TEleExpress);
       procedure SIF_word_lequ_word(fun: TEleExpress);
@@ -3414,6 +3415,10 @@ _LABEL_post(L1);
     GenError('Cannot assign to this Operand.'); exit;
   end;
 end;
+procedure TGenCod.SIF_word_asub_word(fun: TEleExpress);
+begin
+
+end;
 procedure TGenCod.SIF_word_gequ_word(fun: TEleExpress);
 var
   L1B: integer;
@@ -6428,15 +6433,18 @@ begin
   f.getset := gsSetInPtr;
   f1.funset := f;
 
-  CreateInBOMethod(etyp, '=','_equ', typWord, typBool, @SIF_word_equal_word);
-  CreateInBOMethod(etyp, '=','_equ', etyp, typBool, @SIF_word_equal_word);
+  CreateInBOMethod(etyp, '=',  '_equ',  typWord, typBool, @SIF_word_equal_word);
+  CreateInBOMethod(etyp, '=',  '_equ',  etyp   , typBool, @SIF_word_equal_word);
 
-  CreateInBOMethod(etyp, '+', '_add', typWord, etyp, @SIF_pointer_add_word);
-  CreateInBOMethod(etyp, '+', '_add', typByte, etyp, @SIF_pointer_add_byte);
+  CreateInBOMethod(etyp, '+',  '_add',  typWord, etyp   , @SIF_pointer_add_word);
+  CreateInBOMethod(etyp, '+',  '_add',  typByte, etyp   , @SIF_pointer_add_byte);
 
-  CreateInBOMethod(etyp, '-', '_sub', typWord, etyp, @SIF_pointer_sub_word);
-  CreateInBOMethod(etyp, '-', '_sub', typByte, etyp, @SIF_pointer_sub_byte);
-  CreateInBOMethod(etyp, '<=', '_lequ', etyp, typBool, @SIF_word_lequ_word);
+  CreateInBOMethod(etyp, '-',  '_sub',  typWord, etyp   , @SIF_pointer_sub_word);
+  CreateInBOMethod(etyp, '-',  '_sub',  typByte, etyp   , @SIF_pointer_sub_byte);
+  CreateInBOMethod(etyp, '>' , '_gre',  etyp   , typBool, @SIF_word_great_word);
+  CreateInBOMethod(etyp, '<' , '_les',  etyp   , typBool, @SIF_word_less_word);
+  CreateInBOMethod(etyp, '>=', '_gequ', etyp   , typBool, @SIF_word_gequ_word);
+  CreateInBOMethod(etyp, '<=', '_lequ', etyp   , typBool, @SIF_word_lequ_word);
 
   f := CreateInBOMethod(etyp, '+=', '_aadd', typWord, etyp, @SIF_word_aadd_word);
   f.getset := gsSetOther;
@@ -6794,6 +6802,8 @@ begin
   f:=CreateInBOMethod(typWord, '+=' ,'_aadd', typWord, typNull, @SIF_word_aadd_word);
   f.getset := gsSetOther;
   f:=CreateInBOMethod(typWord, '-=' ,'_asub', typByte, typNull, @SIF_word_asub_byte);
+  f.getset := gsSetOther;
+  f:=CreateInBOMethod(typWord, '-=' ,'_asub', typWord, typNull, @SIF_word_asub_word);
   f.getset := gsSetOther;
   f:=CreateInBOMethod(typWord, '+'  , '_add', typByte, typWord, @SIF_word_add_byte);
   f.fConmutat := true;

@@ -49,11 +49,15 @@ begin
   w := @Pass;  //Address of procedure. 
   w := @'Hi'#32'World';  //Address of literal. 
 
-  //Testing address setted
+  //Testing address set
   w := @varabs1;
   if w = $101 then Pass else Fail; end;
   w := @varabs2;
   if w = $102 then Pass else Fail; end; 
+  w := @varabs2+$20;
+  if w = $122 then Pass else Fail; end; 
+  w := @varabs2+$100+$05;
+  if w = $207 then Pass else Fail; end; 
   w := word($10);
   if w = word($10) then Pass; else Fail end;  
   w := $1012;
@@ -64,7 +68,7 @@ begin
   ///////////////////////////////////////////////////////////
   STROUT(@'TYPED POINTERS:'#13);
 
-  //Testing address setted
+  //Testing address set
   pb := word($10); //Setting byte
   if pb = word($10) then Pass; else Fail end;  
 
@@ -116,10 +120,10 @@ begin
   pb := pb - $345;
   if pb = $1000 then Pass; else Fail end;  
 
+  b := $10;
   pb := $1010;
   pb := pb - b;
-  STROUT(@'SUBSTRACTION WITH A VAR:');
-  if pb = $1010 then Pass; else Fail end;
+  if pb = $1000 then Pass; else Fail end;
     
   pb := $FF0;
   pb += $10;
