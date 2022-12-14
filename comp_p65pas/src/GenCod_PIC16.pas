@@ -74,6 +74,7 @@ type
       procedure SIF_SetPointer(fun: TEleExpress);
       procedure SIF_word_mul_byte(fun: TEleExpress);
       procedure SIF_word_or_word(fun: TEleExpress);
+      procedure SNF_byt_div_byt_8(funEleExp: TEleFunBase);
       procedure SNF_byt_mul_byt_16(fun: TEleFunBase);
       procedure Invert_A_to_A;
       procedure Copy_Z_to_A;
@@ -3880,6 +3881,10 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
+procedure TGenCod.SNF_byt_div_byt_8(funEleExp: TEleFunBase);
+begin
+
+end;
 procedure TGenCod.SNF_word_shift_l(fun: TEleFunBase);
 {Routine to left shift.
 Input:
@@ -6711,7 +6716,8 @@ procedure TGenCod.CreateSystemElements;
 var
   uni: TEleUnit;
   pars: TxpParFuncArray;  //Array of parameters
-  f, sifByteMulByte, sifDelayMs, sifWord, sifByteDivByte: TEleFun;
+  f, sifByteMulByte, sifDelayMs, sifWord, sifByteDivByte,
+    snfBytDivByt16: TEleFun;
 begin
   //////// Funciones del sistema ////////////
   //Implement calls to Code Generator
@@ -6953,6 +6959,12 @@ begin
   AddParam(pars, 'B', srcPosNull, typByte, decNone);  //Add parameter
   snfBytMulByt16 :=
   AddSysNormalFunction('byt_mul_byt_16', typWord, srcPosNull, pars, @SNF_byt_mul_byt_16);
+  //Multiply system function
+  setlength(pars, 0);  //Reset parameters
+  AddParam(pars, 'A', srcPosNull, typByte, decNone);  //Add parameter
+  AddParam(pars, 'B', srcPosNull, typByte, decNone);  //Add parameter
+  snfBytDivByt16 :=
+  AddSysNormalFunction('byt_div_byt_16', typByte, srcPosNull, pars, @SNF_byt_div_byt_8);
   //Word shift left
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typByte, decRegisX);   //Parameter counter shift
@@ -6969,6 +6981,8 @@ begin
   //Add dependencies of TByte._mul.
   AddCallerToFrom(snfBytMulByt16, sifByteMulByte.bodyNode);
   AddCallerToFrom(snfWordShift_l, sifByteMulByte.bodyNode);
+
+  AddCallerToFrom(snfBytDivByt16, sifByteDivByte.BodyNode);
   //Close Unit
   TreeElems.CloseElement;
 end;
