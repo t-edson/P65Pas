@@ -105,10 +105,9 @@ function TParserAsm_6502.CaptureOperand(inst: TEleAsmInstr): boolean;
   <literal numérico>
   <identificador> [+|- <literal numérico>]
 
-Actualiza el campo inst.operVal" y, si aplica, agrega los elementos:
+Actualiza el campo "inst.operVal" y, si aplica, agrega los elementos:
 <operando> y <operación>, de acuerdo a como se indica en la documentación.
 Si no encuentra operando, genera error y devuelve FALSE.}
-
   function ScanOperation(out operation: TAsmInstOperation;
                          out value: word; out opTxt: string): boolean;
   {Look for one operations, in the current context. Operatiosn valids are:
@@ -535,8 +534,13 @@ begin
         cpx.SkipWhitesNoEOL;
         UpdateInstruction(idInst, aAbsolutY, curInst.operVal);
       end else begin
-        cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
-        exit;
+        //Could be the 65c02 instruction BBR0 $12, <label>
+        if not CaptureOperand(curInst) then begin
+          cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
+          exit;
+        end;
+        //We have an operand.
+        UpdateInstruction(idInst, aZeroPRel, curInst.operVal);
       end;
     end else begin
       if addressModes = [aRelative] then begin

@@ -69,6 +69,7 @@ type
       procedure DefineObject(etyp: TEleTypeDec);
       function FillArray(parray: TEleExpress): boolean;
       procedure SIF_bool_or_bool(fun: TEleExpress);
+      procedure SIF_byte_div_byte(funEleExp: TEleExpress);
       procedure SIF_GetPointer(fun: TEleExpress);
       procedure SIF_SetPointer(fun: TEleExpress);
       procedure SIF_word_mul_byte(fun: TEleExpress);
@@ -2186,6 +2187,10 @@ begin
   end else begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
+end;
+procedure TGenCod.SIF_byte_div_byte(funEleExp: TEleExpress);
+begin
+
 end;
 procedure TGenCod.SIF_bool_equal_bool(fun: TEleExpress);
 var
@@ -6706,7 +6711,7 @@ procedure TGenCod.CreateSystemElements;
 var
   uni: TEleUnit;
   pars: TxpParFuncArray;  //Array of parameters
-  f, sifByteMulByte, sifDelayMs, sifWord: TEleFun;
+  f, sifByteMulByte, sifDelayMs, sifWord, sifByteDivByte: TEleFun;
 begin
   //////// Funciones del sistema ////////////
   //Implement calls to Code Generator
@@ -6813,6 +6818,9 @@ begin
   f.fConmutat := true;
   AddCallerToFrom(H, f.bodyNode);  //Dependency
   sifByteMulByte := f;
+  f:=CreateInBOMethod(typByte, 'DIV' , '_div', typByte, typWord, @SIF_byte_div_byte);
+  AddCallerToFrom(H, f.bodyNode);  //Dependency
+  sifByteDivByte := f;
 
   f:=CreateInBOMethod(typByte, 'AND','_and', typByte, typByte, @SIF_byte_and_byte);
   f.fConmutat := true;

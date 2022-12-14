@@ -683,6 +683,7 @@ type  //Instructions relative elements
     operVal: integer;  {The value of instruction operand, when it's a simple number.
                         When it's -1, the operand is a reference to an element and
                         should be read in "operRef".}
+    operVal2: integer; {The second value of instruction operand, when it's needed}
     operRef: TxpElement; {Reference to element when operand refers to some Pascal or
                           ASM element.}
     operNam: string;  {Operand name. Used when operand is an unsolved reference}
