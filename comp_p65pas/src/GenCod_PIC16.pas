@@ -71,7 +71,7 @@ type
       function FillArray(parray: TEleExpress): boolean;
       procedure SIF_bool_or_bool(fun: TEleExpress);
       procedure SIF_byte_div_byte(fun: TEleExpress);
-      procedure SIF_byte_mod_byte(funEleExp: TEleExpress);
+      procedure SIF_byte_mod_byte(fun: TEleExpress);
       procedure SIF_GetPointer(fun: TEleExpress);
       procedure SIF_SetPointer(fun: TEleExpress);
       procedure SIF_word_mul_byte(fun: TEleExpress);
@@ -2337,9 +2337,85 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
-procedure TGenCod.SIF_byte_mod_byte(funEleExp: TEleExpress);
-begin
+procedure TGenCod.SIF_byte_mod_byte(fun: TEleExpress);
+  var parA, parB: TEleExpress;
+      AddrUndef: boolean;
+      fmod: TEleFun;
 
+  procedure ModByConst;
+  begin
+    case parB.val of
+        1: _LDAi(0);
+        2: _ANDi(%1);
+        4: _ANDi(%11);
+        8: _ANDi(%111);
+       16: _ANDi(%1111);
+       32: _ANDi(%11111);
+       64: _ANDi(%111111);
+      128: _ANDi(%1111111);
+    else
+        _LDXi(parB.val);
+        functCall(fmod, AddrUndef);
+    end;
+  end;
+
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  fmod := snfBytDivByt8; // the same function as div
+  if compMod = cmConsEval then begin
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then
+      SetFunConst_word(fun, parA.val mod parB.val);
+    exit;
+  end;
+    //Code generation
+  case stoOperation(parA, parB) of
+  stConst_Const:
+    SetFunConst_word(fun, parA.val mod parB.val);
+  stRamFix_Const: begin
+    SetFunExpres(fun);
+    _LDA(parA.add);
+    ModByConst;
+  end;
+  stConst_RamFix: begin
+    SetFunExpres(fun);
+    _LDAi(parA.val);
+    if parA.val > 0 then begin
+        _LDX(parB.add);
+        functCall(fmod, AddrUndef);
+    end;
+  end;
+  stRamFix_RamFix: begin
+    SetFunExpres(fun);
+        _LDA(parA.add);
+        _LDX(parB.add);
+        functCall(fmod, AddrUndef);
+  end;
+  stRegist_RamFix: begin
+    SetFunExpres(fun);
+        //_LDA(parA.add);
+        _LDX(parB.add);
+        functCall(fmod, AddrUndef);
+  end;
+  stRegist_Const: begin
+    SetFunExpres(fun);
+    ModByConst;
+  end;
+  stConst_Regist: begin
+    SetFunExpres(fun);
+        _TAX;
+        _LDAi(parA.val);
+        functCall(fmod, AddrUndef);
+  end;
+  stRamFix_Regist: begin
+    SetFunExpres(fun);
+        _TAX;
+        _LDA(parA.add);
+        functCall(fmod, AddrUndef);
+  end;
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+  end;
 end;
 procedure TGenCod.SIF_bool_equal_bool(fun: TEleExpress);
 var
@@ -7158,6 +7234,7 @@ begin
   AddCallerToFrom(snfWordShift_l, sifByteMulByte.bodyNode);
 
   AddCallerToFrom(snfBytDivByt8, sifByteDivByte.BodyNode);
+  AddCallerToFrom(snfBytDivByt8, sifByteModByte.BodyNode);
   //Close Unit
   TreeElems.CloseElement;
 end;
