@@ -406,7 +406,7 @@ var
 begin
   blkEnd := false;
   addressModes := PIC16InstName[idInst].addressModes;
-  srcInst := cpx.GetSrcPos;
+   srcInst := cpx.GetSrcPos;
   //Capture operand
   cpx.Next;
   cpx.SkipWhitesNoEOL;

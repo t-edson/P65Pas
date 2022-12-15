@@ -71,6 +71,7 @@ type
       function FillArray(parray: TEleExpress): boolean;
       procedure SIF_bool_or_bool(fun: TEleExpress);
       procedure SIF_byte_div_byte(fun: TEleExpress);
+      procedure SIF_byte_mod_byte(funEleExp: TEleExpress);
       procedure SIF_GetPointer(fun: TEleExpress);
       procedure SIF_SetPointer(fun: TEleExpress);
       procedure SIF_word_mul_byte(fun: TEleExpress);
@@ -2242,6 +2243,10 @@ begin
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
+end;
+procedure TGenCod.SIF_byte_mod_byte(funEleExp: TEleExpress);
+begin
+
 end;
 procedure TGenCod.SIF_bool_equal_bool(fun: TEleExpress);
 var
@@ -6567,7 +6572,7 @@ begin
   //Getter and setter
   f1 := CreateInUOMethod(etyp, '', '_getptr', etyp.ptrType, @SIF_GetPointer);
   f1.getset := gsGetInPtr;
-  f := CreateInUOMethod(etyp, '', '_setptr', etyp.ptrType, @SIF_SetPointer);
+  f := CreateInBOMethod(etyp, '', '_setptr', etyp.ptrType, typNull, @SIF_SetPointer);
   f.getset := gsSetInPtr;
   f1.funset := f;
 
@@ -6789,7 +6794,8 @@ procedure TGenCod.CreateSystemElements;
 var
   uni: TEleUnit;
   pars: TxpParFuncArray;  //Array of parameters
-  f, sifByteMulByte, sifDelayMs, sifWord, sifByteDivByte: TEleFun;
+  f, sifByteMulByte, sifDelayMs, sifWord, sifByteDivByte,
+    sifByteModByte: TEleFun;
 begin
   //////// Funciones del sistema ////////////
   //Implement calls to Code Generator
@@ -6899,6 +6905,9 @@ begin
   f:=CreateInBOMethod(typByte, 'DIV' , '_div', typByte, typByte, @SIF_byte_div_byte);
   AddCallerToFrom(H, f.bodyNode);  //Dependency
   sifByteDivByte := f;
+  f:=CreateInBOMethod(typByte, 'MOD' , '_mod', typByte, typByte, @SIF_byte_mod_byte);
+  AddCallerToFrom(H, f.bodyNode);  //Dependency
+  sifByteModByte := f;
 
   f:=CreateInBOMethod(typByte, 'AND','_and', typByte, typByte, @SIF_byte_and_byte);
   f.fConmutat := true;
@@ -7031,11 +7040,12 @@ begin
   AddParam(pars, 'B', srcPosNull, typByte, decNone);  //Add parameter
   snfBytMulByt16 :=
   AddSysNormalFunction('byt_mul_byt_16', typWord, srcPosNull, pars, @SNF_byt_mul_byt_16);
-  //Multiply system function
+  //Division system function
   setlength(pars, 0);  //Reset parameters
   //AddParam(pars, 'A', srcPosNull, typByte, decNone);  //Add parameter
   //AddParam(pars, 'B', srcPosNull, typByte, decNone);  //Add parameter
-  snfBytDivByt8 := AddSysNormalFunction('byt_div_byt_8', typByte, srcPosNull, pars, @SNF_byt_div_byt_8);
+  snfBytDivByt8 :=
+  AddSysNormalFunction('byt_div_byt_8', typByte, srcPosNull, pars, @SNF_byt_div_byt_8);
   AddCallerToFrom(E, snfBytDivByt8.BodyNode);
   //Word shift left
   setlength(pars, 0);  //Reset parameters
