@@ -169,6 +169,7 @@ type
     procedure _PHP; inline;
     procedure _PLA; inline;
     procedure _PLP; inline;
+    procedure _ROLa;  //Acumulator
     procedure _ROL(const addr: integer);
     procedure _RORa;  //Acumulator
     procedure _ROR(const addr: integer);  //Absolute/Zeropage
@@ -977,6 +978,10 @@ end;
 procedure TGenCodBas._PLP;
 begin
   pic.codAsm(i_PLP, aImplicit, 0);
+end;
+procedure TGenCodBas._ROLa;
+begin
+  pic.codAsm(i_ROL, aAcumulat, 0);
 end;
 procedure TGenCodBas._ROL(const addr: integer);
 begin
