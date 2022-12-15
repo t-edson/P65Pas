@@ -149,6 +149,7 @@ type
     procedure _DEC(const addr: integer);
     procedure _EORi(const k: word);
     procedure _EOR(const addr: integer);
+    procedure _INC;
     procedure _INC(const addr: integer);
     procedure _INX;
     procedure _INY;
@@ -873,6 +874,10 @@ end;
 procedure TGenCodBas._EORi(const k: word);
 begin
   pic.codAsm(i_EOR, aImmediat, k);
+end;
+procedure TGenCodBas._INC;
+begin
+  pic.codAsm(i_INC, aImplicit, 0);
 end;
 procedure TGenCodBas._INC(const addr: integer);
 begin

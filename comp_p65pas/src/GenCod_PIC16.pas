@@ -2195,17 +2195,9 @@ procedure TGenCod.SIF_byte_div_byte(fun: TEleExpress);
   var parA, parB: TEleExpress;
       AddrUndef: boolean;
       fdiv: TEleFun;
-begin
-  parA := TEleExpress(fun.elements[0]);  //Parameter A
-  parB := TEleExpress(fun.elements[1]);  //Parameter B
-  fdiv := snfBytDivByt8;
-    //Code generation
-  case stoOperation(parA, parB) of
-  stConst_Const:
-    SetFunConst_word(fun, parA.val div parB.val);
-  stRamFix_Const: begin
-    SetFunExpres(fun);
-    _LDA(parA.add);
+
+  procedure DivbyConst;
+  begin
     case parB.val of
       1: ;
       2: begin
@@ -2230,15 +2222,116 @@ begin
         _LSRa;
         _LSRa;
       end;
+      7: begin
+        _STA(H.addr);
+        _LSRa;
+        _LSRa;
+        _LSRa;
+        _ADC(H.addr);
+        _RORa;
+        _LSRa;
+        _LSRa;
+        _ADC(H.addr);
+        _RORa;
+        _LSRa;
+        _LSRa;
+      end;
       8: begin
         _LSRa;
         _LSRa;
         _LSRa;
       end;
+      16: begin
+        _LSRa;
+        _LSRa;
+        _LSRa;
+        _LSRa;
+      end;
+      32: begin
+        _LSRa;
+        _LSRa;
+        _LSRa;
+        _LSRa;
+        _LSRa;
+      end;
+      64: begin
+        _LSRa;
+        _LSRa;
+        _LSRa;
+        _LSRa;
+        _LSRa;
+        _LSRa;
+      end;
+      128: begin
+        _ASLa;
+        _LDAi(0);
+        _ROLa
+      end;
     else
         _LDXi(parB.val);
         functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
     end;
+  end;
+
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  fdiv := snfBytDivByt8;
+  if compMod = cmConsEval then begin
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then
+      SetFunConst_word(fun, parA.val div parB.val);
+    exit;
+  end;
+    //Code generation
+  case stoOperation(parA, parB) of
+  stConst_Const:
+    SetFunConst_word(fun, parA.val div parB.val);
+  stRamFix_Const: begin
+    SetFunExpres(fun);
+    _LDA(parA.add);
+    DivbyConst;
+  end;
+  stConst_RamFix: begin
+    SetFunExpres(fun);
+    _LDAi(parA.val);
+    if parA.val > 0 then begin
+        _LDX(parB.add);
+        functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
+    end;
+  end;
+  stRamFix_RamFix: begin
+    SetFunExpres(fun);
+        _LDA(parA.add);
+        _LDX(parB.add);
+        functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
+  end;
+  stRegist_RamFix: begin
+    SetFunExpres(fun);
+        //_LDA(parA.add);
+        _LDX(parB.add);
+        functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
+  end;
+  stRegist_Const: begin
+    SetFunExpres(fun);
+    DivbyConst;
+  end;
+  stConst_Regist: begin
+    SetFunExpres(fun);
+        _TAX;
+        _LDAi(parA.val);
+        functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
+  end;
+  stRamFix_Regist: begin
+    SetFunExpres(fun);
+        _TAX;
+        _LDA(parA.add);
+        functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
   end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
@@ -7042,8 +7135,8 @@ begin
   AddSysNormalFunction('byt_mul_byt_16', typWord, srcPosNull, pars, @SNF_byt_mul_byt_16);
   //Division system function
   setlength(pars, 0);  //Reset parameters
-  //AddParam(pars, 'A', srcPosNull, typByte, decNone);  //Add parameter
-  //AddParam(pars, 'B', srcPosNull, typByte, decNone);  //Add parameter
+  AddParam(pars, 'A', srcPosNull, typByte, decRegisA);  //Add parameter
+  AddParam(pars, 'B', srcPosNull, typByte, decRegisX);  //Add parameter
   snfBytDivByt8 :=
   AddSysNormalFunction('byt_div_byt_8', typByte, srcPosNull, pars, @SNF_byt_div_byt_8);
   AddCallerToFrom(E, snfBytDivByt8.BodyNode);
