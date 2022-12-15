@@ -74,6 +74,8 @@ type
       procedure SIF_byte_mod_byte(fun: TEleExpress);
       procedure SIF_GetPointer(fun: TEleExpress);
       procedure SIF_SetPointer(fun: TEleExpress);
+      procedure SIF_word_div_word(funEleExp: TEleExpress);
+      procedure SIF_word_mod_word(funEleExp: TEleExpress);
       procedure SIF_word_mul_byte(fun: TEleExpress);
       procedure SIF_word_or_word(fun: TEleExpress);
       procedure SNF_byt_div_byt_8(funEleExp: TEleFunBase);
@@ -111,6 +113,7 @@ type
       procedure SIF_SetItemIndexWord(fun: TEleExpress);
       procedure SetWordIndexWord(const idxvar: TEleVarDec; offset: word;
         parB: TEleExpress);
+      procedure SNF_wrd_div_wrd_8(funEleExp: TEleFunBase);
       procedure ValidRAMaddr(addr: integer);
       procedure SIF_GetItemIdxByte(fun: TEleExpress);
       procedure SIF_GetItemIdxWord(fun: TEleExpress);
@@ -5960,6 +5963,12 @@ _LABEL_pre(lab1);
     end;
   end;
 end;
+
+procedure TGenCod.SNF_wrd_div_wrd_8(funEleExp: TEleFunBase);
+begin
+
+end;
+
 procedure TGenCod.SIF_SetItemIndexByte(fun: TEleExpress);
 {Write a value to an array item indexed by a BYTE.}
 var
@@ -6673,6 +6682,17 @@ begin
     GenError('Cannot set item to this pointer type: %s.', [ptrVar.Typ.name]);
   end;
 end;
+
+procedure TGenCod.SIF_word_div_word(funEleExp: TEleExpress);
+begin
+
+end;
+
+procedure TGenCod.SIF_word_mod_word(funEleExp: TEleExpress);
+begin
+
+end;
+
 procedure TGenCod.DefineShortPointer(etyp: TEleTypeDec);
 {Configura las operaciones que definen la aritmética de punteros.}
 //var
@@ -6964,7 +6984,7 @@ var
   uni: TEleUnit;
   pars: TxpParFuncArray;  //Array of parameters
   f, sifByteMulByte, sifDelayMs, sifWord, sifByteDivByte,
-    sifByteModByte: TEleFun;
+    sifByteModByte, sifWordDivWord, sifWordModWord, snfWrdDivWrd8: TEleFun;
 begin
   //////// Funciones del sistema ////////////
   //Implement calls to Code Generator
@@ -7135,6 +7155,13 @@ begin
   f:=CreateInBOMethod(typWord, '*' , '_mul', typByte, typWord, @SIF_word_mul_byte);
   f.fConmutat := true;
 
+  f:=CreateInBOMethod(typWord, 'DIV' , '_div', typWord, typWord, @SIF_word_div_word);
+  AddCallerToFrom(H, f.bodyNode);  //Dependency
+  sifWordDivWord := f;
+  f:=CreateInBOMethod(typWord, 'MOD' , '_mod', typWord, typWord, @SIF_word_mod_word);
+  AddCallerToFrom(H, f.bodyNode);  //Dependency
+  sifWordModWord := f;
+
   f:=CreateInBOMethod(typWord, 'AND', '_and', typByte, typByte, @SIF_word_and_byte);
   f.fConmutat := true;
   f:=CreateInBOMethod(typWord, 'AND', '_and', typWord, typWord, @SIF_word_and_word);
@@ -7216,6 +7243,13 @@ begin
   snfBytDivByt8 :=
   AddSysNormalFunction('byt_div_byt_8', typByte, srcPosNull, pars, @SNF_byt_div_byt_8);
   AddCallerToFrom(E, snfBytDivByt8.BodyNode);
+  //Division system function
+  setlength(pars, 0);  //Reset parameters
+  AddParam(pars, 'A', srcPosNull, typByte, decNone);  //Add parameter
+  AddParam(pars, 'B', srcPosNull, typByte, decNone);  //Add parameter
+  snfWrdDivWrd8 :=
+  AddSysNormalFunction('wrd_div_wrd_16', typWord, srcPosNull, pars, @SNF_wrd_div_wrd_8);
+  AddCallerToFrom(E, snfWrdDivWrd8.BodyNode);
   //Word shift left
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typByte, decRegisX);   //Parameter counter shift
@@ -7235,6 +7269,10 @@ begin
 
   AddCallerToFrom(snfBytDivByt8, sifByteDivByte.BodyNode);
   AddCallerToFrom(snfBytDivByt8, sifByteModByte.BodyNode);
+
+  AddCallerToFrom(snfWrdDivWrd8, sifWordDivWord.BodyNode);
+  AddCallerToFrom(snfWrdDivWrd8, sifWordModWord.BodyNode);
+
   //Close Unit
   TreeElems.CloseElement;
 end;
