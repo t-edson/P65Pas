@@ -765,7 +765,7 @@ type  //Declaration elements (functions)
     codSysInline: TCodSysInline;
     //Callback to SNF Routine when callType is ctSysNormal.
     codSysNormal: TCodSysNormal;
-  public  //Parameters manage
+  public  //Parameters management
     pars       : TxpParFuncArray; //parámetros de entrada
     procedure ClearParams;
     function SameParamsType(const funpars: TxpParFuncArray): boolean;

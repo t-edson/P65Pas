@@ -116,7 +116,7 @@ type
       procedure SIF_SetItemIndexWord(fun: TEleExpress);
       procedure SetWordIndexWord(const idxvar: TEleVarDec; offset: word;
         parB: TEleExpress);
-      procedure SNF_wrd_div_wrd_16(funEleExp: TEleFunBase);
+      procedure SNF_wrd_div_wrd_16(fun: TEleFunBase);
       procedure ValidRAMaddr(addr: integer);
       procedure SIF_GetItemIdxByte(fun: TEleExpress);
       procedure SIF_GetItemIdxWord(fun: TEleExpress);
@@ -4138,7 +4138,7 @@ _LABEL_post(L2);
     _BNE_pre(L1);
     _RTS;
 end;
-procedure TGenCod.SNF_wrd_div_wrd_16(funEleExp: TEleFunBase);
+procedure TGenCod.SNF_wrd_div_wrd_16(fun: TEleFunBase);
 { Returns Div and Mod (word, word)
   Source: https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
   Input:  A - numerator;
@@ -4146,8 +4146,14 @@ procedure TGenCod.SNF_wrd_div_wrd_16(funEleExp: TEleFunBase);
   Output: _H - quotient (div)
           A  - remainder (mod)
 }
+var
+  fac1, fac2, tmp: TEleVarDec;
 begin
+  fac1 := fun.pars[0].pvar;
+  fac2 := fun.pars[1].pvar;
+  tmp := TEleVarDec(fun.elements[2]);
   PutLabel('__word_div_word');
+  //_LDA(tmp.addr);
   _RTS();
 end;
 procedure TGenCod.SNF_word_shift_l(fun: TEleFunBase);
@@ -7016,21 +7022,29 @@ begin
   in common units, where all declarations are first}
   curLocation := locImplement;
   Result := AddFunctionIMP(name, retType, srcPos, fundec, true);
-  //Here variables can be added
+  //Create local variables
   for i:=0 to high(local_vars) do begin
     locvar := TreeElems.AddVarDecAndOpen(srcPos, local_vars[i].name, local_vars[i].typ);
     locvar.storage := stRamFix;
     locvar.adicPar := local_vars[i].adicVar;
     TreeElems.CloseElement;  //Close variable
+    local_vars[i].pvar := locvar;  //Keep reference
   end;
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
   TreeElems.AddBodyAndOpen(SrcPos);  //Create body
+  //Set function created
   Result.callType     := ctSysNormal;
   Result.codSysNormal := codSys;  //Set routine to generate code SIF.
   TreeElems.CloseElement;  //Close body
   TreeElems.CloseElement;  //Close function implementation
   curLocation := tmpLoc;   //Restore current location
+  //Add callers to local variables created. Must be done after creating the body.
+  for i:=0 to high(local_vars) do begin
+    locvar := local_vars[i].pvar;
+    AddCallerToFrom(locvar, Result.BodyNode);
+  end;
+
 end;
 function TGenCod.CreateInUOMethod(
                       clsType: TEleTypeDec;   //Base type where the method bellow.
