@@ -60,11 +60,13 @@ type
       snfDelayMs:     TEleFun;
       snfBytDivByt8:  TEleFun;
       snfWrdDivWrd16: TEleFun;
+      procedure AddLocVar(var pars: TxpParFuncArray; parName: string;
+        const srcPos: TSrcPos; typ0: TEleTypeDec; adicDec: TxpAdicDeclar);
       procedure AddParam(var pars: TxpParFuncArray; parName: string;
         const srcPos: TSrcPos; typ0: TEleTypeDec; adicDec: TxpAdicDeclar);
       function AddSysNormalFunction(name: string; retType: TEleTypeDec;
-        const srcPos: TSrcPos; const pars: TxpParFuncArray;
-  codSys: TCodSysNormal): TEleFun;
+        const srcPos: TSrcPos; var pars: TxpParFuncArray; codSys: TCodSysNormal
+  ): TEleFun;
       procedure arrayHigh(fun: TEleExpress);
       procedure arrayLength(fun: TEleExpress);
       procedure arrayLow(fun: TEleExpress);
@@ -114,7 +116,7 @@ type
       procedure SIF_SetItemIndexWord(fun: TEleExpress);
       procedure SetWordIndexWord(const idxvar: TEleVarDec; offset: word;
         parB: TEleExpress);
-      procedure SNF_wrd_div_wrd_8(funEleExp: TEleFunBase);
+      procedure SNF_wrd_div_wrd_16(funEleExp: TEleFunBase);
       procedure ValidRAMaddr(addr: integer);
       procedure SIF_GetItemIdxByte(fun: TEleExpress);
       procedure SIF_GetItemIdxWord(fun: TEleExpress);
@@ -4136,7 +4138,7 @@ _LABEL_post(L2);
     _BNE_pre(L1);
     _RTS;
 end;
-procedure TGenCod.SNF_wrd_div_wrd_8(funEleExp: TEleFunBase);
+procedure TGenCod.SNF_wrd_div_wrd_16(funEleExp: TEleFunBase);
 { Returns Div and Mod (word, word)
   Source: https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
   Input:  A - numerator;
@@ -6689,7 +6691,6 @@ begin
     GenError('Cannot set item to this pointer type: %s.', [ptrVar.Typ.name]);
   end;
 end;
-
 procedure TGenCod.SIF_word_div_word(fun: TEleExpress);
   var parA, parB: TEleExpress;
       AddrUndef: boolean;
@@ -6779,12 +6780,10 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
-
 procedure TGenCod.SIF_word_mod_word(funEleExp: TEleExpress);
 begin
 
 end;
-
 procedure TGenCod.DefineShortPointer(etyp: TEleTypeDec);
 {Configura las operaciones que definen la aritmética de punteros.}
 //var
@@ -6922,6 +6921,23 @@ begin
   pars[n].typ  := typ0;  //Agrega referencia
   pars[n].adicVar.hasAdic := adicDec;
   pars[n].adicVar.hasInit := false;
+  pars[n].isLocVar := false;
+end;
+procedure TGenCod.AddLocVar(var pars: TxpParFuncArray; parName: string; const srcPos: TSrcPos;
+                   typ0: TEleTypeDec; adicDec: TxpAdicDeclar);
+//Create a new parameter to the function.
+var
+  n: Integer;
+begin
+  //Add record to the array
+  n := high(pars)+1;
+  setlength(pars, n+1);
+  pars[n].name := parName;  //Name is not important
+  pars[n].srcPos := srcPos;
+  pars[n].typ  := typ0;  //Agrega referencia
+  pars[n].adicVar.hasAdic := adicDec;
+  pars[n].adicVar.hasInit := false;
+  pars[n].isLocVar := true;
 end;
 function TGenCod.AddSysInlineFunction(name: string; retType: TEleTypeDec; const srcPos: TSrcPos;
                const pars: TxpParFuncArray; codSys: TCodSysInline): TEleFun;
@@ -6955,16 +6971,41 @@ begin
   curLocation := tmpLoc;   //Restore current location
 end;
 function TGenCod.AddSysNormalFunction(name: string; retType: TEleTypeDec; const srcPos: TSrcPos;
-               const pars: TxpParFuncArray; codSys: TCodSysNormal): TEleFun;
+               var pars: TxpParFuncArray; codSys: TCodSysNormal): TEleFun;
 {Create a new system function in the current element of the Syntax Tree.
  Returns the reference to the function created.
    pars   -> Array of parameters for the function to be created.
    codSys -> SIF Routine or the the routine to generate de code.
 }
 var
+  local_vars: TxpParFuncArray;   //Array for local variables
+
+  procedure extract_local_vars;
+  //Extract the local variables from "pars" to "local_vars"
+  var
+    i, n: Integer;
+  begin
+    n := 0;
+    setlength(local_vars, n);
+    i := 0;
+    while i<= high(pars) do begin
+      if pars[i].isLocVar then begin
+        inc(n);
+        setlength(local_vars, n);
+        local_vars[n-1] := pars[i];
+        delete(pars, i, 1);  //Delete element
+      end else begin
+        inc(i);
+      end;
+    end;
+  end;
+var
    fundec: TEleFunDec;
    tmpLoc: TxpEleLocation;
+   locvar: TEleVarDec;
+   i: Integer;
 begin
+  extract_local_vars();
   tmpLoc := curLocation;     //Save current location. We are going to change it.
   //Add declaration
   curLocation := locInterface;
@@ -6976,6 +7017,12 @@ begin
   curLocation := locImplement;
   Result := AddFunctionIMP(name, retType, srcPos, fundec, true);
   //Here variables can be added
+  for i:=0 to high(local_vars) do begin
+    locvar := TreeElems.AddVarDecAndOpen(srcPos, local_vars[i].name, local_vars[i].typ);
+    locvar.storage := stRamFix;
+    locvar.adicPar := local_vars[i].adicVar;
+    TreeElems.CloseElement;  //Close variable
+  end;
   {Create a body, to be uniform with normal function and for have a space where
   compile code and access to posible variables or other elements.}
   TreeElems.AddBodyAndOpen(SrcPos);  //Create body
@@ -7339,8 +7386,9 @@ begin
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'A', srcPosNull, typWord, decNone);  //Add parameter
   AddParam(pars, 'B', srcPosNull, typWord, decNone);  //Add parameter
+  AddLocVar(pars, 'tmp', srcPosNull, typWord, decNone);  //Add local variable
   snfWrdDivWrd16 :=
-  AddSysNormalFunction('wrd_div_wrd_16', typWord, srcPosNull, pars, @SNF_wrd_div_wrd_8);
+  AddSysNormalFunction('wrd_div_wrd_16', typWord, srcPosNull, pars, @SNF_wrd_div_wrd_16);
   AddCallerToFrom(E, snfWrdDivWrd16.BodyNode);
   //Word shift left
   setlength(pars, 0);  //Reset parameters

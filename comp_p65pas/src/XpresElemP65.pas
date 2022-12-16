@@ -702,13 +702,17 @@ type  //Instructions relative elements
   end;
 
 type  //Declaration elements (functions)
+
   //Function parameter
   TxpParFunc = record
-    name   : string;      //Nombre de parámetro
-    typ    : TEleTypeDec; //Referencia al tipo
-    pvar   : TEleVarDec;  //Referencia a la variable que se usa para el parámetro
-    srcPos : TSrcPos;     //Posición del parámetro.
-    adicVar: TAdicVarDec; //Parámetros adicionales
+    name    : string;      //Parameter name
+    typ     : TEleTypeDec; //Reference to type
+    pvar    : TEleVarDec;  //Reference to variable used for this parameter
+    srcPos  : TSrcPos;     //Parameter location.
+    adicVar : TAdicVarDec; //Aditional option for "pvar".
+    isLocVar: boolean;     //Flag to indicate this parameter is not a parameter but a
+                           //local variable. In ths way we can reuse this record to define
+                           //local variabes too.
   end;
   TxpParFuncArray = array of TxpParFunc;
 
