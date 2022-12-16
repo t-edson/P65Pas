@@ -57,8 +57,9 @@ type
     private
       snfBytMulByt16: TEleFun;
       snfWordShift_l: TEleFun;
-      snfDelayMs: TEleFun;
-      snfBytDivByt8: TEleFun;
+      snfDelayMs:     TEleFun;
+      snfBytDivByt8:  TEleFun;
+      snfWrdDivWrd16: TEleFun;
       procedure AddParam(var pars: TxpParFuncArray; parName: string;
         const srcPos: TSrcPos; typ0: TEleTypeDec; adicDec: TxpAdicDeclar);
       function AddSysNormalFunction(name: string; retType: TEleTypeDec;
@@ -74,7 +75,7 @@ type
       procedure SIF_byte_mod_byte(fun: TEleExpress);
       procedure SIF_GetPointer(fun: TEleExpress);
       procedure SIF_SetPointer(fun: TEleExpress);
-      procedure SIF_word_div_word(funEleExp: TEleExpress);
+      procedure SIF_word_div_word(fun: TEleExpress);
       procedure SIF_word_mod_word(funEleExp: TEleExpress);
       procedure SIF_word_mul_byte(fun: TEleExpress);
       procedure SIF_word_or_word(fun: TEleExpress);
@@ -4135,6 +4136,18 @@ _LABEL_post(L2);
     _BNE_pre(L1);
     _RTS;
 end;
+procedure TGenCod.SNF_wrd_div_wrd_8(funEleExp: TEleFunBase);
+{ Returns Div and Mod (word, word)
+  Source: https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
+  Input:  A - numerator;
+          X - denominator
+  Output: _H - quotient (div)
+          A  - remainder (mod)
+}
+begin
+  PutLabel('__word_div_word');
+  _RTS();
+end;
 procedure TGenCod.SNF_word_shift_l(fun: TEleFunBase);
 {Routine to left shift.
 Input:
@@ -5963,12 +5976,6 @@ _LABEL_pre(lab1);
     end;
   end;
 end;
-
-procedure TGenCod.SNF_wrd_div_wrd_8(funEleExp: TEleFunBase);
-begin
-
-end;
-
 procedure TGenCod.SIF_SetItemIndexByte(fun: TEleExpress);
 {Write a value to an array item indexed by a BYTE.}
 var
@@ -6683,9 +6690,94 @@ begin
   end;
 end;
 
-procedure TGenCod.SIF_word_div_word(funEleExp: TEleExpress);
-begin
+procedure TGenCod.SIF_word_div_word(fun: TEleExpress);
+  var parA, parB: TEleExpress;
+      AddrUndef: boolean;
+      fdiv: TEleFun;
 
+  procedure DivbyConst;
+  begin
+    case parB.val of
+      1: begin
+        _LDA(parA.addH);
+        _STA(H.addr);
+        _LDA(parA.addL);
+      end;
+      2: begin
+        _LDA(parA.addH);
+        _LSRa;
+        _STA(H.addr);
+        _LDA(parA.addL);
+        _RORa
+      end;
+    else
+        //_LDXi(parB.val);
+        functCall(fdiv, AddrUndef);
+        //_LDA(H.addr);   // Here we need only the div part
+    end;
+  end;
+
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  fdiv := snfWrdDivWrd16;
+  if compMod = cmConsEval then begin
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then
+      SetFunConst_word(fun, parA.val div parB.val);
+    exit;
+  end;
+  //Code generation
+  case stoOperation(parA, parB) of
+  stConst_Const:
+    SetFunConst_word(fun, parA.val div parB.val);
+  stRamFix_Const: begin
+    SetFunExpres(fun);
+    DivbyConst;
+  end;
+  stConst_RamFix: begin
+    SetFunExpres(fun);
+    _LDAi(parA.val);
+    if parA.val > 0 then begin
+        _LDX(parB.add);
+        functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
+    end;
+  end;
+  stRamFix_RamFix: begin
+    SetFunExpres(fun);
+        _LDA(parA.add);
+        _LDX(parB.add);
+        functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
+  end;
+  stRegist_RamFix: begin
+    SetFunExpres(fun);
+        //_LDA(parA.add);
+        _LDX(parB.add);
+        functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
+  end;
+  stRegist_Const: begin
+    SetFunExpres(fun);
+    DivbyConst;
+  end;
+  stConst_Regist: begin
+    SetFunExpres(fun);
+        _TAX;
+        _LDAi(parA.val);
+        functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
+  end;
+  stRamFix_Regist: begin
+    SetFunExpres(fun);
+        _TAX;
+        _LDA(parA.add);
+        functCall(fdiv, AddrUndef);
+        _LDA(H.addr);   // Here we need only the div part
+  end;
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+  end;
 end;
 
 procedure TGenCod.SIF_word_mod_word(funEleExp: TEleExpress);
@@ -6984,7 +7076,7 @@ var
   uni: TEleUnit;
   pars: TxpParFuncArray;  //Array of parameters
   f, sifByteMulByte, sifDelayMs, sifWord, sifByteDivByte,
-    sifByteModByte, sifWordDivWord, sifWordModWord, snfWrdDivWrd8: TEleFun;
+    sifByteModByte, sifWordDivWord, sifWordModWord: TEleFun;
 begin
   //////// Funciones del sistema ////////////
   //Implement calls to Code Generator
@@ -7245,11 +7337,11 @@ begin
   AddCallerToFrom(E, snfBytDivByt8.BodyNode);
   //Division system function
   setlength(pars, 0);  //Reset parameters
-  AddParam(pars, 'A', srcPosNull, typByte, decNone);  //Add parameter
-  AddParam(pars, 'B', srcPosNull, typByte, decNone);  //Add parameter
-  snfWrdDivWrd8 :=
+  AddParam(pars, 'A', srcPosNull, typWord, decNone);  //Add parameter
+  AddParam(pars, 'B', srcPosNull, typWord, decNone);  //Add parameter
+  snfWrdDivWrd16 :=
   AddSysNormalFunction('wrd_div_wrd_16', typWord, srcPosNull, pars, @SNF_wrd_div_wrd_8);
-  AddCallerToFrom(E, snfWrdDivWrd8.BodyNode);
+  AddCallerToFrom(E, snfWrdDivWrd16.BodyNode);
   //Word shift left
   setlength(pars, 0);  //Reset parameters
   AddParam(pars, 'n', srcPosNull, typByte, decRegisX);   //Parameter counter shift
@@ -7270,8 +7362,8 @@ begin
   AddCallerToFrom(snfBytDivByt8, sifByteDivByte.BodyNode);
   AddCallerToFrom(snfBytDivByt8, sifByteModByte.BodyNode);
 
-  AddCallerToFrom(snfWrdDivWrd8, sifWordDivWord.BodyNode);
-  AddCallerToFrom(snfWrdDivWrd8, sifWordModWord.BodyNode);
+  AddCallerToFrom(snfWrdDivWrd16, sifWordDivWord.BodyNode);
+  AddCallerToFrom(snfWrdDivWrd16, sifWordModWord.BodyNode);
 
   //Close Unit
   TreeElems.CloseElement;
