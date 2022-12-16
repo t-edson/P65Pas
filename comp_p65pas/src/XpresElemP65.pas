@@ -668,7 +668,14 @@ type  //Instructions relative elements
     itDefByte,    //Instruction DB
     itDefWord     //Instruction DW
   );
-
+  TAsmOperand = record
+    val: integer;    {The value of instruction operand, when it's a simple number.
+                      When it's -1, the operand is a reference to an element and
+                      should be read in "operRef".}
+    ref: TxpElement; {Reference to element when operand refers to some Pascal or
+                      ASM element.}
+    nam: string;     {Operand name. Used when operand is an unsolved reference}
+  end;
   { TEleAsmInstr }
   {Represents a line of assembler inside an ASM block.
   Consider this is a hardware dependent format}
@@ -680,13 +687,8 @@ type  //Instructions relative elements
                         because we don't want to depend on unit P6502Utils here. }
     addMode: byte;     {Formally should be TP6502AddMode or similar. Defined as byte
                         because we don't want to depend on unit P6502Utils here. }
-    operVal: integer;  {The value of instruction operand, when it's a simple number.
-                        When it's -1, the operand is a reference to an element and
-                        should be read in "operRef".}
-    operVal2: integer; {The second value of instruction operand, when it's needed}
-    operRef: TxpElement; {Reference to element when operand refers to some Pascal or
-                          ASM element.}
-    operNam: string;  {Operand name. Used when operand is an unsolved reference}
+    operand: TAsmOperand;  //Operand for ASM instruction.
+    operand2: TAsmOperand; //Second operand, used when it's needed.
     constructor Create; override;
   end;
   TEleAsmInstrs = specialize TFPGObjectList<TEleAsmInstr>;

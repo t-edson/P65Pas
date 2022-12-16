@@ -13,6 +13,7 @@ var
   regA: byte register;
 const
 	CBYTE = 3;
+  CWORD = $1234;
 
 procedure bien;
 begin
@@ -134,8 +135,7 @@ end;
 end; 
   
 begin
-
-  //variable asigment
+  //Variable asigment
 	abyte := 66;
 	asm
     LDA# 65
@@ -157,7 +157,7 @@ begin
   end;
   if vbool then bien else mal; 
 
-	//constant access
+	//Constant access
   vbyte := 0;
   asm 
     LDA # CBYTE 
@@ -173,7 +173,7 @@ begin
   end;
   if vbyte = 8 then bien else mal; 
 
-  //indirect address mode 
+  //Indirect address mode 
   asm 
 	   CLC
      LDX #3     ;Offset to point
@@ -182,19 +182,20 @@ begin
   end; 
   if regA = $18 then bien else mal; //$18 ->CLC
 
-	//jumps
+	//Jumps
   asm 
     JMP $+4
     BRK ;stop if not jump
   end;
 
-  //Test Loop 
+  //Test Loop with offset
 	vbyte := 10;
   asm 
     DEC vbyte
     BEQ $+2+3  ;2 bytes of BEQ and 3 of JMP
     JMP $-4    ;Loop to DEC vbyte
   end;
+	if vbyte = $00 then bien else mal;
 
   //Test Loop with labels
 	vbyte := 10;
@@ -206,11 +207,65 @@ begin
 salir:
   end;
 
+  //Setting PC
   asm org $ end;
 
+  //Operators
+  asm 
+	  LDA #CBYTE + 2
+    STA vbyte
+  end; 
+	if vbyte = 5 then bien else mal;
+ 
+  asm 
+	  LDA #<CWORD
+    STA vbyte
+  end; 
+	if vbyte = $34 then bien else mal;
+  asm 
+	  LDA #>CWORD
+    STA vbyte
+  end; 
+	if vbyte = $12 then bien else mal;
+
+  asm 
+	  LDA #<CWORD+1
+    STA vbyte
+  end; 
+	if vbyte = $35 then bien else mal;
+  asm 
+	  LDA #>CWORD-1
+    STA vbyte
+  end; 
+	if vbyte = $11 then bien else mal;
+  
+  asm 
+	  LDA #CWORD@0
+    STA vbyte
+  end; 
+	if vbyte = $34 then bien else mal;
+  asm 
+	  LDA #CWORD@1
+    STA vbyte
+  end; 
+	if vbyte = $12 then bien else mal;
+
+  asm 
+	  LDA #CWORD.LOW
+    STA vbyte
+  end; 
+	if vbyte = $34 then bien else mal;
+  asm 
+	  LDA #CWORD.HIGH
+    STA vbyte
+  end; 
+	if vbyte = $12 then bien else mal;
+  
+  //Test return value
 	vword := SetTo8040;
 	if vword = $8040 then bien else mal;
 
+  //Call to subroutine
 	vword := multiplicar(5,10);
 	if vword = word(50) then bien else mal;
   

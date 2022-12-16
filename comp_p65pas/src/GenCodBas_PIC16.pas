@@ -1940,20 +1940,20 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
   "operRef" returns the reference to the element when operand is an "element operand",
   otherwise returns NIL.}
   begin
-    if (asmInst.operVal = -1) then begin
+    if (asmInst.operand.Val = -1) then begin
       //There is an expresion for the operand. We need to solve the parameter.
-      operRef := asmInst.operRef;
+      operRef := asmInst.operand.Ref;
       //Resolve operand value
       operVal := ReadOperandValueRef(operRef);
       if HayError then exit;
-    end else if (asmInst.operVal = -2) then begin
+    end else if (asmInst.operand.Val = -2) then begin
       //Operand is '$'
       operRef := nil;
       operVal :=  pic.iRam;
     end else begin
       //Operand can be read directly
       operRef := nil;
-      operVal := asmInst.operVal;
+      operVal := asmInst.operand.Val;
     end;
   end;
   procedure ApplyOperations(operRef: TxpElement; operations: TxpElements; var operVal: integer);

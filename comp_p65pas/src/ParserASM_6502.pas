@@ -216,15 +216,15 @@ Si no encuentra operando, genera error y devuelve FALSE.}
     if firstOperation='>' then begin
       //There is an operation
       opr := TEleAsmOperat.Create;
-      opr.operation := aopSelByte;  //Select byte
-      opr.value := 1;          //Byte position
+      opr.operation := aopSelByte; //Select byte
+      opr.value := 1;              //Byte position
       opr.name := '@1';
       inst.AddElement(opr);
     end else if firstOperation='<' then begin
       //There is an operation
       opr := TEleAsmOperat.Create;
-      opr.operation := aopSelByte;  //Select byte
-      opr.value := 0;          //Byte position
+      opr.operation := aopSelByte; //Select byte
+      opr.value := 0;              //Byte position
       opr.name := '@0';
       inst.AddElement(opr);
     end;
@@ -268,21 +268,21 @@ begin
     cpx.Next;
     cpx.SkipWhitesNoEOL;
     //Creates node "Operand".
-    inst.operVal := -2;  //To indicates it's $
+    inst.operand.Val := -2;  //To indicates it's $
     //Check for operations
     ScanOperations(positOper);
     if cpx.HayError then exit(false);
     exit(true);
   end else if cpx.tokType = tkLitNumber then begin
     //Es una dirección numérica
-    inst.operVal := StrToInt(cpx.token);  //Simple number
+    inst.operand.Val := StrToInt(cpx.token);  //Simple number
     cpx.Next;
     exit(true);
   end else if cpx.tokType = tkIdentifier  then begin
     if IsLabelDeclared(cpx.token, lblEle) then begin
       //Es un identificador de etiqueta
-      inst.operVal := -1;        //Indicates to use "operRef"
-      inst.operRef := lblEle;  //Referencia a la etiqueta.
+      inst.operand.Val := -1;        //Indicates to use "operRef"
+      inst.operand.Ref := lblEle;  //Referencia a la etiqueta.
       //cpx.AddCallerToFromCurr(lblEle);  //Agrega referencia
       cpx.Next;
       //Check for operations
@@ -293,9 +293,9 @@ begin
     ele := cpx.TreeElems.FindFirst(cpx.token);  //identifica elemento
     if ele=nil then begin
       //Es un identificador no definido (como una etiqueta). Puede definirse luego.
-      inst.operVal := -1;        //Indicates to use "operRef"
-      inst.operRef := nil;        //Will be later linked.
-      inst.operNam := UpCase(cpx.token);  //Keep name to find reference.
+      inst.operand.Val := -1;        //Indicates to use "operRef"
+      inst.operand.Ref := nil;        //Will be later linked.
+      inst.operand.Nam := UpCase(cpx.token);  //Keep name to find reference.
       //Los saltos indefinidos, se guardan en la lista "undJumps"
       curBlock.undefInstrucs.Add(inst);
       cpx.Next;
@@ -310,8 +310,8 @@ begin
         xfun := TEleFun(ele);
         cpx.AddCallerToFromCurr(xfun);  //lleva la cuenta
         cpx.Next;  //Take variable name
-        inst.operVal := -1;        //Indicates to use "operRef"
-        inst.operRef := xfun;
+        inst.operand.Val := -1;        //Indicates to use "operRef"
+        inst.operand.Ref := xfun;
         //Check for operations
         ScanOperations(positOper);
         if cpx.HayError then exit(false);
@@ -321,8 +321,8 @@ begin
         xvar := TEleVarDec(ele);
         cpx.AddCallerToFromCurr(xvar);  //lleva la cuenta
         cpx.Next;  //Take variable name
-        inst.operVal := -1;        //Indicates to use "operRef"
-        inst.operRef := xvar;
+        inst.operand.Val := -1;        //Indicates to use "operRef"
+        inst.operand.Ref := xvar;
         //Check for operations
         ScanOperations(positOper);
         if cpx.HayError then exit(false);
@@ -333,10 +333,9 @@ begin
         cpx.AddCallerToFromCurr(xcon);  //lleva la cuenta
         //Constants can be resolved as numbers
         if (xcon.typ = cpx.typByte) or (xcon.typ = cpx.typWord) then begin
-          inst.operVal := xcon.value^.ValInt;  //Get Value
           cpx.Next;
-          inst.operVal := -1;        //Indicates to use "operRef"
-          inst.operRef := xcon;
+          inst.operand.Val := -1;        //Indicates to use "operRef"
+          inst.operand.Ref := xcon;
           //Check for operations
           ScanOperations(positOper);
           if cpx.HayError then exit(false);
@@ -370,9 +369,9 @@ procedure TParserAsm_6502.EndASM;  //Termina el procesamiento de código ASM
     lblInstr: TEleAsmInstr;
   begin
     for lblInstr in labels do begin  //Ve si la etiqueta existe
-      if lblInstr.uname = unsInstruct.operNam then begin
+      if lblInstr.uname = unsInstruct.operand.Nam then begin
         //Sí existe la etiqueta.
-        unsInstruct.operRef := lblInstr;  //Actualiza la referencia a la etiqueta.
+        unsInstruct.operand.Ref := lblInstr;  //Actualiza la referencia a la etiqueta.
         //cpx.AddCallerToFromCurr(lblInstr);  //Agrega referencia
         exit(true);  //Encontrado y actualizado.
       end;
@@ -471,9 +470,9 @@ begin
         cpx.SkipWhitesNoEOL;
         //Only could be aIndirecX or aAbsInIdX
         if aAbsInIdX in addressModes then begin  //Only JMP have this mode and don't have aIndirecX
-          UpdateInstruction(idInst, aAbsInIdX, curInst.operVal);
+          UpdateInstruction(idInst, aAbsInIdX, curInst.operand.Val);
         end else begin  //The only option
-          UpdateInstruction(idInst, aIndirecX, curInst.operVal);
+          UpdateInstruction(idInst, aIndirecX, curInst.operand.Val);
         end;
         //Verify ')'
         if not CaptureParenthes then begin
@@ -486,7 +485,7 @@ begin
         cpx.SkipWhitesNoEOL;
         if cpx.token = ',' then begin
           //Can only be (indirect),Y
-          UpdateInstruction(idInst, aIndirecY, curInst.operVal);
+          UpdateInstruction(idInst, aIndirecY, curInst.operand.Val);
           cpx.Next;  //Toma número
           cpx.SkipWhitesNoEOL;
           if UpCase(cpx.token) <> 'Y' then begin
@@ -528,11 +527,11 @@ begin
       if Upcase(cpx.token) = 'X' then begin
         cpx.Next;
         cpx.SkipWhitesNoEOL;
-        UpdateInstruction(idInst, aAbsolutX, curInst.operVal);
+        UpdateInstruction(idInst, aAbsolutX, curInst.operand.Val);
       end else if Upcase(cpx.token) = 'Y' then begin
         cpx.Next;
         cpx.SkipWhitesNoEOL;
-        UpdateInstruction(idInst, aAbsolutY, curInst.operVal);
+        UpdateInstruction(idInst, aAbsolutY, curInst.operand.Val);
       end else begin
         //Could be the 65c02 instruction BBR0 $12, <label>
         if not CaptureOperand(curInst) then begin
@@ -540,17 +539,17 @@ begin
           exit;
         end;
         //We have an operand.
-        UpdateInstruction(idInst, aZeroPRel, curInst.operVal);
+        UpdateInstruction(idInst, aZeroPRel, curInst.operand.Val);
       end;
     end else begin
       if addressModes = [aRelative] then begin
         //Only accept "aRelative" address. Like BEQ, BNE, ...
-        UpdateInstruction(idInst, aRelative, curInst.operVal);
+        UpdateInstruction(idInst, aRelative, curInst.operand.Val);
       end else if addressModes = [aImplicit] then begin
         //Only accept "aImplicit" address. Like CLC, CLD, ...
-        UpdateInstruction(idInst, aImplicit, curInst.operVal);
+        UpdateInstruction(idInst, aImplicit, curInst.operand.Val);
       end else begin
-        UpdateInstruction(idInst, aAbsolute, curInst.operVal);
+        UpdateInstruction(idInst, aAbsolute, curInst.operand.Val);
       end;
     end;
     if (cpx.tokType=tkIdentifier) and (Upcase(cpx.token)='END') then begin
@@ -695,7 +694,7 @@ procedure TParserAsm_6502.UpdateInstruction(const inst: TP6502Inst;
 begin
   curInst.opcode := ord(inst);
   curInst.addMode := ord(addMode);
-  curInst.operVal := param;
+  curInst.operand.Val := param;
 end;
 procedure TParserAsm_6502.AddInstruction(const inst: TP6502Inst;
   addMode: TP6502AddMode; param: integer; srcDec: TSrcPos);
@@ -745,7 +744,7 @@ begin
   curInst.addr := -1;   //Indica que la dirección física aún no ha sido fijada.
   curInst.iType := itOrgDir;  //Represents ORG
   cpx.TreeElems.AddElementAndOpen(curInst);
-  curInst.operVal := param;
+  curInst.operand.Val := param;
 end;
 procedure TParserAsm_6502.AddDirectiveDB;
 begin
