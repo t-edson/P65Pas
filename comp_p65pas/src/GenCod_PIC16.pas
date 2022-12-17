@@ -4141,20 +4141,41 @@ end;
 procedure TGenCod.SNF_wrd_div_wrd_16(fun: TEleFunBase);
 { Returns Div and Mod (word, word)
   Source: https://codebase64.org/doku.php?id=base:16bit_division_16-bit_result
-  Input:  A - numerator;
-          X - denominator
-  Output: _H - quotient (div)
-          A  - remainder (mod)
+  Input:  Dividend  - numerator;
+          Divisor   - denominator
+  Output: Dividend  - quotient (div)
+          Remainder - remainder (mod)
 }
-var
-  fac1, fac2, tmp: TEleVarDec;
+  var loop, skip: integer;
+      Dividend, Divisor, Remainder: TEleVarDec;
 begin
-  fac1 := fun.pars[0].pvar;
-  fac2 := fun.pars[1].pvar;
-  tmp := TEleVarDec(fun.elements[2]);
+  Dividend  := fun.pars[0].pvar;
+  Divisor   := fun.pars[1].pvar;
+  Remainder := TEleVarDec(fun.elements[2]);
   PutLabel('__word_div_word');
-  //_LDA(tmp.addr);
-  _RTS();
+    _LDAi(0);
+    _STA(Remainder.addr);
+    _STA(Remainder.addr + 1);
+    _LDXi(16);
+_LABEL_pre(loop);
+    _ASL(Dividend.addr);
+    _ROL(Dividend.addr + 1);
+    _ROL(Remainder.addr);
+    _ROL(Remainder.addr + 1);
+    _LDA(Remainder.addr);
+    _SEC;
+    _SBC(Divisor.addr);
+    _TAY;
+    _LDA(Remainder.addr + 1);
+    _SBC(Divisor.addr + 1);
+    _BCC_post(skip);
+    _STA(Remainder.addr + 1);
+    _STY(Remainder.addr);
+    _INC(Dividend.addr);
+_LABEL_post(skip);
+    _DEX;
+    _BNE_pre(loop);
+    _RTS;
 end;
 procedure TGenCod.SNF_word_shift_l(fun: TEleFunBase);
 {Routine to left shift.
@@ -6701,8 +6722,36 @@ procedure TGenCod.SIF_word_div_word(fun: TEleExpress);
   var parA, parB: TEleExpress;
       AddrUndef: boolean;
       fdiv: TEleFun;
+      Dividend, Divisor: TEleVarDec;
 
   procedure DivbyConst;
+    procedure Div2(n: integer);
+      var i: integer;
+    begin
+        _LDA(parA.addH);
+        _LSRa;
+        _STA(H.addr);
+        _LDA(parA.addL);
+        _RORa;
+      for i := 1 to n do begin
+        _LSR(H.addr);
+        _RORa;
+      end;
+    end;
+    procedure Div2H(n: integer);
+      var i: integer;
+    begin
+      if cpuMode = cpu65C02 then
+        _STZ(H.addr)
+      else begin
+        _LDAi(0);
+        _STA(H.addr);
+      end;
+        _LDA(parA.addH);
+      for i := 1 to n do
+        _LSRa;
+    end;
+
   begin
     case parB.val of
       1: begin
@@ -6710,17 +6759,39 @@ procedure TGenCod.SIF_word_div_word(fun: TEleExpress);
         _STA(H.addr);
         _LDA(parA.addL);
       end;
-      2: begin
-        _LDA(parA.addH);
-        _LSRa;
-        _STA(H.addr);
-        _LDA(parA.addL);
-        _RORa
-      end;
+          2: Div2(0);
+          4: Div2(1);
+          8: Div2(2);
+         16: Div2(3);
+         32: Div2(4);
+         64: Div2(5);
+        128: Div2(6);
+        256: Div2H(0);
+        512: Div2H(1);
+       1024: Div2H(2);
+       2048: Div2H(3);
+       4096: Div2H(4);
+       8192: Div2H(5);
+      16384: Div2H(6);
+      32768: begin
+        Div2H(0);  // to zero H
+        _ASLa;
+        _LDAi(0);
+        _ROLa;
+      end
     else
-        //_LDXi(parB.val);
+        _LDA(parA.addH);
+        _STA(Dividend.addrH);
+        _LDA(parA.addL);
+        _STA(Dividend.addrL);
+        _LDAi(parB.valH);
+        _STA(Divisor.addrH);
+        _LDAi(parB.valL);
+        _STA(Divisor.addrL);
         functCall(fdiv, AddrUndef);
-        //_LDA(H.addr);   // Here we need only the div part
+        _LDA(Dividend.addrH);  // Dividend contain DIV
+        _STA(H.addr);
+        _LDA(Dividend.addrL);
     end;
   end;
 
@@ -6728,6 +6799,8 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
   fdiv := snfWrdDivWrd16;
+  Dividend := fdiv.pars[0].pvar;
+  Divisor  := fdiv.pars[1].pvar;
   if compMod = cmConsEval then begin
     if (parA.Sto = stConst) and (parB.Sto = stConst) then
       SetFunConst_word(fun, parA.val div parB.val);
@@ -6743,44 +6816,33 @@ begin
   end;
   stConst_RamFix: begin
     SetFunExpres(fun);
-    _LDAi(parA.val);
-    if parA.val > 0 then begin
-        _LDX(parB.add);
-        functCall(fdiv, AddrUndef);
-        _LDA(H.addr);   // Here we need only the div part
-    end;
+    _LDAi(parA.valH);
+    _STA(Dividend.addrH);
+    _LDAi(parA.valL);
+    _STA(Dividend.addrL);
+    _LDA(parB.addH);
+    _STA(Divisor.addrH);
+    _LDA(parB.addL);
+    _STA(Divisor.addrL);
+    functCall(fdiv, AddrUndef);
+    _LDA(Dividend.addrH);  // Dividend contain DIV
+    _STA(H.addr);
+    _LDA(Dividend.addrL);
   end;
   stRamFix_RamFix: begin
     SetFunExpres(fun);
-        _LDA(parA.add);
-        _LDX(parB.add);
-        functCall(fdiv, AddrUndef);
-        _LDA(H.addr);   // Here we need only the div part
-  end;
-  stRegist_RamFix: begin
-    SetFunExpres(fun);
-        //_LDA(parA.add);
-        _LDX(parB.add);
-        functCall(fdiv, AddrUndef);
-        _LDA(H.addr);   // Here we need only the div part
-  end;
-  stRegist_Const: begin
-    SetFunExpres(fun);
-    DivbyConst;
-  end;
-  stConst_Regist: begin
-    SetFunExpres(fun);
-        _TAX;
-        _LDAi(parA.val);
-        functCall(fdiv, AddrUndef);
-        _LDA(H.addr);   // Here we need only the div part
-  end;
-  stRamFix_Regist: begin
-    SetFunExpres(fun);
-        _TAX;
-        _LDA(parA.add);
-        functCall(fdiv, AddrUndef);
-        _LDA(H.addr);   // Here we need only the div part
+    _LDA(parA.addH);
+    _STA(Dividend.addrH);
+    _LDA(parA.addL);
+    _STA(Dividend.addrL);
+    _LDA(parB.addH);
+    _STA(Divisor.addrH);
+    _LDA(parB.addL);
+    _STA(Divisor.addrL);
+    functCall(fdiv, AddrUndef);
+    _LDA(Dividend.addrH);  // Dividend contain DIV
+    _STA(H.addr);
+    _LDA(Dividend.addrL);
   end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
