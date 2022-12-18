@@ -1059,6 +1059,29 @@ var
   minUsed: integer;
   lblLin, comLin, lin: String;
   nBytes: byte;
+
+  procedure DumpVar(const InitStr: string);
+    var n: integer;
+        s: string;
+
+  begin
+    s := InitStr;
+    n := 7;
+    inc(i);
+    while pic.ram[i].name = ''  do begin
+      s := s + ' ' + IntToHEx(pic.ram[i].value,2);
+      dec(n);
+      if n = 0 then begin
+        lins.Add(s);
+        n := 8;
+        //s := SPACEPAD;
+        s := PadRight('', LSPC) + '$'+IntToHex(i,4) + ' DB';
+      end;
+      inc(i);
+    end;
+    if n < 8 then lins.Add(s);
+  end;
+
 begin
   if asmOutType=0 then begin  //Normal Assembler output
     //Include header
@@ -1088,12 +1111,12 @@ begin
         //Must be a variable.
         if IncAddress then begin
           if comLin<>'' then lins.add(comLin);
-          lins.Add( PadRight(lblLin, LSPC) + '$'+IntToHex(i,4) + ' DB ' +
+          DumpVar( PadRight(lblLin, LSPC) + '$'+IntToHex(i,4) + ' DB ' +
                     IntToHEx(pic.ram[i].value,2) );
         end else begin
           lins.Add( PadRight(lblLin, LSPC) + 'DB ' + IntToHEx(pic.ram[i].value,2) );
         end;
-        i := i + 1;
+        //i := i + 1;
       end else begin
         //Debe ser código o memoria sin usar.
         if lblLin<>'' then lins.Add(lblLin+':');  //Etiqueta al inicio de línea

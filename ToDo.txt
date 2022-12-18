@@ -1,0 +1,41 @@
+[=== CODE ===]
+* Finish 65c02:
+  - add new addresing mode for 65c02 (BBR/BBS)
+  - implement BBR/BBS
+  - implement _BBR/BBS
+
+* Fully implement WORD support:
+  - add multiplication:
+    - parsing
+    - SNF
+    - SIF
+
+* Finish POINTERS:
+  - what is left?
+
+* New feauture: INLINE (what do we need here as steps?)
+* New feauture: VAR parameters in procedure
+* New feauture: word registers like RegisterAX/AY/XY/XA/YA/YX (parameters only)
+* New feauture: 24bit registers like RegisterAXY/AYX (parameters only)
+* New feauture: Integers
+* New feauture: Float/Real
+* New feauture: Labels
+
+[=== IDE ===]
+* Code editing:
+  - [Ctrl]+[Shift]+Up: jump to declaration or implementation of procedure
+  - smart Find: when you hit Ctrl+F, to grab the word the carret is on
+
+* Debugger:
+  - remove RAM map and put Stack
+  - Variable panel: make it better :)
+    - Showing all CPU registers, including SP
+    - Option to choose what to show: Registers, Variables,...
+    - manual adding RAM addresses
+  - Placing break points in the editor.
+
+* Generated code panel:
+  - better visualization of multibyte variables (maybe 8 ro 16 per row)
+
+[=== INTERNALS ===]
+* Constant propagation? so code like "a + 10 + 20 + 30" will generate: a + 60
