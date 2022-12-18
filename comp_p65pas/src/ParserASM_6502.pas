@@ -211,30 +211,17 @@ Si no encuentra operando, genera error y devuelve FALSE.}
     operation: TAsmInstOperation;
     value: word;
     opTxt: string;
-    opr: TEleAsmOperat;
   begin
     if firstOperation='>' then begin
       //There is an operation
-      opr := TEleAsmOperat.Create;
-      opr.operation := aopSelByte; //Select byte
-      opr.value := 1;              //Byte position
-      opr.name := '@1';
-      inst.AddElement(opr);
+      inst.operand.AddOperation(aopSelByte, 1);
     end else if firstOperation='<' then begin
       //There is an operation
-      opr := TEleAsmOperat.Create;
-      opr.operation := aopSelByte; //Select byte
-      opr.value := 0;              //Byte position
-      opr.name := '@0';
-      inst.AddElement(opr);
+      inst.operand.AddOperation(aopSelByte, 0);
     end;
     while ScanOperation(operation, value, opTxt) do begin
       //There is an operation
-      opr := TEleAsmOperat.Create;
-      opr.operation := operation;  //Select byte
-      opr.value := value;          //Byte position
-      opr.name := opTxt;
-      inst.AddElement(opr);
+      inst.operand.AddOperation(operation, value);
     end;
   end;
   function TestForPositionOperand: char;

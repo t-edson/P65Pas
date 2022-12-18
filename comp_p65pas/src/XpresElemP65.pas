@@ -205,7 +205,6 @@ type  //TxpElement class
                 eleFinal,     //FINALIZATION section
                 //Expressions
                 eleExpress,   //Expression
-                eleAsmOperat, //ASM Operation
                 eleCondit,    //Condition
                 //Instructions relative
                 eleSenten,    //Sentence/Instruction
@@ -443,20 +442,13 @@ type  //Declaration elements
   TEleVarDecs = specialize TFPGObjectList<TEleVarDec>;
 
 type  //Expression elements
-  //Valid operations for TEleAsmOperat
-  TAsmInstOperation = (
-    aopSelByte,  //Selecciona un byte
-    aopAddValue, //Suma un valor
-    aopSubValue  //Resta un valor
-  );
-
-  { TxpEleOperator }
-  {Represent an operation in ASM expressions.}
-  TEleAsmOperat= class(TxpElement)
-    operation : TAsmInstOperation;   //Operation
-    value     : word;                //Value
-    constructor Create; override;
-  end;
+//  { TxpEleOperator }
+//  {Represent an operation in ASM expressions.}
+//  TEleAsmOperat= class(TxpElement)
+//    operation : TAsmInstOperation;   //Operation
+//    value     : word;                //Value
+//    constructor Create; override;
+//  end;
 
   TEleFunBase = class;
   TEleFunDec = class;
@@ -668,13 +660,29 @@ type  //Instructions relative elements
     itDefByte,    //Instruction DB
     itDefWord     //Instruction DW
   );
-  TAsmOperand = record
+  //Valid operations for TEleAsmOperat
+  TAsmInstOperation = (
+    aopSelByte,  //Select a byte: operand.low, operand.high, >operand, <operand
+    aopAddValue, //Add a value: operand + value
+    aopSubValue  //Substract a value: operand - value
+  );
+  TAsmOperation = record
+    oper: TAsmInstOperation;
+    value: word;
+  end;
+  TAsmOperations = array of TAsmOperation;
+  { TAsmOperand }
+  TAsmOperand = object
     val: integer;    {The value of instruction operand, when it's a simple number.
                       When it's -1, the operand is a reference to an element and
                       should be read in "operRef".}
     ref: TxpElement; {Reference to element when operand refers to some Pascal or
                       ASM element.}
     nam: string;     {Operand name. Used when operand is an unsolved reference}
+    //Operations
+    operations: TAsmOperations;
+    procedure ClearOperations;
+    procedure AddOperation(oper: TAsmInstOperation; value: word);
   end;
   { TEleAsmInstr }
   {Represents a line of assembler inside an ASM block.
@@ -855,6 +863,23 @@ function GenPointerTypeName(refTypeName: string): string; inline;
 begin
   exit(PREFIX_PTR + '-' +refTypeName);
 end;
+
+{ TAsmOperand }
+
+procedure TAsmOperand.ClearOperations;
+begin
+  setlength(Operations, 0);
+end;
+procedure TAsmOperand.AddOperation(oper: TAsmInstOperation; value: word);
+var
+  n: Integer;
+begin
+  n := high(Operations)+1;  //Number of elements
+  setlength(Operations, n+1);
+  Operations[n].oper  := oper;
+  Operations[n].value := value;
+end;
+
 { TEleCondit }
 constructor TEleCondit.Create;
 begin
@@ -917,11 +942,11 @@ begin
   inherited Destroy;
 end;
 { TxpEleOperator }
-constructor TEleAsmOperat.Create;
-begin
-  inherited Create;
-  idClass := eleAsmOperat;
-end;
+//constructor TEleAsmOperat.Create;
+//begin
+//  inherited Create;
+//  idClass := eleAsmOperat;
+//end;
 { TEleExpress }
 function TEleExpress.opTypeAsStr: string;
 begin

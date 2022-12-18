@@ -1956,15 +1956,15 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
       operVal := asmInst.operand.Val;
     end;
   end;
-  procedure ApplyOperations(operRef: TxpElement; operations: TxpElements; var operVal: integer);
+  procedure ApplyOperations(operRef: TxpElement; const operations: TAsmOperations; var operVal: integer);
   {Apply the operations to the parameter "operVal"}
   var
     i: Integer;
-    operat: TEleAsmOperat;
+    operat: TAsmOperation;
   begin
-    for i:=0 to operations.Count-1 do begin
-      operat := TEleAsmOperat(operations[i]);
-      case operat.operation of
+    for i:=0 to high(operations) do begin
+      operat := operations[i];
+      case operat.oper of
       aopAddValue: begin
         operVal += operat.value;
       end;
@@ -2033,7 +2033,7 @@ begin
     //Calculate the final Opcode operand parameter.
     ReadOperandValue(operRef, finalOperVal);
     //Validates possible operations to the operand
-    ApplyOperations(operRef, asmInst.elements, finalOperVal);
+    ApplyOperations(operRef, asmInst.operand.operations, finalOperVal);
     //Write the instruction
     asmInst.addr := pic.iRam;   //Set address
     cpu_inst := TP6502Inst(asmInst.opcode);
@@ -2051,21 +2051,21 @@ begin
     //Calculate the final Opcode operand parameter.
     ReadOperandValue(operRef, finalOperVal);
     //Validates possible operations to the operand
-    ApplyOperations(operRef, asmInst.elements, finalOperVal);
+    ApplyOperations(operRef, asmInst.operand.operations, finalOperVal);
     pic.iRam := finalOperVal;   //Actualiza dirección actual
     lastASMLabel := '';
   end else if asmInst.iType = itDefByte then begin  //Instrucción DB.
     //Calculate the final Opcode operand parameter.
     ReadOperandValue(operRef, finalOperVal);
     //Validates possible operations to the operand
-    ApplyOperations(operRef, asmInst.elements, finalOperVal);
+    ApplyOperations(operRef, asmInst.operand.operations, finalOperVal);
     pic.codByte(finalOperVal and $ff, ruData, lastASMLabel);
     lastASMLabel := '';
   end else if asmInst.iType = itDefWord then begin  //Instrucción DW.
     //Calculate the final Opcode operand parameter.
     ReadOperandValue(operRef, finalOperVal);
     //Validates possible operations to the operand
-    ApplyOperations(operRef, asmInst.elements, finalOperVal);
+    ApplyOperations(operRef, asmInst.operand.operations, finalOperVal);
     pic.codByte(finalOperVal and $ff, ruData, lastASMLabel);
     pic.codByte((finalOperVal >> 8) and $ff, ruData, '');
     lastASMLabel := '';
