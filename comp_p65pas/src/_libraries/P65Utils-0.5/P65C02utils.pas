@@ -263,7 +263,8 @@ type
     procedure useRAMCodeDa;
     procedure codByte(const value: byte; isData: boolean);
     procedure codByte(const value: byte; used: TCPURamUsed; name: string = '');
-    procedure codAsm(const inst: TP6502Inst; addMode: TP6502AddMode; param: word);
+    procedure codAsm(const inst: TP6502Inst; addMode: TP6502AddMode; param: word;
+      param2: word = 0);
     procedure cod_JMP_at(iRam0: integer; const k: word);
     procedure cod_REL_JMP_at(iRam0: integer; const k: word);
     function codInsert(iRam0, nInsert, nWords: integer): boolean;
@@ -382,7 +383,8 @@ begin
   if name<>'' then ram[iRam].name := name;
   inc(iRam);
 end;
-procedure TP6502.codAsm(const inst: TP6502Inst; addMode: TP6502AddMode; param: word);
+procedure TP6502.codAsm(const inst: TP6502Inst; addMode: TP6502AddMode; param: word;
+                        param2: word = 0);
 {General routine to codify assembler instructions.}
 var
   rInst: TP6502Instruct;
@@ -484,6 +486,12 @@ begin
   end;
   aIndirecZP: begin
     ram[iRam].value := lo(param);
+    useRAMCodeDa;
+  end;
+  aZeroPRel: begin
+    ram[iRam].value := lo(param);
+    useRAMCodeDa;
+    ram[iRam].value := lo(param2);
     useRAMCodeDa;
   end
   else
@@ -628,8 +636,17 @@ the intruction length, will be returned in "nBytesProc".
 
 Global variables used: "idIns", "modIns".
 "useVarName" -> Flag to use the name of the variable instead of only the address.
-                Valid only when a variAble name exists in his address.
+                Valid only when a variable name exists in its address.
 }
+  function RelativeParStr(addr, par: word): string;
+  {Returns relative offset as string}
+  begin
+    if par<128 then begin  //Positive
+      Result := '$'+IntToHex((addr + par+2) and $FFFF, 4);
+    end else begin
+      Result := '$'+IntToHex((addr + par-254) and $FFFF, 4);
+    end;
+  end;
 var
   nemo: String;
   opCode, par1: Byte;
@@ -675,12 +692,12 @@ begin
   end;
   aRelative: begin
     nBytesProc := 2;
-    if par1<128 then begin  //Positive
-      Result := nemo + '$'+IntToHex((addr + par1+2) and $FFFF, 4);
-    end else begin
-      Result := nemo + '$'+IntToHex((addr + par1-254) and $FFFF, 4);
-    end;
-    //Result := nemo + '$'+IntToHex(par1, 2);
+    //if par1<128 then begin  //Positive
+    //  Result := nemo + '$'+IntToHex((addr + par1+2) and $FFFF, 4);
+    //end else begin
+    //  Result := nemo + '$'+IntToHex((addr + par1-254) and $FFFF, 4);
+    //end;
+    Result := nemo + RelativeParStr(addr, par1);
   end;
   aIndirect: begin
     nBytesProc := 3;
@@ -725,6 +742,12 @@ begin
   aIndirecZP: begin
     nBytesProc := 2;
     Result := nemo + '($'+IntToHex(par1, 2)+')';
+  end;
+  aZeroPRel: begin
+    nBytesProc := 3;
+    if addr+2>CPUMAXRAM-1 then exit('');
+    par2   := ram[addr+2].value;
+    Result := nemo + '$'+IntToHex(par1, 2)+',' + RelativeParStr(addr, par2);
   end;
   end;
 end;
@@ -1913,38 +1936,38 @@ begin
     PIC16InstName[i_SMB7].AddAddressMode(aZeroPage,$F7,2,5,0, ONLY_65C02);
 
     PIC16InstName[i_BBR0].name := 'BBR0';
-    PIC16InstName[i_BBR0].AddAddressMode(aZeroPRel,$0F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR0].AddAddressMode(aZeroPRel,$0F,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBR1].name := 'BBR1';
-    PIC16InstName[i_BBR1].AddAddressMode(aZeroPRel,$1F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR1].AddAddressMode(aZeroPRel,$1F,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBR2].name := 'BBR2';
-    PIC16InstName[i_BBR2].AddAddressMode(aZeroPRel,$2F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR2].AddAddressMode(aZeroPRel,$2F,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBR3].name := 'BBR3';
-    PIC16InstName[i_BBR3].AddAddressMode(aZeroPRel,$3F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR3].AddAddressMode(aZeroPRel,$3F,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBR4].name := 'BBR4';
-    PIC16InstName[i_BBR4].AddAddressMode(aZeroPRel,$4F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR4].AddAddressMode(aZeroPRel,$4F,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBR5].name := 'BBR5';
-    PIC16InstName[i_BBR5].AddAddressMode(aZeroPRel,$5F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR5].AddAddressMode(aZeroPRel,$5F,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBR6].name := 'BBR6';
-    PIC16InstName[i_BBR6].AddAddressMode(aZeroPRel,$6F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR6].AddAddressMode(aZeroPRel,$6F,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBR7].name := 'BBR7';
-    PIC16InstName[i_BBR7].AddAddressMode(aZeroPRel,$7F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBR7].AddAddressMode(aZeroPRel,$7F,3,5,0, ONLY_65C02);
 
     PIC16InstName[i_BBS0].name := 'BBS0';
-    PIC16InstName[i_BBS0].AddAddressMode(aZeroPRel,$8F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS0].AddAddressMode(aZeroPRel,$8F,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBS1].name := 'BBS1';
-    PIC16InstName[i_BBS1].AddAddressMode(aZeroPRel,$9F,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS1].AddAddressMode(aZeroPRel,$9F,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBS2].name := 'BBS2';
-    PIC16InstName[i_BBS2].AddAddressMode(aZeroPRel,$AF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS2].AddAddressMode(aZeroPRel,$AF,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBS3].name := 'BBS3';
-    PIC16InstName[i_BBS3].AddAddressMode(aZeroPRel,$BF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS3].AddAddressMode(aZeroPRel,$BF,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBS4].name := 'BBS4';
-    PIC16InstName[i_BBS4].AddAddressMode(aZeroPRel,$CF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS4].AddAddressMode(aZeroPRel,$CF,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBS5].name := 'BBS5';
-    PIC16InstName[i_BBS5].AddAddressMode(aZeroPRel,$DF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS5].AddAddressMode(aZeroPRel,$DF,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBS6].name := 'BBS6';
-    PIC16InstName[i_BBS6].AddAddressMode(aZeroPRel,$EF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS6].AddAddressMode(aZeroPRel,$EF,3,5,0, ONLY_65C02);
     PIC16InstName[i_BBS7].name := 'BBS7';
-    PIC16InstName[i_BBS7].AddAddressMode(aZeroPRel,$FF,2,5,0, ONLY_65C02);
+    PIC16InstName[i_BBS7].AddAddressMode(aZeroPRel,$FF,3,5,0, ONLY_65C02);
 
   PIC16InstName[i_Inval].name := 'Inv';
 

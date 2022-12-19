@@ -661,13 +661,13 @@ type  //Instructions relative elements
     itDefWord     //Instruction DW
   );
   //Valid operations for TEleAsmOperat
-  TAsmInstOperation = (
+  TAsmOperator = (
     aopSelByte,  //Select a byte: operand.low, operand.high, >operand, <operand
     aopAddValue, //Add a value: operand + value
     aopSubValue  //Substract a value: operand - value
   );
   TAsmOperation = record
-    oper: TAsmInstOperation;
+    oper: TAsmOperator;
     value: word;
   end;
   TAsmOperations = array of TAsmOperation;
@@ -683,7 +683,7 @@ type  //Instructions relative elements
     //Operations
     operations: TAsmOperations;
     procedure ClearOperations;
-    procedure AddOperation(oper: TAsmInstOperation; value: word);
+    procedure AddOperation(oper: TAsmOperator; value: word);
   end;
   { TEleAsmInstr }
   {Represents a line of assembler inside an ASM block.
@@ -871,7 +871,7 @@ procedure TAsmOperand.ClearOperations;
 begin
   setlength(Operations, 0);
 end;
-procedure TAsmOperand.AddOperation(oper: TAsmInstOperation; value: word);
+procedure TAsmOperand.AddOperation(oper: TAsmOperator; value: word);
 var
   n: Integer;
 begin

@@ -106,7 +106,7 @@ operations if exist.
    [ > | < ] <numeric literal>
    [ > | < ] <identifier> [.HIGH | .LOW | @0 | @1 | @2 | @3 | <+|-><numeric literal>]
 If not operand eas found error is generated and returns FALSE.}
-  function ScanOperation(out operation: TAsmInstOperation; out value: word): boolean;
+  function ScanOperation(out operation: TAsmOperator; out value: word): boolean;
   {Look for one operations, in the current context. Operatiosn valids are:
         .HIGH
         .LOW
@@ -201,7 +201,7 @@ If not operand eas found error is generated and returns FALSE.}
   "firstOperation" allows to indicate if a position operator, like '>' or '<' has been
   found before de parameter.}
   var
-    operation: TAsmInstOperation;
+    operation: TAsmOperator;
     value: word;
   begin
     if firstOperation='>' then begin
@@ -349,16 +349,16 @@ begin
   labels.Clear;   //limpia etiquetas
 end;
 procedure TParserAsm_6502.EndASM;  //Termina el procesamiento de código ASM
-  function CompleteUndefJump(unsInstruct : TEleAsmInstr): boolean;
+  function CompleteUndefJump(var operand: TAsmOperand): boolean;
   {Completa la instrucción "unsInstruct", buscando en la lista de etiquetas.
   Si no encuentra la etiqueta, devuelve FALSE.}
   var
     lblInstr: TEleAsmInstr;
   begin
     for lblInstr in labels do begin  //Ve si la etiqueta existe
-      if lblInstr.uname = unsInstruct.operand.Nam then begin
+      if operand.Nam  = lblInstr.uname  then begin
         //Sí existe la etiqueta.
-        unsInstruct.operand.Ref := lblInstr;  //Actualiza la referencia a la etiqueta.
+        operand.Ref := lblInstr;  //Actualiza la referencia a la etiqueta.
         //cpx.AddCallerToFromCurr(lblInstr);  //Agrega referencia
         exit(true);  //Encontrado y actualizado.
       end;
@@ -368,14 +368,22 @@ procedure TParserAsm_6502.EndASM;  //Termina el procesamiento de código ASM
 var
   jmpInst : TEleAsmInstr;
 begin
-  //Completa los saltos a etiquetas no definidas.
-  //Al final de esta iteración todas las instruciones que incluyan operandos con
-  //saltos a etiquetas indefinidas, estarán referenciando a la etiqueta correspondiente
-  //en lugar de solo guardar el nombre de la etiqueta.
+  //Complete operand for instructions with udefined label references.
+  {Al final de esta iteración todas las instruciones que incluyan operandos con
+  saltos a etiquetas indefinidas, estarán referenciando a la etiqueta correspondiente
+  en lugar de solo guardar el nombre de la etiqueta.}
   for jmpInst in curBlock.undefInstrucs do begin
-    if not CompleteUndefJump(jmpInst) then begin
-      //No se enuentra "jmpInst" en "labels".
-      cpx.GenError(ER_UNDEF_LABEL_, [jmpInst.name], jmpInst.srcDec);
+    if jmpInst.operand.nam<>'' then begin  //Has an undefined label
+      if not CompleteUndefJump(jmpInst.operand) then begin
+        //No se enuentra "jmpInst" en "labels".
+        cpx.GenError(ER_UNDEF_LABEL_, [jmpInst.operand.nam], jmpInst.srcDec);
+      end;
+    end;
+    if jmpInst.operand2.nam<>'' then begin   //Has an undefined label
+      if not CompleteUndefJump(jmpInst.operand2) then begin
+        //No se enuentra "jmpInst" en "labels".
+        cpx.GenError(ER_UNDEF_LABEL_, [jmpInst.operand2.nam], jmpInst.srcDec);
+      end;
     end;
   end;
 end;
@@ -527,7 +535,7 @@ begin
         curInst.addMode := ord(aAbsolutY);
       end else begin
         //Could be the 65c02 instruction BBR0 $12, <label>
-        if not CaptureOperand(curInst.operand, undefLabel) then begin
+        if not CaptureOperand(curInst.operand2, undefLabel) then begin
           cpx.GenError(ER_SYNTAX_ERR_, [cpx.token]);
           exit;
         end;

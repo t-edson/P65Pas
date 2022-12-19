@@ -1996,7 +1996,8 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
     //Validates possible operations to the operand
     ApplyOperations(elemRef, asmOperand.operations, OperVal);
   end;
-  procedure WriteInstruction(cpu_inst: TP6502Inst; cpu_amod: TP6502AddMode; param: integer);
+  procedure WriteInstruction(cpu_inst: TP6502Inst; cpu_amod: TP6502AddMode;
+                             param, param2: integer);
   {Codifica la instrucción a partir de la posiicón actual de la RAM.
   Se debe haber ya definido: "param" }
   var
@@ -2009,6 +2010,10 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
       offset := param-pic.iRam-2;
       { TODO : Validar si el salto es mayor a 127 o menor a -128 }
       pic.codAsm(cpu_inst, aRelative, word(offset));
+    end else if cpu_amod = aZeroPRel then begin
+      offset := param2-pic.iRam-2;
+      { TODO : Validar si el salto es mayor a 127 o menor a -128 }
+      pic.codAsm(cpu_inst, aZeroPRel, param, word(offset));
     end else if (param<256) then begin
       //It could be expressed as zero-page instruction
       if (cpu_amod = aAbsolute) and (aZeroPage in addressModes) then begin
@@ -2029,18 +2034,18 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
 var
   cpu_inst  : TP6502Inst;
   cpu_amod  : TP6502AddMode;
-  operandVal: Integer;
+  operandVal, operandVal2: Integer;
 begin
   if asmInst.iType = itOpcode then begin   //Instrucción normal.
     pic.MsjError := '';
     //Calculate the final Opcode operand parameter.
     if asmInst.operand.used then ReadOperandValue(asmInst.operand, operandVal);
-//   if asmInst.operand2.used thenn ReadOperandValue(asmInst.operand2, operandVal2);
+    if asmInst.operand2.used then ReadOperandValue(asmInst.operand2, operandVal2);
     //Write the instruction
     asmInst.addr := pic.iRam;   //Set address
     cpu_inst := TP6502Inst(asmInst.opcode);
     cpu_amod := TP6502AddMode(asmInst.addMode);
-    WriteInstruction(cpu_inst, cpu_amod, operandVal);
+    WriteInstruction(cpu_inst, cpu_amod, operandVal, operandVal2);
     if pic.MsjError <> '' then begin
       GenError(pic.MsjError, asmInst.srcDec);
       exit;
