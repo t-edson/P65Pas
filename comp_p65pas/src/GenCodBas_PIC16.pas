@@ -1935,27 +1935,6 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
       exit;
     end;
   end;
-  procedure ReadOperandValue(out operRef: TxpElement; out operVal: integer);
-  {Read the value of an instruction Operand in "operVal".
-  "operRef" returns the reference to the element when operand is an "element operand",
-  otherwise returns NIL.}
-  begin
-    if (asmInst.operand.Val = -1) then begin
-      //There is an expresion for the operand. We need to solve the parameter.
-      operRef := asmInst.operand.Ref;
-      //Resolve operand value
-      operVal := ReadOperandValueRef(operRef);
-      if HayError then exit;
-    end else if (asmInst.operand.Val = -2) then begin
-      //Operand is '$'
-      operRef := nil;
-      operVal :=  pic.iRam;
-    end else begin
-      //Operand can be read directly
-      operRef := nil;
-      operVal := asmInst.operand.Val;
-    end;
-  end;
   procedure ApplyOperations(operRef: TxpElement; const operations: TAsmOperations; var operVal: integer);
   {Apply the operations to the parameter "operVal"}
   var
@@ -1992,6 +1971,31 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
       end;
     end;
   end;
+  procedure ReadOperandValue(const asmOperand: TAsmOperand; out operVal: integer);
+  {Read the value of an instruction Operand in "operVal".
+  "operRef" returns the reference to the element when operand is an "element operand",
+  otherwise returns NIL.}
+  var
+    elemRef: TxpElement;
+  begin
+    if (asmOperand.Val = -1) then begin
+      //There is an expresion for the operand. We need to solve the parameter.
+      elemRef := asmOperand.Ref;
+      //Resolve operand value
+      operVal := ReadOperandValueRef(elemRef);
+      if HayError then exit;
+    end else if (asmOperand.Val = -2) then begin
+      //Operand is '$'
+      elemRef := nil;
+      operVal :=  pic.iRam;
+    end else begin
+      //Operand can be read directly
+      elemRef := nil;
+      operVal := asmOperand.Val;
+    end;
+    //Validates possible operations to the operand
+    ApplyOperations(elemRef, asmOperand.operations, OperVal);
+  end;
   procedure WriteInstruction(cpu_inst: TP6502Inst; cpu_amod: TP6502AddMode; param: integer);
   {Codifica la instrucción a partir de la posiicón actual de la RAM.
   Se debe haber ya definido: "param" }
@@ -2023,22 +2027,20 @@ procedure TGenCodBas.GenCodeASMline(asmInst: TEleAsmInstr);
     end;
   end;
 var
-  cpu_inst    : TP6502Inst;
-  cpu_amod    : TP6502AddMode;
-  operRef     : TxpElement;
-  finalOperVal: Integer;
+  cpu_inst  : TP6502Inst;
+  cpu_amod  : TP6502AddMode;
+  operandVal: Integer;
 begin
   if asmInst.iType = itOpcode then begin   //Instrucción normal.
     pic.MsjError := '';
     //Calculate the final Opcode operand parameter.
-    ReadOperandValue(operRef, finalOperVal);
-    //Validates possible operations to the operand
-    ApplyOperations(operRef, asmInst.operand.operations, finalOperVal);
+    if asmInst.operand.used then ReadOperandValue(asmInst.operand, operandVal);
+//   if asmInst.operand2.used thenn ReadOperandValue(asmInst.operand2, operandVal2);
     //Write the instruction
     asmInst.addr := pic.iRam;   //Set address
     cpu_inst := TP6502Inst(asmInst.opcode);
     cpu_amod := TP6502AddMode(asmInst.addMode);
-    WriteInstruction(cpu_inst, cpu_amod, finalOperVal);
+    WriteInstruction(cpu_inst, cpu_amod, operandVal);
     if pic.MsjError <> '' then begin
       GenError(pic.MsjError, asmInst.srcDec);
       exit;
@@ -2049,25 +2051,19 @@ begin
     lastASMLabel := asmInst.name;
   end else if asmInst.iType = itOrgDir then begin  //Instrucción ORG.
     //Calculate the final Opcode operand parameter.
-    ReadOperandValue(operRef, finalOperVal);
-    //Validates possible operations to the operand
-    ApplyOperations(operRef, asmInst.operand.operations, finalOperVal);
-    pic.iRam := finalOperVal;   //Actualiza dirección actual
+    ReadOperandValue(asmInst.operand, operandVal);
+    pic.iRam := operandVal;   //Actualiza dirección actual
     lastASMLabel := '';
   end else if asmInst.iType = itDefByte then begin  //Instrucción DB.
     //Calculate the final Opcode operand parameter.
-    ReadOperandValue(operRef, finalOperVal);
-    //Validates possible operations to the operand
-    ApplyOperations(operRef, asmInst.operand.operations, finalOperVal);
-    pic.codByte(finalOperVal and $ff, ruData, lastASMLabel);
+    ReadOperandValue(asmInst.operand, operandVal);
+    pic.codByte(operandVal and $ff, ruData, lastASMLabel);
     lastASMLabel := '';
   end else if asmInst.iType = itDefWord then begin  //Instrucción DW.
     //Calculate the final Opcode operand parameter.
-    ReadOperandValue(operRef, finalOperVal);
-    //Validates possible operations to the operand
-    ApplyOperations(operRef, asmInst.operand.operations, finalOperVal);
-    pic.codByte(finalOperVal and $ff, ruData, lastASMLabel);
-    pic.codByte((finalOperVal >> 8) and $ff, ruData, '');
+    ReadOperandValue(asmInst.operand, operandVal);
+    pic.codByte(operandVal and $ff, ruData, lastASMLabel);
+    pic.codByte((operandVal >> 8) and $ff, ruData, '');
     lastASMLabel := '';
   end else begin
     //It's not an instruction

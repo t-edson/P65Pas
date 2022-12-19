@@ -679,6 +679,7 @@ type  //Instructions relative elements
     ref: TxpElement; {Reference to element when operand refers to some Pascal or
                       ASM element.}
     nam: string;     {Operand name. Used when operand is an unsolved reference}
+    used: boolean;   //Indicates if operand is used or not.
     //Operations
     operations: TAsmOperations;
     procedure ClearOperations;
