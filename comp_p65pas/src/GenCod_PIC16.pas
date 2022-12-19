@@ -78,7 +78,7 @@ type
       procedure SIF_GetPointer(fun: TEleExpress);
       procedure SIF_SetPointer(fun: TEleExpress);
       procedure SIF_word_div_word(fun: TEleExpress);
-      procedure SIF_word_mod_word(funEleExp: TEleExpress);
+      procedure SIF_word_mod_word(fun: TEleExpress);
       procedure SIF_word_mul_byte(fun: TEleExpress);
       procedure SIF_word_or_word(fun: TEleExpress);
       procedure SNF_byt_div_byt_8(funEleExp: TEleFunBase);
@@ -6848,9 +6848,126 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
-procedure TGenCod.SIF_word_mod_word(funEleExp: TEleExpress);
-begin
+procedure TGenCod.SIF_word_mod_word(fun: TEleExpress);
+  var parA, parB: TEleExpress;
+      AddrUndef: boolean;
+      fdiv: TEleFun;
+      Dividend, Divisor, Remainder: TEleVarDec;
 
+  procedure ModbyConst;
+
+    procedure Mod2(n: integer);
+    begin
+      if cpuMode = cpu65C02 then
+        _STZ(H.addr)
+      else begin
+        _LDAi(0);
+        _STA(H.addr);
+      end;
+        _LDA(parA.addL);
+      if n <> 0 then
+        _ANDi(n);
+    end;
+
+    procedure Mod2H(n: integer);
+    begin
+        _LDA(parA.addH);
+        _ANDi(n);
+        _STA(H.addr);
+        _LDA(parA.addL);
+    end;
+
+  begin
+    case parB.val of
+      0: ;  // there is no no mod0
+      1: begin
+        _LDAi(0);
+        _STA(H.addr);
+      end;
+          2: Mod2(1);
+          4: Mod2(3);
+          8: Mod2(7);
+         16: Mod2(15);
+         32: Mod2(31);
+         64: Mod2(63);
+        128: Mod2(127);
+        256: Mod2(0);
+        512: Mod2H(1);
+       1024: Mod2H(3);
+       2048: Mod2H(7);
+       4096: Mod2H(15);
+       8192: Mod2H(31);
+      16384: Mod2H(63);
+      32768: Mod2H(127);
+    else
+        _LDA(parA.addH);
+        _STA(Dividend.addrH);
+        _LDA(parA.addL);
+        _STA(Dividend.addrL);
+        _LDAi(parB.valH);
+        _STA(Divisor.addrH);
+        _LDAi(parB.valL);
+        _STA(Divisor.addrL);
+        functCall(fdiv, AddrUndef);
+        _LDA(Remainder.addrH);  // Remainder contain MOD
+        _STA(H.addr);
+        _LDA(Remainder.addrL);
+    end;
+  end;
+
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  fdiv := snfWrdDivWrd16;
+  Dividend := fdiv.pars[0].pvar;
+  Divisor  := fdiv.pars[1].pvar;
+  Remainder := TEleVarDec(fdiv.elements[2]);
+  if compMod = cmConsEval then begin
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then
+      SetFunConst_word(fun, parA.val mod parB.val);
+    exit;
+  end;
+  //Code generation
+  case stoOperation(parA, parB) of
+  stConst_Const:
+    SetFunConst_word(fun, parA.val div parB.val);
+  stRamFix_Const: begin
+    SetFunExpres(fun);
+    ModbyConst;
+  end;
+  stConst_RamFix: begin
+    SetFunExpres(fun);
+    _LDAi(parA.valH);
+    _STA(Dividend.addrH);
+    _LDAi(parA.valL);
+    _STA(Dividend.addrL);
+    _LDA(parB.addH);
+    _STA(Divisor.addrH);
+    _LDA(parB.addL);
+    _STA(Divisor.addrL);
+    functCall(fdiv, AddrUndef);
+    _LDA(Remainder.addrH);  // Dividend contain DIV
+    _STA(H.addr);
+    _LDA(Remainder.addrL);
+  end;
+  stRamFix_RamFix: begin
+    SetFunExpres(fun);
+    _LDA(parA.addH);
+    _STA(Dividend.addrH);
+    _LDA(parA.addL);
+    _STA(Dividend.addrL);
+    _LDA(parB.addH);
+    _STA(Divisor.addrH);
+    _LDA(parB.addL);
+    _STA(Divisor.addrL);
+    functCall(fdiv, AddrUndef);
+    _LDA(Remainder.addrH);  // Dividend contain DIV
+    _STA(H.addr);
+    _LDA(Remainder.addrL);
+  end;
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+  end;
 end;
 procedure TGenCod.DefineShortPointer(etyp: TEleTypeDec);
 {Configura las operaciones que definen la aritmética de punteros.}
