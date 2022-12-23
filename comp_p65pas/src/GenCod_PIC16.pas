@@ -2778,7 +2778,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_bool(fun, parA.val = parB.val);
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_bool(fun, parA.val = parB.val);
+      end;
     end;
     exit;
   end;
@@ -2873,7 +2875,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_bool(fun, parA.val = parB.val);
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_bool(fun, parA.val = parB.val);
+      end;
     end;
     exit;
   end;
@@ -3089,7 +3093,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_word(fun, parA.val + parB.val);
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_word(fun, parA.val + parB.val);
+      end;
     end;
     exit;
   end;
@@ -3197,7 +3203,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_word(fun, parA.val-parB.val);  //puede generar error
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_word(fun, parA.val-parB.val);  //puede generar error
+      end;
     end;
     exit;
   end;
@@ -3281,7 +3289,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_word(fun, parA.val-parB.val);  //puede generar error
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_word(fun, parA.val-parB.val);  //puede generar error
+      end;
     end;
     exit;
   end;
@@ -3660,7 +3670,9 @@ begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
     //Process special modes of the compiler.
-  if compMod = cmConsEval then exit;  //We don't calculate constant here.
+  if compMod = cmConsEval then begin
+    exit;  //We don't calculate constant here.
+  end;
   if parA.Sto <> stRamFix then begin
     GenError('Cannot assign to this Operand.');
     exit;
@@ -3721,7 +3733,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_bool(fun, parA.val >= parB.val);
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_bool(fun, parA.val >= parB.val);
+      end;
     end;
     exit;
   end;
@@ -4208,7 +4222,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_byte(fun, parA.val << parB.val);
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_byte(fun, parA.val << parB.val);
+      end;
     end;
     exit;
   end;
@@ -4352,7 +4368,9 @@ begin
   if compMod = cmConsEval then begin
     //Cases when result is constant
     if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
-      SetFunConst_byte(fun, parA.val >> parB.val);
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_byte(fun, parA.val >> parB.val);
+      end;
     end;
     exit;
   end;

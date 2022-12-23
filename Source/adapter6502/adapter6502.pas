@@ -400,7 +400,9 @@ procedure TAdapter6502.CheckSyntax;
 begin
   //Compila de acuerdo a la configuración de verif. de sintaxis.
   CompileLevel(fraCfgAfterChg.actAfterChg);
-  UpdateTools;
+  if fraCfgAfterChg.actAfterChg>1 then begin  //Only when there are something in the AST.
+    UpdateTools;
+  end;
 end;
 procedure TAdapter6502.NotifyConfigChanged(MessPanBack, MessPanText,
           MessPanErr, MessPanSel: TColor; mainEditorCfg: TfraCfgSynEdit);
