@@ -52,4 +52,21 @@ begin
     mal;  //al fin del bloque
   end; 
 
+  //////////////////////////////////////////////////////
+  ////////////////////// Arreglos  /////////////////////
+  //////////////////////////////////////////////////////
+//  achar[0] := 'a';
+//  if 'a' = achar[0] then good else bad end;
+//  vbyte := 1;
+//  achar[vbyte] := 'a';
+//  if achar[vbyte] = 'a' then good else bad end;
+//
+//  abyte[0] := 1;
+//  vbyte := 1;
+//  abyte[vbyte] := 1;
+//  
+//  vbyte := 1;
+//  aword[0] := word(5000);
+//  aword[vbyte] := word(5000);
+  
 end.

@@ -9,7 +9,7 @@ procedure good;
 begin
   CHROUT('O');
   CHROUT('K');
-  CHROUT(chr(13));
+  CHROUT(',');
 end;
 procedure bad;
 begin

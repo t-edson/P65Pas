@@ -136,7 +136,6 @@ TAREAS PLANIFICADAS
 - Agregar una verifiación a los casos que puedan generar _ADC#0 si hay un CLC anterior. Crear
 una versión optimzada de _STA() para que considere si antes había un TXA, y generar un STX.
 - Generar Bootloader para el VIC-20 y PET.
-- Implementar la generación de código para el 65C02.
 - Implementar parámetros VAR.
 - Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
 - Revisar si no es mejor quitar la validación de número de ítems de arreglos en el análisis
@@ -151,11 +150,6 @@ desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
 
 - Implementar la obligatoriedad de localizar el registro IX en la página cero.
 - Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
-- Crear una referencia en todos los elementos a su arbol de sintaxis correspondiente y 
-crear también una referencia del arbol de sintaxis a su compilador. La idea es que el 
-elemento pueda interpretar el campo idCtx de los registros TSrcPos, para poder obtener 
-información del nombre del archivo de TSrcPos, ya que hay varios puntos en donde se lee 
-esta información.
 - Crear estructura para almacenar información de los diferentes archivos que componen el 
 proyecto para gestionar el uso de unidades.
 
@@ -163,17 +157,12 @@ PENDIENTES
 - Agregar la protección a compilar sobre zonas de memoria no implementada o con función
 especial. Se suguiere que antes de compilar en un área se verifique que haya al menos 
 32 bytes o algo así. Además se pensó en que esa verificación se haga al terminar de compilar
-una BOR.
+una SIF.
 - Definir si es necesario "TxpEleLocation" y verificar que se implementa bien.
--Generar bloques IF (o de otro tipo), de más de 128 bytes.
--Revisar y adaptar los programas de prueba para el compilador.
+- Revisar y adaptar los programas de prueba para el compilador.
 - Revisar el caso de tipos creados de forma repetida y hasta con el mismo nombre, como en 
 el caso: CONST CCC: array[3] of char = ('1','2','3'); 
 CC: array[3] of char = ('1','2','3'); 
-
-Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
-implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
-hace realmente en Pascal.
 
 Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
 De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
