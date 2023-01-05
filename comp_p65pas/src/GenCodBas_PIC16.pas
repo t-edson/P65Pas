@@ -105,6 +105,7 @@ type
     procedure SetFunConst_byte(fun: TEleExpress; valByte: integer);
     procedure SetFunConst_char(fun: TEleExpress; valByte: integer);
     procedure SetFunConst_word(fun: TEleExpress; valWord: integer);
+    procedure SetFunConst_dword(fun: TEleExpress; valWord: integer);
   protected  //Code instructions
     function _PC: word;
     function _CLOCK: integer;
@@ -605,6 +606,16 @@ procedure TGenCodBas.SetFunConst_word(fun: TEleExpress; valWord: integer);
 begin
   if (valWord <0) or (valWord>=65536) then begin
     GenError('Numeric value exceeds a word range.', fun.srcDec);
+    exit;
+  end;
+  SetFunConst(fun);
+  fun.evaluated := true;
+  fun.value.valInt := valWord;
+end;
+procedure TGenCodBas.SetFunConst_dword(fun: TEleExpress; valWord: integer);
+begin
+  if (valWord <0) or (valWord>$FFFFFFFF) then begin
+    GenError('Numeric value exceeds a dword range.', fun.srcDec);
     exit;
   end;
   SetFunConst(fun);

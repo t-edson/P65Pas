@@ -75,6 +75,8 @@ type
       procedure SIF_bool_or_bool(fun: TEleExpress);
       procedure SIF_byte_div_byte(fun: TEleExpress);
       procedure SIF_byte_mod_byte(fun: TEleExpress);
+      procedure SIF_dword_add_dword(fun: TEleExpress);
+      procedure SIF_dword_asig_dword(fun: TEleExpress);
       procedure SIF_GetPointer(fun: TEleExpress);
       procedure SIF_SetPointer(fun: TEleExpress);
       procedure SIF_word_div_word(fun: TEleExpress);
@@ -4425,6 +4427,132 @@ begin
   end;
 end;
 {%ENDREGION}
+procedure TGenCod.SIF_dword_asig_dword(fun: TEleExpress);
+var
+  idxVar: TEleVarDec;
+  parA, parB: TEleExpress;
+begin
+  SetFunNull(fun);
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    exit;  //We don't calculate constant here.
+  end;
+  //Validates parA.
+  if parA.opType<>otVariab then begin //The only valid type.
+    GenError('Only variables can be assigned.');
+    exit;
+  end;
+  //Implements assignment
+  if parA.Sto = stRamFix then begin
+    case parB.Sto of
+    stConst : begin
+      if parB.valL = parB.valH then begin  //Lucky case
+        _LDAi(parB.valL);
+        _STA(parA.add);
+        _STA(parA.add+1);
+        _STA(parA.add+2);
+        _STA(parA.add+3);
+      end else begin  //General case
+        //Caso general
+        _LDAi(parB.valL);
+        _STA(parA.add);
+        _LDAi(parB.valH);
+        _STA(parA.add+1);
+        _LDAi(parB.valE);
+        _STA(parA.add+2);
+        _LDAi(parB.valU);
+        _STA(parA.add+3);
+      end;
+    end;
+    stRamFix: begin
+      _LDA(parB.add);
+      _STA(parA.add);
+      _LDA(parB.add+1);
+      _STA(parA.add+1);
+      _LDA(parB.add+2);
+      _STA(parA.add+2);
+      _LDA(parB.add+3);
+      _STA(parA.add+3);
+    end;
+    else
+      GenError(MSG_UNSUPPORTED, parB.srcDec); exit;
+    end;
+  end else begin
+    GenError('Cannot assign to this Operand.', parA.srcDec); exit;
+  end;
+end;
+procedure TGenCod.SIF_dword_add_dword(fun: TEleExpress);
+var
+  parA, parB: TEleExpress;
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_dword(fun, parA.val + parB.val);
+      end;
+    end;
+    exit;
+  end;
+  //Code generation
+  case stoOperation(parA, parB) of
+  stConst_Const: begin
+    //Optimize
+    SetFunConst_dword(fun, parA.val + parB.val);
+  end;
+//  stConst_RamFix: begin
+//    SetFunExpres(fun);
+//    _CLC;
+//    _LDAi(parA.valL);
+//    _ADC(parB.addL);
+//    _TAX;  //Save
+//    _LDAi(parA.valH);
+//    _ADC(parB.addH);
+//    _STA(H.addr);
+//    _TXA;  //Restore A
+//  end;
+//  stRamFix_Const: begin
+//    if parB.val = 0 then begin  //Special case
+//      SetFunVariab(fun, parA.rVar);
+//    end else if parB.valL = 0 then begin
+//      SetFunExpres(fun);
+//      _CLC;
+//      _LDA(parA.addH);
+//      _ADCi(parB.valH);
+//      _STA(H.addr);
+//      _LDA(parA.addL);
+//    end else begin
+//      SetFunExpres(fun);
+//      _CLC;
+//      _LDA(parA.addL);
+//      _ADCi(parB.valL);
+//      _TAX;  //Save
+//      _LDA(parA.addH);
+//      _ADCi(parB.valH);
+//      _STA(H.addr);
+//      _TXA;  //Restore A
+//    end;
+//  end;
+//  stRamFix_RamFix:begin
+//    SetFunExpres(fun);
+//    _CLC;
+//    _LDA(parA.addL);
+//    _ADC(parB.addL);
+//    _TAX;  //Save
+//    _LDA(parA.addH);
+//    _ADC(parB.addH);
+//    _STA(H.addr);
+//    _TXA;  //Restore A
+//  end;
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+  end;
+end;
 {%REGION Char operations}
 procedure TGenCod.SIF_char_asig_char(fun: TEleExpress);
 begin
@@ -7327,7 +7455,6 @@ begin
   TreeElems.CloseElement;  //Close body
   TreeElems.CloseElement;  //Close function implementation
 end;
-
 procedure TGenCod.CreateSystemElements;
 {Initialize the system elements. Must be executed just one time when compiling.}
 var
@@ -7374,6 +7501,13 @@ begin
   typWord.OnRequireWR := @word_RequireWR;
   typWord.location := locInterface;
   TreeElems.AddElementAndOpen(typWord);
+  TreeElems.CloseElement;
+
+  typDWord := CreateEleTypeDec('dword', srcPosNull, 4, tctAtomic, t_uinteger);
+  //typDWord.OnLoadToWR := @word_LoadToWR;
+  //typDWord.OnRequireWR := @word_RequireWR;
+  typDWord.location := locInterface;
+  TreeElems.AddElementAndOpen(typDWord);
   TreeElems.CloseElement;
 
   {Create variables for aditional Working register. Note that this variables are
@@ -7468,7 +7602,6 @@ begin
   TreeElems.CloseElement;   //Close Type
   /////////////// Char type ////////////////////
   TreeElems.OpenElement(typChar);
-  //opr:=typChar.CreateUnaryPreOperator('@', 6, 'addr', @SIF_address);
   f:=CreateInBOMethod(typChar, ':=', '_set', typChar, typNull, @SIF_char_asig_char);
   f.getset := gsSetInSimple;
   //opr.CreateOperation(typString, @SIF_char_asig_string);
@@ -7480,7 +7613,6 @@ begin
 
   /////////////// Word type ////////////////////
   TreeElems.OpenElement(typWord);
-  //opr:=typWord.CreateUnaryPreOperator('@', 6, 'addr', @SIF_address);
   f:=CreateInBOMethod(typWord, ':=' ,'_set' , typWord, typNull, @SIF_word_asig_word);
   f.getset := gsSetInSimple;
   AddCallerToFrom(H, f.bodyNode);  //Dependency
@@ -7536,6 +7668,66 @@ begin
   //Methods
   f:=CreateInUOMethod(typWord, '', 'low' , typByte, @word_Low);
   f:=CreateInUOMethod(typWord, '', 'high', typByte, @word_High);
+
+  TreeElems.CloseElement;   //Close Type
+
+  /////////////// DWord type ////////////////////
+  TreeElems.OpenElement(typDWord);
+  f:=CreateInBOMethod(typDWord, ':=' ,'_set' , typDWord, typNull, @SIF_dword_asig_dword);
+  f.getset := gsSetInSimple;
+//  AddCallerToFrom(H, f.bodyNode);  //Dependency
+//  f:=CreateInBOMethod(typDWord, ':=' ,'_set' , typByte, typNull, @SIF_word_asig_byte);
+//  f.getset := gsSetInSimple;
+//  f:=CreateInBOMethod(typDWord, '+=' ,'_aadd', typByte, typNull, @SIF_word_aadd_byte);
+//  f.getset := gsSetOther;
+//  f:=CreateInBOMethod(typDWord, '+=' ,'_aadd', typDWord, typNull, @SIF_word_aadd_word);
+//  f.getset := gsSetOther;
+//  f:=CreateInBOMethod(typDWord, '-=' ,'_asub', typByte, typNull, @SIF_word_asub_byte);
+//  f.getset := gsSetOther;
+//  f:=CreateInBOMethod(typDWord, '-=' ,'_asub', typDWord, typNull, @SIF_word_asub_word);
+//  AddCallerToFrom(E, f.bodyNode);  // Require _E
+//  f.getset := gsSetOther;
+//  f:=CreateInBOMethod(typDWord, '+'  , '_add', typByte, typDWord, @SIF_word_add_byte);
+//  f.fConmutat := true;
+  f:=CreateInBOMethod(typDWord, '+'  , '_add', typDWord, typDWord, @SIF_dword_add_dword);
+  f.fConmutat := true;
+//  AddCallerToFrom(H, f.bodyNode);  //Dependency
+//  f:=CreateInBOMethod(typDWord, '-'  , '_sub', typByte, typDWord, @SIF_word_sub_byte);
+//  f:=CreateInBOMethod(typDWord, '-'  , '_sub', typDWord, typDWord, @SIF_word_sub_word);
+//  f:=CreateInBOMethod(typDWord, '*' , '_mul', typByte, typDWord, @SIF_word_mul_byte);
+//  f.fConmutat := true;
+//
+//  f:=CreateInBOMethod(typDWord, 'DIV' , '_div', typDWord, typDWord, @SIF_word_div_word);
+//  AddCallerToFrom(H, f.bodyNode);  //Dependency
+//  sifWordDivWord := f;
+//  f:=CreateInBOMethod(typDWord, 'MOD' , '_mod', typDWord, typDWord, @SIF_word_mod_word);
+//  AddCallerToFrom(H, f.bodyNode);  //Dependency
+//  sifWordModWord := f;
+//
+//  f:=CreateInBOMethod(typDWord, 'AND', '_and', typByte, typByte, @SIF_word_and_byte);
+//  f.fConmutat := true;
+//  f:=CreateInBOMethod(typDWord, 'AND', '_and', typDWord, typDWord, @SIF_word_and_word);
+//  f.fConmutat := true;
+//  f:=CreateInBOMethod(typDWord, 'OR' , '_or' , typDWord, typDWord, @SIF_word_or_word);
+//  f.fConmutat := true;
+//  f:=CreateInUOMethod(typDWord, 'NOT', '_not', typDWord, @SIF_not_word, opkUnaryPre);
+//  f:=CreateInBOMethod(typDWord, '>>' , '_shr', typByte, typDWord, @SIF_word_shr_byte); { TODO : Definir bien la precedencia }
+//  f:=CreateInBOMethod(typDWord, '<<' , '_shl', typByte, typDWord, @SIF_word_shl_byte);
+//
+//  f:=CreateInBOMethod(typDWord, '=' , '_equ' , typDWord, typBool, @SIF_word_equal_word);
+//  f.fConmutat := true;
+//  f:=CreateInBOMethod(typDWord, '=' , '_equ' , typByte, typBool, @SIF_word_equal_byte);
+//  f.fConmutat := true;
+//  f:=CreateInBOMethod(typDWord, '<>', '_dif' , typDWord, typBool, @SIF_word_difer_word);
+//  f.fConmutat := true;
+//  f:=CreateInBOMethod(typDWord, '>=', '_gequ', typDWord, typBool, @SIF_word_gequ_word);
+//  AddCallerToFrom(E, f.bodyNode);  //Dependency
+//  f:=CreateInBOMethod(typDWord, '<' , '_les' , typDWord, typBool, @SIF_word_less_word);
+//  f:=CreateInBOMethod(typDWord, '>' , '_gre' , typDWord, typBool, @SIF_word_great_word);
+//  f:=CreateInBOMethod(typDWord, '<=', '_lequ', typDWord, typBool, @SIF_word_lequ_word);
+//  //Methods
+//  f:=CreateInUOMethod(typDWord, '', 'low' , typByte, @word_Low);
+//  f:=CreateInUOMethod(typDWord, '', 'high', typByte, @word_High);
 
   TreeElems.CloseElement;   //Close Type
 

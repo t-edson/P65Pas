@@ -178,7 +178,7 @@ public    //Types to implement
   typBool : TEleTypeDec;
   typChar : TEleTypeDec;
   typWord : TEleTypeDec;
-//  typString: TxpEleType;
+  typDWord : TEleTypeDec;
 public     //Public attributes of compiler
   ID        : integer;     //Identificador para el compilador.
   IsUnit    : boolean;     //Flag to identify a Unit
@@ -1653,6 +1653,8 @@ in this function.
         typ := typByte;
       end else if (n>= 0) and (n<=$FFFF) then begin
         typ := typWord;
+      end else if (n>= 0) and (n<=$FFFFFFFF) then begin
+        typ := typDWord;
       end else  begin //no encontró
         GenError(ER_NOTYPDEF_NU);
         typ := typNull;

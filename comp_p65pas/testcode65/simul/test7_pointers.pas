@@ -17,9 +17,10 @@ var
   pw, pw2: ^word;
   var1,var2: byte;
   arradd: array of word = (@var1, @var2);
-  varabs1: byte absolute $101;
-  varabs2: word absolute $102;
-
+  varabs1: byte absolute $5001;
+  varabsw: word absolute $5002;   
+  varabsw2:word absolute $5004;  //Next to varabsw
+  
 procedure Pass;
 begin
   CHROUT('O');
@@ -51,13 +52,11 @@ begin
 
   //Testing address set
   w := @varabs1;
-  if w = $101 then Pass else Fail; end;
-  w := @varabs2;
-  if w = $102 then Pass else Fail; end; 
-  w := @varabs2+$20;
-  if w = $122 then Pass else Fail; end; 
-  w := @varabs2+$100+$05;
-  if w = $207 then Pass else Fail; end; 
+  if w = $5001 then Pass else Fail; end; 
+  w := @varabs1+$20;
+  if w = $5021 then Pass else Fail; end; 
+  w := @varabs1+$100+$05;
+  if w = $5106 then Pass else Fail; end; 
   w := word($10);
   if w = word($10) then Pass; else Fail end;  
   w := $1012;
@@ -169,9 +168,7 @@ begin
 //  word(pb^);
 //  dword(pb^);
 
-  //Operaciones con desreferencia stVarRefExp
-  //Se asume para esta prueba que "n", está ubicado después de "b"
-  //De otar forma no funcionará, porque pb+1, fallaría
+  //Operaciones con desreferencia 
   w := $1234;
   pb := @w;
   if (pb+1)^ = $12 then Pass else Fail end;
@@ -180,16 +177,6 @@ begin
   if (pb+1)^ + (pb+1)^ = $24 then Pass else Fail end;  
   if $0f and (pb+1)^  = $02 then Pass else Fail end;
   
-//  //Pendientes
-////  delay_ms(pb^);
-////  Inc(pb^);
-////  Dec(pb^);
-////  pb^.bit7 := 0;
-////  chr(pb^);
-////  bit(pb^);
-////  word(pb^);
-////  dword(pb^);
-
   //Pendientes
 //  delay_ms((pb+1)^);
 //  Inc((pb+1)^);
@@ -286,8 +273,7 @@ begin
   dec(pw); 
   if pw = word($75) then Pass else Fail end;
   
-
-  //Operaciones con desreferencia stVarRefVar
+  STROUT(@#13'TARGET OPERATIONS:');
   w := $12;
   pw := @w;
   if pw^ = word($12) then Pass else Fail end;
@@ -295,28 +281,25 @@ begin
   if pw^ - word(1) = word($11) then Pass else Fail end;
   if pw^ + pw^ = word($24) then Pass else Fail end;
   if word($0f) and pw^  = word($02) then Pass else Fail end;
-//  
-//  //Pendientes
-////  delay_ms(pw^);
-////  Inc(pw^);
-////  Dec(pw^);
-////  pw^.bit7 := 0;
-////  chr(pw^);
-////  bit(pw^);
-////  word(pw^);
-////  dword(pw^);
+  
+  //Pendientes
+//  delay_ms(pw^);
+//  Inc(pw^);
+//  Dec(pw^);
+//  pw^.bit7 := 0;
+//  chr(pw^);
+//  bit(pw^);
+//  word(pw^);
+//  dword(pw^);
 //
-//  //Operaciones con desreferencia stVarRefExp
-//  //Se asume para esta prueba que "y", está ubicado después de "x"
-//  //De otar forma no funcionará, porque pw+1, fallaría
-//  y := $12;  
-//  if (pw+1)^ = $12 then Pass else Fail end;
-//  if (pw+1)^ + 1 = $13 then Pass else Fail end;
-//  if (pw+1)^ - 1 = $11 then Pass else Fail end;
-//  {Expresión muy compleja stVarRefExp + stVarRefExp. No implementada por ahora.
-// //  if (pw+1)^ + (pw+1)^ = $24 then Pass else Fail end;  
-//  }
-//  if $0f and (pw+1)^  = $02 then Pass else Fail end;
+  //Operaciones con desreferencia
+  varabsw2 := $2020;
+  pw := @varabsw;
+//  if (pw+1)^ = $2020 then Pass else Fail end;
+//  if (pw+1)^ + 1 = $2021 then Pass else Fail end;
+//  if (pw+1)^ - 1 = $2019 then Pass else Fail end;
+//  if (pw+1)^ + (pw+1)^ = $4040 then Pass else Fail end;  
+//  if $ff and (pw+1)^ = $20 then Pass else Fail end;
 //  
 //  //Pendientes
 ////  delay_ms((pw+1)^);
@@ -330,7 +313,6 @@ begin
 //
 //
 
-  
   asm RTS end; 
 end.
 
