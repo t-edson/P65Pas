@@ -218,6 +218,17 @@ begin
   GenCodBas_PIC16.SetLanguage;
   {$I _language\tra_GenCod.pas}
 end;
+function GetAssignTarget(fun: TEleExpress; out target: TEleExpress): boolean;
+var
+  setFunct: TEleExpress;
+begin
+  setFunct := TEleExpress(fun.Parent);
+  if setFunct = nil then exit(false);
+  if setFunct.opType <> otFunct then exit(false);
+  if setFunct.rfun.getset <> gsSetInSimple then exit(false);
+  target := TEleExpress(setFunct.elements[0]);  //Parameter C := A + B
+  exit(true);
+end;
 procedure TGenCod.Invert_A_to_A;
 {Invert all the bits of A register (as boolean expression) .
 If A=$00 => A = $FF
@@ -4466,15 +4477,19 @@ begin
         _STA(parA.add+3);
       end;
     end;
-    stRamFix: begin
-      _LDA(parB.add);
-      _STA(parA.add);
-      _LDA(parB.add+1);
-      _STA(parA.add+1);
-      _LDA(parB.add+2);
-      _STA(parA.add+2);
-      _LDA(parB.add+3);
-      _STA(parA.add+3);
+    stRamFix: begin      //stRamFix-stRamFix
+      if parA.add = parB.add then begin
+        //Maybe parB is the result of a SIF that identified an assignment target.
+      end else begin
+        _LDA(parB.add);
+        _STA(parA.add);
+        _LDA(parB.add+1);
+        _STA(parA.add+1);
+        _LDA(parB.add+2);
+        _STA(parA.add+2);
+        _LDA(parB.add+3);
+        _STA(parA.add+3);
+      end;
     end;
     else
       GenError(MSG_UNSUPPORTED, parB.srcDec); exit;
@@ -4485,7 +4500,7 @@ begin
 end;
 procedure TGenCod.SIF_dword_add_dword(fun: TEleExpress);
 var
-  parA, parB: TEleExpress;
+  parA, parB, target: TEleExpress;
 begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
@@ -4500,22 +4515,33 @@ begin
     exit;
   end;
   //Code generation
+  if not GetAssignTarget(fun, target) then begin
+    genError('Internal error.', [BinOperationStr(fun)], fun.srcDec);
+    exit;
+  end;
   case stoOperation(parA, parB) of
   stConst_Const: begin
     //Optimize
     SetFunConst_dword(fun, parA.val + parB.val);
   end;
-//  stConst_RamFix: begin
-//    SetFunExpres(fun);
-//    _CLC;
-//    _LDAi(parA.valL);
-//    _ADC(parB.addL);
-//    _TAX;  //Save
-//    _LDAi(parA.valH);
-//    _ADC(parB.addH);
-//    _STA(H.addr);
-//    _TXA;  //Restore A
-//  end;
+  stConst_RamFix: begin
+    SetFunVariab(fun, target.add);  //stRamFix
+    _CLC;
+    _LDAi(parA.valL);
+    _ADC(parB.add);
+    _STA(target.add);
+
+    _LDAi(parA.valH);
+    _ADC(parB.add+1);
+    _STA(target.add+1);
+
+    _LDAi(parA.valE);
+    _ADC(parB.add+2);
+    _STA(target.add+2);
+    _LDAi(parA.valU);
+    _ADC(parB.add+3);
+    _STA(target.add+3);
+  end;
 //  stRamFix_Const: begin
 //    if parB.val = 0 then begin  //Special case
 //      SetFunVariab(fun, parA.rVar);
