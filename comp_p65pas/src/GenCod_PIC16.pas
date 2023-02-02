@@ -4498,7 +4498,7 @@ begin
     GenError('Cannot assign to this Operand.', parA.srcDec); exit;
   end;
 end;
-procedure TGenCod.SIF_dword_add_dword(fun: TEleExpress);
+  procedure TGenCod.SIF_dword_add_dword(fun: TEleExpress);
 var
   parA, parB, target: TEleExpress;
 begin
