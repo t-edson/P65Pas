@@ -4517,6 +4517,7 @@ end;
 var
   parA, parB, target: TEleExpress;
   stoo: TStoOperandsBSIF;
+  L1, L2, L3: integer;
 begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
@@ -4546,22 +4547,35 @@ begin
     if stoo = stRamFix_Const then Exchange(parA, parB);
     SetFunVariab(fun, target.add);  //stRamFix
 
-    _CLC;
-    _LDAi(parA.valL);
-    _ADC(parB.add);
-    _STA(target.add);
+    if parA.val = 1 then begin
+      _INC(parB.add);
+      _BNE_post(L1);
+      _INC(parB.add+1);
+      _BNE_post(L2);
+      _INC(parB.add+2);
+      _BNE_post(L3);
+      _INC(parB.add+3);
+  _LABEL_post(L1);
+  _LABEL_post(L2);
+  _LABEL_post(L3);
+    end else begin
+      _CLC;
+      _LDAi(parA.valL);
+      _ADC(parB.add);
+      _STA(target.add);
 
-    _LDAi(parA.valH);
-    _ADC(parB.add+1);
-    _STA(target.add+1);
+      _LDAi(parA.valH);
+      _ADC(parB.add+1);
+      _STA(target.add+1);
 
-    _LDAi(parA.valE);
-    _ADC(parB.add+2);
-    _STA(target.add+2);
+      _LDAi(parA.valE);
+      _ADC(parB.add+2);
+      _STA(target.add+2);
 
-    _LDAi(parA.valU);
-    _ADC(parB.add+3);
-    _STA(target.add+3);
+      _LDAi(parA.valU);
+      _ADC(parB.add+3);
+      _STA(target.add+3);
+    end;
   end;
   stRamFix_RamFix: begin
     SetFunVariab(fun, target.add);  //stRamFix
@@ -4582,39 +4596,6 @@ begin
     _ADC(parB.add+3);
     _STA(target.add+3);
   end;
-//  stRamFix_Const: begin
-//    if parB.val = 0 then begin  //Special case
-//      SetFunVariab(fun, parA.rVar);
-//    end else if parB.valL = 0 then begin
-//      SetFunExpres(fun);
-//      _CLC;
-//      _LDA(parA.addH);
-//      _ADCi(parB.valH);
-//      _STA(H.addr);
-//      _LDA(parA.addL);
-//    end else begin
-//      SetFunExpres(fun);
-//      _CLC;
-//      _LDA(parA.addL);
-//      _ADCi(parB.valL);
-//      _TAX;  //Save
-//      _LDA(parA.addH);
-//      _ADCi(parB.valH);
-//      _STA(H.addr);
-//      _TXA;  //Restore A
-//    end;
-//  end;
-//  stRamFix_RamFix:begin
-//    SetFunExpres(fun);
-//    _CLC;
-//    _LDA(parA.addL);
-//    _ADC(parB.addL);
-//    _TAX;  //Save
-//    _LDA(parA.addH);
-//    _ADC(parB.addH);
-//    _STA(H.addr);
-//    _TXA;  //Restore A
-//  end;
   else
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
