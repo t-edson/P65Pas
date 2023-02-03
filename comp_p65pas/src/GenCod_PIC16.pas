@@ -75,6 +75,7 @@ type
       procedure SIF_bool_or_bool(fun: TEleExpress);
       procedure SIF_byte_div_byte(fun: TEleExpress);
       procedure SIF_byte_mod_byte(fun: TEleExpress);
+      procedure SIF_DWord(fun: TEleExpress);
       procedure SIF_dword_add_dword(fun: TEleExpress);
       procedure SIF_dword_asig_dword(fun: TEleExpress);
       procedure SIF_GetPointer(fun: TEleExpress);
@@ -5209,6 +5210,55 @@ begin
     genError('Not implemented "%s" for this operand.', [fun.name]);
   end;
 end;
+procedure TGenCod.SIF_DWord(fun: TEleExpress);
+var
+  tmpVar: TEleVarDec;
+  par: TEleExpress;
+begin
+  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  case par.Sto of  //El parámetro debe estar en "res"
+  stConst : begin
+    if par.Typ = typByte then begin
+      SetFunConst(fun);
+      fun.evaluated := par.evaluated;
+      fun.value.ValInt := par.value.ValInt;  //Copy value
+    end else if par.Typ = typChar then begin
+      SetFunConst(fun);
+      fun.evaluated := par.evaluated;
+      fun.value.ValInt := par.value.ValInt;  //Copy value
+    end else if par.Typ = typWord then begin
+      //Already Word
+      SetFunConst(fun);
+      fun.evaluated := par.evaluated;
+      fun.value.ValInt := par.value.ValInt;  //Copy value
+    end else begin
+      GenError('Cannot convert this constant to word.'); exit;
+    end;
+  end;
+//  stRamFix: begin
+//    if par.Typ.IsByteSize then begin
+//      SetFunExpres(fun);  //No podemos devolver variable. Pero sí expresión
+//      _LDAi(0);
+//      _STA(H.addr);
+//      _LDA(par.rVar.addr);
+//    end else if par.Typ = typWord then begin
+//      //ya es Word
+//      SetFunVariab(fun, par.add);
+//    end else if par.Typ.IsWordSize then begin
+//      //Has 2 bytes long, like pointers
+//      SetFunVariab(fun, par.add);
+//      {We could generate stRegister, but we prefer generate a variable, for simplicity
+//      and to have the possibility of assign: word(x) := ...}
+//    end else begin
+//      SetFunExpres(fun);   //A default operand type
+//      GenError('Cannot convert this variable to word.'); exit;
+//    end;
+//  end;
+//  end;
+  else
+    genError('Not implemented "%s" for this operand.', [fun.name]);
+  end;
+end;
 procedure TGenCod.SIF_Addr(fun: TEleExpress);
 {Returns the address of a datatype.}
 var
@@ -7834,7 +7884,14 @@ begin
   AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
   sifWord :=
   AddSysInlineFunction('word', typWord, srcPosNull, pars, @SIF_Word);
-  AddCallerToFrom(H, sifWord.BodyNode);  //Reqire H
+  AddCallerToFrom(H, sifWord.BodyNode);  //Require H
+
+  //Create system function "word"
+  setlength(pars, 0);  //Reset parameters
+  AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
+  //sifWord :=
+  AddSysInlineFunction('dword', typDWord, srcPosNull, pars, @SIF_DWord);
+  //AddCallerToFrom(H, sifWord.BodyNode);  //Require H
 
   ///////////////// System Normal functions (SNF) ///////////////
   //Multiply system function
@@ -7869,7 +7926,7 @@ begin
   snfDelayMs :=
   AddSysNormalFunction('delay_ms', typWord, srcPosNull, pars, @SNF_delay_ms);
   //AddCallerToFrom(snfDelayMs, sifDelayMs.bodyNode);  //Dependency
-  AddCallerToFrom(H, snfDelayMs.BodyNode);  //Reqire H
+  AddCallerToFrom(H, snfDelayMs.BodyNode);  //Require H
 
   //Add dependencies of TByte._mul.
   AddCallerToFrom(snfBytMulByt16, sifByteMulByte.bodyNode);
