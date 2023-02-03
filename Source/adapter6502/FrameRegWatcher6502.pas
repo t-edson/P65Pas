@@ -182,7 +182,7 @@ begin
   else if (v <> nil) and v.typ.IsWordSize then
     newValue := '$'+IntToHex(pic.ram[addr].value + 256*pic.ram[addr+1].value, 4)
   else if (v <> nil) and v.typ.IsDWordSize then
-    newValue := '$'+IntToHex(pic.ram[addr].value + pic.ram[addr+1].value << 8 + pic.ram[addr+2].value << 16 + pic.ram[addr+2].value << 24, 8)
+    newValue := '$'+IntToHex(pic.ram[addr].value + pic.ram[addr+1].value << 8 + pic.ram[addr+2].value << 16 + pic.ram[addr+3].value << 24, 8)
   else newValue := '$'+IntToHex(pic.ram[addr].value, 2);
   if grilla.Cells[COL_VAL,f] <> newValue then begin
     grilla.Objects[1, f] := Tobject(Pointer(255));  //Pone color

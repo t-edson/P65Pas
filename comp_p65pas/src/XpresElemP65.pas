@@ -497,6 +497,8 @@ type  //Expression elements
     function valH: word;
     function valU: word;
     function valE: word;
+    function valWlo: word;
+    function valWhi: word;
     procedure SetLiteralBoolConst(valBool: Boolean);
     procedure SetLiteraltIntConst(valInt: Int64);
     procedure SetConstRef(cons0: TEleConsDec);
@@ -1031,6 +1033,14 @@ end;
 function TEleExpress.valE: word; inline;
 begin
   Result := (value.valInt >> 16) and $FF;
+end;
+function TEleExpress.valWlo: word; inline;
+begin
+  Result := word(value.ValInt);
+end;
+function TEleExpress.valWhi: word; inline;
+begin
+  Result := (value.valInt >> 16) and $FFFF;
 end;
 procedure TEleExpress.SetLiteralBoolConst(valBool: Boolean);
 {Set the value of a Constant boolean expression.}
