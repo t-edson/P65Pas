@@ -4459,14 +4459,28 @@ begin
   if parA.Sto = stRamFix then begin
     case parB.Sto of
     stConst : begin
-      if parB.valL = parB.valH then begin  //Lucky case
+      if (parB.val = 0) and (cpuMode = cpu65C02) then begin
+        _STZ(parA.add);
+        _STZ(parA.add+1);
+        _STZ(parA.add+2);
+        _STZ(parA.add+3);
+      end else if (parB.valWlo = parB.valWhi) and (parB.valL = parB.valH) then begin
+        //all byte parts are equal
         _LDAi(parB.valL);
         _STA(parA.add);
         _STA(parA.add+1);
         _STA(parA.add+2);
         _STA(parA.add+3);
-      end else begin  //General case
-        //Caso general
+      end else if parB.valWlo = parB.valWhi then begin
+        //word parts are equal
+        _LDAi(parB.valL);
+        _STA(parA.add);
+        _STA(parA.add+2);
+        _LDAi(parB.valH);
+        _STA(parA.add+1);
+        _STA(parA.add+3);
+      end else begin
+        //General case
         _LDAi(parB.valL);
         _STA(parA.add);
         _LDAi(parB.valH);
@@ -4501,6 +4515,7 @@ end;
   procedure TGenCod.SIF_dword_add_dword(fun: TEleExpress);
 var
   parA, parB, target: TEleExpress;
+  stoo: TStoOperandsBSIF;
 begin
   parA := TEleExpress(fun.elements[0]);  //Parameter A
   parB := TEleExpress(fun.elements[1]);  //Parameter B
@@ -4519,13 +4534,17 @@ begin
     genError('Internal error.', [BinOperationStr(fun)], fun.srcDec);
     exit;
   end;
-  case stoOperation(parA, parB) of
+
+  stoo := stoOperation(parA, parB);
+  case stoo of
   stConst_Const: begin
     //Optimize
     SetFunConst_dword(fun, parA.val + parB.val);
   end;
-  stConst_RamFix: begin
+  stConst_RamFix, stRamFix_Const: begin
+    if stoo = stRamFix_Const then Exchange(parA, parB);
     SetFunVariab(fun, target.add);  //stRamFix
+
     _CLC;
     _LDAi(parA.valL);
     _ADC(parB.add);
@@ -4538,7 +4557,27 @@ begin
     _LDAi(parA.valE);
     _ADC(parB.add+2);
     _STA(target.add+2);
+
     _LDAi(parA.valU);
+    _ADC(parB.add+3);
+    _STA(target.add+3);
+  end;
+  stRamFix_RamFix: begin
+    SetFunVariab(fun, target.add);  //stRamFix
+    _CLC;
+    _LDA(parA.add);
+    _ADC(parB.add);
+    _STA(target.add);
+
+    _LDA(parA.add+1);
+    _ADC(parB.add+1);
+    _STA(target.add+1);
+
+    _LDA(parA.add+2);
+    _ADC(parB.add+2);
+    _STA(target.add+2);
+
+    _LDA(parA.add+3);
     _ADC(parB.add+3);
     _STA(target.add+3);
   end;
