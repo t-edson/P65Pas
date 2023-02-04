@@ -182,6 +182,8 @@ type
       procedure SIF_dword_asig_byte(fun: TEleExpress);
       procedure SIF_dword_asig_word(fun: TEleExpress);
       procedure SIF_dword_add_dword(fun: TEleExpress);
+      procedure SIF_dword_add_byte(fun: TEleExpress);
+      procedure SIF_dword_add_word(fun: TEleExpress);
     private   //Operaciones con Char
       procedure SIF_char_asig_char(fun: TEleExpress);
       procedure SIF_char_asig_string(fun: TEleExpress);
@@ -4648,14 +4650,24 @@ begin
     if stoo = stRamFix_Const then Exchange(parA, parB);
     SetFunVariab(fun, target.add);  //stRamFix
 
-    if parA.val = 1 then begin
-      _INC(parB.add);
+    if (parA.val = 0) and (parB.add = target.add) then exit
+    else if (parA.val = 0) and (parB.add <> target.add) then begin
+      _LDA(parB.add);
+      _STA(target.add);
+      _LDA(parB.add+1);
+      _STA(target.add+1);
+      _LDA(parB.add+2);
+      _STA(target.add+2);
+      _LDA(parB.add+3);
+      _STA(target.add+3);
+    end else if (parA.val = 1) and (parB.add = target.add) then begin
+      _INC(target.add);
       _BNE_post(L1);
-      _INC(parB.add+1);
+      _INC(target.add+1);
       _BNE_post(L2);
-      _INC(parB.add+2);
+      _INC(target.add+2);
       _BNE_post(L3);
-      _INC(parB.add+3);
+      _INC(target.add+3);
   _LABEL_post(L1);
   _LABEL_post(L2);
   _LABEL_post(L3);
@@ -4701,6 +4713,157 @@ begin
     genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
   end;
 end;
+procedure TGenCod.SIF_dword_add_byte(fun: TEleExpress);
+  var parA, parB, target: TEleExpress;
+      stoo: TStoOperandsBSIF;
+      L1, L2, L3: integer;
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_dword(fun, parA.val + parB.val);
+      end;
+    end;
+    exit;
+  end;
+  //Code generation
+  if not GetAssignTarget(fun, target) then begin
+    genError('Internal error.', [BinOperationStr(fun)], fun.srcDec);
+    exit;
+  end;
+
+  stoo := stoOperation(parA, parB);
+  case stoo of
+  stConst_Const:
+    SetFunConst_dword(fun, parA.val + parB.val);
+  stRamFix_Const, stConst_RamFix: begin
+    if stoo = stConst_RamFix then Exchange(parA, parB);
+    SetFunVariab(fun, target.add);  //stRamFix
+
+    if (parB.val = 0) and (parA.add = target.add) then
+      exit
+    else if (parB.val = 0) and (parA.add <> target.add) then begin
+      _LDA(parA.add);
+      _STA(target.add);
+      _LDA(parA.add+1);
+      _STA(target.add+1);
+      _LDA(parA.add+2);
+      _STA(target.add+2);
+      _LDA(parA.add+3);
+      _STA(target.add+3);
+      exit;
+    end else if (parB.val = 1) and (parA.add = target.add) then begin
+      _INC(target.add);
+      _BNE_post(L1);
+      _INC(target.add+1);
+      _BNE_post(L2);
+      _INC(target.add+2);
+      _BNE_post(L3);
+      _INC(target.add+3);
+  _LABEL_post(L1);
+  _LABEL_post(L2);
+  _LABEL_post(L3);
+      exit;
+    end else begin
+      _CLC;
+      _LDA(parA.add);
+      _ADCi(parB.val);
+      _STA(target.add);
+    end;
+  end;
+  stRamFix_RamFix: begin
+    SetFunVariab(fun, target.add);  //stRamFix
+    _CLC;
+    _LDA(parA.add);
+    _ADC(parB.add);
+    _STA(target.add);
+  end;
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+    exit;
+  end;
+
+  _LDA(parA.add+1);
+  _ADCi(0);
+  _STA(target.add+1);
+
+  _LDA(parA.add+2);
+  _ADCi(0);
+  _STA(target.add+2);
+
+  _LDA(parA.add+3);
+  _ADCi(0);
+  _STA(target.add+3);
+end;
+procedure TGenCod.SIF_dword_add_word(fun: TEleExpress);
+  var parA, parB, target: TEleExpress;
+      stoo: TStoOperandsBSIF;
+      L1, L2, L3: integer;
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_dword(fun, parA.val + parB.val);
+      end;
+    end;
+    exit;
+  end;
+  //Code generation
+  if not GetAssignTarget(fun, target) then begin
+    genError('Internal error.', [BinOperationStr(fun)], fun.srcDec);
+    exit;
+  end;
+
+  stoo := stoOperation(parA, parB);
+  case stoo of
+  stConst_Const:
+    SetFunConst_dword(fun, parA.val + parB.val);
+  stRamFix_Const, stConst_RamFix: begin
+    if stoo = stConst_RamFix then Exchange(parA, parB);
+    SetFunVariab(fun, target.add);  //stRamFix
+    // No optimizations for 0 and 1. Byte takes precedence so it will handle them
+    _CLC;
+    _LDA(parA.add);
+    _ADCi(parB.valL);
+    _STA(target.add);
+    _LDA(parA.add+1);
+    _ADCi(parB.valH);
+    _STA(target.add+1);
+  end;
+  stRamFix_RamFix: begin
+    SetFunVariab(fun, target.add);  //stRamFix
+    _CLC;
+    _LDA(parA.add);
+    _ADC(parB.add);
+    _STA(target.add);
+    _LDA(parA.add+1);
+    _ADC(parB.add+1);
+    _STA(target.add+1);
+  end;
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+    exit;
+  end;
+
+  _LDA(parA.add+2);
+  _ADCi(0);
+  _STA(target.add+2);
+
+  _LDA(parA.add+3);
+  _ADCi(0);
+  _STA(target.add+3);
+end;
+
 {%REGION Char operations}
 procedure TGenCod.SIF_char_asig_char(fun: TEleExpress);
 begin
@@ -7889,6 +8052,10 @@ begin
 //  f:=CreateInBOMethod(typDWord, '+'  , '_add', typByte, typDWord, @SIF_word_add_byte);
 //  f.fConmutat := true;
   f:=CreateInBOMethod(typDWord, '+'  , '_add', typDWord, typDWord, @SIF_dword_add_dword);
+  f.fConmutat := true;
+  f:=CreateInBOMethod(typDWord, '+'  , '_add', typByte, typDWord, @SIF_dword_add_byte);
+  f.fConmutat := true;
+  f:=CreateInBOMethod(typDWord, '+'  , '_add', typWord, typDWord, @SIF_dword_add_word);
   f.fConmutat := true;
 //  AddCallerToFrom(H, f.bodyNode);  //Dependency
 //  f:=CreateInBOMethod(typDWord, '-'  , '_sub', typByte, typDWord, @SIF_word_sub_byte);
