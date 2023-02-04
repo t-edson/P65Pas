@@ -75,9 +75,6 @@ type
       procedure SIF_bool_or_bool(fun: TEleExpress);
       procedure SIF_byte_div_byte(fun: TEleExpress);
       procedure SIF_byte_mod_byte(fun: TEleExpress);
-      procedure SIF_DWord(fun: TEleExpress);
-      procedure SIF_dword_add_dword(fun: TEleExpress);
-      procedure SIF_dword_asig_dword(fun: TEleExpress);
       procedure SIF_GetPointer(fun: TEleExpress);
       procedure SIF_SetPointer(fun: TEleExpress);
       procedure SIF_word_div_word(fun: TEleExpress);
@@ -179,6 +176,12 @@ type
       procedure SIF_word_shl_byte(fun: TEleExpress);
       procedure SIF_word_shr_byte(fun: TEleExpress);
       procedure SIF_not_word(fun: TEleExpress);
+        // Operations for DWord
+      procedure SIF_DWord(fun: TEleExpress);
+      procedure SIF_dword_asig_dword(fun: TEleExpress);
+      procedure SIF_dword_asig_byte(fun: TEleExpress);
+      procedure SIF_dword_asig_word(fun: TEleExpress);
+      procedure SIF_dword_add_dword(fun: TEleExpress);
     private   //Operaciones con Char
       procedure SIF_char_asig_char(fun: TEleExpress);
       procedure SIF_char_asig_string(fun: TEleExpress);
@@ -4513,7 +4516,105 @@ begin
     GenError('Cannot assign to this Operand.', parA.srcDec); exit;
   end;
 end;
-  procedure TGenCod.SIF_dword_add_dword(fun: TEleExpress);
+procedure TGenCod.SIF_dword_asig_byte(fun: TEleExpress);
+  var parA, parB: TEleExpress;
+begin
+  SetFunNull(fun);
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then exit;  //We don't calculate constant here.
+  //Validates parA.
+  if (parA.opType<>otVariab) or (parA.Sto <> stRamFix) then begin //The only valid type.
+    GenError('Only variables can be assigned.');
+    exit;
+  end;
+
+  case parB.Sto of
+  stConst:    //constant
+    if (parB.val = 0) and (cpuMode = cpu65C02) then
+      _STZ(parA.add)
+    else begin
+      _LDAi(parB.valL);
+      _STA(parA.add);
+     end;
+  stRamFix:   //variable
+    if parA.add = parB.add then begin
+      //Maybe parB is the result of a SIF that identified an assignment target.
+    end else begin
+      _LDA(parB.add);
+      _STA(parA.add);
+    end;
+  stRegister: //expression
+      _STA(parA.add);
+  end;
+  if cpuMode = cpu65C02 then begin
+    _STZ(parA.add+1);
+    _STZ(parA.add+2);
+    _STZ(parA.add+3);
+  end else begin
+    _LDAi(0);
+    _STA(parA.add+1);
+    _STA(parA.add+2);
+    _STA(parA.add+3);
+  end;
+end;
+procedure TGenCod.SIF_dword_asig_word(fun: TEleExpress);
+  var parA, parB: TEleExpress;
+begin
+  SetFunNull(fun);
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then exit;  //We don't calculate constant here.
+  //Validates parA.
+  if (parA.opType<>otVariab) or (parA.Sto <> stRamFix) then begin //The only valid type.
+    GenError('Only variables can be assigned.');
+    exit;
+  end;
+
+  case parB.Sto of
+  stConst:    //constant
+    if (parB.val = 0) and (cpuMode = cpu65C02) then begin
+      _STZ(parA.add);
+      _STZ(parA.add+1);
+    end else begin
+      if (parB.valL = 0) and (cpuMode = cpu65C02) then
+        _STZ(parA.add)
+      else begin
+        _LDAi(parB.valL);
+        _STA(parA.add);
+      end;
+      _LDAi(parB.valH);
+      _STA(parA.add+1);
+     end;
+  stRamFix:   //variable
+    if parA.add = parB.add then begin
+      //Maybe parB is the result of a SIF that identified an assignment target.
+    end else begin
+      _LDA(parB.add);
+      _STA(parA.add);
+      _LDA(parB.add+1);
+      _STA(parA.add+1);
+    end;
+  stRegister: begin //expression
+      _STA(parA.add);
+      _LDA(H.addr);
+      _STA(parA.add+1);
+    end;
+  end;
+  if cpuMode = cpu65C02 then begin
+    _STZ(parA.add+2);
+    _STZ(parA.add+3);
+  end else begin
+    _LDAi(0);
+    _STA(parA.add+2);
+    _STA(parA.add+3);
+  end;
+end;
+procedure TGenCod.SIF_dword_add_dword(fun: TEleExpress);
 var
   parA, parB, target: TEleExpress;
   stoo: TStoOperandsBSIF;
@@ -7771,9 +7872,11 @@ begin
   TreeElems.OpenElement(typDWord);
   f:=CreateInBOMethod(typDWord, ':=' ,'_set' , typDWord, typNull, @SIF_dword_asig_dword);
   f.getset := gsSetInSimple;
-//  AddCallerToFrom(H, f.bodyNode);  //Dependency
-//  f:=CreateInBOMethod(typDWord, ':=' ,'_set' , typByte, typNull, @SIF_word_asig_byte);
-//  f.getset := gsSetInSimple;
+  f:=CreateInBOMethod(typDWord, ':=' ,'_set' , typByte, typNull, @SIF_dword_asig_byte);
+  f.getset := gsSetInSimple;
+  f:=CreateInBOMethod(typDWord, ':=' ,'_set' , typWord, typNull, @SIF_dword_asig_word);
+  f.getset := gsSetInSimple;
+  AddCallerToFrom(H, f.bodyNode);  //Dependency
 //  f:=CreateInBOMethod(typDWord, '+=' ,'_aadd', typByte, typNull, @SIF_word_aadd_byte);
 //  f.getset := gsSetOther;
 //  f:=CreateInBOMethod(typDWord, '+=' ,'_aadd', typDWord, typNull, @SIF_word_aadd_word);
