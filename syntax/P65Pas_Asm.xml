@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Language name="ASM PIC" ext="xpr" ColorBlock="Block">
-  <Attribute Name="Keyword"   ForeCol="#00FF00" Bold="True" Italic="False" Underline="False"/>
+  <Attribute Name="Keyword"   ForeCol="#0000FF" Bold="True" Italic="False" Underline="False"/>
   <Attribute Name="Comment"   ForeCol="#808080" Bold="False" Italic="False" Underline="False"/>
   <Attribute Name="Number"    ForeCol="#FF00FF" Bold="False" Italic="False" Underline="False"/>
   <Attribute Name="String"    ForeCol="#00FF00" Bold="False" Italic="False" Underline="False"/>
