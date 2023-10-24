@@ -13,7 +13,7 @@ var
   w: word;
 begin
   sprPucp := SPRITE1;  //Copy date from screen
-  spritePointers[0] := (@sprPucp) >> 6;  //Point to sprite.
+  spritePointers[0] := ((@sprPucp) >> 6) and $FF;  //Point to sprite.
   spritePosition[0].x := 120;
   spritePosition[0].y := 200;
   spriteColor[0]:=8; 

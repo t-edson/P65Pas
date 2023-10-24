@@ -4220,6 +4220,7 @@ Output:
 var
   lbl1: integer;
 begin
+  PutLabel('__word_shift_l');
 _LABEL_pre(lbl1);
   _ASLa;
   _ROL(H.addr);
@@ -4266,7 +4267,6 @@ begin
 //      _ROL(H.addr);
 //      _DEX;
 //    _BNE_pre(L1);
-    AddCallerToFromCurr(snfWordShift_l);  //Declare use
     functCall(snfWordShift_l, AddrUndef);  //Use
 _LABEL_post(L2);
   end;
@@ -4293,7 +4293,6 @@ _LABEL_pre(L1);
         _DEX;
         _BNE_pre(L1);
       end else begin
-        AddCallerToFromCurr(snfWordShift_l);  //Declare use
         functCall(snfWordShift_l, AddrUndef);  //Use
       end;
     end;
@@ -4313,7 +4312,6 @@ _LABEL_pre(L1);
       _DEX;
       _BNE_pre(L1);
     end else begin
-      AddCallerToFromCurr(snfWordShift_l);  //Declare use
       functCall(snfWordShift_l, AddrUndef);  //Use
     end;
 _LABEL_post(L2);
@@ -4333,7 +4331,6 @@ _LABEL_pre(L1);
       _DEX;
       _BNE_pre(L1);
     end else begin
-      AddCallerToFromCurr(snfWordShift_l);  //Declare use
       functCall(snfWordShift_l, AddrUndef);  //Use
     end;
 _LABEL_post(L2);
@@ -4354,7 +4351,6 @@ _LABEL_post(L2);
         _DEX;
         _BNE_pre(L1);
       end else begin
-        AddCallerToFromCurr(snfWordShift_l);  //Declare use
         functCall(snfWordShift_l, AddrUndef);  //Use
       end;
     end;
@@ -4368,7 +4364,6 @@ _LABEL_pre(L1);
       _DEX;
       _BNE_pre(L1);
     end else begin
-      AddCallerToFromCurr(snfWordShift_l);  //Declare use
       functCall(snfWordShift_l, AddrUndef);  //Use
     end;
   end;
@@ -7821,7 +7816,7 @@ var
   uni: TEleUnit;
   pars: TxpParFuncArray;  //Array of parameters
   f, sifByteMulByte, sifDelayMs, sifWord, sifByteDivByte,
-    sifByteModByte, sifWordDivWord, sifWordModWord: TEleFun;
+    sifByteModByte, sifWordDivWord, sifWordModWord, sifWordShlByte: TEleFun;
 begin
   //////// Funciones del sistema ////////////
   //Implement calls to Code Generator
@@ -8013,6 +8008,7 @@ begin
   f:=CreateInUOMethod(typWord, 'NOT', '_not', typWord, @SIF_not_word, opkUnaryPre);
   f:=CreateInBOMethod(typWord, '>>' , '_shr', typByte, typWord, @SIF_word_shr_byte); { TODO : Definir bien la precedencia }
   f:=CreateInBOMethod(typWord, '<<' , '_shl', typByte, typWord, @SIF_word_shl_byte);
+  sifWordShlByte := f;         //Guarda referencia
 
   f:=CreateInBOMethod(typWord, '=' , '_equ' , typWord, typBool, @SIF_word_equal_word);
   f.fConmutat := true;
@@ -8188,6 +8184,8 @@ begin
 
   AddCallerToFrom(snfWrdDivWrd16, sifWordDivWord.BodyNode);
   AddCallerToFrom(snfWrdDivWrd16, sifWordModWord.BodyNode);
+
+  AddCallerToFrom(snfWordShift_l, sifWordShlByte.bodyNode);
 
   //Close Unit
   TreeElems.CloseElement;

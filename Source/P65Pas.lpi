@@ -76,7 +76,7 @@
         <PackageName Value="LCL"/>
       </Item4>
     </RequiredPackages>
-    <Units Count="34">
+    <Units Count="36">
       <Unit0>
         <Filename Value="P65Pas.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -284,6 +284,16 @@
         <Filename Value="..\comp_p65pas\src\ParserASM_6502.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit33>
+      <Unit34>
+        <Filename Value="..\comp_p65pas\src\XpresMIR.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit34>
+      <Unit35>
+        <Filename Value="adapter6502\FrameMIR6502.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="fraMIR6502"/>
+        <ResourceBaseClass Value="Frame"/>
+      </Unit35>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

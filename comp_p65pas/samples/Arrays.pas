@@ -24,7 +24,7 @@ begin
   n := arr5.length;  //Number of items
   n := arr5.low;     //Lower index
   n := arr5.high;    //Higher index
-  c := arr5.item(0); //Read item
+//  c := arr5.item(0); //Read item
   c := arr5[0];      //Equivalent.
   for i:=0 to arr5.high do
     c := arr5[i];

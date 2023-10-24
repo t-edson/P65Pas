@@ -679,13 +679,13 @@ constructor TXpTreeElements.Create;
 begin
   main:= TEleProg.Create;  //No debería
   main.name := 'Main';
-  main.elements := TxpElements.Create(true);  //debe tener lista
-  AllCons  := TEleConsDecs.Create(false);   //Crea lista
+  main.elements := TxpElements.Create(true); //Debe tener lista
+  AllCons  := TEleConsDecs.Create(false);  //Crea lista
   AllVars  := TEleVarDecs.Create(false);   //Crea lista
-  AllFuncs := TEleFuns.Create(false);   //Crea lista
-  AllUnits := TEleUnits.Create(false);  //Crea lista
+  AllFuncs := TEleFuns.Create(false);      //Crea lista
+  AllUnits := TEleUnits.Create(false);     //Crea lista
   AllTypes := TEleTypeDecs.Create(false);  //Crea lista
-  curNode := main;  //empieza con el nodo principal como espacio de nombres actual
+  curNode := main;                         //Empieza con el nodo principal como espacio de nombres actual
 end;
 destructor TXpTreeElements.Destroy;
 begin

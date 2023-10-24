@@ -11,7 +11,7 @@ uses
   FrameEditView, Globales, FrameCfgSynEdit, MisUtils, SynFacilHighlighter,
   EditView, MiConfigXML, FrameStatist6502, FrameSynTree6502, FormAdapter6502,
   FrameCfgAfterChg6502, FrameCfgCompiler6502, FormDebugger6502,
-  FormRAMExplorer6502, FrameCfgAsmOut6502;
+  FormRAMExplorer6502, FrameCfgAsmOut6502, FrameMIR6502;
 type
   { TAdapter6502 }
   TAdapter6502 = class(TAdapterBase)
@@ -50,6 +50,7 @@ type
   private     //Herramientas adicionales
     fraStatis     : TfraStatist6502;  //Frame de estadísticas
     fraSynTree    : TfraSynxTree6502; //Frame de árbol de sintaxis
+    fraMir        : TfraMIR6502;      //Frame del MIR
     adapterForm   : TfrmAdapter6502;   //Formulario principal
     frmDebug      : TfrmDebugger6502;
     frmRAMExplorer: TfrmRAMExplorer6502;
@@ -282,6 +283,7 @@ var
 begin
   //Actualiza el árbol de sintaxis
   fraSynTree.Refresh;
+  fraMir.Refresh;
   //Actualiza frame de estadísticas de uso
   if nErrors=0 then begin
     //No hay error
@@ -438,18 +440,21 @@ procedure TAdapter6502.SynTree_ReqAnalysis;
 begin
   CompileLevel(1);
   fraSynTree.Refresh;
+  fraMir.Refresh;
 end;
 procedure TAdapter6502.SynTree_ReqOptimizat;
 {Se pide realizar Análisis y Optimización.}
 begin
   CompileLevel(2);
   fraSynTree.Refresh;
+  fraMir.Refresh;
 end;
 procedure TAdapter6502.SynTree_ReqSynthesis;
 {Se pide realizar Análisis, Optimización y Síntesis.}
 begin
   CompileLevel(3);
   fraSynTree.Refresh;
+  fraMir.Refresh;
 end;
 
 //Inicialización
@@ -490,7 +495,7 @@ begin
   Compiler_PIC16.SetLanguage;
   //Agrega los íconos de "adapterForm" a los ImageList
   adapterForm.AddActions(imgList16, imgList32, actList, COMP_NAME);
-  //Agrega las herramientas de este compilador
+  //Agrega la herramienta de árbol de sintaxis
   tab := pagControl.AddTabSheet;    //Agrega nuevo panel
   tab.Name := 'SyntaxTree_'+ COMP_NAME;
   tab.Caption := 'Syntax Tree';
@@ -502,6 +507,15 @@ begin
   fraSynTree.OnReqAnalysis  := @SynTree_ReqAnalysis;
   fraSynTree.OnReqOptimizat  := @SynTree_ReqOptimizat;
   fraSynTree.OnReqSynthesis  := @SynTree_ReqSynthesis;
+  //Agrega la herramienta de árbol de sintaxis
+  tab := pagControl.AddTabSheet;    //Agrega nuevo panel
+  tab.Name := 'mir_'+ COMP_NAME;
+  tab.Caption := 'MIR';
+  tab.Hint := COMP_NAME;     //Lo marca aquí para saber que es de este compilador.
+  fraMir.Parent := tab;
+  fraMir.Visible := true;
+  fraMir.Align := alClient;
+
   //Configura editor de ensamblador
   edAsm.Parent := panRightPanel;
   edAsm.Align := alClient;
@@ -616,6 +630,10 @@ begin
   //Crea frame del árbol de sintaxis
   fraSynTree := TfraSynxTree6502.Create(nil);
   fraSynTree.Init(Compiler);    //Conecta al compilador
+  //Crea frame del MIR
+  fraMir     := TfraMIR6502.Create(nil);
+  fraMir.Init(Compiler);    //Conecta al compilador
+
   //Crea formulario principal
   adapterForm:= TfrmAdapter6502.Create(nil);
   adapterForm.adapter := self;  //Actualiza referencia
@@ -636,6 +654,7 @@ begin
   frmRAMExplorer.Destroy;
   frmDebug.Destroy;
   adapterForm.Destroy;
+  fraMir.Destroy;
   fraSynTree.Destroy;
   fraStatis.Destroy;
   CodeTool.Destroy;

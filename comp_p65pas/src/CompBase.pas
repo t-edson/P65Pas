@@ -12,7 +12,7 @@ unit CompBase;
 interface
 uses
   Classes, SysUtils, Types, LazLogger, LexPas,
-  XpresElemP65, XpresAST, CompContexts;
+  XpresElemP65, XpresAST, CompContexts, XpresMIR;
 type
 //Expression type, according the position it appears.
 TPosExpres = (pexINDEP,  //Expresión independiente
@@ -128,6 +128,7 @@ protected  //Containers
   procedure SeparateUsedFunctions;
 public     //Containers
   TreeElems  : TXpTreeElements; //Abstract syntax tree.
+  mirCont    : TMirList;        //Conteiner for MIR representation
   usedFuncs  : TEleFuns;    //Store only used functions
   unusedFuncs: TEleFuns;    //Store only unused functions
   interruptFunct: TEleFun;  //Store ths only Interrupt function
@@ -2167,6 +2168,7 @@ begin
   ClearError;   //inicia motor de errores
   //Crea arbol de elementos y listas
   TreeElems  := TXpTreeElements.Create;
+  mirCont    := TMirList.Create;
   ejecProg := false;
   //Containers for functions
   usedFuncs := TEleFuns.Create(false);     //Only references
@@ -2176,6 +2178,7 @@ destructor TCompilerBase.Destroy;
 begin
   unusedFuncs.Destroy;
   usedFuncs.Destroy;
+  mirCont.Destroy;
   TreeElems.Destroy;
   inherited Destroy;
 end;

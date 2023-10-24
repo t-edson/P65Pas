@@ -15,6 +15,7 @@ type
     addVariab : integer;  //Address where start Variables section.
     addFuncts : integer;  //Address where start function section.
     procedure ConstantFoldExpr(eleExp: TEleExpress);
+    procedure GenerateMIR;
     procedure PrepareBody(cntBody, sntBlock: TEleCodeCont);
     procedure PrepareSentences;
   private  //Compilers steps
@@ -661,6 +662,22 @@ begin
   bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
   PrepareBody(bod, bod);
 end;
+procedure TCompiler_PIC16.GenerateMIR;
+var
+  fun : TEleFun;
+  bod: TEleBody;
+begin
+  for fun in usedFuncs do begin
+    if fun.callType = ctUsrNormal then begin
+//      mirCont.AddInstruction();
+//      PrepareBody(fun.BodyNode, fun.BodyNode);
+//      if HayError then exit;   //Puede haber error
+    end;
+  end;
+  //Split body
+//  bod := TreeElems.BodyNode;  //lee Nodo del cuerpo principal
+//  PrepareBody(bod, bod);
+end;
 procedure TCompiler_PIC16.DoOptimize;
 {Usa la información del árbol de sintaxis, para optimizar su estructura con
 miras a la síntesis.
@@ -679,7 +696,8 @@ begin
   //Updating callers and calleds.
   UpdateFunLstCalled;     //Actualiza lista "lstCalled" de las funciones usadas.
   if HayError then exit;
-  SeparateUsedFunctions;
+  SeparateUsedFunctions;  //Updates "usedFuncs".
+  GenerateMIR;            //Genera la representación MIR
   //Evaluate declared constants
   EvaluateConstantDeclare;
   if HayError then exit;
@@ -958,6 +976,7 @@ begin
     end;
     {-------------------------------------------------}
     TreeElems.Clear;
+    mirCont.Clear;
     //Asigna nombre y archivo a elemento
     TreeElems.main.name := ExtractFileName(mainFile);
     p := pos('.',TreeElems.main.name);
