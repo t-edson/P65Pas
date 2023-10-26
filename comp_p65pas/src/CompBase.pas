@@ -180,6 +180,7 @@ public    //Types to implement
   typChar : TEleTypeDec;
   typWord : TEleTypeDec;
   typDWord : TEleTypeDec;
+  typTriplet: TEleTypeDec;
 public     //Public attributes of compiler
   ID        : integer;     //Identificador para el compilador.
   IsUnit    : boolean;     //Flag to identify a Unit

@@ -292,6 +292,7 @@
         <Filename Value="adapter6502\FrameMIR6502.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraMIR6502"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
       </Unit35>
     </Units>

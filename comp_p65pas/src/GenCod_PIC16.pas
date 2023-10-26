@@ -70,6 +70,11 @@ type
       procedure arrayHigh(fun: TEleExpress);
       procedure arrayLength(fun: TEleExpress);
       procedure arrayLow(fun: TEleExpress);
+      procedure CreateBooleanOperations;
+      procedure CreateByteOperations;
+      procedure CreateCharOperations;
+      procedure CreateSystemTypesAndVars;
+      procedure CreateWordOperations;
       procedure DefineObject(etyp: TEleTypeDec);
       function FillArray(parray: TEleExpress): boolean;
       procedure SIF_bool_or_bool(fun: TEleExpress);
@@ -218,7 +223,9 @@ implementation
 var
   MSG_NOT_IMPLEM, MSG_INVAL_PARTYP, MSG_UNSUPPORTED : string;
   MSG_CANNOT_COMPL, MSG_IDX_BYT_WORD, ER_INV_MEMADDR, ER_INV_MAD_DEV: string;
-
+var
+  sifByteMulByte, sifByteDivByte, sifByteModByte: TEleFun;
+  sifWordDivWord, sifWordModWord, sifWordShlByte: TEleFun;
 procedure SetLanguage;
 begin
   GenCodBas_PIC16.SetLanguage;
@@ -7810,31 +7817,8 @@ begin
   TreeElems.CloseElement;  //Close body
   TreeElems.CloseElement;  //Close function implementation
 end;
-procedure TGenCod.CreateSystemElements;
-{Initialize the system elements. Must be executed just one time when compiling.}
-var
-  uni: TEleUnit;
-  pars: TxpParFuncArray;  //Array of parameters
-  f, sifByteMulByte, sifDelayMs, sifWord, sifByteDivByte,
-    sifByteModByte, sifWordDivWord, sifWordModWord, sifWordShlByte: TEleFun;
+procedure TGenCod.CreateSystemTypesAndVars;
 begin
-  //////// Funciones del sistema ////////////
-  //Implement calls to Code Generator
-  callDefineArray  := @DefineArray;
-  callDefineObject := @DefineObject;
-  callDefinePointer:= @DefinePointer;
-  callValidRAMaddr := @ValidRAMaddr;
-  callStartProgram := @Cod_StartProgram;
-  callEndProgram   := @Cod_EndProgram;
-  //////////////////////// Create "System" Unit. //////////////////////
-  {Must be done once in First Pass. Originally system functions were created in a special
-  list and has a special treatment but it implied a lot of work for manage the memory,
-  linking, use of variables, and optimization. Now we create a "system unit" like a real
-  unit (more less) and we create the system function here, so we use the same code for
-  linking, calling and optimization that we use in common functions. Moreover, we can
-  create private functions.}
-  uni := CreateEleUnit('System');  //System unit
-  TreeElems.AddElementAndOpen(uni);  //Open Unit
   /////////////// System types ////////////////////
   typBool := CreateEleTypeDec('boolean', srcPosNull, 1, tctAtomic, t_boolean);
   typBool.OnLoadToWR := @byte_LoadToWR;
@@ -7846,11 +7830,20 @@ begin
   typByte.location := locInterface;
   TreeElems.AddElementAndOpen(typByte);  //Open to create "elements" list.
   TreeElems.CloseElement;
+
   typChar := CreateEleTypeDec('char', srcPosNull, 1, tctAtomic, t_string);
   typChar.OnLoadToWR := @byte_LoadToWR;
   typChar.location := locInterface;
   TreeElems.AddElementAndOpen(typChar);
   TreeElems.CloseElement;
+
+  typWord := CreateEleTypeDec('word', srcPosNull, 2, tctAtomic, t_uinteger);
+  typWord.OnLoadToWR := @word_LoadToWR;
+  typWord.OnRequireWR := @word_RequireWR;
+  typWord.location := locInterface;
+  TreeElems.AddElementAndOpen(typWord);
+  TreeElems.CloseElement;
+
   typWord := CreateEleTypeDec('word', srcPosNull, 2, tctAtomic, t_uinteger);
   typWord.OnLoadToWR := @word_LoadToWR;
   typWord.OnRequireWR := @word_RequireWR;
@@ -7863,6 +7856,13 @@ begin
   //typDWord.OnRequireWR := @word_RequireWR;
   typDWord.location := locInterface;
   TreeElems.AddElementAndOpen(typDWord);
+  TreeElems.CloseElement;
+
+  typTriplet := CreateEleTypeDec('triplet', srcPosNull, 3, tctAtomic, t_uinteger);
+  //typTriplet.OnLoadToWR := @trip_LoadToWR;
+  //typTriplet.OnRequireWR := @trip_RequireWR;
+  //typTriplet.location := locInterface;
+  TreeElems.AddElementAndOpen(typTriplet);
   TreeElems.CloseElement;
 
   {Create variables for aditional Working register. Note that this variables are
@@ -7891,8 +7891,11 @@ begin
   IX.adicPar.hasAdic := decNone;
   IX.adicPar.hasInit := false;
   IX.location := locInterface;  //make visible
-
-  curLocation := locInterface;   {Maybe not needed because element here are created directly.}
+end;
+procedure TGenCod.CreateBooleanOperations;
+var
+  f: TEleFun;
+begin
   /////////////// Boolean type ////////////////////
   //Methods-Operators
   TreeElems.OpenElement(typBool);
@@ -7910,6 +7913,11 @@ begin
   f:=CreateInBOMethod(typBool, '<>',  '_dif', typBool, typBool, @SIF_bool_xor_bool);
   f.fConmutat := true;
   TreeElems.CloseElement;   //Close Type
+end;
+procedure TGenCod.CreateByteOperations;
+var
+  f: TEleFun;
+begin
   /////////////// Byte type ////////////////////
   //Methods-Operators
   TreeElems.OpenElement(typByte);
@@ -7955,6 +7963,11 @@ begin
   f:=CreateInBOMethod(typByte, '>>', '_shr', typByte, typByte, @SIF_byte_shr_byte);  { TODO : Definir bien la precedencia }
   f:=CreateInBOMethod(typByte, '<<', '_shl', typByte, typByte, @SIF_byte_shl_byte);
   TreeElems.CloseElement;   //Close Type
+end;
+procedure TGenCod.CreateCharOperations;
+var
+  f: TEleFun;
+begin
   /////////////// Char type ////////////////////
   TreeElems.OpenElement(typChar);
   f:=CreateInBOMethod(typChar, ':=', '_set', typChar, typNull, @SIF_char_asig_char);
@@ -7965,7 +7978,11 @@ begin
   f:=CreateInBOMethod(typChar, '<>', '_dif', typChar, typBool, @SIF_char_difer_char);
   f.fConmutat := true;
   TreeElems.CloseElement;   //Close Type
-
+end;
+procedure TGenCod.CreateWordOperations;
+var
+  f: TEleFun;
+begin
   /////////////// Word type ////////////////////
   TreeElems.OpenElement(typWord);
   f:=CreateInBOMethod(typWord, ':=' ,'_set' , typWord, typNull, @SIF_word_asig_word);
@@ -8026,6 +8043,38 @@ begin
   f:=CreateInUOMethod(typWord, '', 'high', typByte, @word_High);
 
   TreeElems.CloseElement;   //Close Type
+end;
+procedure TGenCod.CreateSystemElements;
+{Initialize the system elements. Must be executed just one time when compiling.}
+var
+  uni: TEleUnit;
+  pars: TxpParFuncArray;  //Array of parameters
+  f, sifDelayMs, sifWord: TEleFun;
+begin
+  //////// Funciones del sistema ////////////
+  //Implement calls to Code Generator
+  callDefineArray  := @DefineArray;
+  callDefineObject := @DefineObject;
+  callDefinePointer:= @DefinePointer;
+  callValidRAMaddr := @ValidRAMaddr;
+  callStartProgram := @Cod_StartProgram;
+  callEndProgram   := @Cod_EndProgram;
+  //////////////////////// Create "System" Unit. //////////////////////
+  {Must be done once in First Pass. Originally system functions were created in a special
+  list and has a special treatment but it implied a lot of work for manage the memory,
+  linking, use of variables, and optimization. Now we create a "system unit" like a real
+  unit (more less) and we create the system function here, so we use the same code for
+  linking, calling and optimization that we use in common functions. Moreover, we can
+  create private functions.}
+  uni := CreateEleUnit('System');  //System unit
+  TreeElems.AddElementAndOpen(uni);  //Open Unit
+  CreateSystemTypesAndVars;
+  curLocation := locInterface;   {Maybe not needed because element here are created directly.}
+  //Creates operations
+  CreateBooleanOperations;
+  CreateByteOperations;
+  CreateCharOperations;
+  CreateWordOperations;
 
   /////////////// DWord type ////////////////////
   TreeElems.OpenElement(typDWord);
@@ -8191,4 +8240,10 @@ begin
   TreeElems.CloseElement;
 end;
 end.
-//5186
+
+
+
+
+
+
+
