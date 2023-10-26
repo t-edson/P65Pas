@@ -4263,9 +4263,9 @@ begin
   end;
   stConst_RamFix: begin
     SetFunExpres(fun);
-    _LDA(parA.valH);
+    _LDAi(parA.valH);
     _STA(H.addr);  //Load high byte
-    _LDA(parA.valL);
+    _LDAi(parA.valL);
     //Loop
     _LDX(parB.add);
     _BEQ_post(L2);  //Protección to zero
