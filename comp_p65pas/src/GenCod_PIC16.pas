@@ -75,6 +75,7 @@ type
       procedure CreateCharOperations;
       procedure CreateSystemTypesAndVars;
       procedure CreateWordOperations;
+      procedure CreateTripletOperations;
       procedure DefineObject(etyp: TEleTypeDec);
       function FillArray(parray: TEleExpress): boolean;
       procedure SIF_bool_or_bool(fun: TEleExpress);
@@ -189,6 +190,10 @@ type
       procedure SIF_dword_add_dword(fun: TEleExpress);
       procedure SIF_dword_add_byte(fun: TEleExpress);
       procedure SIF_dword_add_word(fun: TEleExpress);
+        // Triplet operations
+      procedure SIF_triplet_asig_byte(fun: TEleExpress);
+      procedure SIF_triplet_asig_word(fun: TEleExpress);
+      procedure SIF_triplet_asig_dword(fun: TEleExpress);
     private   //Operaciones con Char
       procedure SIF_char_asig_char(fun: TEleExpress);
       procedure SIF_char_asig_string(fun: TEleExpress);
@@ -4865,6 +4870,153 @@ begin
   _ADCi(0);
   _STA(target.add+3);
 end;
+procedure TGenCod.SIF_triplet_asig_byte(fun: TEleExpress);
+  var parA, parB: TEleExpress;
+begin
+  SetFunNull(fun);
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then exit;  //We don't calculate constant here.
+  //Validates parA.
+  if (parA.opType<>otVariab) or (parA.Sto <> stRamFix) then begin //The only valid type.
+    GenError('Only variables can be assigned.');
+    exit;
+  end;
+
+  case parB.Sto of
+  stConst:    //constant
+    if (parB.val = 0) and (cpuMode = cpu65C02) then
+      _STZ(parA.add)
+    else begin
+      _LDAi(parB.valL);
+      _STA(parA.add);
+     end;
+  stRamFix:   //variable
+    if parA.add = parB.add then begin
+      //Maybe parB is the result of a SIF that identified an assignment target.
+    end else begin
+      _LDA(parB.add);
+      _STA(parA.add);
+    end;
+  stRegister: //expression
+      _STA(parA.add);
+  end;
+  if cpuMode = cpu65C02 then begin
+    _STZ(parA.add+1);
+    _STZ(parA.add+2);
+  end else begin
+    _LDAi(0);
+    _STA(parA.add+1);
+    _STA(parA.add+2);
+  end;
+end;
+procedure TGenCod.SIF_triplet_asig_word(fun: TEleExpress);
+  var parA, parB: TEleExpress;
+begin
+  SetFunNull(fun);
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then exit;  //We don't calculate constant here.
+  //Validates parA.
+  if (parA.opType<>otVariab) or (parA.Sto <> stRamFix) then begin //The only valid type.
+    GenError('Only variables can be assigned.');
+    exit;
+  end;
+
+  case parB.Sto of
+  stConst:    //constant
+    if (parB.val = 0) and (cpuMode = cpu65C02) then begin
+      _STZ(parA.add);
+      _STZ(parA.add+1);
+    end else begin
+      if (parB.valL = 0) and (cpuMode = cpu65C02) then
+        _STZ(parA.add)
+      else begin
+        _LDAi(parB.valL);
+        _STA(parA.add);
+      end;
+      _LDAi(parB.valH);
+      _STA(parA.add+1);
+     end;
+  stRamFix:   //variable
+    if parA.add = parB.add then begin
+      //Maybe parB is the result of a SIF that identified an assignment target.
+    end else begin
+      _LDA(parB.add);
+      _STA(parA.add);
+      _LDA(parB.add+1);
+      _STA(parA.add+1);
+    end;
+  stRegister: begin //expression
+      _STA(parA.add);
+      _LDA(H.addr);
+      _STA(parA.add+1);
+    end;
+  end;
+  if cpuMode = cpu65C02 then begin
+    _STZ(parA.add+2);
+  end else begin
+    _LDAi(0);
+    _STA(parA.add+2);
+  end;
+end;
+procedure TGenCod.SIF_triplet_asig_dword(fun: TEleExpress);
+  var parA, parB: TEleExpress;
+begin
+  SetFunNull(fun);
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then exit;  //We don't calculate constant here.
+  //Validates parA.
+  if (parA.opType<>otVariab) or (parA.Sto <> stRamFix) then begin //The only valid type.
+    GenError('Only variables can be assigned.');
+    exit;
+  end;
+
+  case parB.Sto of
+    stConst : begin
+      if (parB.val = 0) and (cpuMode = cpu65C02) then begin
+        _STZ(parA.add);
+        _STZ(parA.add+1);
+        _STZ(parA.add+2);
+      end else if (parB.valL = parB.valH) and (parB.valL = parB.valE) then begin
+        //all byte parts are equal
+        _LDAi(parB.valL);
+        _STA(parA.add);
+        _STA(parA.add+1);
+        _STA(parA.add+2);
+      end else  begin
+        //General case
+        _LDAi(parB.valL);
+        _STA(parA.add);
+        _LDAi(parB.valH);
+        _STA(parA.add+1);
+        _LDAi(parB.valE);
+        _STA(parA.add+2);
+      end;
+    end;
+    stRamFix: begin      //stRamFix-stRamFix
+      if parA.add = parB.add then begin
+        //Maybe parB is the result of a SIF that identified an assignment target.
+      end else begin
+        _LDA(parB.add);
+        _STA(parA.add);
+        _LDA(parB.add+1);
+        _STA(parA.add+1);
+        _LDA(parB.add+2);
+        _STA(parA.add+2);
+      end;
+    end;
+    else
+      GenError(MSG_UNSUPPORTED, parB.srcDec); exit;
+  end;
+end;
 
 {%REGION Char operations}
 procedure TGenCod.SIF_char_asig_char(fun: TEleExpress);
@@ -8044,6 +8196,23 @@ begin
 
   TreeElems.CloseElement;   //Close Type
 end;
+procedure TGenCod.CreateTripletOperations;
+var
+  f: TEleFun;
+begin
+  TreeElems.OpenElement(typTriplet);
+  f:=CreateInBOMethod(typTriplet, ':=', '_set', typByte, typNull, @SIF_triplet_asig_byte);
+  f.getset := gsSetInSimple;
+  f:=CreateInBOMethod(typTriplet, ':=', '_set', typWord, typNull, @SIF_triplet_asig_word);
+  f.getset := gsSetInSimple;
+  AddCallerToFrom(H, f.bodyNode);  //Dependency
+  f:=CreateInBOMethod(typTriplet, ':=', '_set', typDWord, typNull, @SIF_triplet_asig_dword);
+  f.getset := gsSetInSimple;
+    // Methods
+  f:=CreateInUOMethod(typTriplet, '', 'low' , typByte, @word_Low);
+  f:=CreateInUOMethod(typTriplet, '', 'high', typByte, @word_High);
+  TreeElems.CloseElement;
+end;
 procedure TGenCod.CreateSystemElements;
 {Initialize the system elements. Must be executed just one time when compiling.}
 var
@@ -8075,6 +8244,7 @@ begin
   CreateByteOperations;
   CreateCharOperations;
   CreateWordOperations;
+  CreateTripletOperations;
 
   /////////////// DWord type ////////////////////
   TreeElems.OpenElement(typDWord);
