@@ -8200,17 +8200,18 @@ procedure TGenCod.CreateTripletOperations;
 var
   f: TEleFun;
 begin
-  /////////////// Char type ////////////////////
   TreeElems.OpenElement(typTriplet);
-  f:=CreateInBOMethod(typChar, ':=', '_set', typByte, typNull, @SIF_triplet_asig_byte);
+  f:=CreateInBOMethod(typTriplet, ':=', '_set', typByte, typNull, @SIF_triplet_asig_byte);
+  f.getset := gsSetInSimple;
+  f:=CreateInBOMethod(typTriplet, ':=', '_set', typWord, typNull, @SIF_triplet_asig_word);
   f.getset := gsSetInSimple;
   AddCallerToFrom(H, f.bodyNode);  //Dependency
-  f:=CreateInBOMethod(typChar, ':=', '_set', typWord, typNull, @SIF_triplet_asig_word);
+  f:=CreateInBOMethod(typTriplet, ':=', '_set', typDWord, typNull, @SIF_triplet_asig_dword);
   f.getset := gsSetInSimple;
-  f:=CreateInBOMethod(typChar, ':=', '_set', typDWord, typNull, @SIF_triplet_asig_dword);
-  f.getset := gsSetInSimple;
-  f.fConmutat := true;
-  TreeElems.CloseElement;   //Close Type
+    // Methods
+  f:=CreateInUOMethod(typTriplet, '', 'low' , typByte, @word_Low);
+  f:=CreateInUOMethod(typTriplet, '', 'high', typByte, @word_High);
+  TreeElems.CloseElement;
 end;
 procedure TGenCod.CreateSystemElements;
 {Initialize the system elements. Must be executed just one time when compiling.}
