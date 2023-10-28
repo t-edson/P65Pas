@@ -8211,6 +8211,7 @@ begin
     // Methods
   f:=CreateInUOMethod(typTriplet, '', 'low' , typByte, @word_Low);
   f:=CreateInUOMethod(typTriplet, '', 'high', typByte, @word_High);
+  f:=CreateInUOMethod(typTriplet, '', 'bank', typByte, @triplet_Bank);
   TreeElems.CloseElement;
 end;
 procedure TGenCod.CreateSystemElements;

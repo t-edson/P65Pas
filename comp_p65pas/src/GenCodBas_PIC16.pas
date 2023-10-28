@@ -212,6 +212,7 @@ type
     procedure word_SaveToStk;
     procedure word_Low(fun: TEleExpress);
     procedure word_High(fun: TEleExpress);
+    procedure triplet_Bank(fun: TEleExpress);
   public     //Access to CPU information
     function PICName: string; override;
     function RAMmax: integer; override;
@@ -1643,6 +1644,33 @@ begin
     if par.evaluated then begin
       //We can take the high part
       SetFunConst_byte(fun, par.value.ValInt and $ff00 >>8);
+    end else begin
+      //We cannot set a variable yet
+      SetFunExpres(fun);
+    end;
+  end;
+  else
+    GenError('Syntax error.');
+  end;
+end;
+procedure TGenCodBas.triplet_Bank(fun: TEleExpress);
+  var par: TEleExpress;
+begin
+  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  requireA;
+  case par.Sto of
+  stRamFix: begin
+    if par.rvar.allocated then begin
+      SetFunVariab(fun, par.add + 2);
+    end else begin
+      //We cannot set a variable yet
+      SetFunExpres(fun);
+    end;
+  end;
+  stConst: begin
+    if par.evaluated then begin
+      //We can take the bank part
+      SetFunConst_byte(fun, par.valE);
     end else begin
       //We cannot set a variable yet
       SetFunExpres(fun);
