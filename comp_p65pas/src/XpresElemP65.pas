@@ -435,6 +435,8 @@ type  //Declaration elements
     function AddrString: string; //Devuelve la dirección física como cadena
     procedure ResetAddress; //Limpia las direcciones físicas
     function stoStr: string;
+//Este campo debería usarse para acceder al elementeo en el MIR
+public mirVarDec: TObject;  //Formalmente debe ser TMirVarDec, pero se pone TObject para no generar referencias circulares.
   public
     constructor Create; override;
     destructor Destroy; override;

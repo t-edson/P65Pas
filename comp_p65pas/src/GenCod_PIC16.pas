@@ -5731,6 +5731,7 @@ begin
     end;
   end;
   stRamFix: begin
+    if compMod = cmConsEval then exit;  //We don't generate constants in this case.
     if par.Typ.IsByteSize then begin
       SetFunExpres(fun);  //No podemos devolver variable. Pero sí expresión
       _LDAi(0);
@@ -5747,6 +5748,7 @@ begin
     end;
   end;
   stRegister: begin  //se asume que ya está en (A)
+    if compMod = cmConsEval then exit;  //We don't generate constants in this case.
     if par.Typ = typByte then begin
       SetFunExpres(fun);
       //Ya está en A el byte bajo
