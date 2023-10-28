@@ -191,6 +191,7 @@ type
       procedure SIF_dword_add_byte(fun: TEleExpress);
       procedure SIF_dword_add_word(fun: TEleExpress);
         // Triplet operations
+      procedure SIF_Triplet(fun: TEleExpress);
       procedure SIF_triplet_asig_byte(fun: TEleExpress);
       procedure SIF_triplet_asig_word(fun: TEleExpress);
       procedure SIF_triplet_asig_dword(fun: TEleExpress);
@@ -5658,6 +5659,62 @@ begin
     genError('Not implemented "%s" for this operand.', [fun.name]);
   end;
 end;
+procedure TGenCod.SIF_Triplet(fun: TEleExpress);
+var
+  tmpVar: TEleVarDec;
+  par: TEleExpress;
+begin
+  par := TEleExpress(fun.elements[0]);  //Only one parameter
+  case par.Sto of  //El parámetro debe estar en "res"
+  stConst : begin
+    if (par.Typ = typByte) or (par.Typ = typChar) or (par.Typ = typWord) or (par.Typ = typDWord) then begin
+      SetFunConst(fun);
+      fun.evaluated := par.evaluated;
+      fun.value.ValInt := par.value.ValInt and $FFFFFF;  //Copy value
+    end else begin
+      GenError('Cannot convert this constant to word.'); exit;
+    end;
+  end;
+  stRamFix: begin
+    if par.Typ.IsByteSize then begin
+      SetFunExpres(fun);  //No podemos devolver variable. Pero sí expresión
+      _LDAi(0);
+      _STA(H.addr);
+      _LDA(par.rVar.addr);
+    end else if par.Typ = typWord then begin
+      //ya es Word
+      SetFunVariab(fun, par.add);
+    end else if par.Typ.IsWordSize then begin
+      //Has 2 bytes long, like pointers
+      SetFunVariab(fun, par.add);
+      {We could generate stRegister, but we prefer generate a variable, for simplicity
+      and to have the possibility of assign: word(x) := ...}
+    end else begin
+      SetFunExpres(fun);   //A default operand type
+      GenError('Cannot convert this variable to word.'); exit;
+    end;
+  end;
+  stRegister: begin  //se asume que ya está en (A)
+    if par.Typ = typByte then begin
+      SetFunExpres(fun);
+      //Ya está en A el byte bajo
+      _LDXi(0);
+      _STX(H.addr);
+    end else if par.Typ = typChar then begin
+      SetFunExpres(fun);
+      //Ya está en A el byte bajo
+      _LDXi(0);
+      _STX(H.addr);
+    end else if par.Typ = typWord then begin
+//      Ya es word
+    end else begin
+      GenError('Cannot convert expression to word.'); exit;
+    end;
+  end;
+  else
+    genError('Not implemented "%s" for this operand.', [fun.name]);
+  end;
+end;
 procedure TGenCod.SIF_Addr(fun: TEleExpress);
 {Returns the address of a datatype.}
 var
@@ -8199,6 +8256,7 @@ end;
 procedure TGenCod.CreateTripletOperations;
 var
   f: TEleFun;
+  pars: TxpParFuncArray;  //Array of parameters
 begin
   TreeElems.OpenElement(typTriplet);
   f:=CreateInBOMethod(typTriplet, ':=', '_set', typByte, typNull, @SIF_triplet_asig_byte);
@@ -8211,7 +8269,16 @@ begin
     // Methods
   f:=CreateInUOMethod(typTriplet, '', 'low' , typByte, @word_Low);
   f:=CreateInUOMethod(typTriplet, '', 'high', typByte, @word_High);
+  f:=CreateInUOMethod(typTriplet, '', 'bank', typByte, @triplet_Bank);
   TreeElems.CloseElement;
+
+  //Create system function "word"
+  setlength(pars, 0);  //Reset parameters
+  AddParam(pars, 'n', srcPosNull, typNull, decNone);  //Parameter NULL, allows any type.
+  //sifWord :=
+  AddSysInlineFunction('triplet', typDWord, srcPosNull, pars, @SIF_Triplet);
+  //AddCallerToFrom(H, sifWord.BodyNode);  //Require H
+
 end;
 procedure TGenCod.CreateSystemElements;
 {Initialize the system elements. Must be executed just one time when compiling.}
