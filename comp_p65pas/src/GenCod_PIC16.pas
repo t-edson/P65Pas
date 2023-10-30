@@ -206,6 +206,8 @@ type
       procedure SIF_triplet_sub_byte(fun: TEleExpress);
       procedure SIF_triplet_sub_word(fun: TEleExpress);
       procedure SIF_triplet_sub_dword(fun: TEleExpress);
+      procedure SIF_triplet_equal_triplet(fun: TEleExpress);
+      procedure SIF_triplet_difer_triplet(fun: TEleExpress);
     private   //Operaciones con Char
       procedure SIF_char_asig_char(fun: TEleExpress);
       procedure SIF_char_asig_string(fun: TEleExpress);
@@ -4925,7 +4927,8 @@ begin
         //Maybe parB is the result of a SIF that identified an assignment target.
       end else begin
         w := parb.Typ.tmp;
-        for i := 0 to w -1 do begin
+        if w = 0 then w := 3;
+        for i := 0 to w - 1 do begin
           _LDA(parB.add + i);
           _STA(parA.add + i);
         end;
@@ -5299,6 +5302,82 @@ end;
 procedure TGenCod.SIF_triplet_sub_dword(fun: TEleExpress);
 begin
   Triplet_SUB(fun, 4);
+end;
+procedure TGenCod.SIF_triplet_equal_triplet(fun: TEleExpress);
+  var
+    L_False1, L_False2, L_False3: integer;
+    Storage: TStoOperandsBSIF;
+    parA, parB: TEleExpress;
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_bool(fun, parA.val = parB.val);
+      end;
+    end;
+    exit;
+  end;
+
+  //Code generation
+  Storage := stoOperation(parA, parB);
+  case Storage of
+  stConst_Const: begin  //compara constantes. Caso especial
+    SetFunConst_bool(fun, parA.val = parB.val);
+  end;
+  stRamFix_Const, stConst_RamFix: begin
+    if Storage = stConst_RamFix then Exchange(parA, parB);
+    SetFunExpres(fun);
+    _LDAi(0);  // return False by default
+    _LDX(parA.add);
+    _CPXi(parB.ValL);
+    _BNE_post(L_False1);
+
+    _LDX(parA.add+1);
+    _CPXi(parB.valH);
+    _BNE_post(L_False2);
+
+    _LDX(parA.add+2);
+    _CPXi(parB.valE);
+    _BNE_post(L_False3);
+
+    _LDAi($FF);  // return True
+_LABEL_post(L_False1);
+_LABEL_post(L_False2);
+_LABEL_post(L_False3);
+  end;
+  stRamFix_RamFix:begin
+    SetFunExpres(fun);
+    _LDAi(0);  // return False by default
+    _LDX(parA.add);
+    _CPX(parB.add);
+    _BNE_post(L_False1);
+
+    _LDX(parA.add+1);
+    _CPX(parB.add+1);
+    _BNE_post(L_False2);
+
+    _LDX(parA.add+2);
+    _CPX(parB.add+2);
+    _BNE_post(L_False3);
+
+    _LDAi($FF);  // return True
+_LABEL_post(L_False1);
+_LABEL_post(L_False2);
+_LABEL_post(L_False3);
+  end
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+  end;
+end;
+procedure TGenCod.SIF_triplet_difer_triplet(fun: TEleExpress);
+begin
+  SIF_triplet_equal_triplet(fun);
+  _EORi($FF);
 end;
 
 {%REGION Char operations}
@@ -8524,7 +8603,7 @@ begin
   AddCallerToFrom(H, f.bodyNode);  //Dependency
   f:=CreateInBOMethod(typTriplet, ':=', '_set', typDWord, typNull, @SIF_triplet_asig_dword);
   f.getset := gsSetInSimple;
-    // ADD
+    // ADD (addition)
   f:=CreateInBOMethod(typTriplet, '+'  , '_add', typTriplet, typTriplet, @SIF_triplet_add_triplet);
   f.fConmutat := true;
   f:=CreateInBOMethod(typTriplet, '+'  , '_add', typByte, typTriplet, @SIF_triplet_add_byte);
@@ -8533,11 +8612,17 @@ begin
   f.fConmutat := true;
   f:=CreateInBOMethod(typTriplet, '+'  , '_add', typDWord, typTriplet, @SIF_triplet_add_dword);
   f.fConmutat := true;
-    // SUB
+    // SUB (substract)
   f:=CreateInBOMethod(typTriplet, '-'  , '_sub', typTriplet, typTriplet, @SIF_triplet_sub_triplet);
   f:=CreateInBOMethod(typTriplet, '-'  , '_sub', typByte, typTriplet, @SIF_triplet_sub_byte);
   f:=CreateInBOMethod(typTriplet, '-'  , '_sub', typWord, typTriplet, @SIF_triplet_sub_word);
   f:=CreateInBOMethod(typTriplet, '-'  , '_sub', typDWord, typTriplet, @SIF_triplet_sub_dword);
+    // EQU (equal)
+  f:=CreateInBOMethod(typTriplet, '=' , '_equ' , typTriplet, typBool, @SIF_triplet_equal_triplet);
+  f.fConmutat := true;
+    // DIF (not equal)
+  f:=CreateInBOMethod(typTriplet, '<>', '_dif' , typTriplet, typBool, @SIF_triplet_difer_triplet);
+  f.fConmutat := true;
     // Methods
   f:=CreateInUOMethod(typTriplet, '', 'low' , typByte, @word_Low);
   f:=CreateInUOMethod(typTriplet, '', 'high', typByte, @word_High);
