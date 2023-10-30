@@ -12,6 +12,7 @@
 
 Source/lib/
 Source/languages/
+comp_p65pas/src/backup/
 
 Source/P65Pas.res
 *.lrj

@@ -318,6 +318,7 @@ type  //Declaration elements
   public   //Fields when type is Object
     objSize : integer;
   public   //Information
+    tmp: word;  // temporal variable
     tmpNode: TxpElement;  //Temporal node informatios. Used by OpenTypeDec().
     function IsByteSize: boolean;
     function IsWordSize: boolean;

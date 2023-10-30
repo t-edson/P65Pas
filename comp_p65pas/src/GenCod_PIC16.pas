@@ -196,6 +196,11 @@ type
       procedure SIF_triplet_asig_byte(fun: TEleExpress);
       procedure SIF_triplet_asig_word(fun: TEleExpress);
       procedure SIF_triplet_asig_dword(fun: TEleExpress);
+      procedure Triplet_ADD(fun: TEleExpress; Size: word);
+      procedure SIF_triplet_add_triplet(fun: TEleExpress);
+      procedure SIF_triplet_add_byte(fun: TEleExpress);
+      procedure SIF_triplet_add_word(fun: TEleExpress);
+      procedure SIF_triplet_add_dword(fun: TEleExpress);
     private   //Operaciones con Char
       procedure SIF_char_asig_char(fun: TEleExpress);
       procedure SIF_char_asig_string(fun: TEleExpress);
@@ -4874,6 +4879,7 @@ begin
 end;
 procedure TGenCod.SIF_triplet_asig_triplet(fun: TEleExpress);
   var parA, parB: TEleExpress;
+      i, w: word;
 begin
   SetFunNull(fun);
   parA := TEleExpress(fun.elements[0]);  //Parameter A
@@ -4913,12 +4919,19 @@ begin
       if parA.add = parB.add then begin
         //Maybe parB is the result of a SIF that identified an assignment target.
       end else begin
-        _LDA(parB.add);
-        _STA(parA.add);
-        _LDA(parB.add+1);
-        _STA(parA.add+1);
-        _LDA(parB.add+2);
-        _STA(parA.add+2);
+        w := parb.Typ.tmp;
+        for i := 0 to w -1 do begin
+          _LDA(parB.add + i);
+          _STA(parA.add + i);
+        end;
+        for i := w to 2 do begin
+          if cpuMode = cpu65C02 then
+            _STZ(parA.add + i)
+          else begin
+            _LDAi(0);
+            _STA(parA.add + i);
+          end;
+        end;
       end;
     end;
     else
@@ -5071,6 +5084,103 @@ begin
     else
       GenError(MSG_UNSUPPORTED, parB.srcDec); exit;
   end;
+end;
+procedure TGenCod.Triplet_ADD(fun: TEleExpress; Size: word);
+  var
+    parA, parB, target: TEleExpress;
+    stoo: TStoOperandsBSIF;
+    i, L1, L2: integer;
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_triplet(fun, parA.val + parB.val);
+      end;
+    end;
+    exit;
+  end;
+  //Code generation
+  if not GetAssignTarget(fun, target) then begin
+    genError('Internal error.', [BinOperationStr(fun)], fun.srcDec);
+    exit;
+  end;
+
+  stoo := stoOperation(parA, parB);
+  case stoo of
+  stConst_Const: begin
+    //Optimize
+    SetFunConst_triplet(fun, parA.val + parB.val);
+  end;
+  stConst_RamFix, stRamFix_Const: begin
+    if stoo = stRamFix_Const then Exchange(parA, parB);
+    SetFunVariab(fun, target.add);  //stRamFix
+
+    if (parA.val = 0) and (parB.add = target.add) then exit
+    else if (parA.val = 0) and (parB.add <> target.add) then begin
+      _LDA(parB.add);
+      _STA(target.add);
+      _LDA(parB.add+1);
+      _STA(target.add+1);
+      _LDA(parB.add+2);
+      _STA(target.add+2);
+    end else if (parA.val = 1) and (parB.add = target.add) then begin
+      _INC(target.add);
+      _BNE_post(L1);
+      _INC(target.add+1);
+      _BNE_post(L2);
+      _INC(target.add+2);
+  _LABEL_post(L1);
+  _LABEL_post(L2);
+    end else begin
+      _CLC;
+      _LDAi(parA.valL);
+      _ADC(parB.add);
+      _STA(target.add);
+
+      _LDAi(parA.valH);
+      _ADC(parB.add+1);
+      _STA(target.add+1);
+
+      _LDAi(parA.valE);
+      _ADC(parB.add+2);
+      _STA(target.add+2);
+    end;
+  end;
+  stRamFix_RamFix: begin
+    SetFunVariab(fun, target.add);  //stRamFix
+    _CLC;
+    for i := 0 to 2 do begin
+      if i < Size then
+        _LDA(parA.add + i)
+      else
+        _LDAi(0);
+      _ADC(parB.add + i);
+      _STA(target.add + i);
+    end;
+  end;
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+  end;
+end;
+procedure TGenCod.SIF_triplet_add_triplet(fun: TEleExpress);
+begin
+  Triplet_ADD(fun, 3);
+end;
+procedure TGenCod.SIF_triplet_add_byte(fun: TEleExpress);
+begin
+  Triplet_ADD(fun, 1);
+end;
+procedure TGenCod.SIF_triplet_add_word(fun: TEleExpress);
+begin
+  Triplet_ADD(fun, 2);
+end;
+procedure TGenCod.SIF_triplet_add_dword(fun: TEleExpress);
+begin
+  Triplet_ADD(fun, 4);
 end;
 
 {%REGION Char operations}
@@ -5714,10 +5824,7 @@ begin
   end;
 end;
 procedure TGenCod.SIF_Triplet(fun: TEleExpress);
-var
-  tmpVar: TEleVarDec;
-  par: TEleExpress;
-  w: word;
+  var par: TEleExpress;
 begin
   par := TEleExpress(fun.elements[0]);  //Only one parameter
   case par.Sto of  //El parámetro debe estar en "res"
@@ -5732,38 +5839,14 @@ begin
   end;
   stRamFix: begin
     if compMod = cmConsEval then exit;  //We don't generate constants in this case.
-    if par.Typ.IsByteSize then begin
-      SetFunExpres(fun);  //No podemos devolver variable. Pero sí expresión
-      _LDAi(0);
-      _STA(H.addr);
-      _LDA(par.rVar.addr);
-    end else if par.Typ.size in [2, 4] then begin
-      w := par.rVar.addr;
-      SetFunVariab(fun, w);
-      {We could generate stRegister, but we prefer generate a variable, for simplicity
-      and to have the possibility of assign: word(x) := ...}
-    end else begin
-      SetFunExpres(fun);   //A default operand type
-      GenError('Cannot convert this variable to word.'); exit;
-    end;
+    fun.Typ.tmp := par.Typ.size; // return in tmp original size
+    if fun.Typ.tmp > 3 then fun.Typ.tmp := 3; // cut anything begger then 3 bytes
+    SetFunVariab(fun, par.add);
+    {We could generate stRegister, but we prefer generate a variable, for simplicity
+    and to have the possibility of assign: word(x) := ...}
   end;
-  stRegister: begin  //se asume que ya está en (A)
-    if compMod = cmConsEval then exit;  //We don't generate constants in this case.
-    if par.Typ = typByte then begin
-      SetFunExpres(fun);
-      //Ya está en A el byte bajo
-      _LDXi(0);
-      _STX(H.addr);
-    end else if par.Typ = typChar then begin
-      SetFunExpres(fun);
-      //Ya está en A el byte bajo
-      _LDXi(0);
-      _STX(H.addr);
-    end else if par.Typ = typWord then begin
-//      Ya es word
-    end else begin
-      GenError('Cannot convert expression to word.'); exit;
-    end;
+  stRegister: begin
+    genError('That is not suppose to happen!!!');
   end;
   else
     genError('Not implemented "%s" for this operand.', [fun.name]);
@@ -8313,6 +8396,7 @@ var
   pars: TxpParFuncArray;  //Array of parameters
 begin
   TreeElems.OpenElement(typTriplet);
+    // SET
   f:=CreateInBOMethod(typTriplet, ':=', '_set', typTriplet, typNull, @SIF_triplet_asig_triplet);
   f.getset := gsSetInSimple;
   f:=CreateInBOMethod(typTriplet, ':=', '_set', typByte, typNull, @SIF_triplet_asig_byte);
@@ -8322,6 +8406,15 @@ begin
   AddCallerToFrom(H, f.bodyNode);  //Dependency
   f:=CreateInBOMethod(typTriplet, ':=', '_set', typDWord, typNull, @SIF_triplet_asig_dword);
   f.getset := gsSetInSimple;
+    // ADD
+  f:=CreateInBOMethod(typTriplet, '+'  , '_add', typTriplet, typTriplet, @SIF_triplet_add_triplet);
+  f.fConmutat := true;
+  f:=CreateInBOMethod(typTriplet, '+'  , '_add', typByte, typTriplet, @SIF_triplet_add_byte);
+  f.fConmutat := true;
+  f:=CreateInBOMethod(typTriplet, '+'  , '_add', typWord, typTriplet, @SIF_triplet_add_word);
+  f.fConmutat := true;
+  f:=CreateInBOMethod(typTriplet, '+'  , '_add', typDWord, typTriplet, @SIF_triplet_add_dword);
+  f.fConmutat := true;
     // Methods
   f:=CreateInUOMethod(typTriplet, '', 'low' , typByte, @word_Low);
   f:=CreateInUOMethod(typTriplet, '', 'high', typByte, @word_High);

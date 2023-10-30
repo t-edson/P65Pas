@@ -106,6 +106,7 @@ type
     procedure SetFunConst_char(fun: TEleExpress; valByte: integer);
     procedure SetFunConst_word(fun: TEleExpress; valWord: integer);
     procedure SetFunConst_dword(fun: TEleExpress; valWord: integer);
+    procedure SetFunConst_triplet(fun: TEleExpress; valTiplet: integer);
   protected  //Code instructions
     function _PC: word;
     function _CLOCK: integer;
@@ -623,6 +624,13 @@ begin
   fun.evaluated := true;
   fun.value.valInt := valWord;
 end;
+procedure TGenCodBas.SetFunConst_triplet(fun: TEleExpress; valTiplet: integer);
+begin
+  SetFunConst(fun);
+  fun.evaluated := true;
+  fun.value.valInt := valTiplet and $FFFFFF;
+end;
+
 //Codificación de instrucciones
 function TGenCodBas._PC: word; inline;
 {Devuelve la dirección actual en Flash}
