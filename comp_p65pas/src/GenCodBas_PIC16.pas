@@ -146,6 +146,8 @@ type
     procedure _CMP(const addr: integer);  //Absolute/Zeropage
     procedure _CPYi(const k: word);  //immidiate
     procedure _CPY(const addr: integer);  //Absolute/Zeropage
+    procedure _CPXi(const k: word);  //immidiate
+    procedure _CPX(const addr: integer);  //Absolute/Zeropage
     procedure _DEX;
     procedure _DEY;
     procedure _DEC(const addr: integer);
@@ -865,6 +867,18 @@ begin
     pic.codAsm(i_CPY, aZeroPage, addr);
   end else begin
     pic.codAsm(i_CPY, aAbsolute, addr);
+  end;
+end;
+procedure TGenCodBas._CPXi(const k: word);
+begin
+  pic.codAsm(i_CPX, aImmediat, k);
+end;
+procedure TGenCodBas._CPX(const addr: integer);
+begin
+  if addr<256 then begin
+    pic.codAsm(i_CPX, aZeroPage, addr);
+  end else begin
+    pic.codAsm(i_CPX, aAbsolute, addr);
   end;
 end;
 procedure TGenCodBas._DEX;
