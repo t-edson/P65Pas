@@ -201,6 +201,11 @@ type
       procedure SIF_triplet_add_byte(fun: TEleExpress);
       procedure SIF_triplet_add_word(fun: TEleExpress);
       procedure SIF_triplet_add_dword(fun: TEleExpress);
+      procedure Triplet_SUB(fun: TEleExpress; Size: word);
+      procedure SIF_triplet_sub_triplet(fun: TEleExpress);
+      procedure SIF_triplet_sub_byte(fun: TEleExpress);
+      procedure SIF_triplet_sub_word(fun: TEleExpress);
+      procedure SIF_triplet_sub_dword(fun: TEleExpress);
     private   //Operaciones con Char
       procedure SIF_char_asig_char(fun: TEleExpress);
       procedure SIF_char_asig_string(fun: TEleExpress);
@@ -5182,6 +5187,119 @@ procedure TGenCod.SIF_triplet_add_dword(fun: TEleExpress);
 begin
   Triplet_ADD(fun, 4);
 end;
+procedure TGenCod.Triplet_SUB(fun: TEleExpress; Size: word);
+  var
+    parA, parB, target: TEleExpress;
+    stoo: TStoOperandsBSIF;
+    i, L1, L2: integer;
+begin
+  parA := TEleExpress(fun.elements[0]);  //Parameter A
+  parB := TEleExpress(fun.elements[1]);  //Parameter B
+  //Process special modes of the compiler.
+  if compMod = cmConsEval then begin
+    //Cases when result is constant
+    if (parA.Sto = stConst) and (parB.Sto = stConst) then begin
+      if parA.evaluated and parB.evaluated then begin
+        SetFunConst_triplet(fun, parA.val - parB.val);
+      end;
+    end;
+    exit;
+  end;
+  //Code generation
+  if not GetAssignTarget(fun, target) then begin
+    genError('Internal error.', [BinOperationStr(fun)], fun.srcDec);
+    exit;
+  end;
+
+  stoo := stoOperation(parA, parB);
+  case stoo of
+  stConst_Const: begin
+    //Optimize
+    SetFunConst_triplet(fun, parA.val - parB.val);
+  end;
+  stRamFix_Const: begin
+    SetFunVariab(fun, target.add);  //stRamFix
+
+    if (parB.val = 0) and (parA.add = target.add) then exit
+    else if (parB.val = 0) and (parB.add <> target.add) then begin
+      _LDA(parA.add);
+      _STA(target.add);
+      _LDA(parA.add+1);
+      _STA(target.add+1);
+      _LDA(parA.add+2);
+      _STA(target.add+2);
+    end else if (parB.val = 1) and (parA.add = target.add) then begin
+      _LDA(target.add);
+      _BNE_post(L2);
+      _LDA(target.add+1);
+      _BNE_post(L1);
+      _DEC(target.add+2);
+  _LABEL_post(L1);
+      _DEC(target.add+1);
+  _LABEL_post(L2);
+      _DEC(target.add);
+    end else begin
+      _SEC;
+      _LDA(parA.add);
+      _SBCi(parB.valL);
+      _STA(target.add);
+
+      _LDA(parA.add+1);
+      _SBCi(parB.valH);
+      _STA(target.add+1);
+
+      _LDA(parA.add+2);
+      _SBCi(parB.valE);
+      _STA(target.add+2);
+    end;
+  end;
+  stConst_RamFix: begin
+    SetFunVariab(fun, target.add);  //stRamFix
+    _SEC;
+    _LDAi(parA.valL);
+    _SBC(parB.add);
+    _STA(target.add);
+
+    _LDAi(parA.valH);
+    _SBC(parB.add+1);
+    _STA(target.add+1);
+
+    _LDAi(parA.valE);
+    _SBC(parB.add+2);
+    _STA(target.add+2);
+  end;
+  stRamFix_RamFix: begin
+    SetFunVariab(fun, target.add);  //stRamFix
+    _SEC;
+    for i := 0 to 2 do begin
+      if i < Size then
+        _LDA(parA.add + i)
+      else
+        _LDAi(0);
+      _SBC(parB.add + i);
+      _STA(target.add + i);
+    end;
+  end;
+  else
+    genError(MSG_CANNOT_COMPL, [BinOperationStr(fun)], fun.srcDec);
+  end;
+end;
+procedure TGenCod.SIF_triplet_sub_triplet(fun: TEleExpress);
+begin
+  Triplet_SUB(fun, 3);
+end;
+procedure TGenCod.SIF_triplet_sub_byte(fun: TEleExpress);
+begin
+  Triplet_SUB(fun, 1);
+end;
+procedure TGenCod.SIF_triplet_sub_word(fun: TEleExpress);
+begin
+  Triplet_SUB(fun, 2);
+end;
+procedure TGenCod.SIF_triplet_sub_dword(fun: TEleExpress);
+begin
+  Triplet_SUB(fun, 4);
+end;
 
 {%REGION Char operations}
 procedure TGenCod.SIF_char_asig_char(fun: TEleExpress);
@@ -8415,6 +8533,11 @@ begin
   f.fConmutat := true;
   f:=CreateInBOMethod(typTriplet, '+'  , '_add', typDWord, typTriplet, @SIF_triplet_add_dword);
   f.fConmutat := true;
+    // SUB
+  f:=CreateInBOMethod(typTriplet, '-'  , '_sub', typTriplet, typTriplet, @SIF_triplet_sub_triplet);
+  f:=CreateInBOMethod(typTriplet, '-'  , '_sub', typByte, typTriplet, @SIF_triplet_sub_byte);
+  f:=CreateInBOMethod(typTriplet, '-'  , '_sub', typWord, typTriplet, @SIF_triplet_sub_word);
+  f:=CreateInBOMethod(typTriplet, '-'  , '_sub', typDWord, typTriplet, @SIF_triplet_sub_dword);
     // Methods
   f:=CreateInUOMethod(typTriplet, '', 'low' , typByte, @word_Low);
   f:=CreateInUOMethod(typTriplet, '', 'high', typByte, @word_High);
