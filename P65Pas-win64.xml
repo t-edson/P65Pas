@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <language Val="en - English"/>
+  <chkLoadLast Val="True"/>
+  <grpToolbarSta Val="1"/>
+  <PanelsCol Val="536870912"/>
+  <SplitterCol Val="536870912"/>
+  <TextPanel Val="8421504"/>
+  <currPath Val=""/>
+  <filesClosed Val=""/>
+  <VerPanMensaj Val="True"/>
+  <VerStatusbar Val="True"/>
+  <VerBarHerram Val="True"/>
+  <ViewSynTree Val="True"/>
+  <SynTreeWidth Val="190"/>
+  <EditAsmWidth Val="300"/>
+  <ViewPanAssem Val="True"/>
+  <winXpos Val="50"/>
+  <winYpos Val="50"/>
+  <winWidth Val="800"/>
+  <winHeight Val="600"/>
+  <winState Val="0"/>
+  <LastProject Val=""/>
+  <themLoaded Val=""/>
+  <CodExplBack Val="-2147483643"/>
+  <CodExplText Val="536870912"/>
+  <grpFiltypes Val="0"/>
+  <MessPanBack Val="-2147483643"/>
+  <MessPanText Val="536870912"/>
+  <MessPanErr Val="255"/>
+  <MessPanSel Val="-2147483633"/>
+  <ShowErMsg Val="True"/>
+  <TabEdiState Val="0"/>
+  <TamLet Val="10"/>
+  <TipLet Val="Courier New"/>
+  <VerBarDesV Val="True"/>
+  <VerBarDesH Val="False"/>
+  <Edit>
+    <cTxtNor Val="0"/>
+    <cFonEdi Val="16777215"/>
+    <cLinAct Val="65535"/>
+    <Autoindent Val="True"/>
+    <MarLinAct Val="False"/>
+    <ResPalCur Val="True"/>
+    <ResPalCFon Val="15780518"/>
+    <ResPalCTxt Val="0"/>
+    <ResPalCBor Val="15780518"/>
+    <ResPalFWord Val="False"/>
+    <VerPanVer Val="True"/>
+    <VerNumLin Val="False"/>
+    <VerMarPle Val="True"/>
+    <cFonPan Val="16777215"/>
+    <cTxtPan Val="0"/>
+    <recient Val=""/>
+  </Edit>
+  <ExternTool>
+    <extern_tools Val=""/>
+  </ExternTool>
+  <AftChg6502>
+    <actAfterChg Val="1"/>
+  </AftChg6502>
+  <Compiler6502>
+    <unitPath Val="{AppPath}/comp_p65pas/units/"/>
+    <saveBefcomp Val="True"/>
+    <ForToRepeat Val="True"/>
+    <OptimLev Val="1"/>
+    <ReuProcVar Val="False"/>
+    <OptRetProc Val="True"/>
+    <RemUnOpcod Val="True"/>
+  </Compiler6502>
+  <AsmOutput6502>
+    <IncDecVar Val="True"/>
+    <OutAsmType Val="0"/>
+    <IncAddress Val="True"/>
+    <IncComment Val="False"/>
+    <ExcUnused Val="True"/>
+    <IncVarName Val="True"/>
+  </AsmOutput6502>
+</CONFIG>

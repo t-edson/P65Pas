@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<Language name="ASM PIC" ext="xpr" ColorBlock="Block">
+  <Attribute Name="Keyword"   ForeCol="#0000FF" Bold="True" Italic="False" Underline="False"/>
+  <Attribute Name="Comment"   ForeCol="#808080" Bold="False" Italic="False" Underline="False"/>
+  <Attribute Name="Number"    ForeCol="#FF00FF" Bold="False" Italic="False" Underline="False"/>
+  <Attribute Name="String"    ForeCol="#00FF00" Bold="False" Italic="False" Underline="False"/>
+  <Attribute Name="Directive" ForeCol="#FF00FF" Bold="False" Italic="False" Underline="False"/>
+  <Attribute Name="Label"     ForeCol="#007000" Bold="False" Italic="False" Underline="False"/>
+  <Identifiers CharsStart= "A..Za..z" Content = "A..Za..z0..9_"> 
+    <Keyword> 
+ADC AND ASL 
+BCC BCS BEQ BIT BMI BNE BPL BRK BVC BVS CLC 
+CLD CLI CLV CMP CPX CPY 
+DEC DEX DEY 
+EOR 
+INC INX INY 
+JMP JSR 
+LDA LDX LDY LSR 
+NOP 
+ORA 
+PHA PHP PLA PLP 
+ROL ROR RTI RTS 
+SBC SEC SED SEI STA STX STY 
+TAX TAY TSX TXA TXS TYA
+BRA STZ PHX PHY PLX PLY TRB TSB STP WAI
+RMB0 RMB1 RMB2 RMB3 RMB4 RMB5 RMB6 RMB7
+SMB0 SMB1 SMB2 SMB3 SMB4 SMB5 SMB6 SMB7
+BBR0 BBR1 BBR2 BBR3 BBR4 BBR5 BBR6 BBR7
+BBS0 BBS1 BBS2 BBS3 BBS4 BBS5 BBS6 BBS7
+
+    </Keyword>
+	<Directive>
+	COMMENT MODEL DATA CONST CODE END
+	DB DW DD DF DP DQ DT
+	ORG
+	PROC EQU
+	processor
+	</Directive>
+  </Identifiers>
+  <!--Token CharsStart="0..9" Content = '0..9' Attribute="NUMBER"> </Token-->
+  <String Start="'" End="'"></String>
+  <String Start="&quot;" End="&quot;"></String>
+  <Comment Start=";" ></Comment>
+  <Token Start="LIST" End="" Attribute="Directive"/>
+  <Token Start="__" Content = "A..Za..z0..9_" Attribute="Label"/>
+  <Section Start=":"/>
+
+</Language>

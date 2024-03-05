@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <language Val="en - English"/>
+  <chkLoadLast Val="True"/>
+  <grpToolbarSta Val="1"/>
+  <PanelsCol Val="2368548"/>
+  <SplitterCol Val="2368548"/>
+  <TextPanel Val="8421504"/>
+  <currPath Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk"/>
+  <filesClosed Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/samples/HelloWorld.pas
+"/>
+  <VerPanMensaj Val="True"/>
+  <VerStatusbar Val="True"/>
+  <VerBarHerram Val="True"/>
+  <ViewSynTree Val="True"/>
+  <SynTreeWidth Val="250"/>
+  <EditAsmWidth Val="346"/>
+  <ViewPanAssem Val="True"/>
+  <winXpos Val="118"/>
+  <winYpos Val="56"/>
+  <winWidth Val="1223"/>
+  <winHeight Val="767"/>
+  <winState Val="2"/>
+  <LastProject Val=""/>
+  <themLoaded Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/themes/dark.theme"/>
+  <CodExplBack Val="2434341"/>
+  <CodExplText Val="12632256"/>
+  <grpFiltypes Val="0"/>
+  <MessPanBack Val="2368548"/>
+  <MessPanText Val="16777215"/>
+  <MessPanErr Val="5855743"/>
+  <MessPanSel Val="-2147483629"/>
+  <ShowErMsg Val="True"/>
+  <TabEdiState Val="0"/>
+  <TamLet Val="10"/>
+  <TipLet Val="Courier New"/>
+  <VerBarDesV Val="True"/>
+  <VerBarDesH Val="False"/>
+  <Edit>
+    <cTxtNor Val="16777215"/>
+    <cFonEdi Val="2368548"/>
+    <cLinAct Val="4210688"/>
+    <Autoindent Val="True"/>
+    <MarLinAct Val="False"/>
+    <ResPalCur Val="True"/>
+    <ResPalCFon Val="15780518"/>
+    <ResPalCTxt Val="0"/>
+    <ResPalCBor Val="15780518"/>
+    <ResPalFWord Val="False"/>
+    <VerPanVer Val="True"/>
+    <VerNumLin Val="False"/>
+    <VerMarPle Val="True"/>
+    <cFonPan Val="2105376"/>
+    <cTxtPan Val="12632256"/>
+    <recient Val="/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/samples/HelloWorld.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/temp/newfile1.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/temp/NewFile1.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/temp/NewFile1.pas
+/tmp/unidadd/Proyectos_Software/Lazarus/P65Pas-trunk/comp_p65pas/units/Commodore64.pas
+"/>
+  </Edit>
+  <ExternTool>
+    <extern_tools Val=""/>
+  </ExternTool>
+  <AftChg6502>
+    <actAfterChg Val="1"/>
+  </AftChg6502>
+  <Compiler6502>
+    <unitPath Val="{AppPath}/comp_p65pas/units/"/>
+    <saveBefcomp Val="True"/>
+    <ForToRepeat Val="True"/>
+    <OptimLev Val="1"/>
+    <ReuProcVar Val="False"/>
+    <OptRetProc Val="True"/>
+    <RemUnOpcod Val="True"/>
+  </Compiler6502>
+  <AsmOutput6502>
+    <IncDecVar Val="True"/>
+    <OutAsmType Val="0"/>
+    <IncAddress Val="True"/>
+    <IncComment Val="False"/>
+    <ExcUnused Val="True"/>
+    <IncVarName Val="True"/>
+  </AsmOutput6502>
+</CONFIG>
