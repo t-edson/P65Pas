@@ -1,0 +1,649 @@
+object Config: TConfig
+  Left = 226
+  Height = 501
+  Top = 215
+  Width = 714
+  BorderStyle = bsDialog
+  Caption = 'Configuración'
+  ClientHeight = 501
+  ClientWidth = 714
+  DesignTimePPI = 120
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnShow = FormShow
+  Position = poScreenCenter
+  LCLVersion = '2.2.0.4'
+  object Panel1: TPanel
+    Left = 0
+    Height = 62
+    Top = 439
+    Width = 714
+    Align = alBottom
+    ClientHeight = 62
+    ClientWidth = 714
+    TabOrder = 0
+    object BitAplicar: TBitBtn
+      Left = 390
+      Height = 38
+      Top = 12
+      Width = 130
+      Caption = '&Apply'
+      Default = True
+      Kind = bkYes
+      OnClick = BitAplicarClick
+      TabOrder = 0
+    end
+    object BitAceptar: TBitBtn
+      Left = 240
+      Height = 38
+      Top = 12
+      Width = 120
+      Caption = '&OK'
+      Kind = bkOK
+      OnClick = BitAceptarClick
+      TabOrder = 1
+    end
+    object BitCancel: TBitBtn
+      Left = 540
+      Height = 38
+      Top = 12
+      Width = 130
+      Cancel = True
+      Caption = 'Cancel'
+      Kind = bkCancel
+      ModalResult = 2
+      TabOrder = 2
+    end
+  end
+  object PageControl1: TPageControl
+    Left = 200
+    Height = 439
+    Top = 0
+    Width = 514
+    ActivePage = tabEditor
+    Align = alClient
+    ShowTabs = False
+    TabIndex = 5
+    TabOrder = 1
+    object tabEnviron: TTabSheet
+      Caption = 'Enviroment'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclEnviron: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 442
+        VertScrollBar.Page = 306
+        Align = alClient
+        BorderStyle = bsNone
+        ClientHeight = 431
+        ClientWidth = 506
+        TabOrder = 0
+        object chkLoadLast: TCheckBox
+          Left = 20
+          Height = 24
+          Top = 100
+          Width = 156
+          Caption = 'Load last file edited'
+          TabOrder = 0
+        end
+        object lblSplitCol: TLabel
+          Left = 290
+          Height = 20
+          Top = 204
+          Width = 95
+          Caption = 'Splitters color:'
+        end
+        object colSplitCol: TColorBox
+          Left = 290
+          Height = 26
+          Top = 224
+          Width = 152
+          Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
+          ItemHeight = 20
+          TabOrder = 1
+        end
+        object lblPanelCol: TLabel
+          Left = 290
+          Height = 20
+          Top = 144
+          Width = 84
+          Caption = 'Panels Color:'
+        end
+        object colPanelsCol: TColorBox
+          Left = 290
+          Height = 26
+          Top = 164
+          Width = 152
+          Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
+          ItemHeight = 20
+          TabOrder = 2
+        end
+        object Label2: TLabel
+          Left = 20
+          Height = 20
+          Top = 32
+          Width = 68
+          Caption = 'Language:'
+          Enabled = False
+        end
+        object cmbLanguage: TComboBox
+          Left = 110
+          Height = 28
+          Top = 30
+          Width = 125
+          Enabled = False
+          ItemHeight = 20
+          Items.Strings = (
+            'en - English'
+            'es - Español'
+            'de - German'
+            'uk - Ukrainian'
+            'ru - Russian'
+            'fr - French'
+            'qu - Quechua'
+          )
+          Style = csDropDownList
+          TabOrder = 3
+        end
+        object grpToolbarSta: TRadioGroup
+          Left = 16
+          Height = 110
+          Top = 160
+          Width = 225
+          AutoFill = True
+          Caption = 'Toolbar'
+          ChildSizing.LeftRightSpacing = 6
+          ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
+          ChildSizing.EnlargeVertical = crsHomogenousChildResize
+          ChildSizing.ShrinkHorizontal = crsScaleChilds
+          ChildSizing.ShrinkVertical = crsScaleChilds
+          ChildSizing.Layout = cclLeftToRightThenTopToBottom
+          ChildSizing.ControlsPerLine = 1
+          ClientHeight = 85
+          ClientWidth = 221
+          Items.Strings = (
+            'Small Icons'
+            'Big Icons'
+          )
+          TabOrder = 4
+        end
+        object lblSplitCol1: TLabel
+          Left = 288
+          Height = 20
+          Top = 260
+          Width = 109
+          Caption = 'Panel Text Color:'
+        end
+        object colPanTextCol: TColorBox
+          Left = 288
+          Height = 26
+          Top = 280
+          Width = 152
+          DefaultColorColor = clGray
+          Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
+          ItemHeight = 20
+          TabOrder = 5
+        end
+      end
+    end
+    object tabEnvThemes: TTabSheet
+      Caption = 'tabEnvThemes'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclEnvThemes: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 446
+        VertScrollBar.Page = 210
+        Align = alClient
+        BorderStyle = bsNone
+        ClientHeight = 431
+        ClientWidth = 506
+        TabOrder = 0
+        object butSaveCurThem: TButton
+          Left = 128
+          Height = 42
+          Top = 168
+          Width = 224
+          Caption = '&Save current config. as theme'
+          OnClick = butSaveCurThemClick
+          TabOrder = 0
+        end
+        object lblThemLoad: TLabel
+          Left = 24
+          Height = 20
+          Top = 24
+          Width = 99
+          Caption = 'Theme loaded:'
+        end
+        object butLoadTheme: TButton
+          Left = 288
+          Height = 30
+          Top = 48
+          Width = 158
+          Caption = '&Load theme ...'
+          OnClick = butLoadThemeClick
+          TabOrder = 1
+        end
+        object txtThemLoaded: TEdit
+          Left = 24
+          Height = 28
+          Top = 48
+          Width = 200
+          TabOrder = 2
+        end
+      end
+    end
+    object tabEnvFilExp: TTabSheet
+      Caption = 'tabEnvFilExp'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclEnvFilExp: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 438
+        VertScrollBar.Page = 319
+        Align = alClient
+        BorderStyle = bsNone
+        ClientHeight = 431
+        ClientWidth = 506
+        TabOrder = 0
+        object colCodExplText: TColorBox
+          Left = 286
+          Height = 26
+          Top = 36
+          Width = 152
+          Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
+          ItemHeight = 20
+          TabOrder = 0
+        end
+        object lblCodExplCol2: TLabel
+          Left = 286
+          Height = 20
+          Top = 16
+          Width = 70
+          Caption = 'Text Color:'
+        end
+        object colCodExplBack: TColorBox
+          Left = 16
+          Height = 26
+          Top = 36
+          Width = 152
+          Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
+          ItemHeight = 20
+          TabOrder = 1
+        end
+        object lblCodExplCol1: TLabel
+          Left = 16
+          Height = 20
+          Top = 16
+          Width = 72
+          Caption = 'Back color:'
+        end
+        object grpFilType: TRadioGroup
+          Left = 16
+          Height = 111
+          Top = 208
+          Width = 231
+          AutoFill = True
+          Caption = 'File types shown'
+          ChildSizing.LeftRightSpacing = 6
+          ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
+          ChildSizing.EnlargeVertical = crsHomogenousChildResize
+          ChildSizing.ShrinkHorizontal = crsScaleChilds
+          ChildSizing.ShrinkVertical = crsScaleChilds
+          ChildSizing.Layout = cclLeftToRightThenTopToBottom
+          ChildSizing.ControlsPerLine = 1
+          ClientHeight = 86
+          ClientWidth = 227
+          Items.Strings = (
+            '*.pas, *.pp, *.inc'
+            '*.*'
+          )
+          TabOrder = 2
+        end
+      end
+    end
+    object tabEnvMesPan: TTabSheet
+      Caption = 'tabEnvMesPan'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclEnvMesPan: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 162
+        VertScrollBar.Page = 276
+        Align = alClient
+        BorderStyle = bsNone
+        ClientHeight = 431
+        ClientWidth = 506
+        TabOrder = 0
+        object colMessPanSel: TColorBox
+          Left = 10
+          Height = 26
+          Top = 250
+          Width = 152
+          Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
+          ItemHeight = 20
+          TabOrder = 0
+        end
+        object lblMessPan4: TLabel
+          Left = 10
+          Height = 20
+          Top = 230
+          Width = 102
+          Caption = 'Selection color:'
+        end
+        object colMessPanErr: TColorBox
+          Left = 10
+          Height = 26
+          Top = 180
+          Width = 152
+          Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
+          ItemHeight = 20
+          TabOrder = 1
+        end
+        object lblMessPan3: TLabel
+          Left = 10
+          Height = 20
+          Top = 160
+          Width = 73
+          Caption = 'Error color:'
+        end
+        object colMessPanText: TColorBox
+          Left = 10
+          Height = 26
+          Top = 110
+          Width = 152
+          Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
+          ItemHeight = 20
+          TabOrder = 2
+        end
+        object lblMessPan2: TLabel
+          Left = 10
+          Height = 20
+          Top = 90
+          Width = 68
+          Caption = 'Text color:'
+        end
+        object colMessPanBack: TColorBox
+          Left = 10
+          Height = 26
+          Top = 40
+          Width = 152
+          Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor]
+          ItemHeight = 20
+          TabOrder = 3
+        end
+        object lblMessPan1: TLabel
+          Left = 10
+          Height = 20
+          Top = 20
+          Width = 69
+          Caption = 'Back color'
+        end
+      end
+    end
+    object tabEnvExtra1: TTabSheet
+      Caption = 'tabEnvExtra1'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclEnvExtra1: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        BorderStyle = bsNone
+        TabOrder = 0
+      end
+    end
+    object tabEditor: TTabSheet
+      Caption = 'General'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclEditor: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 267
+        VertScrollBar.Page = 208
+        Align = alClient
+        BorderStyle = bsNone
+        ClientHeight = 431
+        ClientWidth = 506
+        TabOrder = 0
+        object grpTabEdiState: TRadioGroup
+          Left = 24
+          Height = 120
+          Top = 88
+          Width = 236
+          AutoFill = True
+          Caption = 'Tab Editor State:'
+          ChildSizing.LeftRightSpacing = 6
+          ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
+          ChildSizing.EnlargeVertical = crsHomogenousChildResize
+          ChildSizing.ShrinkHorizontal = crsScaleChilds
+          ChildSizing.ShrinkVertical = crsScaleChilds
+          ChildSizing.Layout = cclLeftToRightThenTopToBottom
+          ChildSizing.ControlsPerLine = 1
+          ClientHeight = 95
+          ClientWidth = 232
+          Items.Strings = (
+            'Show always'
+            'Hide for one file'
+            'Hide always'
+          )
+          TabOrder = 0
+        end
+        object chkShowErrMsg: TCheckBox
+          Left = 24
+          Height = 24
+          Top = 24
+          Width = 243
+          Caption = 'Show Compiler Error Dialog box '
+          TabOrder = 1
+        end
+      end
+    end
+    object tabEdiAppear: TTabSheet
+      Caption = 'Editor'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclEdiAppear: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        BorderStyle = bsNone
+        TabOrder = 0
+      end
+    end
+    object tabEdiSyntax: TTabSheet
+      Caption = 'Syntax'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclEdiSyntax: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        BorderStyle = bsNone
+        TabOrder = 0
+      end
+    end
+    object tabEdiExtra1: TTabSheet
+      Caption = 'After Edit Action'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclEdiExtra1: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        BorderStyle = bsNone
+        TabOrder = 0
+      end
+    end
+    object tabCompiler: TTabSheet
+      Caption = 'Compiler'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclCompiler: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        BorderStyle = bsNone
+        TabOrder = 0
+      end
+    end
+    object tabCmpExtra1: TTabSheet
+      Caption = 'Assembler'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclCmpExtra1: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        BorderStyle = bsNone
+        TabOrder = 0
+      end
+    end
+    object tabCmpExtra2: TTabSheet
+      Caption = 'tabCmpExtra2'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclCmpExtra2: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        BorderStyle = bsNone
+        TabOrder = 0
+      end
+    end
+    object tabCmpExtra3: TTabSheet
+      Caption = 'tabCmpExtra3'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclCmpExtra3: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        BorderStyle = bsNone
+        TabOrder = 0
+      end
+    end
+    object tabExtTool: TTabSheet
+      Caption = 'tabExtTool'
+      ClientHeight = 431
+      ClientWidth = 506
+      object sclExtTool: TScrollBox
+        Left = 0
+        Height = 431
+        Top = 0
+        Width = 506
+        HorzScrollBar.Page = 1
+        VertScrollBar.Page = 1
+        Align = alClient
+        BorderStyle = bsNone
+        TabOrder = 0
+      end
+    end
+  end
+  object Panel2: TPanel
+    Left = 0
+    Height = 439
+    Top = 0
+    Width = 200
+    Align = alLeft
+    ClientHeight = 439
+    ClientWidth = 200
+    TabOrder = 2
+    object TreeView1: TTreeView
+      Left = 1
+      Height = 437
+      Top = 1
+      Width = 198
+      Align = alClient
+      Images = ImageList1
+      ReadOnly = True
+      ScrollBars = ssAutoBoth
+      TabOrder = 0
+      OnClick = TreeView1Click
+      OnKeyDown = TreeView1KeyDown
+      Options = [tvoAutoItemHeight, tvoHideSelection, tvoKeepCollapsedNodes, tvoReadOnly, tvoShowButtons, tvoShowLines, tvoShowRoot, tvoToolTips, tvoThemedDraw]
+    end
+  end
+  object ImageList1: TImageList
+    Left = 70
+    Top = 260
+    Bitmap = {
+      4C7A010000001000000010000000EC0200000000000078DA8553D94E5A4118F6
+      117C041EA18FE01BD4A4F1A277B4692FADA69ADA361551E1B8A0E25611AB1E44
+      D4D605B08A4B812A52B1E0C2522968555010115B075138A8D8AF734834A931F1
+      4F2699C9CC37DFF2CFE4E4DC5D6C758DD83E6BC49AC58A2E09C3E6DC539AAA9A
+      DC6159B3F35363CB5C6F352318E9503A412BF9FB0FF47D6AD22A65725B1986ED
+      92CB9D72462AB88DD7B729C8399746EAF414C6E151FCB03BC09D2410DDD884C7
+      6683616C8CC4A251A4390EFDBD3DA45652F5DF1DDAF6CE402A9180C7F81521AF
+      0F4791086C26132C53066C79D7714E71998B735CD1A11DF9486EF3F75433F258
+      388C75EA57C7AA30A65261D16484F3FB122C6623C6B52338393E02393A045325
+      BAC963B4B95D3EAB1922936A0D78FD469D0E66FD3876FD3ED8AD0B5873D89139
+      E77010DEC5A47E14DC29C1F0A01A7D3D9D73156F4BC433EA01FCCD64903C26D8
+      DFDACAF2F258559792C86AA44259AD54A866BB099FA575DE0C120BE1924B502F
+      1C34AC02D6CF9348536CCCBF01B7F51B6C46235C9493628BAF35D64944428F6B
+      0DC1C0367CAE2570F17D9C1C6E433BA0447735933FD0D216D85C59C5CFE5E5AC
+      5FAFDB05CA7B83AFA97C43F12B08EEFC8277D5820D9715BDED52222A7D2EE6F7
+      3BA44CB1CBE1C0612804D3B421EB97D7CCF3F2D85E656B56BFC564402CE8C6C2
+      CC102A4A9F66EF5748987CF3C404BF8D8B5412F3A62F34ABBDEC9AD7EC71AE64
+      E7D14808BA410552471B383DF062986D80A8F8715E878411FADC1E207389AB34
+      8764220EC3F818166856BC5F5EB37D710EBA010548D84DB11E903D07AC931F20
+      2A2A10F21AFA3B95CE258B85F6A49BB8D79691499F211CF0C33637854533EDA5
+      CF8E64CC0FBB69089A0E11A6871AD1247A12B8CE87BE6BC1F59BD6F4B1B8A4FE
+      CF8E0F10D959A73D752211F5214EB9BB9BCAC09F11173DCAAB287C28B8EB1FD1
+      DC903A8B2312F4A3B6F295B3A5AE3C400E8388EDD8A194BDC47DFF50FCEEB5F8
+      7D737DA0415A4E44658582F292670F58453D69638A03E52F0AC4B7CFFF03CDFD
+      6AC6
+    }
+  end
+  object OpenDialog1: TOpenDialog
+    Left = 464
+    Top = 16
+  end
+end

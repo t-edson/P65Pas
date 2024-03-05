@@ -1,0 +1,51 @@
+object fraRamExplorer6502: TfraRamExplorer6502
+  Left = 0
+  Height = 429
+  Top = 0
+  Width = 575
+  ClientHeight = 429
+  ClientWidth = 575
+  DesignTimePPI = 120
+  ParentFont = False
+  TabOrder = 0
+  DesignLeft = 343
+  DesignTop = 284
+  object panGraph: TPanel
+    Left = 0
+    Height = 404
+    Top = 25
+    Width = 575
+    Align = alClient
+    TabOrder = 0
+  end
+  object panTitle: TPanel
+    Left = 0
+    Height = 25
+    Top = 0
+    Width = 575
+    Align = alTop
+    ClientHeight = 25
+    ClientWidth = 575
+    TabOrder = 1
+    object Label1: TLabel
+      Left = 1
+      Height = 23
+      Top = 1
+      Width = 548
+      Align = alClient
+      AutoSize = False
+      Caption = 'RAM map'
+      Color = clActiveCaption
+      Transparent = False
+    end
+    object SpeedButton1: TSpeedButton
+      Left = 549
+      Height = 23
+      Top = 1
+      Width = 25
+      Align = alRight
+      Caption = 'X'
+      OnClick = SpeedButton1Click
+    end
+  end
+end

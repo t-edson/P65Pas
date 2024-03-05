@@ -1,0 +1,37 @@
+object fraCfgAfterChg6502: TfraCfgAfterChg6502
+  Left = 0
+  Height = 245
+  Top = 0
+  Width = 434
+  ClientHeight = 245
+  ClientWidth = 434
+  DesignTimePPI = 120
+  ParentFont = False
+  TabOrder = 0
+  DesignLeft = 302
+  DesignTop = 680
+  object grpAfterEdit_6502: TRadioGroup
+    Left = 24
+    Height = 152
+    Top = 24
+    Width = 272
+    AutoFill = True
+    Caption = 'Actions after changes in editor:'
+    ChildSizing.LeftRightSpacing = 6
+    ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
+    ChildSizing.EnlargeVertical = crsHomogenousChildResize
+    ChildSizing.ShrinkHorizontal = crsScaleChilds
+    ChildSizing.ShrinkVertical = crsScaleChilds
+    ChildSizing.Layout = cclLeftToRightThenTopToBottom
+    ChildSizing.ControlsPerLine = 1
+    ClientHeight = 127
+    ClientWidth = 268
+    Items.Strings = (
+      '<No actions>'
+      'Do Only Analysis'
+      'Do Analysis and Optimization'
+      'Do complete compilation'
+    )
+    TabOrder = 0
+  end
+end

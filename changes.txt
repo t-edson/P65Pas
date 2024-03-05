@@ -1,0 +1,1262 @@
+16/11/2022
+- Implemted the bahvior for the new 65c02 instruction (for Debugger)
+
+14/11/2022
+- Visual improvments on Debugger (more compact to see more variables)
+- Fix for main screen of the 3 check boxes at the bottom.
+
+13/11/2022
+- Fixed the optimizer when processing assignment sentences in 
+TCompiler_PIC16.ConstantFolding;
+- Delete all implementation for @ operand in all types. It will be processed for 
+the addr() system function.
+- Implemented function TCompilerBase.proc_addr() to analyze the @ oeprator.
+- Modified code generator to call to Evaluate() if constants not evaluated.
+
+11/11/2022
+- Implemented the option for allocate initialized variables in Data Section in order to
+avoid message "Cannot initialize variable", when compiler try to allocate in location 
+defined by SET_DATA_ADDR.
+- Implemented reserved word ZEROPAGE to allow variables declaration like:
+  VAR x: byte ZEROPAGE;
+- Updated unit Commodore with definition os Special Register in Zero-page.
+
+10/11/2022
+- Added WDC instructions for 65c02
+- Implemnted a new 65c02 addressing mode: JMP ($1234, X)
+- Fixed the runtime error when initializing long arrays (>255).
+
+9/11/2022
+- Added option for external tools to change the icon used on the ToolBar. Added couple of icons for different compiuters - Commandex X16, Commodere C64/C128/Vic-20/... TExternTooltype extended to acomodate the extra info.
+
+8/11/2022
+- Added initial support for 65C02. The new instructions and address modes were added, excluding WD specific set. Now "asm ... end" can include the new instructions and modes.
+
+7/11/2022
+- Fixed RAM form to respond on resize.
+- Added keyboard shorcuts for zoom in RAM form: "+" and "-"
+
+6/11/2022
+- Se implementa los saltos largos para los bucles con REPEAT ... UNTIL.
+- Se corrige la inicialización de la memoria RAM para que aparezca implementada
+al iniciar la compilación.
+- Se traduce al inglés, el menú contextual del explorador de archivos.
+- Se agrega el valor "decZeroP" al enumerado TxpAdicDeclar. Aún falta usarse.
+
+4/11/2022
+- Se quita la limitación de crear bloques del IF o FOR que sean mayores a 127 bytes.
+- Se agrega opción "Grabar antes de compilar" a la configuración del compilador P65pas.
+- Se habilita la configuración "Unit Path" para poder modificar la ruta de las unidades.
+
+2/11/2022
+- Se corrige el error al compilar ASM jsr $123 END;
+1/11/2022: 
+- Se corrige el procesamiento de las unidades después de IMPLEMENTATION en 
+TAnalyzer.DoAnalyzeUnit().
+- Se agrega soporte para los comentarios de tipo (* ... *) en el compilador.
+- Se cambia los atajos para "Grabar" y "Buscar" a Ctrl+G y Ctrl+S.
+
+P65PAS 1.0.0
+=============
+En esta versión se producen cambios de gran magnitud con respecto a la arquitectura de la IDE 
+incluyendo la esperada separación del compilador como aplicativo independiente de la IDE.
+
+Actualmente el compilador P65Pas se puede compilar como proyecto independiente y genera un
+programa de línea de comandos que puede compilar un código fuente y generar un archivo de
+salida en formato *.PRG.
+
+En cuanto a la IDE, se ha terminado de definir una arquitectura que separa a la IDE del 
+compilador usando un elemento intermedio al que se ha llamado "Adaptador".
+
+Como muestra de la factibilidad de la arquitectura, se ha creado un adaptador para integrar al
+compilador P65Pas y se espera poder integrar pronto a otros compiladores, como al compilador
+PicPas. También se ha pensado en probar la integración de otros compiladores, por línea de 
+comando como el KickC, como una prueba del trabajo eficiente de un adaptador.
+
+Pero los cambios en la IDE no han sido solo en su arquitectura, sino que se han corregido o 
+mejorado diversos problemas. Algunos de ellos son:
+- Mejora en la configuración de temas. Se ha creado una pestaña adicional y se han modificado 
+varios frames para mejorar la configuración de colores.
+- Mejora en el formulario de configuración (además de hacerlo modificable para soportar 
+configuraciones de los adaptadores).
+- Se modifica el panel lateral izquierdo para que soporte la agregación de nuevos frames como
+el del árbol de sintaxis.
+- Se modifica el panel lateral derecho para que soporte la integración de diversos elementos
+y no solo un editor de ensamblador.
+- Se ha definido que el panel derecho, que se encuentra al lado del panel de mensajes, se pueda
+personalizar para que los compiladores puedan personalizarlos, mediante un adaptador.
+- Se ha pasado a usar el mecanismo de archivos *.PO para implementar la internacionalización
+en lugar de usar el método interno de archivos INCLUDE. El mencanismo de archivos INCLUDE,
+sin embargo, se mantiene en el código fuente del compilador.
+- Se han modificado todas las herramientas, como el Depurador o el Codetool, del compilador
+para que soporten la integración del compilador mediante un adaptador.
+
+En cuanto al compilador, se han modificado diversas rutinas para darle la forma final de
+proyecto que pueda compilarse en dos formas:
+- Como aplicacion de consola controlada por línea de comandos.
+- Como librería o código externo que se pueda integrar en el código fuente de la IDE para que
+se integre en el ejecutable de la IDE.
+
+Una mejora realizada en el compilador, y que tiene que ver con la separación, es la eliminación
+de la dependencia del componente SynEdit en las rutinas de procesamiento de directivas.
+
+Otra de las mejoras en el compilador, está en la corrección y mejora del procesamiento de los
+bloques ensamblador.
+
+Se han creado y eliminado algunas variables de configuración del compilador. Además se ha 
+reordenado el código que está relacionado.
+
+Se han creado una nueva directiva para poder manejar el código de inicialización (BOOTLOADER)
+del binario generado. Se ha eliminado la directiva $COMMODORE64 y se corregido la directiva 
+{$ORG $801} que generaba obligatoriamente un bootloader de Commodore 64.
+
+Se ha creado la directiva {$STRING } para configurar la forma de codificar los literales de
+tipo cadena.
+
+Se ha eliminado el árbol de sintaxis secundario para el manejo de directivas. Ahora todas 
+las directivas se resuelven en la fase de Análisis.
+
+Se ha mejorado considerablemente la implementación de las rutinas para el manejo de los arreglos,
+incluyendo la implementación de getters y setters para ítems de arreglos.
+
+Se ha refactorizado y se han modificado las clases para eliminar algunos métodos abstractos que
+estaban orientado a reutlizar el código fuente para implementar otros compiladores, pero como 
+ahora se maneja una arquitectura de adpatadores ya no es tan crucial.
+
+Se ha incluido una etapa adicional en el proceso de Optimización y se ha completado y mejorado 
+la documentación técnica para reflejar los últimos cambios realizados.
+
+También se ha modificado y corregido la librería P65utils para adaptarse mejor al proyecto. Una
+corrección realizada está en la ejecución de la instrucción SBC. Otro cambio notable es la 
+eliminación del campo TCPURamCell.topLabel de modo que se simplifica la generación de código 
+ensamblador y pr otro lado se reduce la cantidad de memoria utilizada por el modelo virtual 
+de la CPU en la RAM.
+
+TAREAS PLANIFICADAS
+- Agregar una verifiación a los casos que puedan generar _ADC#0 si hay un CLC anterior. Crear
+una versión optimzada de _STA() para que considere si antes había un TXA, y generar un STX.
+- Generar Bootloader para el VIC-20 y PET.
+- Implementar parámetros VAR.
+- Revisar si es necesario crear elementos Expresión por cada ítem de las constantes Arreglo.
+- Revisar si no es mejor quitar la validación de número de ítems de arreglos en el análisis
+de arreglos y crear solo tipos "ARREGLOS DE TIPO". ¿Se podría aún trabajar con length() como método?
+- Quitar bandera "regsUsed" TGenCodBas.GenCodeExpr(). ¿Es recomendable?
+- Describir mejor en la documentación, la forma en que se manejan las variables (registro, 
+globales, locales) y los registros de trabajo.
+- Simplificar el uso de variables temporales, implementado el uso de variables registro o 
+con alguna otra técnica.
+- Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
+desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
+
+- Implementar la obligatoriedad de localizar el registro IX en la página cero.
+- Implementar la eliminación de tipos duplicados en TCompMain.CompileVarDeclar().
+- Crear estructura para almacenar información de los diferentes archivos que componen el 
+proyecto para gestionar el uso de unidades.
+
+PENDIENTES
+- Agregar la protección a compilar sobre zonas de memoria no implementada o con función
+especial. Se suguiere que antes de compilar en un área se verifique que haya al menos 
+32 bytes o algo así. Además se pensó en que esa verificación se haga al terminar de compilar
+una SIF.
+- Definir si es necesario "TxpEleLocation" y verificar que se implementa bien.
+- Revisar y adaptar los programas de prueba para el compilador.
+- Revisar el caso de tipos creados de forma repetida y hasta con el mismo nombre, como en 
+el caso: CONST CCC: array[3] of char = ('1','2','3'); 
+CC: array[3] of char = ('1','2','3'); 
+
+Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
+De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
+almacenar la lista de los posibles tipos creados.
+
+Considerar implementar funciones INLINE. Las funciones INLINE se declaran de la sgte. forma:
+
+inline func1(var x: byte; const y: word; expr z: char);
+begin
+end;
+
+La idea es que las funciones INLINE puedan servir para compilar rutinas de bajo nivel 
+considerando el tipo de almacenamiento del operando.
+Son más parecidas a las macros que a las funciones. Se espera que en el futuro puedan 
+codificar operaciones sobre tipos objeto:
+
+octeto = object
+    value: byte;
+  public 
+    inline assign(var x: byte) operator ":="  precedence 5;
+    
+    end;
+    inline assign(x: byte) operator ":=";
+    
+    end;
+  end;
+
+
+P65PAS 0.9.3
+=============
+COMENTARIOS
+
+
+CAMBIOS
+- Se modifica CompContext en las instrucciones de generación de mensajes de Información y los 
+eventos: TContexts.GenInfo().
+- Se crea la unidad "adapterBase" para definir la clase abstracta "TAdapter".
+- Se crea la unidad "adapter6502" para definir un compilador externo que sería el P65Pas que
+se va a manejar como un compilador separado.
+- Se simplifica el panel del árbol de sintaxis de la IDE y se le quita la función de árbol de 
+sintaxis. Se le deja solo la función de explorador de archivo, pero con opción de acoplarme un
+frame externo que debe ser el del compilador seleccionado.
+- Se crea un Frame en el adaptador del 6502 para incluir un árbol de sintaxis.
+- Se mueven todos los formularios relativos a herramientas del compilador a la unidad 
+/adapter6502 y se dejan en /Source solo los relativos al compilador solo y a la IDE.
+- Se crean dos frames de configuración y se incluyen en el formulario Config.
+- Se crean rutinas para la creación dinámica de menús y botones en el Toolbar desde las rutinas
+del adaptador.
+- Se reemplaza el Toolbar por un control Coolbar. Y se le copia la configuración mejorada que 
+tenía PicPas.
+- Se agrega, a las configuraciones, una propiedad más para fijar el color del texto de los
+páneles.
+- Se modifica la interfaz para usar un Panel a la derecha en lugar de solo el editor de ASM.
+- Se modifica formulario de configruación para separar las aciones "AFter Edit" en una página
+separada del editor.
+
+
+
+
+P65PAS 0.9.2
+=============
+COMENTARIOS
+En esta versión se está haciendo algunos avances importantes con miras a la sepración del 
+compilador de la IDE, y también para hacer una mejor IDE multicompilador. En este sentido,
+destaca las modificaciones que se han introducido en FormConfig para llenar dinámicamente 
+algunos controles a partir de configuraciones que proporciona el mismo compilador y también 
+en FormPrincipal para manejar diversos compiladores.
+Queda aún definir mejor la forma de hacer a la IDE multicompilador. La última opción analizada
+consiste en separar al compilador como proyecto de línea de comando pero incluir también en el 
+compilador, unos frames (que no formarán parte del proyecto compilador de consola) que servirán 
+para adaptar el compilador a la IDE. Estos frames serviran para crear opciones de configuración 
+(a incluir en el FormConfig) y herramientas adicionales (como simulador o depurador) del 
+compilador.
+Importante es la corrección que se ha hecho para las llamadas a funciones dentro de bloques
+condicionales y bucles. Antes no se estaba aplicando la optimización por falta de profundidad 
+en TCompiler_PIC16.SplitExpresBody().
+
+CAMBIOS
+- Se crea la función del sistema "_ref()" para implementar al operador "^".
+- Se modifica TCompilerBase.GetOperand() para reconocer al operador "^" como una llamada
+a la función del sistema "_ref()"
+- Se crea la función TCompiler_PIC16.ConstanPropagation() para experimentar con una rutina
+de propagación de constantes.
+- Se habilita la rutina TGenCod.DefinePointer() para completar la definición de los tipos 
+punteros.
+- Se corrige y actualizan el archivo README.md para adaptarse a la nueva versión.
+- Se corrige el uso de directivas (macros) al inicio de una expresión.
+- Se eliminan los evento TEleTypeDec.OnSaveToStk y TEleTypeDec.OnGlobalDef.
+- Se completa la documentación con información sobre los tipos de sentencias y la clase
+TEleTypeDec.
+- Se modifican las rutinas TGenCod.AddSysInlineFunction() y TGenCod.AddSysNormalFunction() para
+que restauren "curLocation" al terminar.
+- Se renombra "TAnalyzer.IsUnit" a "TAnalyzer.GetUnitDeclaration".
+- Se renombra "TCompileBase.CompiledUnit" a "IsUnit".
+- Se modifica la rutina TCompiler_PIC16.Compile() para que se pueda definir la ejecución de 
+los 3 niveles (análisis, optimización y síntesis).
+- Se crea la propiedad "TConfig.AfterEdit_6502" y se crea el control en TConfig para definir 
+las acciones a ejecutar cuando se edita un código fuente.
+- Se crea el método abstracto Exec() en TCompilerBase y se elimina Compile() como método 
+abstracto.
+- Se cambia de nombre a TCompilerBase.Compiling por enabDirMsgs y se pasa a usar como opción
+del compilador.
+- Se crea la bandera TCompiler.Compiling para controlar el estado de la compilación.
+- Se renombra el método TfrmPrincipal.MarcarError por HighlightErrorLine y se incluye dentro 
+de TfrmPrincipal.VerificarError().
+- Se renombra TfrmPrincipal.VerificarError() por TfrmPrincipal.ShowErrorInDialogBox().
+- Se modifica TfraMessagesWin.EndCompilation() para incluir un parámetro de control.
+- Se modifica TfrmPrincipal.Timer1Timer() para llamar a Compiler.Exec() en lugar de 
+Compiler.Compile().
+
+
+P65PAS 0.9.1
+=============
+COMENTARIOS
+En esta versión se realizan algunas mejoras pequeñas en la interfaz, los bloques ASM,
+el generador de código y en el código fuente del proyecto.
+Resalta el ordenamiento de código en lo que se refiere al procesamiento de constantes y
+variables. Ahora se soporta la declaración de constantes con tipo y se ha cambiado a 
+TEleConsDec para que no cree copias de valores constantes.
+El mayor avance ha sido en la implementación casi completa del soporte para arreglos que
+estaba incompleto después de los cambios en la arquitectura del compilador.
+
+CAMBIOS
+- Se actualiza el código fuente para trabajar con la versión más reciente de Lazarus.
+- Se genera un ejecutable para Linux y se corrige la falta de un Archivo en el Git.
+- Se corrige el resultado de los operadores "<" y ">" cuando se aplican a una variable o
+función dentro de los bloques ASM.
+- Se corrige uno de los ejemplos de código ASM en el archivo README.txt.
+- Se incluyen el estado, las coordenadas y tamaño de la pantalla principal, como 
+información a guardarse en el archivo de configuración.
+- Se agrega validación de tipos en la inicialización de variables de tipo arreglo.
+- Se incluye la librería EpikTimer como parte de las librerías en la carpeta /Source.
+- Se cambia de nombre a AddVariableAndOpen(), AddConstantAndOpen() y a AddTypeAndOpen().
+- Se mueven OpenExpression(), AddLengthFieldArray() y GetConstantArray() a nivel de 
+método de la clase.
+- Se renombra OpenExpression() a AddExpressAndOpen() y se reordena el código de la 
+unidad CompBase.
+- Se cambian los íconos para las declaraciones de constantes y variables, para 
+diferenciarlos de las expresiones.
+- Se modifica TAnalyzer.AnalyzeVarDeclar() para evitar tener que quitar referencias
+"callers" y evitar hacer llamadas desde contenedores falsos a FindFirst().
+- Se modifica TAnalyzer.AddConstDeclar() para que devuelva un TEleExpress en lugar 
+de una declaración de constante.
+- Se cambia el tipo del campo TAdicVarDec.constDec (de TEleConsDec a TEleExpres)  porque 
+las constantes de inicialización, pasarán a ser nodos hijos de las declaraciones de 
+variables y ya no se usarán declaraciones de variables.
+- Se modifica TCompilerBase.AddLengthFieldArray() para hacerlo más general y poder usarse
+en TAnalyzer.GetTypeDeclar().
+- Se crea TCompilerBase.CreateArrayTypeDec() para reutilizar código y permitir agregar
+los tipos creados en la posición correcta.
+- Se modifican TXpTreeElements.AddElementAndOpen() y TXpTreeElements.AddElementTypeAndOpen() 
+para que permita especificar la ubicación del ítem a agregar.
+- Se cambia de nombre a TAnalyzer.AddConstDeclar() por TAnalyzer.GetConstValue().
+- Se incluye la evalaución del valor de inicialización de las declaraciones de variables, 
+que ahora se incluye como nodo hijo.
+- Se actualiza la documentación con información sobre las declaraciones de constantes.
+- Se habilita la detección de tipos en la declaración de constantes.
+- Se habilita la incialización de variables y constantes con arreglos en el formato
+(<item>,<item>,...).
+- Se corrige TCompilerBase.GetConstantArray() para que no genere error en tiempo de 
+ejecución en los casos de errores de sintaxis en los ítems.
+- Se habilita TAnalyzer.GetConstValue() para detectar los formatos de arreglos [ ... ] y
+los string como arreglo de cadenas.
+- Se cambia el tipo del campo TEleConsDec.value para que sea un puntero en lugar de una
+copia de la constante incluida y se actualizan todas las referencias para mantener la 
+consistencia. 
+- Se convierte TCompilerBase.getListOfIdent() en función para simplificar su uso.
+- Se crea GetIntialization() dentro de TAnalyzer.AnalyzeConstDeclar() para uniformizar 
+TAnalyzer.AnalyzeConstDeclar() con TAnalyzer.AnalyzeVarDeclar().
+- Se crea TCompilerBase.AddConstDeclarByte() y se reutiliza en TGenCod.DefineArray() para
+crear el campo "low", además de "length".
+- Se renombran TXpTreeElements.AddElementConsAndOpen(), TXpTreeElements.AddElementVarAndOpen()
+y TXpTreeElements.AddElementTypeAndOpen() a versiones más reducidas.
+- Se crean las funciones TCompilerBase.OpenTypeDec() y TCompilerBase.CloseTypeDec() para 
+gestionar la creación de tipos en diversas ubicaciones del AST.
+- Se modifica TAnalyzer.GetConstValue() para que devuelva el tipo principal creado, en lugar
+de la cantidad de tipos creados.
+- Se corrige la inicialización de arreglos de tipo: ARRAY[] OF CHAR = "abc";
+- Se modifica TAnalyzer.GetAdicVarDeclar() para ordenar las validaciones y darle mas
+inteligencia para validar los tipos de tipo arreglo.
+- Se completa el test de pruebas de código ASM con una rutina de prueba de direccionamiento
+indexado por X y varaible registro.
+- Se corrige un problema con la inicialización del resultado en TGenCod.BOR_byte_equal_byte()
+con operandos registro.
+
+
+
+
+P65PAS 0.9.0
+=============
+COMENTARIOS
+La versión anterior resolvio prácticamente todos los pendientes de los bloques ASM.
+En esta versión se completa la implementación de la instrucción exit() y se corrigen 
+diversos errores incluyendo la definición de arreglos.
+Esta versión reemplaza, finalmente, a la versión 0.7.8 que era la más estable hasta 
+ahora.
+
+OBJETIVOS
+- Terminar de implementar y pasar el código de prueba de bloques ASM. --> HECHO
+- Implementar, de la mejor forma, la instrucción exit() --> HECHO. 
+- Avanzar en la implementación de las funciones INLINE de usuario.
+- Simplificar el uso de variables temporales.
+- Generar una versión en Ubuntu. ->
+
+CAMBIOS:
+- Se quita la función EXIT() como función del sistema y se crea un nuevo tipo de 
+sentencia. Se crea AnalyzeEXIT().
+- Se cambia de nombre a TxpEleSentence por TEleSentence.
+- Se elimina TXpTreeElements.CurCodeContainer(). 
+- Se crea el evento TEleTypeDec.OnRequireWR para requerir dependencias de registros.
+- Se cambia el ancestro de la clase TEleBlock a TxpEleCodeCont.
+- Se quita el enumerado "TxpSynBlockId" y se modifica TxpExitCall para adaptarse a la
+forma de trabajo del nuevo AST de este compilador.
+- Se actualiza TEleProgFrame.AddExitCall() con los cambios hechos en TxpExitCall.
+- Se quita de la Doc. técnica, información sobre los bloques de sintaxis, porque ya no 
+se usan en este diesño de compilador.
+- Se eliminan lstExitCalls, AddExitCall() y ObligatoryExit() en TEleProgFrame porque 
+se descarta el mecanismo de guardar llamadas a las instrucciones exit(), porque esta
+información no es necesaria con el uso del AST.
+- Se crean los campos firstObligExit y RegisterExitCall() en TEleProgFrame, porque
+lo que nos interesa, para optimización de la instrucción RTS, es saber si hay una 
+instrucción exit() en código obligatorio. 
+- Se eliminan las clases TxpExitCall y TxpExitCalls porque ya no son necesarias.
+- Se renombra CompileUsesDeclaration a AnalyzeUsesDeclaration
+- Se renombra CompileStructBody a AnalyzeStructBody.
+- Se renombra CompileInlineDeclar a AnalyzeInlineDeclar.
+- Se renombran CompileConstDeclar y CompileVarDeclar a AnalyzeConstDeclar y 
+AnalyzeVarDeclar.
+- Se renombra CompileTypeDeclar a AnalyzeTypeDeclar.
+- Se cambia de nombre a la unidad CompMain por Analyzer.
+- Se cambia de nombre a la clase TCompMain por TAnalyzer.
+- Se corrige TGenCodBas.GenCodeExit() para que pueda trabajar expresiones complejas.
+- Se corrige un problema relacionado con la falta de inicialización de 
+TreeElems.curCodCont.
+- Se definió que el Timer de frmPrincipal se active en el evento OnShow(). Este
+cambio se implementó debido a un error encontrado al compilar para Mac.
+- Se corrige codigo de prueba Test4_Asm.pas.
+- Se cambia de nombre al repositorio. AHora es la 0.9.
+- Se corrige la inclusión de comentarios de instrucciones en el código ASM generado.
+- Se corrige error de cambio de puntero en RAM en subrutinas ASM con etiquetas 
+incompletas.
+- Se elimina TCompiler_PIC16.cInNewLine().
+- Se cambia el orden de creación de elementos en TGenCod.CreateSystemElements() para
+crear primero a los registros de trabajo y poder referenciarlos antes.
+- Se corrige la rutina MoveNodeToAssign() de TCompiler_PIC16.SplitExpresBody() en la
+elección del tipo de la variable temporal.
+- Se eliminan TGenCodBas.requireH(), TGenCodBas.requireE() y TGenCodBas.requireU() y 
+TGenCodBas.requireVar2().
+- Se logra pasar el código de prueba Test4_Asm.pas.
+- Se logra pasar el código de prueba Test3_Procedure.pas.
+- Se implementa la generación de código para la instrucción WHILE.
+- Se implementa la generación de código para la instrucción REPEAT.
+- Se simplifica TGenCodBas.IF_TRUE() y se crean los métodos JUMP_IF_Z_pre(),
+JUMP_IF_C_pre(), JUMP_IF_Z_post(), JUMP_IF_C_post(), JUMP_IF_pre() y JUMP_IF_post().
+- Se cambia de nombre TCompilerBase.CreateVar() a TCompilerBase.CreateEleVarDec().
+- Se crea referencia TAnalyzer.eleFunInc a la función del sistema Inc().
+- Se implementa la estructura FOR.
+- Se logra pasar el código de prueba Test3_Structs1.pas.
+- Se logra pasar el código de prueba Test3_Structs2.pas.
+- Se corrige TCompilerBase.GetOperand() para que reconozca correctamente a arreglos
+constantes.
+
+
+
+
+P65PAS 0.8.9
+============
+COMENTARIOS
+La versión anterior dejó bien establecidos los mecanismos para que la funciones de sistema 
+puedan incluir dependencias de funciones y variables auxiliares. Lo mejor de todo es que
+esos mecanismos están, ahora, bien documentados.
+Además, ya se tiene el mecanismo para dividir las expresiones en el formato TAC (Cödigo de
+tres direcciones) lo que ha eliminado completamente el problema de registros de trabajo 
+ocupado. Queda ahora pendiente diseñar el mecanismo para poder reutilizar las variables 
+requeridas en esta transformación.
+Es de resaltar el avance de la actualización de la documentación que cuenta ahora con más
+páginas y solo quedan algunas porciones por actualizar o corregir.
+En esta versión se ha implementado completamente (con considerables mejoras) el 
+análisis y síntesis de los bloques ASM, rediseñando gran parte de las rutinas. Para 
+complementar las mejoras, se ha incluido información bastante completa en la documentación
+técnica.
+
+OBJETIVOS
+- Avanzar en la implementación de las funciones INLINE de usuario.
+- Simplificar el uso de variables temporales.
+
+
+CAMBIOS:
+- Se modifica el lexer (rutina TParserAsm_6502.DecodeNext) de la unidad ParserASM_6502 para
+reconocer a los operadores ">", "<" y al símbolo ":".
+- Se corrige TParserAsm_6502.ProcInstrASM() de la unidad ParserASM_6502 para que trabaje 
+correctamente con TParserAsm_6502.CaptureParam().
+- Se modifica TParserAsm_6502.CaptureParam() para que reconozca los operadores ">" y "<"
+como parte de la sintaxis en ensamblador.
+- Se cambia de nombre a TCompMain.CompileCurBlock por TCompMain.AnalyzeCurBlock().
+- Se cambia de nombre a TCompMain.CompileSentence por TCompMain.AnalyzeSentence().
+- Se modifica TGenCodBas.GenCodeASMline() para procesar de forma diferente las operaciones
+de posición en variables o funciones.
+- Se implementa la detección de etiquetas no definidas en los bloques ASM.
+- Se completa la documentación técnica con información sobre los bloques ASM.
+- Se cambia de nombre a TxpEleAsmLine por TEleAsmLine.
+- Se cambia de nombre a TxpEleAsmBlock por TEleAsmBlock.
+- Se cambia de nombre a TxpEleFuns por TEleFuns.
+- Se reemplaza el campo TEleAsmLine.alabel por TEleAsmLine.addr.
+- Se eliminan los tipos TPicLabel y TPicLabel_list de la unidad ParserASM_6502 y se define
+a TParserAsm_6502.labels de tipo TEleAsmLines.
+- Se define undJumps de tipo TEleAsmLines y se eliminan definiciones adicionales.
+- Se define una nueva forma de definir etiquetas y parámetros etiqueta en los bloques ASM.
+- Se habilita la rutina de detección de saltos o etiquetas indefinidas en bloques ASM.
+- Se corrige el error generado cuando se coloca un nemónico después de una etiqueta en los
+bloques ASM.
+- Se cambia de nombre a TEleAsmLine por TEleAsmInstr.
+- Se cambia de nombre a eleAsmLine por eleAsmInstr.
+- Se agregan llamadas (Caller) a las instrucciones etiqueta en los bloques ASM.
+- Se modifica el examinador de objetos para dar mayor información sobre las instrucciones 
+ASM.
+- Se mueve la lista de uJumps (renombrada como undefInstrucs) de la unidad ParserASM_6502 a
+un campo de la clase TEleAsmBlock.
+- Se crea el campo TEleAsmInstr.iType para clasificar a las instrucciones.
+- Se cambia el campo TEleAsmInstr.inst por TEleAsmInstr.opcode.
+- Se elimina la clase TEleAsmOperand y se pasa a usar un campo nuevo en TEleAsmInstr.
+- Se cambia el campo TEleAsmInstr.param por TEleAsmInstr.operVal.
+- Se reordena TParserAsm_6502.CaptureParam() y se le incluye un parámetro de instrucción.
+- Se implementa la directiva ORG con opción de operandos con expresiones.
+- Se renombra TParserAsm_6502.CaptureParam a TParserAsm_6502.CaptureOperand().
+- Se implementa la directiva DB en los blqoues ensamblador.
+- Se corrige rutina de resaltado de errores TSynEditor.MarkError() para considerar tokens 
+de tipo espacio.
+- Se corrige la rutina TCompilerBase.CaptureTok() para cuando se produce un salto de línea.
+- Se cambia de nombre a CompileProcDeclar() por AnalyzeProcDeclar().
+- Se corrige un error en la creación de variables en TCompilerBase.AddVariableAndOpen().
+- Se modifica la librería P65utils para arreglar TP6502.Decode() Estaba fallando en identificar
+el Opcode $00.
+ 
+
+
+P65PAS 0.8.8
+============
+COMENTARIOS 
+La versión anterior siguió la línea de grandes mejoras en el diseño del compilador, 
+sobre todo en lo que a la optimización se refiere.
+Quedó pendiente definir la forma en que se manejarían las dependencias de las rutinas
+BOR y UOR en cuanto a funciones llamadas y variables auxiliares.
+Esta versión pretende acercarse, finalmente, a tener un compilador funcional para el 
+6502, al menos pasando las pruebas básicas del patrón de pruebas.
+
+OBJETIVOS
+- Terminar de Implementar un mecanismo sólido para que las BOR y UOR soliciten 
+variables auxiliares. -> HECHO
+- Implementar la simplificación para las sentencias sntProcCal en el AST y eliminar 
+CodAsigmentToVar() y el método antiguo de llamadas a procedimientos. -> HECHO.
+
+CAMBIOS:
+- Se procede a usar Git para el control de cambios del proyecto localmente y en Github.
+- Se cambia la forma como se genera el código de llamada a los procedimientos en el AST.
+Ahora la rutina de optimización genera instrucciones adicionales de asignación de los
+parámetros en el AST.
+- Se elimina la función TGenCodBas.CodAsigmentToVar() y los elementos asociados. Además
+se simplifica TGenCodBas.functCall().
+- Se corrige TGenCodBas.GenCodeExpr() para adapatarse a la nueva forma de llamadas a 
+funciones comunes.
+- Se modifica TCompiler_PIC16.SplitExpressions() para manejar funciones comunes, además
+de las funciones INLINE que ya soportaba.
+- Se incluye la generación de "Calller" a las funciones INLINE de la unidad System.
+- Se incluye elemento Body a los métodos de los tipos declarados en System.
+- Se incluye información adicional en la documentación técnica acerca de las funciones.
+- Se agrega el campo TEleFunBase.callType, el enumerado TCallType y se modifican las 
+rutinas de creación de funciones para inicializar este campo.
+- Se agrega el parámetro "addParam" a TCompilerBase.AddFunctionUNI() y a 
+TCompilerBase.AddFunctionIMP().
+- Se modifica TCompiler_PIC16.SplitExpressions para cubrir a todas las subrutinas y se 
+crea TCompiler_PIC16.SplitExpresBody().
+- Se cambia el nobre de TEleFunBase.codInline a TEleFunBase.codSysInline y se crea 
+codSysNormal.
+- Se crea AddSysNormalFunction() y se logra que las funciones del sistema se codifiquen
+adecuadamente como si fueran funciones normales.
+- Se reordena y actualiza la documentación técnica con información referente a los tipos
+de función.
+- Se elimina el modo del compilador "cmRequire" de TCompMod, porque ahora ya no se 
+necesita. Las dependencias se crearán al momento de crear las funciones de la unidad 
+System.
+
+
+
+
+P65PAS 0.8.7
+============
+COMENTARIOS
+Esta versión es una versión de avance hacia una versión funcional.
+Los cambios realizados en la versión 0.8.6 demostraron que los cambios ensayados eran
+apropiadas, que eran un diseño sólido y suceptible de mejora. Inclusive se logró 
+compilar algunos códigos que habían fallado con la versión anterior. Ahora en esta 
+versión se continuarán implementando mejoras siguiendo la misma línea del diseño 
+planteado en la versión 0.8.6. Estas mejoras son:
+- Incluir rutina que separe las expresiones de asignación con expresiones complejas en 
+varias asignaciones simples.
+- Implementar un mecanismo sólido para que las expresiones soliciten variables 
+auxiliares.
+
+OBJETIVOS:
+- Modificar las estructuras condicionales para soportar mejor a las condiciones. -> 
+HECHO para IF.
+- Avanzar en la modificaciones de las rutinas de operación para trabajar en los modos
+de evaluación de constantes y solicitud de variables. -> HECHO
+- Mejoras en la documentación. -> HECHO.
+- Quitar el uso de la propiedad TxpElement.logic y pasar a usar las opciones de 
+optimización que se pueden lograr con "lastASMcode". --> HECHO.
+- Eliminar o modificar TEleExpress.Invert; --> MODIFICADO.
+
+CAMBIOS:
+- Se crea un nuevo tipo de elemento "eleCondit" y se usa para albergar a la condición
+de las condicionales.
+- Se crea la función TCompMain.GetCondition() y se usa para todas las estructuras
+condicionales y repetitivas.
+- Se modifica el panel del árbol de sintaxis y el formulario de propiedades de 
+elementos para reconocer el nuevo tipo de elemento "eleCondit".
+- Se modifica la rutina TCompMain.AnalyzeIF para definir sus condiciones dentro de
+un bloque "eleCondit".
+- Se modifica la rutina TGenCodBas.GenCondeIF() para adaptarse a la nueva estructura 
+de las condicionales en el AST.
+- Se modifican las rutinas de operación con Booleanos para adaptarse a la nueva 
+representación interna de los valores booleanos.
+- Se implementa el operador OR para booleanos.
+- Se unifican las banderas "lacBooleanFromC", "BooleanFromZ", y "LastIsTXA" en un solo
+enumerado y una variable de dirección: lastASMcode y lastASMaddr
+- Se crea la función Invert_Z_to_A() con miras a eliminar la bandera "Inverted"
+- Se simplifica la rutina TGenCod.BOR_bool_equal_bool() y se le quitan todas las 
+llamadas a Copy_Z_to_A() porque ya no son necesarias.
+- Se implementa las operaciones XOR y "<>" para el tipo booleano.
+- Se quita el uso de la bandera "logic" en todas las operaciones con booleanos.
+- Se logra que el compilador pase el test de pruebas para tipos booleanos, aunque 
+usando muchas variables temporales porque aún no se optimiza el reuso de variables
+temporales.
+- Se modifica el procedimiento TGenCod.Copy_C_to_A() y se crea TGenCod.Invert_C_to_A().
+- Se elimina TEleExpress.logic y todas las referencias existentes a ese campo.
+- Se actualiza la rutina TGenCodBas.IF_TRUE() para adaptarse a la eliminación de
+TEleExpress.logic.
+- Se renombran los enumerados: 
+	stConst_Variab a stConst_RamFix
+	stVariab_Variab a stRamFix_RamFix
+	stExpres_Variab a stExpres_RamFix
+- Se modifica TEleExpress.Invert() para adecuarla a la nueva forma de trabajo de los
+operandos.
+- Se corrige la rutina de la función del sistema byte().
+- Se crea la función BOR_word_equal_byte().
+- Se mejora la documentación y se actualiza a los nuevos cambios.
+- Se incluyen rutinas de verifiación de los modos del compilador (cmConsEval y cmRequire)
+en todas las BOR y UOR.
+
+
+
+P65PAS 0.8.6
+============
+COMENTARIOS
+Esta versión es una versión experimental. probablemente se deseche.
+
+OBJETIVOS
+1. La idea es modificar la generación del AST, de modo que 
+las expresiones no se guarden como árboles sino como conjunto de operaciones simples de
+tipo: A = oper(B,C). --> CUMPLIDO
+2. Establecer claramente el mecanismo para que las BOR y UOR permitan permita evaluar
+constantes y detectar las variables auxiliares que va a necesitar. --> CUMPLIDO.
+
+CAMBIOS
+- IDE: Se define que el árbol de sintaxis expanda siempre los nodos "Body" y "Sentence"
+(unidad FrameSyntaxTree).
+- Se modifica la definición de tipo de sentencias (se separa las asignaciones de las 
+llamadas a procedimientos), tanto en la documentación:
+Documentación – Fundamentos y Análisis.docm - Sección 11, como en el código fuente, en 
+la unidad XpresElemP65.
+- Se quita la vista en modo "Por grupos" del Panel "Árbol de sintaxis", porque no se
+usa y se espera simplificar este panel.
+- Se modifica el "Árbol de sintaxis", para que muestre información del tipo de nodo 
+para los nodos de tipo sentencia.
+- Se incluye código para reconocer (y procesar) las sentencias de tipo "sntProcCal" y 
+diferenciarlas de las de tipo "sntAssigm".
+- Se cambia el nombre de la etiqueta "TopType.otExpres" por "TopType.otFunct" para 
+hacerla más consistente con su definición.
+- Se implementa rutina SplitAssigments() para separar las expresiones de asignación 
+con expresiones complejas a múltiples asignaciones con dos operandos y un operador. 
+- Se reordena y actualiza el documento "Documentación – Fundamentos y Análisis" con 
+información sobre el Árbol de Sintaxis.
+- Se mueven las rutinas: ConstantFoldBody() y ConstantFoldExpr() de la unidad 
+GenCodBas_PIC16 a Compiler_PIC16.
+- Se modifica TGenCodBas.GenCodeSentences() para que genere el código adecuadamente
+considerando que en una sentencia de asignación puede haber más de una instrucción.
+
+
+P65PAS 0.8.5
+============
+COMENTARIOS
+Se ha hecho un gran avance en reordenar y completar la documentación técnica.
+
+
+OBJETIVOS
+- Implementar la síntesis para el caso: Expresión-expresión. 
+
+CAMBIOS
+- Se cambia en la documentación y en el código, los acrónimos RO, ROB, ROU, por sus 
+equivalentes en inglés.
+- Se reordena la documentación y se corrigen o actualizan algunas secciones. 
+- Se reordena el código de la unidad GenCod_PIC16.
+
+
+
+
+P65PAS 0.8.4 (No funcional)
+============
+COMENTARIOS
+En esta versión se avanzó en lograr el objetivo, pero se cierra la versión porque se 
+encontró un problema que tiene que ver con el procesamietno de expresiones que requiere
+diseñar una nueva característica.
+Las ultimas 4 versiones han dado un gran avance en la implementación de un compilador
+funcional con el nuevo diseño, pero hay todavía un largo camino por delante. Mientras
+tanto se deja la versión 0.7.8 como la última estable.
+
+OBJETIVOS
+- Compilar y ejecutar sin errores los primeros 3 archivos de prueba.
+
+CAMBIOS
+- Se cambia de nombre a la unidad System.
+- Se corrige un error en TGenCodBas.CodAsigmentToVar() respecto al almacenamiento de _Op1.
+- Se corrige TCompilerBase.GetOperand() para que actualice correctamente el campo 
+"evaluated".
+- Se corrige TCompilerBase.CreateFunctionParams() para que actualice "srcDec" de las 
+variables creadas para los parámetros y para que define el alamacenamiento de las 
+variables correctamente.
+- Se corrigen TGenCodBas.GenCodeExpr() y TGenCodBas.ConstantFoldExpr() para que evaluen
+los parámetros de una función normal antes de llamar a la función normal.
+- Se modifica TCompMain.AnalyzeIF para que agregue una condición TRUE antes del bloque
+ELSE, de modo que se uniformizan todos los bloques del IF.
+- Se crea TGenCodBas.GenCondeIF() para que genere código para las condicionales.
+- Se incluye información sobre las condicionales en la documentación.
+- Se agregan nuevos íconos al frame FrameSyntaxTree e información adicional, con algunas
+correcciones, a FormElemProperty.
+- Se elimina el campo TGenCodBas.ModeRequire y se crea la variable TGenCodBas.compMod.
+- Se modifica TGenCod.ROB_byte_asig_byte() para que salga en el modo de evaluación de 
+constantes.
+- Se corrige TGenCod.fun_Chr() para que actualicen el campo "evaluated" en el caso de 
+constantes.
+- Se completa TGenCodBas.word_Low() para que trabaje de forma similar a TGenCodBas.word_High().
+- Se corrige TGenCodBas.SetFunConst_byte().
+
+
+P65PAS 0.8.3 (No funcional)
+============
+COMENTARIOS
+En esta versión se logran dos avances importantes:
+- Se logra hacer funcional la codificación de instrucciones ASM.
+- Se mejora el procesamiento de la declaración de variables y tipos.
+
+OBJETIVOS
+- Lograr compilar, sin errores de sintaxis, las rutinas de prueba, y las unidades estándar
+ del compilador.
+
+CAMBIOS
+- Se eliminan los atributos "TEleFunBase.fConResCon" y "TEleFunBase.fNulResNul".
+- Se simplifica TGenCodBas.ConstantFoldExpr() y se agrega una protección a la simplificación
+de constantes no evaluadas.
+- Se agrega el atributo TxpElement.curCodCont.
+- Se modifican las rutinas TXpTreeElements.AddElementXXXAndOpen() para que guarden el valor
+de "curCodCont" antes de abrir un nuevo contenedor de código.
+- Se modifica TXpTreeElements.CloseElement() para restaurar el último valor de "curCodCont".
+- Se modifica TCompMain.CompileSentence() para que mueva los posibles tipos creados, a la 
+sección de declaraciones.
+- Se corrige TGenCod.ROU_address() para que trabaje bien con arreglos constantes.
+- Se cambian los nombres de los enumerados eleOperand y eleOperator a eleAsmOperand y 
+eleAsmOperat.
+- Se cambian los nombres de las clases TEleOperand y TEleOperator por TEleAsmOperand y
+TEleAsmOperat.
+- Se agregan íconos en el explorador de código para identificar a elementos de los bloques
+ensamblador.
+- Se crea el método TParserAsm_6502.ScanOperations() y se modifica 
+TParserAsm_6502.CaptureAddress() para completar la implementación de instrucciones ASM.
+- Se eliminan TParserAsm_6502.CaptureByte() y TParserAsm_6502.HaveByteInformation() porque 
+ya no se usan.
+- Se modifica TParserAsm_6502.ProcInstrASM() para tener mejor precisión en la dientificación
+de los direccionamientos de las instrucciones.
+- Se modifica TCompMain.CompileVarDeclar() para use solo una declaración de tipos cuando 
+genera dos declaraciones (a: array[3] of char = 'abc'). 
+- Se corrige TCompMain.CompileVarDeclar() para que genere las llamadas correspondientes
+a la constante de inicialización, cuando se usa. 
+- Se corrige TCompMain.CompileVarDeclar() para que genere las llamadas correctamente al 
+tipo de la variable creada.
+- Se modifica TCompMain.GetAdicVarDeclar() para que se valide la inicialización de arreglos
+de forma exacta. Antes se permitía inicializar con menos ítems.
+- Se corrige TCompMain.CompileVarDeclar() para que se fije TreeElems.curCodCont a un valor
+antes de llamar a GetTypeDeclar()
+- Se modifica TCompMain.GetTypeDeclar() para que no llame a AddCallerToFromCurr() ya que no 
+se garantiza que se pueda estar dentro de un contenedor de código, cuando se le llame.
+- Se modifica TGenCodBas.GenCodeSentences() para procesar mejor a las líneas ASM y se crea
+el método TGenCodBas.GenCodeASMline().
+- Se actualiza información en la documentación.
+
+
+P65PAS 0.8.2 (No funcional)
+============
+COMENTARIOS
+La versión 0.8.1 corrigió algunas fallas en la nueva implementación y avanzó en el 
+diseño del optimizador.
+Esta versión ha hecho también avances importantes, implementando varias características
+incompletas o implementadas erróneamente. Se destaca el avance en cuanto a la declaración 
+de tipos y variables. El soporte es bastante completo y flexible en la versión anterior.
+Por primera vez se logra compilar sin errores (aunque no se ha verificado el código 
+compilado) la unidad Commodore64.
+
+OBJETIVOS
+- Crear estructura para almacenar información de los diferentes archivos que componen el proyecto.
+
+CAMBIOS
+- Se modifica la documentación. Se corrigen algunos nombres desactualizados.
+- Se define el uso del estado ModeRequire y se modifica TGenCod.ROB_byte_asig_byte() para
+que lo soporte.
+- Se modifica TGenCodBas.GenCodeExpr() para que no realiza la verificación del caso
+"eleExp.opType = otVariab".
+- Se corrige un problema en el cálculo de los tiempos de cada proceso.
+- Se agregan dos nuevos atributos a TEleExpress para manejar direcciones de memoria 
+cuando la expresión es de tipo otVariab y el almacenamiento es stRamFix.
+- Se crea la función TEleExpress.add() para acceder a la dirección de memoria.
+- Se crea la función TEleExpress.allocated().
+- Se modifica GetAdicVarDeclar() para que elimine el operando creado cuando una variable
+es inicializada.
+- Se crea TCompMain.AddConstDeclar() para extraer la función de creación de constantes
+en el AST y poder usarla desde otros puntos.
+- Se modifica TCompMain.CompileConstDeclar() para que mejore su comportamiento y mueva los
+tipos generados al mismo nivel que la constante.
+- Se crea el método TXpTreeElements.ChangeParentTo() para mover un elemento del AST.
+- Se elimina el campo TAdicVarDec.iniVal y se crea TAdicVarDec.constDec.
+- Se corrige un error en la inicialización de literales arreglo, en TCompilerBase.GetOperand().
+- Se corrige la declaración de tipos copia en TCompMain.CompileTypeDeclar().
+- Se corrige TCompMain.CompileSentence() para que acepte también palabras reservadas.
+- Se corrige un error en TGenCod.fun_Word() 
+
+
+
+
+P65PAS 0.8.1 (No funcional)
+============
+COMENTARIOS
+La versión 0.8.0 fue un gran avance con respecto a las versiones previas 0.7.X, pero 
+tiene aún varios aspectos que mejorar para ser funcional.
+Esta nueva versión se crea como un avance más antes de lograr liberar formalmente al
+compilador con un nuevo diseño y que sea funcional.
+El cambio principal ha sido avanzar en definir mejor el sistema de detección de 
+registros y variables auxiliares necesarios.
+
+CAMBIOS
+- Se corrige un error con la creación duplicada de tipos en el AST, en TCompMain.CompileVarDeclar;
+El tipo se agregaba nuevamente cuando la bandera "typeCreated" estaba en TRUE.
+- Se corrige y actualiza la documentación, especialmente en la sección de Compilación y 
+enlazado.
+- Se agrega la simplificación de almacenamiento de parB, en TGenCod.ROB_byte_asig_byte().
+- Se inicializa el evento OnLoadToRT de los tipos del sistema, creados.
+- Se completa TGenCodBas.byte_LoadToRT() para que soporte el almacenamiento "stRamVarOf". 
+- Se cambia de nombre a byte_LoadToRT() por byte_LoadToWR() porque ya no se usa el acrónimo
+RT en la nueva versión del proyecto.
+- Se cambia de nombre a OnLoadToRT() por OnLoadToWR().
+- Se cambia de nombre a TPicRegister por TCpuRegister.
+- Se cambia el nombre de TGenCodBas.CodeEleExpress() a TGenCodBas.GenCodeExpr(), por 
+consistencia.
+- Se elimina FoldConstant() porque no se usa.
+- Se modifica TCompiler_PIC16.DoGenerateCode() para que incluya todo el código y ya no 
+llame a TGenCodBas.GenCodeBody().
+- Se modifica TGenCodBas.GenCodeBody() para que tenga un comportamiento similar a 
+ConstantFoldBody().
+- Se cambia de nombre a TCompiler_PIC16.UpdateStoAndFoldConst() por 
+TCompiler_PIC16.ScanForRegsRequired() y se cambia la llamada a ConstantFoldBody().
+
+
+P65PAS 0.8.0 (No funcional)
+============
+COMENTARIOS
+La versión anterior 0.7.9 realizó cambios dramáticos en la estructura del compilador, referidos 
+principalmente al uso del lexer. 
+Ahora, con esta versión, se trabaja más en la parte del llenado del árbol de sintaxis, que 
+incluye detalle de las expresiones. Esta nueva forma de trabajo influye en muchas rutinas básicas
+como el analizdor de expresiones (el que se ha recosntruido casi por completo) y el manejo de 
+operandos.
+Se han creado estructuras nuevas y conceptos nuevos también que dan forma al nuevo diseño del 
+compilador.
+Cabe resaltar que se ha logrado el objetivo de eliminar las llamadas "funciones y tipos del 
+sistema" y que se ha dado un paso grande al implementar el futuro soporte a la definición de 
+objetos, con las nuevas estructuras creadas.
+También es importante el avance en la definición de funciones INLINE.
+El generador de código es ahora más flexible y permitirá la creación de nuevas optimizaciones.
+
+
+CAMBIOS
+- Se elimina la instrucción que limpiaba los contextos después de compilar, para poder acceder
+a información de archivos.
+- Se mejora la creación de elementos "Sentence".
+- Se cambia el comportamiento de los bloques ASM de modo que ahora se comportan como una 
+sentencia y requieren el punto y coma final.
+- Se modifica el arbol de sintaxis para incluir las sentencias y las expresiones.
+- Se crea el campo "curBody" en el arbol de sintaxis.
+- Se elimina la creación clásica de tipos y funciones "del sistema". Ahora todos se incluyen
+como definiciones de la unidad System.
+- Se quita el tipo de token relativo a las funciones de sistema, porque ahora se manejarán como 
+simples identficadores, en la nueva arquitectura del compilador.
+- Se modifican las funciones AddCallerTo(), para tener un mejor control sobre ellas. Se les ha 
+cambiado el nombre, se ha eliminado la versión que permite indicar la posición y se han creado
+nuevas versiones.
+- Se elimina la propiedad TxpElemnt.posCtx , porque ya no son útiles en el nuevo 
+esquema del compilador (No se exploran nuevamente los elementos).
+- Se eliminan las clases TxpSynBlock y TxpSynBlocks, porque ya no son útiles en el nuevo 
+esquema del compilador.
+- Se elimina el tipo TxpProcParam, porque ya no se usa. 
+- Se cambian el nombre de los valores enumerados de TxpIDClass, de eltXXXX a eleXXXX.
+- Se implementan algunas funciones del sistema y oepraciones binarias en el generador de código.
+- Se revisa la inclusión de la instrucción RTS al final de las funciones.
+- Se mueven los campos picCore y devicesPath, de la clase a TCompilerBase a TCompMain, para
+dejara a la clase TCompilerBase, menos dependiente del hardware.
+- Se elimina el campo TxpEleFunBase.codCall y el código asociado. Se pasa ahora a usar 
+directamente TGenCodBas.functCall().
+- Se eliminan TGenCodBas.StartCodeSub(), TGenCodBas.EndCodeSub(), TCompilerBase.callStartCodeSub,
+TCompilerBase.callEndCodeSub, TCompilerBase.callLoadToA, TCompilerBase.callLoadToX, 
+callLoadToX.callLoadToY, TCompilerBase.callSetSharedUnused y TCompilerBase.callSetSharedUsed. 
+- Se eliminan los métodos de TxpEleType, relacionados al manejo de operadores (
+TxpEleType.CreateUnaryPreOperator(), CreateUnaryPostOperator(), FindBinaryOperator(), 
+FindUnaryPreOperator() y FindUnaryPostOperator() ), porque ya no se usan en el nuevo diseño 
+del compilador. 
+- Se eliminan los campos relacionados a funciones INLINE para los tipos (TxpEleType.fields y
+TxpEleType.CreateField()), porque ya no se usan en el nuevo diseño del compilador. 
+- Se elimina el campo TxpEleType.OperationLoad, porque ya no se usa.
+- Se elimina la clase TxpOperator de la unidad XpresElemP65.
+- Se elimina el operador nulo operNull, de la unidad XpresAST, porque ya no se usa. 
+- Se actualiza TGenCodBas.CreateLocalVarsAndPars() con una leve corrección para adaptarse
+a la nueva forma de trabajo del compilador.
+- Se elimina la bandera TCompilerBase.RTstate, porque la forma de verificar la disponibilidad
+de registror va a cambair en el nuevo esquema.
+- Se actualizan y simplifican las funciones de tipo SetResultXXXX
+- Se elimina la clase TOperand.
+- Se elimina TCompilerBase.FindSysEleType().
+- Se elimina la unidad CompOperands. Se mueven sus métodos a GenCodBas_PIC16.
+- Se elimina el enumerado TStoOperand.
+- Se cambia de nombre a TCompMain.CompileProgram() por TCompMain.DoAnalyze.
+- Se cambia el nombre de las funciones de tipo CompileXXX() a AnalyzeXXX().
+- Se cambia el nombre del campo "linked" por "coded".
+- Se modifican las rutinas del generador de código: TGenCod.ROB_XXX(), para que usen variables
+locales en lugar de globales.
+- Se modifica la rutina TGenCodBas.CreateVarInRAM() para adaptarla a la nueva forma de trabajo.
+- Se modifica la ventana de propiedades del explorador de código, para que refleje 
+información más uniforme y más completa para las expresiones.
+- Se revisa y actualiza la documentación ampliamente.
+
+P65PAS 0.7.9 (No es funcional)
+============
+Se elimina la unidad XpresTypesPIC.
+Se divide la unidad XpresElementsPIC en dos unidades: XpresAST y XpresElemP65.
+Se crean nuevos archivos de prueba para evaluar detección de recursividad.
+Se crea la unidad LexPas y se configura para usarse como lexer principal, modificando todos los
+puntos donde sea necesario.
+Se elimina la dependencia de la librería Xpres en todo el proyecto.
+Se actualiza la librería SynFacilUtils para poder usar la última versión de Lazarus 2.0.10.
+Se mueve la ubicación de las librerías de Lazarus, y se ponen en la misma capeta /Source (algunas 
+como enlace simbólico), para que todo el código fuente quede en esta carpeta.
+Se eliminan los diversos tipos que guardaban referencias a posiciones en contextos y el estado del
+lexer, dejando solo dos tipos principales: TSrcPos y TContextState.
+Se elimina la propiedad cIn del compilador y se pone la clase TContexts como clase base del
+compilador.
+Se crea la unidad CompContexts, para incluir la definición de la clase TContexts.
+
+
+Comentarios.
+Esta versión involucra varios cambios importantes. El primero y mayor es el cambio del lexer, 
+que significó cambios importantes en diversas undiades, y que rompió la dependencia de la 
+librería Xpres. Ahora ya es más factible generar el compilador de forma independiente.
+Otro de los cambios importantes es que se eliminan las diversas estructuras para guardar 
+posiciones y estados del lexer y se dejan solo dos, e inclusive se deja la opción de poder
+usar solo una.
+Otro cambio importante es que ahora la clase TContexts, se define como la clase base de todo 
+el compilador, simplificando las llamadas al lexer.
+También es de notar que se ha implementado por primera vez la generación de información 
+del código en el árbol de sintaxis. Esto se probó para los bloques ensamblador.
+ESTA VERSIÓN NO ES FUNCIONAL. Se usó como paso intermedio para la versión 0.8.0, debido a la
+cantidad de cambios requeridos. 
+
+
+
+P65PAS 0.7.8
+============
+Se corrige el bug #24 reportado en GitHub.
+Se corrige el bug #25 reportado en GitHub.
+Se pasa a usar la librería actualizada de P65Utils.
+
+
+P65PAS 0.7.7
+============
+Se cambia de nombre a TCompMain.CompileInstruction() por TCompMain.CompileSentence() para hacerlo
+más consistente con la definición del lenguaje Pascal.
+Se implementa la función addr() para que pueda obtener la dirección de procedimientos y funciones
+
+P65PAS 0.7.6
+============
+Se pasa a usar la versión 0.3 de P65Utils, para solucionar un problema con la inicialización en 
+la instrucción $SET_DATA_ADDR.
+Se corige un error en la operación TGenCod.ROB_byte_and_byte().
+
+
+P65PAS 0.7.5
+============
+- Se organiza y revisa la documentación técnica. Se eliminan algunas referencias a los tipos bit 
+y se quitan también las referencias a registros auxiliares y de pila que ya no se usan en el 
+compilador. También se actualiza la sección que describe a los registros. 
+
+- Se cambia de nombre a TOperand.FValue por TOperand.FConst para hacerlo más consistente con 
+la documentación.
+- Se elimina el valor prtStkReg del enumerado TPicRegType, porque no se necesita manejar pila
+personalizada.
+- Se elimina el método TGenCodBas.GetAuxRegisterByte() porque no se usa. 
+- Se elimina el método TGenCodBas.CreateRegisterByte() porque no se usa. 
+- Se elimina TCompilerBase.ProplistRegAux, porque ya no se usa.
+- Se elimina TCompilerBase.listRegAux, porque ya no se usa.
+- Se eliminan el manejo de registros auxiliares y de pila dentro del compilador.
+- Se elimina TGenCodBas.StartRegs().
+- Se simplifica la clase TPicRegister porque ahora solo se usa para modelar a registros internos
+de la CPU. Definiendo a los otros registros, como simples variables.
+- Se elimina el tipo TPicRegType de la unidad XpresTypesPIC.
+- Se elimina el tipo TPicRegister_list.
+- Se pasa a manejar el tipo TPicRegister como "object" en lugar de clase.
+- Se elimina TxpEleVar.adrByteTmp.
+- Se reemplaza typWord.DefineRegister por el método AddCallerTo(H), que es más específico en el 
+uso del registro.
+
+
+P65PAS 0.7.4
+===========
+- Se define que las variables booleanas se cargen con el valor $02 para el valor TRUE y $00
+para el valor FALSE, para facilidad de las operaciones.
+- Se quita el parámetro "logic" para los métodos SetResultVariab(), SetROBResultVariab() y 
+- SetROUResultVariab(), porque se está definiendo que esta bandera solo se aplique a expresiones. 
+Se podría trabajar como PicPas y manejar "logic" también en variables, pero esto complicaría las 
+RO, considerando que el 6502 no tiene instrucciones de acceso a bit, como si lo tienen los PIC.
+- Se revisa y completa, un poco más, la documentación.
+- Se corrige y optimiza TGenCod.ROB_bool_equal_bool().
+- Se crea la rutina TGenCodBas.bool_LoadToRT() para corregir un error al compilar funciones.
+- Se corrige un error con la lectura de parámetros, cuando se llamaba a métodos. 
+
+Pendientes
+==========
+Encapsular los valores de constantes en un solo objeto de TOperand.
+
+Generar bloques IF (o de otro tipo), de más de 128 bytes.
+
+Revisar y adaptar los programas de prueba para el compilador.
+
+Queda pendiente revisar la artimética de punteros a word. Ya que actualmente se 
+implementan como aritmética simple de words, sin considerar el tipo de puntero, como se 
+hace realmente en Pascal.
+
+Una mejora en el diseño podría ser:
+Revisar las llamadas "Funciones del sistema", ya que con el actual método de llamada a 
+funciones del sistema, parecen innecesarios. Rutinas como inc() o dec() son realmente 
+funciones INLINE, que pueden llamar, si lo deciden, a funciones del sistema.
+
+Además pareciera que estas "funciones de sistema" están haciendo mal uso del campo "procCall"
+ya que en todos los casos (salvo en estas llamadas "funciones del sistema") apuntan a la 
+rutina "callFunctCall", que es la única que debería ser usada para verdaderas funciones.
+
+Otra de las revisiones pendientes es ver el caso de las unidades cuando se referencian a ellas
+desde dos módulos distintos. ¿Se duplican sus elementos en el arbol de sintaxis?
+
+Queda pendiente también implementar la declaración de tipos en los parámetros de funciones.
+De momento ya se ha creado la lista "internalTypes" en los elementos TxpEleType, para 
+almacenar la lista de los posibles tipos creados.
+
+Queda pendiente implementar las operaciones de tipo Expres + Expres, usando variables 
+auxiliares.
+
+
+
+P65PAS 0.7.3
+===========
+Se corrige, en la unidad ParserAsm_PIC16, el ensamblado de las instrucciones que hacen 
+alusión a una etiqueta del bloque ensamblador.
+Se corrige un problema relativo al uso de unidades dentro de unidades.
+
+
+P65PAS 0.7.2
+===========
+Se corrige y mejora el Frame de registros para la ventana de depuración.
+Se implementan nuevas instrucciones en el depurador/simulador, y se corrigen algunas 
+funcionalidades.
+Se revisan y completan nuevas operaciones con el tipo word (suma, autosuma, y and).
+Se implementa el operador += para los punteros.
+Se revisa la implementación de los métodos GetItem y SetItem de arreglos.
+Se crea el método TGenCod.LoadIXmult() para ayudar en el cálculo de índices para arreglos 
+o punteros.
+Se completan las implementaciones de TGenCodBas.byte_LoadToRT() y TGenCodBas.word_LoadToRT() 
+para más casos de almacenamiento.
+Se implementa el operador ^ para punteros en modo "getter".
+Se modulariza el método TGenCodBas.IF_TRUE().
+
+
+
+P65PAS 0.7.1
+==========
+Se crea el tipo TOpReadMode y se incluye en las rutinas que manejan operandos.
+Se cambia la forma de trabajo de TCompilerBase.GetExpressionE() para que ahora lea el 
+primer operando con GetExpression() en lugar de GetOperand() y pueda procesar mejor las
+asignaciones a punteros.
+Se revisa y mejora la directiva $SET_STATE_RAM.
+Se implementa la directiva $SET_DATA_ADDR y se activan los mecanismos para permitir la 
+declaración de variables en zonas diferentes de la memoria.
+Se elimina el registro H y se crea la variable del sistema H, para facilitar la 
+administración de memoria y asignación.
+Se eliminan, también, los registros E y U, de la misma forma que se hace con H.
+Se crea el registro de índice IX.
+Se implementa la operación de multiplicación de bytes y se revisan las operaciones de
+suma.
+Se implementa la optimización para reusar variables para parámetros.
+Se revisan las operaciones de desplazamientos.
+Se corrigen las búsquedas de elementos con FindNext() en TCompilerBase.GetOperandIdent().
+Se corrige las búsquedas con TXpTreeElements.FindNextFuncName().
+
+
+P65PAS 0.7
+==========
+Se mueven dos rutinas más de Compiler_PIC16 a CompMain.
+Se modifica TGenCodBas.FunctCall() para gaurdar las llamadas pendientes.
+Se modifica TxpElement.UpdateCalledAll() para detectar llamadas recursivas.
+Se modifica CompileLinkProgram()-UpdateFunLstCalled() para protegerse de llamadas recursivas.
+Se crean las rutinas necesarias para crear funciones del sistema en la unidad system y así 
+puedan uniformizarse con las otras funciones y usar los mecanismos de optimización.
+Se modifican las rutimas de exploración del arbol de sintaxis, de la unidad XpresElementsPIC
+para implementar la búsqueda de Tipos en el árbol de sintaxis.
+Se modifica GetTypeDeclar() para que evite crear tipos nuevos de arreglos cuando ya existe
+un tipo equivalente.
+Se elimina el typo String y se implementa la lectura de literales cadena como arreglos de
+caracteres.
+Se reescribe y mejora la rutina CreateVarInRAM(). Además se elimina AssignRAMinByte(). 
+Se mejora la rutina TxpEleType.IsArrayOf() y se crea TxpEleType.IsPointerTo(), para detectar
+equivalencias de tipos.
+Se impleementa la asiganción de arrays de arrays:
+  x: arrplus = [[1,2,3],[1,2,3],[4,5,6]]; 
+Se eliminan los campos TxpEleVar.adrByte0, TxpEleVar.adrByte3, ... y sus objetos asociados 
+para pasar a usar solo las direcciones físicas como números.
+Se eliminan todas las referencias a las direcciones de tipo "offset", porque no tienen
+sentido en la arquitectura del 6502.
+Se hace una implementación básica del tipo "object" solo con soporte de atributos.
+Se habilita la compilación en tiempo real, como una opción de la IDE.
+Se mueve la rutina UpdateFunLstCalled() de Compiler_PIC16 a CompMain.
+
+P65PAS 0.6
+==========
+Se continuan moviendo métodos de la unidad Compiler_PIC16 a la unidad CompMain.
+Se cambia el método de creación de las funciones cuando se usan en INTERFACE y se 
+implementa la opción de FORWARD. Ahora se crea un elemento nuevo que representa solo 
+a la declaración y se cambia las rutinas de llamadas para la nueva gestión.
+Se implementa la asignación de arreglos.
+Se implementa asignación a nuevos tipos de almacenamiento para el tipo byte.
+Se modifica el método TCompilerBase.GetExpressionE() para permitir operadores de tipo
++= y -=.
+Se crea el almacenamiento stNull, para procedimientos que no devuelven valor.
+Se implementan parcialmente las ROB para += y -= para el tipo Word.
+
+
+P65PAS 0.5
+==========
+Se modifica TCompilerBase.GetExpressionE() para darle otro enfoque y permitir procesar las
+asignaciones como instrucciones especiales, además de prohibir ciertas expresiones como 
+instrucciones.
+Se convierte GetOperand() a procedimiento y se devuelve el operando por referencia.
+Se elimina TCompilerBase.GetOperandPrec().
+Se cambia la estructura de TAdicVarDec para que incluya la información adicional de
+variables registro y se quita del código el uso de banderas adicionales.
+Se crea TxpAdicDeclar y se amplía los tipos de variables registro para que consideren
+los casos REGISTERA, REGISTERX, y REGISTERY.
+Se incrementan los modos de almacenamiento para dar soporte a los parámetros REGISTER.
+Se cambia la sintaxis para la declaración de los parámetros REGISTER. AHora se ponen en 
+el mismo lugar de ABSOLUTE.
+Se reordenan las rutinas que daban soporte a punteros y arreglos para que se ubiquen en la
+unidad GenCod_PIC16, mediante el uso de refrencias a función, de modo que se separa mejor
+la generación de código del "Parser".
+Se uniformiza el nombre y la creación de tipos para que haya consistencia.
+Se implementa la creación dinámica de tipos para arreglos y punteros.
+Se implementa parcialmente la aritmética de punteros como operaciones con word.
+Se implementa la inciailización de arrays con constantes, al momento de la declaración.
+Se mueven los métodos GetTypeDeclar() y GetTypeDeclarSimple(), (y otros más ) de la unidad
+COmpiler_PIC16 a la unidad Parser(), para ir moviendo el generador de código, a niveles más
+altos de la estructura de clases (así se pueden crear más generadores de código reusando 
+las clases más bajas, como se espera hacer en Picpas). la idea sería mover todos los métodos
+de Compiler_PIC16 a Parser. 
+Se crea la unidad CompOperands y se mueven las rutinas básicas del compilador.
+Se cambia de nombre a la unidad Parser por CompBase.
+
+
+P65PAS 0.4
+==========
+Se crea el elemento TxpEleInline, para dar soporte a las funciones INLINE.
+Se agrega la rutina CLRSCR() a la unidad Commodore64;
+Se corrige un errror en la rutina TCompiler_PIC16.CompileFOR() cuando se asignaba una variable
+como valor inicial de la variable índice.
+Se crea el método TCompiler_PIC16.AddConstant() y se usa.
+Se crea el método: TCompiler_PIC16.AddFunction() y se usa en TCompiler_PIC16.CompileProcHeader().
+Se cambia de nombre a TxpElement.DuplicateIn() por TxpElement.ExistsIn() y se le quita el
+VIRTUAL.
+Se cambia de nombre a TxpEleFun.DuplicateIn() por TxpEleFun.Duplicated() y se le quita los
+parámetros.
+Se elimina TCompilerBase.ValidateFunction() y se incluye su código directamente.
+Se cambia el manejo del campo "name" de TxpElement, agregando el campo "uname" para acelerar
+las búsquedas y se usa en todos los puntos donde se aplicaba un UpCAse().
+Se elimina TxpTreeElements.ValidateCurElement().
+Se renombra el archivo tra_Parser.pas a tra_Compiler.pas. 
+Se crea el archivo tra_Parser.pas y se cambia el sistema de traducción de la unidad Parser.pas
+al sistema que usan las demás unidades.
+Se agregan traducciones a mensajes en Parser.pas
+Se optimiza getListOfIdent().
+Se modifica sustancialmente CompileProcHeader() para que separe la parte de la lectura de la
+información de la función de la parte de la creación de la función.
+Se crea el enumerado TxpEleLocation, para precisar mejor la ubicación de los elementos y pasa
+a reemplazar a la bandera boolena InInterface en varios procedimientos.
+Se modifica TCompilerBase.CaptureParams() para que use un arreglo TxpParFuncArray, como 
+parámetro y así se simplifica TCompilerBase.GetOperandIdent().
+Se mueven de TCompiler_PIC16.getListOfIdent(), getParamType(), y CreateFunctionParams() a la 
+unidad Parser.pas
+Se cambia de nombre a CompileProcHeader() por ReadProcHeader() y se restringe su función.
+Se modifica TCompiler_PIC16.GetAdicVarDeclar() para que soporte valores iniciales para las
+variables.
+Se modifican TGenCodBas.AssignRAMinByte() y TGenCodBas.CreateVarInRAM() para que asigne
+valores iniciales a la RAM reservada.
+Se deja de usar la función TCompilerBase.getParamType() y se pasa a usar 
+TCompiler_PIC16.GetTypeVarDeclar() con leves modificaciones.
+Se amplía y mejora TCompiler_PIC16.GetTypeVarDeclar() para soportar declaración de arreglos
+básica.
+Se crea el tipo typString, sin funcionalidad, solo para inicialización de arreglos y se 
+modifica TCompilerBase.GetOperand() para soportar literales de cadena.
+Se potencia TCompiler_PIC16.GetTypeVarDeclar() para permitir la especifiación dede tipos
+compuestos en la declaración de variables.
+Se unifican y se amplían las rutinas de lectura de tipos en los métodos 
+TCompiler_PIC16.GetTypeDeclar() y TCompiler_PIC16.GetTypeDeclarSimple().
+Se implementa la asignación de memoria para arreglos simples.
+Se aumneta la sintaxis del ensmablador 6502 integrado, para que soporte los operadores #< y
+#>.
+Se quitan los campos de acceso a bit, que quedan como rezago de PicPas.
+Se implementa el acceso a items de arreglos para estructuras simples.
+
+
+P65PAS 0.3
+==========
+Se redefinen los almacenamientos en el enumerado TStoOperand, en la unidad XpresTypesPIC, 
+para hacerlos más consistentes con el documento "Modos de Almacenamiento de Operandos en 
+Xpres" del framework Xpres.
+Se cambia el nombre del valor enumerado "stVarRefVar" por "stVarRef"
+Se cambia el nombre del valor enumerado "stVarRefExp" por "stExpRef"
+Se agrega comentario al código BASIC generado en modo COmmodore64.
+Se corrige TGenCodBas.byte_LoadToRT() para el caso de variables.
+Se corrige el uso de instrucciones con direccionamiento acumulador en los bloques ASM.
+Se implementan algunos casos de TGenCod.fun_Word()
+Se corrige la codificación de la instrucción ADC. 
+Se agregan envoltorios a funciones del Kernal y BASIC en las unidad Commodore64.
+Se corrige el tipo que devuelve la expresión a>b, para algunos casos.
+Se corrrige la asignación de constantes a valores booleanos.
+Se implementan nuevas rutinas TGenCodBas.SetROU* para el tipo booleano.
+Se corrigen las rutinas TGenCod.Copy_Z_to_A() y TGenCod.Copy_C_to_A().
+Se corrige la rutina TGenCodBas.IF_TRUE(). 
+Se convierten las banderas BooleanFromC y BooleanFromZ a integer.
+Se revisa y corrige la implementación de TGenCod.ROB_byte_great_byte().
+Se cambia el tipo de parámetro "Inverted" de las funciones de tipo TGenCodBas.SetROBResult*()
+y se crea el enumerado TLogicType.
+Se implementan instruCciones nuevas en la unidad GenCodBas_PIC16.
+Se mejora TGenCodBas.IF_TRUE(), para que considere la optimización.
+
+Se ha mejorado la implementación del tipo Booleano, agregando y revisando al operador
+NOT. QUedaría pendiente implementar las operaciones AND y OR.
+La documentación también refleja el avance, porque se ha estudiado y se ha definido mejor
+los tipos de almacenamientos que se van a implementar en el compilador.
+Se debe revisar la documentación y completarla también con los avances. Además quedan
+todavía en la documentación, muchos rezagos de la documentación de PicPas.
+
+Los otros tipos aún tienen que revisarse.
+Se ha analizado considerablemente la posibilidad de permitir implementar herencia de tipos
+básicos, como:
+type MiByte = object(byte)
+		procedure Add()
+	      end;
+Implementar esta funcionalidad en etapas tempranas daría la ventaja de que el lenguaje nacería 
+ya con soporte básico a objetos.
+Otra de las tareas pendientes es hacer que la creación de funciones de sistema sea igual 
+que las funciones definidas por el usuario (incluyendo el uso de variables locales).
+Pero este acercamiento, debe también darse del lado de las funciones definidas por el usuario. 
+De modo que se permita especificar parámetros REGISTER, diferenciados. Se recomienda 
+implementar las palabras resrevadas REGISTERA, REGISTERX, REGISTERY, REGISTERSP,...
+
+Revisar las instrucciones "if not AcumStatInZ" porque están después de SetROBResult* y no tiene
+sentido, porque siempre cambia AcumStatInZ.
+
+Otra de las cuestiones "filosóficas" a resolver, es si el modo "logic = logInverted" tiene
+realmente sentido cuando se aplica a variables, ya que en una interpretación, las variables
+nunca deberían tener una lógica distinta a la estableciada para todo el sistema. Al parecer
+la lógica invertida solo debería aplicarse a expresiones, pero es un tema de análisis.
+
+P65PAS 0.2
+==========
+Se mejora el desarrollo del compilador, mejorando el análisis de los almacenamientos: 
+stVarRefVar y stVarRefExp.
+Se elimina las instrucciones _BTFSC y _BTFSS, que eran un remanente del compilador PicPas.

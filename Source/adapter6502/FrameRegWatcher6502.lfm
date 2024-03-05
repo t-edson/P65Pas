@@ -1,0 +1,112 @@
+object fraRegWatcher: TfraRegWatcher
+  Left = 0
+  Height = 359
+  Top = 0
+  Width = 287
+  ClientHeight = 359
+  ClientWidth = 287
+  ParentFont = False
+  TabOrder = 0
+  DesignLeft = 350
+  DesignTop = 272
+  object grilla: TStringGrid
+    Left = 0
+    Height = 339
+    Top = 20
+    Width = 287
+    Align = alClient
+    ColCount = 3
+    FixedCols = 0
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goThumbTracking, goDblClickAutoSize, goSmoothScroll]
+    ParentFont = False
+    PopupMenu = PopupMenu1
+    RowCount = 3
+    TabOrder = 0
+    ColWidths = (
+      48
+      132
+      64
+    )
+    Cells = (
+      3
+      0
+      0
+      'Address'
+      1
+      0
+      'Name'
+      2
+      0
+      'Value'
+    )
+  end
+  object panTitle: TPanel
+    Left = 0
+    Height = 20
+    Top = 0
+    Width = 287
+    Align = alTop
+    ClientHeight = 20
+    ClientWidth = 287
+    ParentFont = False
+    TabOrder = 1
+    object Label1: TLabel
+      Left = 1
+      Height = 18
+      Top = 1
+      Width = 265
+      Align = alClient
+      AutoSize = False
+      Caption = 'Register Watcher'
+      Color = clActiveCaption
+      ParentColor = False
+      ParentFont = False
+      Transparent = False
+    end
+    object SpeedButton1: TSpeedButton
+      Left = 266
+      Height = 18
+      Top = 1
+      Width = 20
+      Align = alRight
+      Caption = 'X'
+      ParentFont = False
+    end
+  end
+  object PopupMenu1: TPopupMenu
+    left = 56
+    top = 136
+    object MenuItem1: TMenuItem
+      Action = acClearAll
+    end
+    object MenuItem2: TMenuItem
+      Action = acAddVars
+    end
+    object MenuItem3: TMenuItem
+      Action = acAddRT
+    end
+    object MenuItem4: TMenuItem
+      Action = acDeleteRow
+    end
+  end
+  object ActionList1: TActionList
+    left = 147
+    top = 230
+    object acClearAll: TAction
+      Caption = '&Clear all'
+      OnExecute = acClearAllExecute
+    end
+    object acAddVars: TAction
+      Caption = 'Add Program &Variables'
+      OnExecute = acAddVarsExecute
+    end
+    object acAddRT: TAction
+      Caption = 'Add &Registers'
+      OnExecute = acAddRTExecute
+    end
+    object acDeleteRow: TAction
+      Caption = '&Delete row'
+      OnExecute = acDeleteRowExecute
+    end
+  end
+end

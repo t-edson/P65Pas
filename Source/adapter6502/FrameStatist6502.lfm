@@ -1,0 +1,27 @@
+object fraStatist6502: TfraStatist6502
+  Left = 0
+  Height = 177
+  Top = 0
+  Width = 273
+  ClientHeight = 177
+  ClientWidth = 273
+  DesignTimePPI = 120
+  ParentFont = False
+  TabOrder = 0
+  DesignLeft = 398
+  DesignTop = 596
+  object lblRAM: TLabel
+    Left = 16
+    Height = 20
+    Top = 8
+    Width = 32
+    Caption = 'RAM'
+  end
+  object lblROM: TLabel
+    Left = 68
+    Height = 20
+    Top = 8
+    Width = 33
+    Caption = 'ROM'
+  end
+end

@@ -1,0 +1,176 @@
+object Form2: TForm2
+  Caption = 'Form2'
+  ClientHeight = 340
+  ClientWidth = 359
+  OnCreate = Form2CREATE
+  OnDestroy = Form2DESTROY
+  PixelsPerInch = 96
+  HorzScrollBar.Page = 358
+  VertScrollBar.Page = 339
+  Left = 420
+  Height = 340
+  Top = 364
+  Width = 359
+  object Groupbox1: TGroupBox
+    BorderSpacing.OnChange = nil
+    Caption = 'Using Built-in timer'
+    ClientHeight = 137
+    ClientWidth = 336
+    ParentColor = True
+    ParentCtl3D = False
+    TabOrder = 0
+    Left = 10
+    Height = 155
+    Top = 10
+    Width = 340
+    object Button1: TButton
+      BorderSpacing.OnChange = nil
+      BorderSpacing.InnerBorder = 2
+      Caption = 'Elapsed'
+      OnClick = Button1CLICK
+      TabOrder = 0
+      Left = 173
+      Height = 25
+      Top = 10
+      Width = 75
+    end
+    object Button2: TButton
+      BorderSpacing.OnChange = nil
+      BorderSpacing.InnerBorder = 2
+      Caption = 'Start'
+      OnClick = Button2CLICK
+      TabOrder = 1
+      Left = 18
+      Height = 25
+      Top = 10
+      Width = 75
+    end
+    object Button3: TButton
+      BorderSpacing.OnChange = nil
+      BorderSpacing.InnerBorder = 2
+      Caption = 'Stop'
+      OnClick = Button3CLICK
+      TabOrder = 2
+      Left = 18
+      Height = 25
+      Top = 40
+      Width = 75
+    end
+    object Button4: TButton
+      BorderSpacing.OnChange = nil
+      BorderSpacing.InnerBorder = 2
+      Caption = 'Clear'
+      OnClick = Button4CLICK
+      TabOrder = 3
+      Left = 18
+      Height = 25
+      Top = 73
+      Width = 75
+    end
+    object Edit1: TEdit
+      BorderSpacing.OnChange = nil
+      TabOrder = 4
+      Left = 113
+      Height = 23
+      Top = 45
+      Width = 205
+    end
+    object Edit2: TEdit
+      BorderSpacing.OnChange = nil
+      TabOrder = 5
+      Left = 113
+      Height = 23
+      Top = 75
+      Width = 205
+    end
+    object Edit4: TEdit
+      BorderSpacing.OnChange = nil
+      TabOrder = 6
+      Left = 18
+      Height = 23
+      Top = 105
+      Width = 300
+    end
+  end
+  object Groupbox2: TGroupBox
+    BorderSpacing.OnChange = nil
+    Caption = 'Using program created timer'
+    ClientHeight = 137
+    ClientWidth = 336
+    ParentColor = True
+    ParentCtl3D = False
+    TabOrder = 1
+    Left = 10
+    Height = 155
+    Top = 175
+    Width = 340
+    object Button5: TButton
+      BorderSpacing.OnChange = nil
+      BorderSpacing.InnerBorder = 2
+      Caption = 'Elapsed'
+      OnClick = Button5CLICK
+      TabOrder = 0
+      Left = 173
+      Height = 25
+      Top = 10
+      Width = 75
+    end
+    object Button6: TButton
+      BorderSpacing.OnChange = nil
+      BorderSpacing.InnerBorder = 2
+      Caption = 'Start'
+      OnClick = Button6CLICK
+      TabOrder = 1
+      Left = 18
+      Height = 25
+      Top = 10
+      Width = 75
+    end
+    object Button7: TButton
+      BorderSpacing.OnChange = nil
+      BorderSpacing.InnerBorder = 2
+      Caption = 'Stop'
+      OnClick = Button7CLICK
+      TabOrder = 2
+      Left = 18
+      Height = 25
+      Top = 40
+      Width = 75
+    end
+    object Button8: TButton
+      BorderSpacing.OnChange = nil
+      BorderSpacing.InnerBorder = 2
+      Caption = 'Clear'
+      OnClick = Button8CLICK
+      TabOrder = 3
+      Left = 18
+      Height = 25
+      Top = 75
+      Width = 75
+    end
+    object Edit3: TEdit
+      BorderSpacing.OnChange = nil
+      TabOrder = 4
+      Left = 113
+      Height = 23
+      Top = 45
+      Width = 205
+    end
+    object Edit5: TEdit
+      BorderSpacing.OnChange = nil
+      TabOrder = 5
+      Left = 113
+      Height = 23
+      Top = 75
+      Width = 205
+    end
+    object Edit6: TEdit
+      BorderSpacing.OnChange = nil
+      TabOrder = 6
+      Left = 18
+      Height = 23
+      Top = 105
+      Width = 300
+    end
+  end
+end

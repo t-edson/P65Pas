@@ -1,0 +1,307 @@
+object fraCfgSynEdit: TfraCfgSynEdit
+  Left = 0
+  Height = 341
+  Top = 0
+  Width = 374
+  ClientHeight = 341
+  ClientWidth = 374
+  ParentFont = False
+  TabOrder = 0
+  DesignLeft = 412
+  DesignTop = 300
+  object cbutLinAct: TColorButton
+    Left = 294
+    Height = 25
+    Top = 136
+    Width = 64
+    BorderWidth = 2
+    ButtonColorSize = 16
+    ButtonColor = clBlack
+    ParentFont = False
+  end
+  object Label1: TLabel
+    Left = 223
+    Height = 15
+    Top = 139
+    Width = 32
+    Caption = 'Color:'
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label8: TLabel
+    Left = 10
+    Height = 15
+    Top = 78
+    Width = 60
+    Caption = 'Back Color:'
+    ParentColor = False
+    ParentFont = False
+  end
+  object cbutBackCol: TColorButton
+    Left = 115
+    Height = 25
+    Top = 72
+    Width = 64
+    BorderWidth = 2
+    ButtonColorSize = 16
+    ButtonColor = clBlack
+    ParentFont = False
+  end
+  object Label9: TLabel
+    Left = 222
+    Height = 15
+    Top = 80
+    Width = 57
+    Caption = 'Font color:'
+    ParentColor = False
+    ParentFont = False
+  end
+  object cbutTextCol: TColorButton
+    Left = 294
+    Height = 25
+    Top = 72
+    Width = 64
+    BorderWidth = 2
+    ButtonColorSize = 16
+    ButtonColor = clBlack
+    ParentFont = False
+  end
+  object GroupBox1: TGroupBox
+    Left = 6
+    Height = 76
+    Top = 262
+    Width = 350
+    Caption = '   '
+    ClientHeight = 56
+    ClientWidth = 346
+    ParentFont = False
+    TabOrder = 0
+    object chkVerPanVer: TCheckBox
+      Left = 16
+      Height = 19
+      Top = -17
+      Width = 53
+      Caption = 'Gutter'
+      OnChange = chkVerPanVerChange
+      ParentFont = False
+      TabOrder = 0
+    end
+    object cbutFonPan: TColorButton
+      Left = 275
+      Height = 25
+      Top = 0
+      Width = 64
+      BorderWidth = 2
+      ButtonColorSize = 16
+      ButtonColor = clBlack
+      ParentFont = False
+    end
+    object Label2: TLabel
+      Left = 168
+      Height = 15
+      Top = 8
+      Width = 58
+      Caption = 'Back color:'
+      ParentColor = False
+      ParentFont = False
+    end
+    object Label3: TLabel
+      Left = 168
+      Height = 15
+      Top = 36
+      Width = 54
+      Caption = 'Text color:'
+      ParentColor = False
+      ParentFont = False
+    end
+    object cbutTxtPan: TColorButton
+      Left = 275
+      Height = 25
+      Top = 28
+      Width = 64
+      BorderWidth = 2
+      ButtonColorSize = 16
+      ButtonColor = clBlack
+      ParentFont = False
+    end
+    object chkVerNumLin: TCheckBox
+      Left = 4
+      Height = 19
+      Top = 8
+      Width = 116
+      Caption = 'Show line number'
+      ParentFont = False
+      TabOrder = 1
+    end
+    object chkVerMarPle: TCheckBox
+      Left = 4
+      Height = 19
+      Top = 32
+      Width = 125
+      Caption = 'Show folding marks'
+      ParentFont = False
+      TabOrder = 2
+    end
+  end
+  object chkAutoindent: TCheckBox
+    Left = 9
+    Height = 19
+    Top = 107
+    Width = 80
+    Caption = 'Autoindent'
+    ParentFont = False
+    TabOrder = 1
+  end
+  object GroupBox2: TGroupBox
+    Left = 9
+    Height = 89
+    Top = 168
+    Width = 349
+    Caption = '              '
+    ClientHeight = 69
+    ClientWidth = 345
+    ParentFont = False
+    TabOrder = 2
+    object chkHighCurWord: TCheckBox
+      Left = 16
+      Height = 19
+      Top = -17
+      Width = 141
+      Caption = 'Highlight current word'
+      OnChange = chkHighCurWordChange
+      ParentFont = False
+      TabOrder = 0
+    end
+    object Label10: TLabel
+      Left = 6
+      Height = 15
+      Top = 12
+      Width = 58
+      Caption = 'Back color:'
+      ParentColor = False
+      ParentFont = False
+    end
+    object cbutResPalCFon: TColorButton
+      Left = 102
+      Height = 25
+      Top = 8
+      Width = 64
+      BorderWidth = 2
+      ButtonColorSize = 16
+      ButtonColor = clBlack
+      ParentFont = False
+    end
+    object Label11: TLabel
+      Left = 184
+      Height = 15
+      Top = 12
+      Width = 54
+      Caption = 'Text color:'
+      ParentColor = False
+      ParentFont = False
+    end
+    object cbutResPalCTxt: TColorButton
+      Left = 275
+      Height = 25
+      Top = 8
+      Width = 64
+      BorderWidth = 2
+      ButtonColorSize = 16
+      ButtonColor = clBlack
+      ParentFont = False
+    end
+    object Label12: TLabel
+      Left = 6
+      Height = 15
+      Top = 42
+      Width = 66
+      Caption = 'Frame color:'
+      ParentColor = False
+      ParentFont = False
+    end
+    object cbutResPalCBor: TColorButton
+      Left = 102
+      Height = 25
+      Top = 38
+      Width = 64
+      BorderWidth = 2
+      ButtonColorSize = 16
+      ButtonColor = clBlack
+      ParentFont = False
+    end
+    object chkFullWord: TCheckBox
+      Left = 184
+      Height = 19
+      Top = 38
+      Width = 71
+      Caption = 'Full Word'
+      ParentFont = False
+      TabOrder = 1
+    end
+  end
+  object chkHighCurLin: TCheckBox
+    Left = 10
+    Height = 19
+    Top = 134
+    Width = 133
+    Caption = 'Highlight current line'
+    OnChange = chkHighCurLinChange
+    ParentFont = False
+    TabOrder = 3
+  end
+  object lblFontName: TLabel
+    Left = 9
+    Height = 15
+    Top = 14
+    Width = 62
+    Caption = 'Font Name:'
+    ParentColor = False
+    ParentFont = False
+  end
+  object cmbFontName: TComboBox
+    Left = 90
+    Height = 23
+    Top = 13
+    Width = 100
+    ItemHeight = 15
+    ParentFont = False
+    TabOrder = 4
+    Text = 'cmbFontName'
+  end
+  object lblFontSize: TLabel
+    Left = 223
+    Height = 15
+    Top = 14
+    Width = 50
+    Caption = 'Font Size:'
+    ParentColor = False
+    ParentFont = False
+  end
+  object spFontSize: TSpinEdit
+    Left = 303
+    Height = 23
+    Top = 13
+    Width = 50
+    Alignment = taRightJustify
+    ParentFont = False
+    TabOrder = 5
+  end
+  object chkViewVScroll: TCheckBox
+    Left = 10
+    Height = 19
+    Top = 45
+    Width = 108
+    Caption = '&Vertical Scrollbar'
+    ParentFont = False
+    TabOrder = 6
+  end
+  object chkViewHScroll: TCheckBox
+    Left = 192
+    Height = 19
+    Top = 45
+    Width = 124
+    Caption = '&Horizontal Scrollbar'
+    ParentFont = False
+    TabOrder = 7
+  end
+end

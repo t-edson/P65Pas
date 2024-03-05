@@ -1,0 +1,48 @@
+1.24
+===
+Se actualiza el proyecto ejemplo /Editor_muestra.
+Se cambia de nombre al procedimiento VerTipoArchivo() por GetFileInfo().
+Se cambia de nombre de AgregArcReciente() a AddRecentFile().
+Se reordena la definición de la clase TSynFacilEditor.
+Se mueven los controles FindDialog1 y ReplaceDialog1 a dentro de la clase TSynFacilEditor.
+Se cambia de nombre de FindNextWord() a FindDialog_Find().
+Se cambia de nombre de ReplaceDialog1Find() a ReplaceDialog_Find().
+Se cambia de nombre de ReplaceDialog1Replace() a ReplaceDialog_Replace().
+Se incluye la opción "¿Continuar desde el principio?" para la ventana de búsqueda.
+Se aumenta información en el archivo README.md.
+
+1.23
+===
+Se cambia el nombre del tipo TEventoArchivo por TEventFile.
+Se crea el evento "OnMenLangSelected".
+Se quitan las rutinas de traducción. Se espera usar los Resourcestring.
+
+1.22
+===
+Incluye las versiones SynfacilSyn 1.21 y SynFacilCompletion 1.22.
+Se cambia el nombre del campo nomDef a namDef.
+
+1.21
+===
+Incluye las versiones SynfacilSyn 1.21 y SynFacilCompletion 1.21.
+Se cambia el nombre del campo NomArc a FileName.
+
+1.2
+===
+Incluye la versión 1.19 de SynFacilCompletion.
+Se quita las opciones implementadas para emular el funcionamiento en modo columna, ya
+que la nueva versión de SynEdit, ya incluye el modo de múltiples cursores.
+Se hace virtual al constructor de TSynFacilEditor.
+Se mueven varios métodos privados a protegidos, para poder modificarlos.
+
+1.1
+===
+Incluye la versión 1.18 de SynFacilSyn y 1.18 de SynFacilCompletion.
+Se agrega el método TSynFacilEditor.SelectAll;
+Se convierten en virtuales algunos métodos de TSynFacilEditor.
+
+1.0
+===
+* Incluye la versión 1.17 de SynFacilSyn y 1.17 de SynFacilCompletion.
+
+

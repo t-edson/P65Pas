@@ -1,0 +1,51 @@
+
+16/09/2022: Se separa el tipo ruCode en dos tipos ruCodeOp y ruCodeDa.
+16/09/2022: Se elimina la propiedad "TopLabel" para disminuir el tamaño de la celda de memoria.
+16/09/2022: Se agrega otra forma del porcedimiento codByte().
+16/09/2022: Se agrega la función GetASMlineAt() para ayudar en la generación de código ASM.
+16/09/2022: Se corrije el cálculo del tiempo de ejecución en el depurador
+16/09/2022: Se mejora la ejecución en tiempo real para que se detenga cuando ejecuta código 
+no válido.
+16/09/2022: Se corrige ejecución de instrucción SBC.
+16/09/2022: Se agrega protección a desborde en las instrucción i_ASL e i_AND.
+16/09/2022: Se implementa la actualización de la bandera V en las instrucciones que la afectan.
+16/09/2022: Se corrige la cantidad de ciclos que generan las instrucciones de saltos.
+
+0.5 
+===
+04/09/2020: Se mueve el método FindOpcode() fuera del objeto TP6502Instruct.
+22/10/2020: Se agrega protección de dirección excesiva, a TCPUCore.addTopLabel(). 
+23/10/2020: Se crea la bandera pic.disableCodegen.
+
+
+0.4
+===
+Se corrige un error con la ejecución de la instrucción ROL.
+Se traducen algunos comentarios al inglés.
+Se elimina el campo TP6502.b_ porque no se usa.
+Se elimina el campo TP6502.k_ porque no se usa.
+
+0.3
+===
+Se elimina la bandera hasDataAdrr y se pasa a usar dataAddr1, como bandera y dirección inicial.
+Se corrige un error en la ejecución de la instrucción ROL.
+
+0.2
+===
+Se cambian variables a tipo dword para evitar desborde en TP6502.GetFreeBytes(). 
+Se cambia el tipo del  campo TCPURamCell.used al enumerado TCPURamUsed, para dar más libertad
+para definir a la RAM.
+Se agrega un estado más para la memoria RAM.
+
+0.1
+===
+Se eliminan algunos campos no usados, porque esta librería se ha creado a partir de la librería
+PicUtils que contiene más detalle en cuanto al hardware.
+Se corrige errores en el ejemplo de ensamblador.
+Se agregan registros adicionales de la CPU.
+Se implementa la simulación de nuevas instrucciones. Aún quedan pendientes algunas.
+
+0.0
+===
+Primera versión compilable de la librería.
+Aún queda pendiente la implementación de la ejecución de las instrucciones, y revisar todo la librería para quitar elementos no usados ya que esta libraría se ha creado a partir de la librería PicUtils.
