@@ -1,7 +1,7 @@
 {Frame para la configuración de los elementos de la sintaxis de los editores de texto.
 A diferencia de los otros frames, este no trabaja a la manera común, que sería asociar
 propiedades a controles, con rutinas de MiConfig.
-Aquí se leen directamente las propiedades de los archivos XML de sintaxis, y se cargan
+Aquí se leen directamente las propiedades de lso archivos XML de sintaxis, y se cargan
 en la lista synLangList. Allí se modifican y solo cuando se pulsa "Aplicar", se vuelca
 nuevamente el contenido a disco, sobreescribiendo todo el archivo.
 }
@@ -125,6 +125,7 @@ type
     procedure SetPropertiesForTheme(themeFile: string);
   public  //Inicialización
     procedure LoadSyntaxFiles(pathSyn0: string);
+    procedure SetLanguage;
     constructor Create(AOwner: TComponent) ; override;
     destructor Destroy; override;
   end;
@@ -343,6 +344,11 @@ begin
   inherited Destroy;
 end;
 { TfraCfgSyntax }
+procedure TfraCfgSyntax.SetLanguage;
+begin
+  //curLang := idLang;
+  //
+end;
 procedure TfraCfgSyntax.chkAutoCompChange(Sender: TObject);
 begin
   if curLang = nil then exit;

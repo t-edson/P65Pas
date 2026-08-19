@@ -3,7 +3,7 @@
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=7LKYWG9LXNQ9C&lc=ES&item_name=Tito%20Hinostroza&item_number=2153&no_note=0&cn=Dar%20instrucciones%20especiales%20al%20vendedor%3a&no_shipping=2&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
 
 
-P65Pas 1.0.0
+P65Pas 0.8.7
 ============
 
 Cross-platform Pascal cross-compiler for 6502 CPU.
@@ -28,32 +28,9 @@ P65Pas doesn't need installation, and have not dependencies, except the commons 
 
 To run, it's only needed to download the folder from GitHub. There is compiled binaries for Windows-64 version (P65Pas-win64.exe) and Ubuntu version (P65Pas-linux).
 
-If it's required other platform, it needs to be compiled from the source code.
+If it's required other platform, it need to be compiled from the source code.
 
-The binaries for the IDE are located in root "/" of the folder downloaded:
-* P65Pas-win64.exe -> Executable of the IDE for Windows.
-* P65Pas-linux -> Executable of the IDE for Linux.
-
-The binaries for the compiler are located in the folder /comp_p65pas:
-* p65pas-win64.exe -> Executable of the Compiler for Windows.
-* p65pas-linux -> Executable of the compiler for Linux.
-
-The IDE binary includes the compiler too, so the compiler executable is not used when compiling from the IDE.
-
-When starting the IDE, P65Pas could generate warning messsages, if needed folders doesn't exist.
-
-### Folder structure
-
-This repository includes all the files for both development and execution. It also includes the IDE and compiler files.
-
-IDE files:
-
-* "/" -> Includes the binaries and config files.
-* "/Source" -> Source files for the IDE.
-* "/syntax" -> Syntax files for highlighter and completion code.
-* "/temp" -> Temporal folder for new files.
-* "/themes" -> Themes files for the IDE.
-* "/comp_p65pas" -> Files and binaries of the compiler.
+When starting, P65Pas could generate warning messsages, if not needed folders exist.
 
 ## Hello World
 
@@ -80,13 +57,11 @@ The code "asm RTS end" line, generate a RTS assembler instruction in the program
 
 ## Devices supported
 
-P65Pas is a cross compiler for the 6502 CPU. It's not an specific system compiler.
-
 Currently, only 6502 CPU is supported, but the compiler is designed to include some variants. Of course, compatible devices, like 6510, can be targeted too.
 
-Although P65Pas can compile directly for different systems (like Apple II, Atari 800XL, Commodore 64, ...), it is easier to use a unit designed specifically for that system.
+Support for differents systems (like Apple II, Atari 800XL, Commodore 64, ...) can be implemented using appropriate units.
 
-Currently there is only units defined for Commodore 64, Commodore 128 and Commodore VIC-20 system. So, to compile to Commodore 64 system, it's recommended use the unit: "Commodore64":
+Currently there is only a unit to support Commodore 64 system. So, to compile to Commodore 64 system, it's recommended use the unit: "Commodore64":
 
 ```
 program anything;
@@ -124,36 +99,33 @@ Some features of the IDE are:
 
 •	Several setting options.
 
+•	Translated to english, french, spanish and german.
+
+![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/06/P65Pas-0.7_en.png "P65Pas with dark skin")
+
 ![P65Pas](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2019/06/Sin-título2.png "P65Pas for Ubuntu")
 
-![P65Pas for Mac](https://github.com/t-edson/P65Pas/blob/trunk/screenshots/PicPasMac.jpg "P65Pas for Mac")
+![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2018/05/P65PasMac.jpg "P65Pas for Mac")
+
+Some functions like the "File Explorer" is implemented only for the Windows version.
 
 ## Debugger/Simulator
 
-P65Pas IDE includes a complete GUI debugger for ASM instructions:
+P65Pas includes a graphical debugger for ASM instructions:
 
-![Assembler Debugger of P65Pas](https://github.com/t-edson/P65Pas/blob/trunk/screenshots/ide_debugger.png "Assembler Debugger of P65Pas")
+![Tito's Terminal](http://blog.pucp.edu.pe/blog/tito/wp-content/uploads/sites/610/2017/11/P65Pas-simulator.png "P65Pas debugger-simulator")
 
 To control the execution, the following keys can be used:
 
-* F5 -> Set a breakpoint in the current position of  the assembler code.
-* F6 -> Reste the device.
-* F7 -> Step by step into subroutine.
-* F8 -> Step by step over subroutine.
-* F9 -> Run the program in real time.
-
-The debugger included in the IDE can execute the executable code step by step or in blocks.
-
-It is based on a virtual system that includes a 6502 CPU and 64K of RAM.
-
-The simulation environment is an empty system, composed only of CPU and RAM memory. There are no additional devices attached and no ROM routines preloaded into memory.
-
-All that is loaded into memory is the latest compiled code from the IDE.
-All 6502 CPU instructions are implemented but have not been all tested to execute as a real 6502 model. Arithmetic operations in BCD are not yet implemented for simulation.
-
-Be careful about executing infinite loops or invalid instructions, because they could hang the program.
+F5 -> Set a breakpoint in the current position of  the assembler code.
+F6 -> Reste the device.
+F7 -> Step by step into subroutine.
+F8 -> Step by step over subroutine.
+F9 -> Run the program in real time.
 
 ## Compiler
+
+The P65pas compiler is integrated with the IDE. It cannot be used separated.
 
 The compiler implements a simplified and adpated version of the Pascal language.
 
@@ -355,7 +327,7 @@ TYPE
   TAStr = [3]char;
   TAByte = [4]byte;
 VAR
-  str : TAStr = ('a','b','c');
+  str : TASrt = ('a','b','c');
   numb: TAByte = (1, 2, 3); //ERROR: Expected 4 items.
 ```
 
@@ -367,18 +339,7 @@ array.low -> low index of the array. Always returns 0.
 
 array.high -> high index of the array. Always returns n-1.
 
-array.clear -> Clear the elements of array to its default value (Chars->#0, Byte, Word -> 0, Boolean -> false). 
-
-To fill the array content with the same byte value, we can use the clear() method using a byte parameter, like the next example:
-
-```
-var
-  buffer: array[256] of byte;
-begin
-  //Fill all the array with the $FF value
-  buffer.clear($FF);
-end.
-```
+array.clear -> Clear the elements of array to its default value (Chars->#0, Byte, Word -> 0, Boolean -> false).
 
 Arrays can be constant too:
 
@@ -636,8 +597,9 @@ The next example shows how to access to a Pascal constant:
 ```
 const
   SMALL = $FF;
-  BIG   = $1234;
+  BIG   = $FF;
 begin
+  //Low level clear
   asm 
     LDA #SMALL
 	LDX #<BIG   ;low byte
@@ -653,27 +615,13 @@ It's possible to use the directive ORG inside a ASM block, too:
 ```
   asm 
     org $-2
-  end;
+  end
   vbit := 1;
 ```
 
 The address in ORG, can be absolute or relative. 
 
 WARNING: Changing the PC pointer with ORG, can generate errors in the compilation or in execution.
-
-The directive DB allows to define a byte in a specific position of the code:
-
-```
-  asm 
-    JMP code
-tmp_var:
-   DB $00  ;temporal variable
-code:
-  LDA tmp_var
-  end;
-```
-
-The directive DW allows to define a word (2 bytes) in a specific position of the code.
 
 ## Directives
 
@@ -698,31 +646,24 @@ Variables are assigned with the instruction $SET:
 ```
 {$SET x = 1}
 {$SET y = 1 + x}
-{$SET x = 'I am now a string'}
+{$SET x = 'I'm now a string'}
 ```
 
 $SET, is not a declaration, but an assignment. First time a variable is assigned, it's created.
 
-Content of a variable, can be shown using instructions like $MSGBOX or $INFO:
+Content of a variable, can be shown using instructions like $MSGBOX oo $INFO:
 
 {$MSGBOX 'x is:' + x}
-
-Variables defined can also be used as part of source code like macros:
-
-```
-  {$SET valor=1+1}
-  x := {$valor};   //x := 2;
-```
 
 ### System Variables
 
 There are some system variables, accessible from the directives language. They are:
  
-{$MSGBOX CPU_MODEL} -> Shows the PIC model defined.
+{$MSGBOX PIC_MODEL} -> Shows the PIC model defined.
 
-{$MSGBOX CPU_FREQUEN} -> Shows the Clock frequency.
+{$MSGBOX PIC_FREQUEN} -> Shows the Clock frequency.
 
-{$MSGBOX CPU_MAXFREQ} -> Shows the Max Clock frequency for the device.
+{$MSGBOX PIC_MAXFREQ} -> Shows the Max Clock frequency for the device.
 
 {$MSGBOX SYN_MODE} -> Shows the syntax Mode of the compiler.
 
@@ -732,12 +673,18 @@ There are some system variables, accessible from the directives language. They a
 
 The next directives are supported by P65Pas:
 
+#### $COMMODORE64
+
+Indicates the compiler to compile to a Commodore 64 system. 
+
+In this mode when compiling at $0801, the compiler generates the instruction "SYS 2062" in the BASIC buffer, to run automatically the program after loading the PRG file.
+
 #### $FREQUENCY
 
 Specify the clock frequency, in MHz or KHz. Example:
 
 ```
-{$FREQUENCY 2Mhz}
+{$FREQUENCY 10Mhz}
 ```
 
 Frequency information is used for:
@@ -747,9 +694,9 @@ Frequency information is used for:
 
 If delays are used in the program, only some frequencies are supported. They are:
 
-1MHz, 2Mhz, 4Mhz, 8MHz, 10MHz.
+1MHz, 2Mhz, 4Mhz, 8MHz, 10MHz, 12MHz, 16MHz or 20MHz.
 
-If frequency is not specified, the default value is 1MHz.
+If frequency is not specified, the default value is 4MHz.
 
 #### $MODE
 
@@ -765,11 +712,11 @@ Shows a text message in the screen:
 
 {$MSGBOX 'Hello World'} -> Shows the message 'Hello World' in the screen.
 
-{$MSGBOX CPU_MODEL} -> Shows the system variable CPU_MODEL, that is the CPU model defined.
+{$MSGBOX PIC_MODEL} -> Shows the system variable PIC_MODEL, that is the PIC model defined.
 
-{$MSGBOX CPU_FREQUEN} -> Shows the Clock frequency.
+{$MSGBOX PIC_FREQUEN} -> Shows the Clock frequency.
 
-{$MSGBOX 'clock=' + CPU_FREQUEN}  -> Shows the message: "clock=1000000" (if the Frequency was set to 1MHz).
+{$MSGBOX 'clock=' + PIC_FREQUEN}  -> Shows the message: "clock=8000000" (if the Frequency was set to 8MHz).
 
 #### $MSGERR
 
@@ -789,35 +736,18 @@ Includes the contents of a external file, into de source code:
 x := {$INCLUDE expression.txt};
 ```
 
-#### $BIN2CSV
-
-Includes the contents of a external binary file, into de source code, like a CSV text:
-
-For example, if a binary file contains the bytes $20, $21 and $22, the directive will generates the string "30, 31, 32".
-
-This directive can be used to initialize arrays.
-
-```
-var 
-  //Initialize with a binary content
-  AAA: array[3] of byte = ({$BIN2CSV data.bin});
-begin
-
-end.
-```
-
 #### $OUTPUTHEX
 
 Defines the name of the output binary file *.prg.
 
 ```
-{$OUTPUTHEX "myoutput.prg"}  // Relative path
-{$OUTPUTHEX "d:\temp\myoutput.prg"}  //Absolute path
+{$OUTPUTHEX myoutput.prg}  // Relative path
+{$OUTPUTHEX d:\temp\myoutput.prg}  //Absolute path
 ```
 
 When relative path is used, the file will be created in the same folder the Pascal program is.
 
-If it's not defined the name of the \*.prg file, it will be used the name of the program/unit compiled. So if the program is called "myprogram" (and the file is "myprogram.pas"), then the *.prg file will be "myprogram.prg".
+If it's not defined the name of the *.prg file, it will be used the name of the program/unit compiled. So if the program is called "myprogram" (and the file is "myprogram.pas"), then the *.prg file will be "myprogram.prg".
 
 Directive {$OUTPUTHEX}, can be placed in any part of the source code and can be used several times. If so, the output file will be the defined by the last directive.
 
@@ -997,14 +927,14 @@ The syntax of $SET_STATE_RAM is:
 {$SET_STATE_RAM <list of commands>}
 ```
 
-Commands are separated by commas. One command have the syntax:
+Commands are separaed by commas. One command have the syntax:
 
-  \<Begin adrress\> - \<End address\> : \<state\>
+<Begin adrress>-<End address>:<state>
 
 One valid example, for this directive, would be:
 
 ```
-{$SET_STATE_RAM '0100-01FF:SFR'}
+{$SET_STATE_RAM '0100-01FF:SFR'};
 ```
 
 That indicates the bytes in RAM from $0100 to $01FF are special RAM and cannot be used by the compiler.
@@ -1066,170 +996,6 @@ Using $SET_DATA_ADDR with an empty string will disable the effect of a previous 
 
 Variables allocated in a separate block, are considered as ABSOLUTE variables, so they cannot be initialized in the declaration.
 
-#### $STRING
-
-Set options for interpreting literal arrays of chars (strings) in the source code.
-
-By default strings are translated literally. 
-
-This means that if a string is defined as in the following example:
-
-```
-var
-  a: array of char = 'Hola';
-```
-
-The string will occupy 4 bytes in memory.
-
-But if we use the following directive:
-
-
-```
-{$STRING NULL_TERMINATED}
-```
-
-The string 'Hola' will occupy 5 bytes in memory, because a NULL character will be added at the end.
-
-To disable the directive, and return to the default mode for strings, we use:
-
-```
-{$STRING NONE}
-```
-
-
-#### $BOOTLOADER
-
-Defines the initial binary code generated by the compiler. The initial code is generated at the position $0000 or at the position defined by the directive {$ORG ...}
-
-The BOOTLOADER directive can have the following forms:
-
-* {$BOOTLOADER NONE}
-
-In this mode no code is generated at the beginning of the compilated code.
-
-This mode should be used with caution because the entry point of the the compilde code must be known to execute it.
-
-The following code shows how to use this directive.
-
-```
-{$BOOTLOADER NONE}
-var
-  x: byte;
-begin
-  x := 1;
-end. 
-```
-
-The ASM code generated is:
-
-```
-      ORG $0000
-x     $0000 DB 00			   ;variables zone
-      $0001 A9 01    LDA #$01  ;entry point for code
-      $0003 85 00    STA x 
-      END
-```
-As we can see, the entry point is the address $0001.
-
-* {$BOOTLOADER JMP}
-
-This is the default bootloader created when the directive $BOOTLOADER is not specified.
-
-This option creates a simple JMP instruction at the beginning of the code so we can always run the compiled code fron the beginning. The JMP instruction goes to the entry point of the executable code skipping the possible area for ​​variables or subroutines.
-
-The following code shows how to use this directive.
-
-```
-{$BOOTLOADER JMP}
-var
-  x: byte;
-begin
-  x := 1;
-end. 
-```
-
-The ASM code generated is:
-
-```
-            ORG $0000
-      $0000 4C 04 00 JMP $0004 
-x     $0003 DB 00
-      $0004 A9 01    LDA #$01 
-      $0006 85 03    STA x 
-```
-
-As we can see, the code can be executed from the beginning without worrying about the structure of the compiled code.
-
-* {$BOOTLOADER C64}
-
-It's used when compiling for the Commodore64 system.
-
-This directive generates a simple BASIC program to call the compiled code. The BASIC program is a simple line containing: "10 SYS 2062".
-
-This directive must be used in conjunction with the directive {$ORG $0801} in order to the bootloader code to be effective, because BASIC zone start at the address $0801.
-
-The following code shows how to use this directive.
-
-```
-{$ORG $0801}
-{$BOOTLOADER C64}
-var
-  x: byte;
-begin
-  x := 1;
-end. 
-```
-
-The binary code generated for this program can be loaded and run directly from Commodore 64 BASIC after loading the PRG file.
-
-* {$BOOTLOADER \<content\>} 
-
-This is the more general form to define a bootloader. 
-
-In this form we can define custom bootloaders, specifying the bytes or instructions of the code.
-
-The argument <content> is a list of numbers or strings like: 12, $123, 'JSR', ...
-
-The following example creates a bootloader with 3 bytes:
-
-```
-{$BOOTLOADER $0C,$08,$0A}
-var
-  x: byte;
-begin
-  x := 1;
-end.
-```
-
-Bytes can be specified in decimal or hexadecimal.
-
-In addition to numbers, which can be specified directly, there is a set of strings with a special meaning. They are:
-'JMP' ->  Encodes to the 6502 JMP absolute instruction (Code $4C).
-'COD_HL' -> Generates, in 2 bytes, the address of the entry point for the compiled code.
-'COD_5A' -> Generates, in 5 ASCII bytes, the address of the entry point for the compiled code.
-'COD_4A' -> Generates, in 4 ASCII bytes, the address of the entry point for the compiled code.
-
-The next directive shows how to define a simple bootloader with a JMP to the origin of the compiled code, like it's generated with {$BOOTLOADER JMP}:
-
-```
-{$BOOTLOADER 'JMP','COD_HL'}
-```
-
-The next directive shows how to define a bootloader like it's generated with {$BOOTLOADER C64}:
-
-```
-{$BOOTLOADER $0C,$08,$0A,$00,$9E,'COD_4A',$00,$00,$00}
-```
-
-
-## Libraries
-
-Currently there are the following units (librearies) in the directory ./comp_p65pas/units:
-
-* Commodore64.pas -> Unit for compiling for a Commodore 64 system.
-* Commodore128.pas -> Unit for compiling for a Commodore 128 system.
-
-
 ## P65Pas Limitations
 
 •	Only basic types are implemented: byte, char, boolean, word an dword(limited support).
@@ -1248,34 +1014,27 @@ There is still, much work for development or documentation, so any help will be 
 
 ## Source Code
 
-The compiler has been developed in Object Pascal and created using the Lazarus IDE https://www.lazarus-ide.org
-
-All the source code is divided in two projects. Both projects can be compiled independently.
-
-* The source code of the IDE is located in the folder /Source.
-
-* The source code of the compiler (Command line) is located in the folder /comp_p65pas/src.
-
-When compiling the IDE, the source code of the compiler is included too so the IDE executable embeds the compiler binary too.
-
-P65Pas has been compiled, using the version 2.0.12 of Lazarus. Tested in Windows, Ubuntu and Mac.
-
-To have more information about the compiler internals and design, check the Technical Documentation (Only in spanish by now): \comp_p65pas\docs\.
+The source code of the compiler is in the folder /Source.
 
 To compile P65Pas, it's needed to have the following libraries:
 
-* MiConfig: https://github.com/t-edson/MiConfig
-* MisUtils: https://github.com/t-edson/MisUtils
-* P65Utils: https://github.com/t-edson/P65Utils
-* SynFacilUtils: https://github.com/t-edson/SynFacilUtils
-* UtilsGrilla: https://github.com/t-edson/UtilsGrilla
-* EpikTimer: https://wiki.freepascal.org/EpikTimer
+* SynFacilUtils
+* MisUtils
+* MiConfig
+* P65Utils 
+* t-Xpres 
+* UtilsGrilla
+* ogEditGraf
 
-All of them, are include in the folder /_libraries located in the /Source folder. 
+All of them, must be availables on the GitHub. Check the versions used.
 
-These libraries don't include packages. They are only files in folders that are included when compiling P65Pas.
+These libraries don't include package. They are only files in folders that need to be included when compiling P65Pas.
 
-### External Dependencies
+P65Pas has been compiled, using the version 1.8.0 of Lazarus. Tested in Windows, Ubuntu and Mac.
 
-There is not external dependencies. All libraries used are included in the /Source folder.
- 
+To have more information about the compiler, check the Technical Documentation (Only in spanish by now).
+
+## Libraries
+
+P65Pas is a new project and it's still in development and there are not dedicated libraries for the compiler. 
+

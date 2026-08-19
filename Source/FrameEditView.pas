@@ -6,10 +6,59 @@ uses
   Classes, SysUtils, FileUtil, LazUTF8, LazFileUtils, Forms, Controls, Dialogs,
   ComCtrls, ExtCtrls, Graphics, LCLProc, Menus, LCLType, StdCtrls, strutils,
   fgl, Types, SynEdit, SynEditMiscClasses, SynEditKeyCmds, SynPluginMultiCaret,
-  SynPluginSyncroEdit, Globales,
-  EditView, SynFacilBasic, SynFacilCompletion,
+  SynEditMarkupHighAll, SynEditTypes, SynPluginSyncroEdit, Globales,
+  SynFacilUtils, SynFacilBasic, SynFacilCompletion, SynFacilHighlighter,
   MisUtils;
 type
+  { TMarkup }
+  {Marcador para resltar errores de sintaxis en SynEdit}
+  TMarkup = class(TSynEditMarkupHighlightMatches)
+    public
+      procedure SetMark(p1, p2: TPoint);
+  end;
+
+  { TSynFacilComplet2 }
+  {Versión personalizada de  TSynFacilComplet, que define palabras claves y
+   hace público el campo SpecIdentifiers}
+  TSynFacilComplet2 = class(TSynFacilComplet)
+    function IsKeyword(const AKeyword: string): boolean; override;
+  public
+    property SpecIdentif: TArrayTokSpec read SpecIdentifiers;
+//    SpecIdentifiers: TArrayTokSpec;
+  end;
+
+  { TSynEditor }
+  {Versión personalizada de TSynFacilEditor, que usa TSynFacilComplet2, como resaltador}
+  TSynEditor = class(TSynFacilEditor)
+  private  //Manejo de edición síncrona
+    cursorPos: array of TPOINT;  //guarda posiciones de cursor
+    procedure AddCursorPos(x,y: integer);
+    procedure SetCursors;
+  private
+    FCaption : string;
+    procedure edSpecialLineMarkup(Sender: TObject; Line: integer;
+      var Special: boolean; Markup: TSynSelectedColor);
+    procedure SetCaption(AValue: string);
+  protected
+    const MAX_NMARK = 4;
+  protected
+    MarkErr: array[0..MAX_NMARK] of TMarkup;   //lista de marcadores
+    MarkFree: integer;  //Índice al marcador libre
+    function GetFreeMark: TMarkup;
+    procedure edKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+  public  //Inicialización
+    SynEdit: TSynEdit;  //Editor SynEdit
+    x1      : integer;  //Coordenada inicial de dibujo
+    tabWidth: integer;  //ancho de lengueta
+    panTabs : TPanel;   //referencia al Panel de las lenguetas.
+    property Caption: string read FCaption write SetCaption;  //etiqueta de la pestaña
+    function SaveAsDialog(SaveDialog1: TSaveDialog): boolean; override;
+    function SaveQuery(SaveDialog1: TSaveDialog): boolean; reintroduce;
+    procedure ClearMarkErr;
+    procedure MarkError(p1: TPoint);
+    constructor Create(AOwner: TComponent; nomDef0, extDef0: string; panTabs0: TPanel); reintroduce;
+    destructor Destroy; override;
+  end;
 
   TEditorList = specialize TFPGObjectList<TSynEditor>;
   TSynEditorEvent = procedure(ed: TSynEditor) of object;
@@ -18,30 +67,23 @@ type
     imgBookMarks: TImageList;
     ImgCompletion: TImageList;
     lblBackground: TLabel;
-    mnClearProject: TMenuItem;
-    mnSetProject: TMenuItem;
-    N1: TMenuItem;
-    mnLocFileExp: TMenuItem;
     mnCloseOthers: TMenuItem;
     mnCloseAll: TMenuItem;
     mnNewTab: TMenuItem;
     mnCloseTab: TMenuItem;
     mnNewTab1: TMenuItem;
+    OpenDialog1: TOpenDialog;
     Panel1: TPanel;
     Panel2: TPanel;
     PopUpTabs: TPopupMenu;
-    OpenDialog1: TOpenDialog;
     SaveDialog1: TSaveDialog;
     SynPluginSyncroEdit1: TSynPluginSyncroEdit;
     UpDown1: TUpDown;
     procedure FrameResize(Sender: TObject);
-    procedure mnClearProjectClick(Sender: TObject);
     procedure mnCloseOthersClick(Sender: TObject);
     procedure mnCloseAllClick(Sender: TObject);
     procedure mnCloseTabClick(Sender: TObject);
-    procedure mnLocFileExpClick(Sender: TObject);
     procedure mnNewTabClick(Sender: TObject);
-    procedure mnSetProjectClick(Sender: TObject);
     procedure UpDown1Click(Sender: TObject; Button: TUDBtnType);
   private  //Métodos para dibujo de las lenguetas
     xIniTabs : integer;  //Coordenada inicial desde donde se dibujan las lenguetas
@@ -87,10 +129,8 @@ type
     property TabIndex: integer read FTabIndex write SetTabIndex;   //panel actualmente activo
     function Count: integer;
     function ActiveEditor: TSynEditor;
-    function SearchEditor(filname: string): TSynEditor;
     function SearchEditorIdx(filname: string): integer;
     function SearchEditorIdxByTab(tabName: string): integer;
-    procedure ChangeFileName(editIdx: integer; filName0: string);
     function SelectEditor(filname: string): boolean;
     procedure SelectNextEditor;
     procedure SelectPrevEditor;
@@ -102,7 +142,6 @@ type
     OnSelectEditor: procedure of object;  //Cuando cambia la selección de editor
     OnRequireSynEditConfig: procedure(ed: TsynEdit) of object;
     OnRequireSetCompletion: procedure(ed: TSynEditor) of object;
-    OnLocateInFileExpl: procedure(ed: TSynEditor) of object;
   public  //Administración de archivos
     tmpPath: string;  //ruta usada para crear archivos temporales para los editores
     property Modified: boolean read GetModified;
@@ -139,18 +178,310 @@ type
       MaxRecents0: integer = 5);
     constructor Create(AOwner: TComponent) ; override;
     destructor Destroy; override;
+    procedure SetLanguage;
   end;
 
 implementation
 {$R *.lfm}
+const
+  MIN_WIDTH_TAB = 50;  //Ancho por defecto de la lengueta
+  FONT_TAB_SIZE = 9;
+  SEPAR_TABS = 2;  //Separación adicional, entre pestañas
 
-resourcestring
-  MSG_NOFILES  = 'No files';
-  MSG_PASFILES = 'Pascal Files';
-  MSG_ALLFILES = 'All files';
-  MSG_NOSYNFIL = 'Syntax file not found: %s';
+{ TSynFacilComplet2 }
+var
+  MSG_NOFILES: string;
+  MSG_MODIFSAV: string;
+  MSG_PASFILES: string;
+  MSG_ALLFILES: string;
+  MSG_NOSYNFIL: string;
 
+{ TMarkup }
+procedure TMarkup.SetMark(p1, p2: TPoint);
+begin
+  Matches.StartPoint[0] := p1;
+  Matches.EndPoint[0]   := p2;
+  InvalidateSynLines(p1.y, p2.y);
+end;
+
+function TSynFacilComplet2.IsKeyword(const AKeyword: string): boolean;
+{Esta rutina es llamada por el Markup, que resalta palabras iguales. Se implementa
+para evitar que se resalten palabras muy conocidas}
+begin
+  //Para el lenguaje Pascal, esta rutina funciona bien
+  case UpCase(AKeyword) of
+  'CONS','VAR','TYPE','BEGIN','END','IF','THEN','ELSE','WHILE',
+  'DO','REPEAT','UNTIL','FOR','TO','AND','OR','XOR','NOT','DIV','MOD','IN':
+    exit(true)
+  else
+    exit(false);
+  end;
+end;
+{ TSynEditor }
+procedure TSynEditor.AddCursorPos(x, y: integer);
+{Agrega una posición de cursor al areglo CursorPos[]}
+var
+  n: Integer;
+begin
+  n := high(CursorPos) + 1;
+  setlength(CursorPos, n + 1);
+  CursorPos[n].x := x;
+  CursorPos[n].y := y;
+end;
+procedure TSynEditor.SetCursors;
+var
+  i: Integer;
+begin
+  if high(cursorPos)<0 then exit;
+//  ed.CommandProcessor(ecPluginMultiCaretClearAll, '', nil);
+  for i:= high(cursorPos) downto 0 do begin
+    //Explora la revés para dejar el último cursor al inicio del texto
+    if i = 0 then begin
+      //El último
+      ed.CaretY := cursorPos[i].y;   //primero la fila
+      ed.CaretX := cursorPos[i].x;
+      ed.ExecuteCommand(ecPluginMultiCaretSetCaret, '', nil);
+//    ed.CommandProcessor(ecPluginMultiCaretSetCaret, '', nil);
+    end else begin
+      ed.CaretY := cursorPos[i].y;   //primero la fila
+      ed.CaretX := cursorPos[i].x;
+//    ed.ExecuteCommand(ecPluginMultiCaretSetCaret, '', nil);
+      ed.CommandProcessor(ecPluginMultiCaretSetCaret, '', nil);
+    end;
+  end;
+end;
+procedure TSynEditor.edSpecialLineMarkup(Sender: TObject; Line: integer;
+  var Special: boolean; Markup: TSynSelectedColor);
+begin
+  if Line = self.linErr then begin
+      Special := True ;  //marca como línea especial
+      Markup.Background := TColor($3030A0); //color de fondo
+  end;
+end;
+procedure TSynEditor.SetCaption(AValue: string);
+{Cambiar el título, cambia el ancho de la lengueta}
+var
+  w: Integer;
+begin
+  if FCaption = AValue then Exit;
+  FCaption := AValue;
+  panTabs.Canvas.Font.Size := FONT_TAB_SIZE;  {Fija atrubutos de texto, para que el
+                                        cálculo con "TextWidth", de ancho sea correcto}
+  w := panTabs.Canvas.TextWidth(AValue) + 30;
+  if w < MIN_WIDTH_TAB then w := MIN_WIDTH_TAB;
+  tabWidth := w;
+  panTabs.Invalidate;   //Para refrescar el dibujo
+end;
+procedure TSynEditor.edKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+//var
+//  lexState: TFaLexerState;
+begin
+//  if (Shift = [ssCtrl]) and (Key = VK_J) then begin
+//    //Exploramos el texto usando el resaltador
+//    //Utilizaremos el mismo resaltador
+
+  //    SetCursors;           //Coloca los cursores
+////    ed.CommandProcessor(ecSelWordRight, '', nil);
+//  end;
+  if Key = VK_ESCAPE then begin
+    //Cancela una posible edición de múltiples cursores
+    ed.CommandProcessor(ecPluginMultiCaretClearAll, '', nil);
+  end;
+  //Pasa el evento
+  if OnKeyDown <> nil then OnKeyDown(Sender, Key, Shift);
+end;
+function TSynEditor.SaveAsDialog(SaveDialog1: TSaveDialog): boolean;
+begin
+  SaveDialog1.Filter := MSG_PASFILES + '|*.pas|' + MSG_ALLFILES + '|*.*';
+  SaveDialog1.DefaultExt := '.pas';
+  Result := inherited SaveAsDialog(SaveDialog1);
+  if Result then exit;
+  //Se ha cambiado el nombre del archivo. Actualiza.
+  Caption := ExtractFileName(FileName);
+end;
+function TSynEditor.SaveQuery(SaveDialog1: TSaveDialog): boolean;
+{Versión de SaveQuery(), que verifica si el editor tiene nombre.}
+//Verifica si es necesario guardar el archivo antes de ejecutar alguna operación.
+//Si se ignora la acción, devuelve "true".
+//Si ocurre algún error, muestra el mensaje en pantalla y actualiza "Error".
+var
+  resp: integer;
+begin
+  Result := false;
+  if SynEdit.Modified then begin
+    resp := MessageDlg('', Format(MSG_MODIFSAV, [ExtractFileName(FileName)]),
+                       mtConfirmation, [mbYes, mbNo, mbCancel],0);
+    if resp = mrCancel then begin
+      Result := true;   //Sale con "true"
+      Exit;
+    end;
+    if resp = mrYes then begin  //guardar
+      if FileName='' then begin
+        //Es un archivo nuevo
+        SaveAsDialog(SaveDialog1);
+      end else begin
+        SaveFile;  //ACtualiz "Error"
+      end;
+    end;
+  end;
+end;
+function TSynEditor.GetFreeMark: TMarkup;
+//Devuelve referencia a un marcador no usado. Si no encuentra alguno, devuelve NIL.
+begin
+  if MarkFree <= MAX_NMARK then begin
+    Result := MarkErr[MarkFree];
+    MarkFree := MarkFree + 1;
+  end else begin
+    Result := nil;
+  end;
+end;
+procedure TSynEditor.ClearMarkErr;
+{Limpia marcadores de error.}
+var
+  i: Integer;
+begin
+  for i:=0 to MAX_NMARK do begin
+    MarkErr[i].Enabled := false;
+  end;
+  MarkFree := 0;
+  SynEdit.Invalidate;
+end;
+procedure TSynEditor.MarkError(p1: TPoint);
+{Marca el token que se encuentra en la coordenada indicada. Para ubicar al token afectado,
+usa información del lexer/resaltador del editor, que debe ser consistente con el lexer del
+compilador, para obtener resultados corectos.
+En caso de errores dentro de bloques ASM o Directivas, usa un lexer interno simple,
+porque no se tiene acceso a los lexer que procesan los bloques ASM y Directivas.}
+  function LocEndOfWord(const lin: string; col1: integer): integer;
+  {Devuelve el final de la palabra actual, que empieza en "col1".}
+  var
+    i: Integer;
+  begin
+    i := col1;  //empìeza por aquí
+    if i>length(lin) then exit(length(lin));
+    if lin[i] in ['A'..'Z','a'..'z','_'] then begin
+      //Es identificador. Ubica los límites del identificador.
+      while (i<=length(lin)) and (lin[i] in ['A'..'Z','a'..'z','0'..'9','_']) do begin
+        inc(i);
+      end;
+    end else begin
+      //Es otro token. Ubica espacio o fin de línea
+      while (i<=length(lin)) and (lin[i]<>' ') do begin
+        inc(i);
+      end;
+    end;
+    Result := i;
+  end;
+var
+  toks: TATokInfo;
+  tokIdx, col1, col2: integer;
+  curTok: TFaTokInfo;
+  lin: String;
+  MarkErr1: TMarkup;
+begin
+  hl.ExploreLine(p1, toks, tokIdx);  //Explora la línea aludida
+  if tokIdx = -1 then exit;
+  MarkErr1 := GetFreeMark;
+  if MarkErr1 = nil then exit;
+  curTok := toks[tokIdx];  //token actual
+  //Obtiene línea actual
+  if hl.CurrentLines = nil then begin
+    exit;
+  end else begin
+    lin := hl.CurrentLines[p1.y-1];
+  end;
+  MarkErr1.Enabled := true;
+  //Obtiene en los límites del token actual
+  col1 := curTok.posIni+1;
+  col2 := curTok.posIni+1+curTok.length;
+  if curTok.TokTyp = hl.tnEol then begin
+    //Es la marca de final de línea. Extiende para que sea visible
+    MarkErr1.SetMark(Point(col1, p1.y),
+                    Point(col2 + 1, p1.y));
+  end else if curTok.TokTyp = hl.GetAttribIDByName('Asm') then begin
+    //Es bloque ensamblador.
+    col2 := LocEndOfWord(lin, p1.x);  //ubica a la palabra actual
+    MarkErr1.SetMark(Point(p1.x, p1.y),
+                    Point(col2, p1.y));
+  end else if curTok.TokTyp = hl.GetAttribIDByName('Directive') then begin
+    //Es directiva
+    col2 := LocEndOfWord(lin, p1.x);  //ubica a la palabra actual
+    MarkErr1.SetMark(Point(p1.x, p1.y),
+                    Point(col2, p1.y));
+  end else begin
+    //Es un token normal
+    MarkErr1.SetMark(Point(col1, p1.y),
+                    Point(col2, p1.y));
+  end;
+end;
+constructor TSynEditor.Create(AOwner: TComponent; nomDef0, extDef0: string;
+  panTabs0: TPanel);
+var
+  i: Integer;
+  mark: TMarkup;
+begin
+  SynEdit:= TSynEdit.Create(AOwner);// Crea un editor
+//  inherited Create(SynEdit, nomDef0, extDef0);
+  ////////////// Código modificado del constructor /////////////
+  ed := SynEdit;
+  hl := TSynFacilComplet2.Create(ed.Owner);  //crea resaltador
+  hl.SelectEditor(ed);  //inicia
+  //Intercepta eventos
+  ed.OnChange:=@edChange;   //necesita interceptar los cambios
+  ed.OnStatusChange:=@edStatusChange;
+  ed.OnMouseDown:=@edMouseDown;
+  ed.OnKeyUp:=@edKeyUp;     //para funcionamiento del completado
+  ed.OnKeyDown:=@edKeyDown;
+  ed.OnKeyPress:=@edKeyPress;
+  ed.OnUTF8KeyPress:=@edUTF8KeyPress;
+  ed.OnCommandProcessed:=@edCommandProcessed;  //necesita para actualizar el cursor
+//  RecentFiles := TStringList.Create;
+  MaxRecents := 1;   //Inicia con 1
+  //guarda parámetros
+  namDef := nomDef0;
+  extDef := extDef0;
+  NewFile;   //Inicia editor con archivo vacío
+  ///////////////////////////////////////////////////////////////
+  tabWidth := 30;  //valor por defecto
+  panTabs := panTabs0;
+
+  //configuración del editor
+  SynEdit.Options:=[eoBracketHighlight];  //quita la línea vertical
+  SynEdit.Options := SynEdit.Options - [eoSmartTabs];
+  SynEdit.Options := SynEdit.Options - [eoTrimTrailingSpaces];
+  SynEdit.Options := SynEdit.Options + [eoKeepCaretX];
+  SynEdit.Options := SynEdit.Options + [eoTabIndent];  //permite indentar con <Tab>
+  SynEdit.Options2:= SynEdit.Options2 + [eoCaretSkipTab];
+  SynEdit.TabWidth:= 2;
+  SynEdit.OnSpecialLineMarkup:=@edSpecialLineMarkup;
+  InicEditorC1(SynEdit);
+  SynEdit.Options := SynEdit.Options + [eoTabsToSpaces];  //permite indentar con <Tab>
+
+  //Crea marcadores para los errores de sinatxis
+  for i:=0 to MAX_NMARK do begin
+    mark := TMarkup.Create(SynEdit);
+    MarkErr[i] := mark;   //asigna referencia
+    mark.MarkupInfo.Background := clNone;
+    mark.MarkupInfo.Foreground := clNone;
+    mark.MarkupInfo.FrameColor := clRed;
+    mark.MarkupInfo.FrameEdges := sfeBottom;
+    mark.MarkupInfo.FrameStyle := slsWaved;
+    SynEdit.MarkupManager.AddMarkUp(mark);   //agrega marcador
+  end;
+
+  NewFile;        //para actualizar estado
+end;
+destructor TSynEditor.Destroy;
+begin
+  inherited Destroy;
+  FreeAndNil(SynEdit);  //El "Owner", intentará destruirlo, por eso lo ponemos en NIL
+end;
 { TfraEditView }
+procedure TfraEditView.SetLanguage;
+begin
+  {$I ..\_language\tra_FrameEditView.pas}
+end;
 procedure TfraEditView.RefreshTabs;
 begin
   if FTabViewMode = 0 then begin
@@ -175,10 +506,10 @@ begin
   if AValue>editors.Count-1 then AValue := editors.Count-1;
   if FTabIndex = AValue then Exit;
   if FTabIndex<>-1 then begin  //que no sea la primera vez
-    editors[FTabIndex].sedit.Visible := false;  //oculta el anterior
+    editors[FTabIndex].SynEdit.Visible := false;  //oculta el anterior
   end;
   FTabIndex := AValue;   //cambia valor
-  editors[FTabIndex].sedit.Visible := true;  //muestra el nuevo
+  editors[FTabIndex].SynEdit.Visible := true;  //muestra el nuevo
   if OnSelectEditor<>nil then OnSelectEditor;  //dispara evento
   RefreshTabs;
 end;
@@ -218,7 +549,6 @@ var
   y1, y2, alto, xr1, xr2, xrmin, xrmin2, i: Integer;
   r: TRect;
   colBorde: TColor;
-  IsProject: boolean;
 begin
   //Lee coordenadas horizontales
   x1 := edi.x1;
@@ -226,14 +556,11 @@ begin
   alto := panel1.Height;
   y1 := 0;
   y2 := y1 + alto;
-  IsProject := edi.FileName = LastProject;
   //Inicia dibujo
   cv := Panel1.canvas;
   cv.Font.Size:= FONT_TAB_SIZE;
-  //cv.Font.Color := clBlack;
-  if IsProject then cv.Font.Color := clBlue
-               else cv.Font.Color := coltex;   //Color de texto
-  cv.Font.Bold := IsProject;
+  cv.Font.Color := clBlack;
+  cv.Font.Color := coltex;   //Color de texto
   //Fija Línea y color de fondo
   cv.Pen.Style := psSolid;
   cv.Pen.Width := 1;
@@ -268,8 +595,7 @@ begin
   cv.Pixels[xr1,3] := colBorde;
   cv.Pixels[xr2,3] := colBorde;
   //Dibuja ícono
-  if IsProject then ImgCompletion.Draw(cv, x1+4, 4, 0)
-               else ImgCompletion.Draw(cv, x1+4, 4, 7);
+  ImgCompletion.Draw(cv, x1+4, 4, 7);
   //Elimina objetos y pone texto
   r.Top := y1;
   r.Bottom := y2;
@@ -365,7 +691,7 @@ begin
   //Pasa el enfoque al editor que se ha seleccionado
   if TabIndex<>-1 then begin
     try
-      editors[TabIndex].sedit.SetFocus;
+      editors[TabIndex].SynEdit.SetFocus;
     except
 
     end;
@@ -508,11 +834,11 @@ begin
   n := 0;
   repeat
     inc(n);
-    Result := 'newfile' + IntToStr(n) + ext;
+    Result := 'NewFile' + IntToStr(n) + ext;
   until SearchEditorIdxByTab(Result)=-1;
 end;
 function TfraEditView.AddEdit(ext: string): TSynEditor;
-{Agrega una nueva ventana de edición a la vista, y devuelve la referencia.}
+{Agrega una nueva ventana de eición a la vista, y devuelve la referencia.}
 var
   ed: TSynEditor;
   n: Integer;
@@ -522,45 +848,45 @@ begin
   ed.OnChangeEditorState := @ChangeEditorState;
   ed.OnChangeFileInform := @editChangeFileInform;
   ed.hl.IconList := ImgCompletion;
-//  ed.SetLanguage(curLanguage);
+  ed.SetLanguage(curLanguage);
   //Configura PageControl
-  ed.sedit.Parent := self;
-  ed.sedit.Align := alClient;
+  ed.SynEdit.Parent := self;
+  ed.SynEdit.Align := alClient;
   //Fija imágenes para marcadores
-  ed.sedit.BookMarkOptions.BookmarkImages := imgBookMarks;
+  ed.SynEdit.BookMarkOptions.BookmarkImages := imgBookMarks;
 
   //Configura el borrado de la palabra actual
   n := 46;
-  ed.sedit.Keystrokes.BeginUpdate;
-  ed.sedit.Keystrokes[n].Key := VK_DELETE;
-  ed.sedit.Keystrokes[n].Shift := [ssCtrl];
-  ed.sedit.Keystrokes[n].ShiftMask := [];
-  ed.sedit.Keystrokes.EndUpdate;
+  ed.SynEdit.Keystrokes.BeginUpdate;
+  ed.SynEdit.Keystrokes[n].Key := VK_DELETE;
+  ed.SynEdit.Keystrokes[n].Shift := [ssCtrl];
+  ed.SynEdit.Keystrokes[n].ShiftMask := [];
+  ed.SynEdit.Keystrokes.EndUpdate;
   //Deshabilita Ctrl+N
-  n := ed.sedit.Keystrokes.FindCommand(ecInsertLine);
-  ed.sedit.Keystrokes[n].ShortCut := 0;   //Esto debe dehabilitarlo
+  n := ed.SynEdit.Keystrokes.FindCommand(ecInsertLine);
+  ed.SynEdit.Keystrokes[n].ShortCut := 0;   //Esto debe dehabilitarlo
   n := 84;
-  ed.sedit.Keystrokes.BeginUpdate;
-  ed.sedit.Keystrokes[n].Key := VK_SUBTRACT;
-  ed.sedit.Keystrokes[n].Shift := [ssShift,ssAlt];
-  ed.sedit.Keystrokes[n].ShiftMask := [];
-  ed.sedit.Keystrokes.EndUpdate;
+  ed.SynEdit.Keystrokes.BeginUpdate;
+  ed.SynEdit.Keystrokes[n].Key := VK_SUBTRACT;
+  ed.SynEdit.Keystrokes[n].Shift := [ssShift,ssAlt];
+  ed.SynEdit.Keystrokes[n].ShiftMask := [];
+  ed.SynEdit.Keystrokes.EndUpdate;
   //Configura el desplegado con Alt+Shift+"+"
   n := 85;
-  ed.sedit.Keystrokes.BeginUpdate;
-  ed.sedit.Keystrokes[n].Key := VK_ADD;
-  ed.sedit.Keystrokes[n].Shift := [ssShift,ssAlt];
-  ed.sedit.Keystrokes[n].ShiftMask := [];
-  ed.sedit.Keystrokes.EndUpdate;
+  ed.SynEdit.Keystrokes.BeginUpdate;
+  ed.SynEdit.Keystrokes[n].Key := VK_ADD;
+  ed.SynEdit.Keystrokes[n].Shift := [ssShift,ssAlt];
+  ed.SynEdit.Keystrokes[n].ShiftMask := [];
+  ed.SynEdit.Keystrokes.EndUpdate;
 
   //Crea un "plugin" de edición síncrona
   fSynchro := TSynPluginSyncroEdit.Create(self);
-  fSynchro.Editor := ed.sedit;
+  fSynchro.Editor := ed.SynEdit;
 
   //Configura múltiples cursores
   fMultiCaret := TSynPluginMultiCaret.Create(self);
   with fMultiCaret do begin
-    Editor := ed.sedit;
+    Editor := ed.SynEdit;
     with KeyStrokes do begin
       Add.Command    := ecPluginMultiCaretSetCaret;
       Add.Key        := VK_INSERT;
@@ -576,7 +902,7 @@ begin
   ed.Caption := NewName(ext);   //Pone nombre diferente
   ed.FileName := '';  //Pone sin nombre para saber que no se ha guardado
   if OnRequireSynEditConfig<>nil then  //Configura
-    OnRequireSynEditConfig(ed.sedit);
+    OnRequireSynEditConfig(ed.SynEdit);
   editors.Add(ed);   //agrega a la lista
   TabIndex := LastIndex;
   //Configura desplazamiento para asegurarse que la pestaña se mostrará visible
@@ -593,18 +919,18 @@ begin
   if editors.Count = 0 then begin
     //Era el único
     FTabIndex := -1;
-    FrameResize(self);  //para ubicar mensaje de fondo
+    FrameResize(self);  //para ubciar mensaje de fondo
   end else begin
     //Había al menos 2
     if TabIndex > editors.Count - 1 then begin
       //Quedó apuntando fuera
       FTabIndex := editors.Count - 1;   //limita
       //No es necesario ocultar el anterior, porque se eliminó
-      editors[FTabIndex].sedit.Visible := true;  //muestra el nuevo
+      editors[FTabIndex].SynEdit.Visible := true;  //muestra el nuevo
     end else begin
       //Queda apuntando al siguiente. No es necesario modificar.
       //No es necesario ocultar el anterior, porque se eliminó
-      editors[FTabIndex].sedit.Visible := true;  //muestra el nuevo
+      editors[FTabIndex].SynEdit.Visible := true;  //muestra el nuevo
     end;
   end;
   MakeActiveTabVisible;
@@ -632,19 +958,6 @@ begin
   i := TabIndex;
   Result := editors[i];   //Solo funcionará si no se desordenan las enguetas
 end;
-function TfraEditView.SearchEditor(filname: string): TSynEditor;
-{Busca entre las ventanas abiertas al archivo indicado, y devuelve el índice del
-editor. Si no lo encuentra devuelve -1}
-var
-  ed: TSynEditor;
-  i: integer;
-begin
-  for i:=0 to editors.Count-1 do begin
-    ed := editors[i];
-    if Upcase(ed.FileName) = UpCase(filname) then exit(ed);
-  end;
-  exit(nil);
-end;
 function TfraEditView.SearchEditorIdx(filname: string): integer;
 {Busca entre las ventanas abiertas al archivo indicado, y devuelve el índice del
 editor. Si no lo encuentra devuelve -1}
@@ -668,22 +981,6 @@ begin
     if Upcase(ed.Caption) = UpCase(tabName) then exit(i);
   end;
   exit(-1);
-end;
-procedure TfraEditView.ChangeFileName(editIdx: integer; filName0: string);
-{Cambia el nombre de archvo de un editor.}
-var
-  ed: TSynEditor;
-begin
-  if editIdx = -1 then exit;
-  ed := editors[editIdx];
-  if ed.FileName = filName0 then exit;  //Sin cambio.
-  ed.FileName := filName0;
-  ConfigureSyntax(ed);   //Por si cambia de tipo
-  AgregArcReciente(ed.FileName);
-  ed.Caption := ExtractFileName(ed.fileName);
-  {Dispara otra vez, para actualizar bien el nombre del archivo, en el Caption de la
-  ventana principal.}
-//  if OnSelectEditor<>nil then OnSelectEditor;
 end;
 function TfraEditView.SelectEditor(filname: string): boolean;
 {Activa el editor que corresponde al archivo indicado. Si no encuentra el archivo,
@@ -728,7 +1025,7 @@ var
   i: Integer;
 begin
   for i:=0 to editors.Count-1 do begin
-    if editors[i].sedit.Focused then exit(true);
+    if editors[i].SynEdit.Focused then exit(true);
   end;
   exit(false);
 end;
@@ -736,8 +1033,8 @@ procedure TfraEditView.SetFocus;
 begin
 //  inherited SetFocus;
   if TabIndex = -1 then exit;
-  if editors[TabIndex].sedit.Visible then begin
-    editors[TabIndex].sedit.SetFocus;
+  if editors[TabIndex].SynEdit.Visible then begin
+    editors[TabIndex].SynEdit.SetFocus;
   end;
 end;
 procedure TfraEditView.Undo;
@@ -880,12 +1177,12 @@ begin
   if Result then begin
     if (row>=0) and (col>=0)  then begin
       //posiciona curosr
-      ActiveEditor.sedit.CaretY := row;
-//      ActiveEditor.sedit.CaretX := col;
-      ActiveEditor.sedit.LogicalCaretXY := Point(col, row);
+      ActiveEditor.SynEdit.CaretY := row;
+//      ActiveEditor.SynEdit.CaretX := col;
+      ActiveEditor.SynEdit.LogicalCaretXY := Point(col, row);
       //Define línea con error
       if highlightLine then ActiveEditor.linErr := row;
-      ActiveEditor.sedit.Invalidate;  //refresca
+      ActiveEditor.SynEdit.Invalidate;  //refresca
       SetFocus;
     end;
   end;
@@ -1046,7 +1343,7 @@ begin
   //Pide configuración para todos los editores abiertos
   for i:=0 to editors.Count-1 do begin
     if OnRequireSynEditConfig<>nil then begin
-      OnRequireSynEditConfig(editors[i].sedit);
+      OnRequireSynEditConfig(editors[i].SynEdit);
     end;
     //Actualiza resaltador y Completado
     ConfigureSyntax(editors[i]);
@@ -1094,32 +1391,11 @@ begin
   inherited Destroy;
 end;
 //Menú
-procedure TfraEditView.FrameResize(Sender: TObject);
-begin
-  //Configura ubciación de etiquetas
-  if Count>0 then exit;   //Está oculto
-  lblBackground.Left := self.Width div 2 - lblBackground.Width div 2;
-  lblBackground.Top := self.Height div 2;
-end;
-
-procedure TfraEditView.mnClearProjectClick(Sender: TObject);
-begin
-  LastProject := '';
-  Panel1Paint(Self);
-end;
-
 procedure TfraEditView.mnNewTabClick(Sender: TObject);
 begin
   NewPasFile;
   SetFocus;
 end;
-
-procedure TfraEditView.mnSetProjectClick(Sender: TObject);
-begin
-  LastProject := ActiveEditor.FileName;
-  Panel1Paint(Self);
-end;
-
 procedure TfraEditView.UpDown1Click(Sender: TObject; Button: TUDBtnType);
 begin
   case Button of
@@ -1131,10 +1407,6 @@ procedure TfraEditView.mnCloseTabClick(Sender: TObject);
 begin
   CloseEditor;
   SetFocus;
-end;
-procedure TfraEditView.mnLocFileExpClick(Sender: TObject);
-begin
-  if OnLocateInFileExpl<>nil then OnLocateInFileExpl(ActiveEditor);
 end;
 procedure TfraEditView.mnCloseAllClick(Sender: TObject);
 begin
@@ -1164,6 +1436,13 @@ begin
   end;
   SetFocus;
 end;
+procedure TfraEditView.FrameResize(Sender: TObject);
+begin
+  //Configura ubciacio de etiquetas
+  if Count>0 then exit;   //Está oculto
+  lblBackground.Left := self.Width div 2 - lblBackground.Width div 2;
+  lblBackground.Top := self.Height div 2;
+end;
 
 end.
-//1453
+//1482

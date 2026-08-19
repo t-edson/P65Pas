@@ -98,10 +98,7 @@
 	</OpenOn>	
 	<!-- Completado de directivas-->
 	<OpenOn AfterPattern="Directive" Iconindex='3'>
-      "{$BOOTLOADER NONE}"
-      "{$BOOTLOADER JMP}"
-      "{$BOOTLOADER C64}"
-      "{$BOOTLOADER $10,$20,$30}"
+      "{$COMMODORE64}"
       "{$FREQUENCY \_10Mhz}"
 	  "{$ORG \_$0801}"
 	  "{$IFDEF \_}"
@@ -115,9 +112,6 @@
 	  "{$DEFINE symbol}"
 	  "{$DEFINE macro=valor}"
 	  "{$INCLUDE \_}"
-	  "{$INCLUDE extra.pas}"
-      "{$BIN2CSV \_}"	  
-      "{$BIN2CSV data.bin}"	  
 	  "{$OUTPUTHEX \_}"
 	  "{$OUTPUTHEX 'output.hex'}"
 	  "{$MODE PASCAL}"
@@ -127,8 +121,6 @@
 	  "{$MSGERR 'Error'}"
 	  "{$SET \_}"
 	  "{$SET variable = 'valor'}"
-	  "{$STRING NONE}"
-	  "{$STRING NULL_TERMINATED}"
 	  "{$INFO \_}"
 	  "{$INFO 'Hello'}"
 	  "{$WARNING \_}"
@@ -140,8 +132,12 @@
 	  "{$SET_STATE_RAM '000-00B:GPR'}"
 	  "{$SET_DATA_ADDR '\_'}"
 	  "{$SET_DATA_ADDR '00F0-00FF'}"
-	  "{$PROCESSOR CPU6502}"
-	  "{$PROCESSOR CPU65C02}"
+	  "{$RESET_PINS}"
+	  "{$SET_PIN_NAME '\_'}"
+	  "{$SET_PIN_NAME '1:VCC'}"
+	  "{$MAP_RAM_TO_PIN '\_'}"
+	  "{$MAP_RAM_TO_PIN '005:0-17,1-18,2-1,3-2,4-3'}"
+	  
 	</OpenOn>	
 	<!-- Completado en ASM-->
 	<OpenOn AfterPattern="Asm" FilterBy="LastIdentPart">
@@ -159,12 +155,7 @@ PHA PHP PLA PLP
 ROL ROR RTI RTS
 SBC SEC SED SEI STA STX STY
 TAX TAY TSX TXA TXS TYA
-BRA STZ PHX PHY PLX PLY TRB TSB STP WAI
-RMB0 RMB1 RMB2 RMB3 RMB4 RMB5 RMB6 RMB7
-SMB0 SMB1 SMB2 SMB3 SMB4 SMB5 SMB6 SMB7
-BBR0 BBR1 BBR2 BBR3 BBR4 BBR5 BBR6 BBR7
-BBS0 BBS1 BBS2 BBS3 BBS4 BBS5 BBS6 BBS7
-	_H _E _U ORG DB DW
+	_H _E _U
 	</OpenOn>	
   </Completion>
   <!-- *********************************************************************** -->

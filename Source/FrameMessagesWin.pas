@@ -4,8 +4,8 @@ unit FrameMessagesWin;
 interface
 uses
   Classes, SysUtils, FileUtil, LazFileUtils, Forms, Controls, Grids, Graphics,
-  ExtCtrls, StdCtrls, Menus, Clipbrd, EpikTimer, Globales, LexPas,
-  adapterBase, UtilsGrilla, BasicGrilla, MisUtils;
+  ExtCtrls, StdCtrls, Menus, Clipbrd, EpikTimer, CompBase, Globales, LexPas,
+  UtilsGrilla, BasicGrilla, MisUtils;
 type
 
   { TUtilGrillaFil2 }
@@ -46,8 +46,9 @@ type
     procedure mnCopyRowClick(Sender: TObject);
     procedure PanGrillaResize(Sender: TObject);
     procedure panStatisDblClick(Sender: TObject);
+    procedure panStatisPaint(Sender: TObject);
   private
-    cxp       : TAdapterBase;
+    cxp       : TCompilerBase;
     FBackColor: TColor;
     FBackSelColor: Tcolor;
     FPanelColor: TColor;
@@ -55,6 +56,7 @@ type
     FTextErrColor: TColor;
     UtilGrilla: TUtilGrillaFil2;
     nVis, nWar, nErr: Integer;
+    usedRAM, usedROM, usedSTK: single;
     eTimer    : TEpikTimer;  //Counter for mesaure compiling
     procedure CountMessages;
     procedure SetBackColor(AValue: TColor);
@@ -77,26 +79,19 @@ type
     procedure GetErrorIdx(f: integer; out msg: string; out filname: string; out
       row, col: integer);
     function IsErroridx(f: integer): boolean;
-    procedure InitCompilation(cxp0: TAdapterBase; InitMsg: boolean);
-    procedure EndCompilation(showSummary: boolean = true);
-    procedure AddError(errTxt, fname: string; row, col: integer);
-    procedure AddInformation(infTxt, fname: string; row, col: integer);
-    procedure AddWarning(warTxt, fname: string; row, col: integer);
+    procedure InitCompilation(cxp0: TCompilerBase; InitMsg: boolean);
+    procedure EndCompilation;
+    procedure AddError(errTxt: string; const srcPos: TSrcPos);
+    procedure AddInformation(infTxt: string);
+    procedure AddWarning(warTxt: string; const srcPos: TSrcPos);
   public //Inicialización
     constructor Create(AOwner: TComponent) ; override;
     destructor Destroy; override;
+    procedure SetLanguage;
   end;
 
 implementation
 {$R *.lfm}
-resourcestring
-  MSG_INICOMP = 'Starting Compilation...';
-  MSG_WARN    = 'Warning'                ;
-  MSG_WARNS   = 'Warnings'               ;
-  MSG_ERROR   = 'Error'                  ;
-  MSG_ERRORS  = 'Errors'                 ;
-  MSG_COMPIL  = 'Compiled in: '          ;
-
 const
   ROW_HEIGH = 19;
   //Constantes para identificar íconos
@@ -112,6 +107,13 @@ var
   GCOL_COL: integer;  //número ed columna
   GCOL_MSG: integer;  //mensaje
 
+var  //Cadenas de traducción
+  MSG_INICOMP: string;
+  MSG_WARN   : string;
+  MSG_WARNS  : string;
+  MSG_ERROR  : string;
+  MSG_ERRORS : string;
+  MSG_COMPIL : string;
 { TUtilGrillaFil2 }
 procedure TUtilGrillaFil2.grillaDrawCell(Sender: TObject; aCol, aRow: Integer;
   aRect: TRect; aState: TGridDrawState);
@@ -168,7 +170,11 @@ begin
   BackSelColor := clBtnFace;
 end;
 { TfraMessagesWin }
-procedure TfraMessagesWin.AddInformation(infTxt, fname: string; row, col: integer);
+procedure TfraMessagesWin.SetLanguage;
+begin
+ {$I ..\_language\tra_FrameMessagesWin.pas}
+end;
+procedure TfraMessagesWin.AddInformation(infTxt: string);
 var
   f: Integer;
 begin
@@ -184,16 +190,20 @@ begin
   UtilGrilla.FijColorFondo(f, FBackColor);  //Color de fondo de la fila
   UtilGrilla.FijColorTexto(f, FTextColor);
 end;
-procedure TfraMessagesWin.AddWarning(warTxt, fname: string; row, col: integer);
+procedure TfraMessagesWin.AddWarning(warTxt: string; const srcPos: TSrcPos);
 var
-  f: Integer;
+  f, row, col: Integer;
+  fileName: String;
 begin
+  fileName := cxp.ctxFile(srcPos);
+  row := srcPos.row;
+  col := srcPos.col;
   f := grilla.RowCount;
   grilla.RowCount := f + 1;
   grilla.Cells[GCOL_ICO, f] := ICO_WAR;  //ícono
-  grilla.Cells[GCOL_TXT, f] := ExtractFileNameOnly(fName) +
+  grilla.Cells[GCOL_TXT, f] := ExtractFileNameOnly(fileName) +
     '['+ IntToStr(row) + ',' + IntToStr(col) + '] '+ MSG_WARN + ': ' + warTxt;
-  grilla.Cells[GCOL_FILE, f] := fName;
+  grilla.Cells[GCOL_FILE, f] := fileName;
   grilla.Cells[GCOL_ROW, f] := IntToStr(row);
   grilla.Cells[GCOL_COL, f] := IntToStr(col);
   grilla.Cells[GCOL_MSG, f] := warTxt;   //El texto tal cual
@@ -201,16 +211,20 @@ begin
   UtilGrilla.FijColorFondo(f, FBackColor);  //Color de fondo de la fila
   UtilGrilla.FijColorTexto(f, FTextColor);
 end;
-procedure TfraMessagesWin.AddError(errTxt, fname: string; row, col: integer);
+procedure TfraMessagesWin.AddError(errTxt: string; const srcPos: TSrcPos);
 var
-  f: Integer;
+  f, row, col: Integer;
+  fileName: String;
 begin
+  fileName := cxp.ctxFile(srcPos);
+  row := srcPos.row;
+  col := srcPos.col;
   f := grilla.RowCount;
   grilla.RowCount := f + 1;
   grilla.Cells[GCOL_ICO, f] := ICO_ERR;  //ícono
-  grilla.Cells[GCOL_TXT, f] := ExtractFileNameOnly(fName) +
+  grilla.Cells[GCOL_TXT, f] := ExtractFileNameOnly(fileName) +
     '['+ IntToStr(row) + ',' + IntToStr(col) + '] ' + MSG_ERROR + ': ' + errTxt;
-  grilla.Cells[GCOL_FILE, f] := fName;
+  grilla.Cells[GCOL_FILE, f] := fileName;
   grilla.Cells[GCOL_ROW, f] := IntToStr(row);
   grilla.Cells[GCOL_COL, f] := IntToStr(col);
   grilla.Cells[GCOL_MSG, f] := errTxt;   //El texto tal cual
@@ -291,7 +305,7 @@ procedure TfraMessagesWin.SetPanelColor(AValue: TColor);
 begin
   FPanelColor := AValue;
   //Paneles
-  panStatis.Color := AValue;   //No muy útil si vamos a poner un Frame encima.
+  panStatis.Color := AValue;
   panel2.Color := AValue;
   PanGrilla.Color := AValue;
   Splitter1.Color := AValue;
@@ -381,33 +395,24 @@ begin
   end;
   grilla.EndUpdate;
 end;
-procedure TfraMessagesWin.InitCompilation(cxp0: TAdapterBase; InitMsg: boolean
+procedure TfraMessagesWin.InitCompilation(cxp0: TCompilerBase; InitMsg: boolean
   );
-{Limpia grilla e inicia banderas para empezar a recibir mensajes.}
 begin
   cxp := cxp0;   //Guarda referencia
   grilla.RowCount := 1;   //Limpia Grilla
-  cxp.OnWarning:= @AddWarning;  //Inicia evento
-  cxp.OnError  := @AddError;
-  cxp.OnInfo   := @AddInformation;
+  cxp.OnWarning := @AddWarning;  //Inicia evento
+  cxp.OnError := @AddError;
+  cxp.OnInfo := @AddInformation;
 
   eTimer.Clear;
   eTimer.Start;   //Star counting time
-  if InitMsg then AddInformation(cxp.CompilerName + ': ' + MSG_INICOMP, '', 0, 0);
+  if InitMsg then AddInformation(cxp.CompilerName + ': ' + MSG_INICOMP);
   HaveErrors := false;  //limpia bandera
 end;
-procedure TfraMessagesWin.EndCompilation(showSummary: boolean = true);
-{Escribe un mensaje final del tiempo de compilación usado y la cantidad de advertencias
-y errores en el Panel de mensajes. También incluye información sobre los recursos usados
-(RAM) y filtra los mensajes de acuerdo a lo que indican los "CheckBox".}
+procedure TfraMessagesWin.EndCompilation;
 var
   infWar, infErr: String;
 begin
-  if not showSummary then begin
-     //Solo filtra los posibles mensajes recibidos.
-    FilterGrid;
-    exit;
-  end;
   //Construye información adicional
   CountMessages;
   if nWar = 1 then begin
@@ -422,17 +427,78 @@ begin
   end;
   eTimer.Stop;  //Stop counter
   AddInformation(MSG_COMPIL + IntToStr(round(eTimer.Elapsed*1000)) + ' msec. <<' +
-                 infWar + ', ' + infErr + '>>', '', 0, 0);
-
+                 infWar + ', ' + infErr + '>>');
   //Actualiza estadísticas de uso
-  if nErr=0 then begin     //No hay error
-    AddInformation(cxp.RAMusedStr, '', 0, 0);
+  if nErr=0 then begin
+    //No hay error
+    cxp.GetResourcesUsed(usedRAM, usedROM, usedSTK);
+    panStatis.Invalidate;
+    AddInformation(cxp.RAMusedStr) ;
+  end else begin
+    //Hubo errores
+    usedRAM:=0;
+    usedROM:=0;
+    usedSTK:=0;
+    panStatis.Invalidate;
   end;
   FilterGrid;
   //Posiciona al final
   if grilla.RowCount>1 then begin
     grilla.Row := grilla.RowCount -1;
   end;
+end;
+procedure TfraMessagesWin.panStatisPaint(Sender: TObject);
+var
+  cv: TCanvas;
+  procedure Barra(x0, y0: integer; alt: integer; porc: Single);
+  var
+    alt2, dif: Integer;
+    n: Int64;
+  begin
+    if alt<15 then exit;
+    if alt>120 then alt := 100;
+    //Dibuja fondo
+    {$ifdef UNIX}
+//    cv.Brush.Color := clForm;
+    cv.Brush.Color := FBackColor;
+    {$else}
+//    cv.Brush.Color := clMenu;
+    cv.Brush.Color := FBackColor;
+    {$endif}
+    cv.FillRect(x0, y0, x0 + 20, y0 +alt);
+    //Dibuja barra
+    n := round(porc*100);
+    cv.Pen.Color := clGreen;
+    if n < 40 then begin
+      cv.Brush.Color := clGreen;
+    end else if n < 80 then begin
+      cv.Brush.Color := clYellow;
+    end else begin
+      cv.Brush.Color := clRed;
+    end;
+    alt2 := Round(alt*porc);
+    dif := alt-alt2;
+    cv.FillRect(x0, y0 + dif , x0 + 20, y0 + alt2 + dif);
+    //Borde
+    cv.Pen.Color := clGray;
+    cv.Frame(x0, y0, x0 + 20, y0 +alt);
+    cv.Frame(x0-2, y0-2, x0 + 22, y0 +alt+2);
+    //Texto
+    cv.Brush.Style := bsClear;
+    cv.Font.Bold := true;
+    cv.Font.Color := FTextColor;
+    if n<10 then begin
+      cv.TextOut(x0+2, y0 + alt div 2 - 10, IntToStr(n)+'%');
+    end else if n < 100 then begin
+      cv.TextOut(x0-1, y0 + alt div 2 - 10, IntToStr(n)+'%');
+    end else begin
+      cv.TextOut(x0-3, y0 + alt div 2 - 10, IntToStr(n)+'%');
+    end;
+  end;
+begin
+  cv := panStatis.Canvas;
+  Barra(lblRAM.Left + 5, lblRAM.Top + 20, panStatis.Height-35, usedRAM);
+  Barra(lblROM.Left + 5, lblROM.Top + 20, panStatis.Height-35, usedROM);
 end;
 //Inicialización
 constructor TfraMessagesWin.Create(AOwner: TComponent);

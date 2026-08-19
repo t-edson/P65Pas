@@ -1,0 +1,12 @@
+////////////////////////////////////////////
+// New program created in 12/11/2020}
+////////////////////////////////////////////
+program NewProgram;
+uses Commodore64;
+//Declarations here
+  
+begin
+  
+  //Code here
+  
+end.
